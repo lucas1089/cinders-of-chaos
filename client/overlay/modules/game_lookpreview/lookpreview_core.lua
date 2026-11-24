@@ -87,6 +87,18 @@ end
 
 P.UNKNOWN_SHADER = 'This shader is not in your client yet.'
 P.NO_OUTLINE = 'Your client cannot draw outlines yet.' -- an engine without base patch 0038
+P.NO_WEAR = 'Your client cannot draw head pieces and capes yet.' -- an engine without base patch 0210 (O747)
+-- the name the preview's own creature takes while it wears a head piece or cape (setCreatureWear is by name; no
+-- character name has a ~)
+P.WEAR_NAME = '~preview~'
+
+-- a head piece / cape option (O747): {head, cape} looks, the rest 0; nil for any other option
+function P.wearOf(opt)
+  if type(opt) ~= 'table' or opt.kind ~= 'wear' or num(opt.look) <= 0 then return nil end
+  if opt.slot == 'head' then return { head = num(opt.look), cape = 0 } end
+  if opt.slot == 'cape' then return { head = 0, cape = num(opt.look) } end
+  return nil
+end
 P.NO_RIDE = 'Your look cannot ride: the mount is shown with the plain figure.'
 
 -- What to draw: outfit, outline ({art, pulse} or nil) and a note (an unshown kind). The 'simple' figure keeps only
@@ -146,6 +158,8 @@ function P.composeRaw(mode, own, opt)
     outline = { art = opt.art, pulse = opt.pulse == true }
   elseif kind == 'footprint' and type(opt.art) == 'string' and opt.art ~= '' then
     return o, nil, nil -- the stage draws the walk (footwalk.lua)
+  elseif kind == 'wear' then
+    return o, nil, nil -- the head piece / cape: the preview hands it to the engine by the creature's name (O747)
   end
   return o, outline, P.note(opt)
 end
@@ -167,6 +181,8 @@ function P.fromStoreLook(l, depth)
     return name(l.art) and { kind = 'outline', art = l.art, pulse = l.pulse == true } or nil
   elseif k == 'footprint' then
     return name(l.art) and { kind = 'footprint', art = l.art } or nil
+  elseif k == 'wear' then
+    return (l.slot == 'head' or l.slot == 'cape') and num(l.look) > 0 and { kind = 'wear', slot = l.slot, look = num(l.look) } or nil
   elseif k == 'effects' then
     return type(l.play) == 'table' and #l.play > 0
       and { kind = 'effects', play = l.play, killfx = l.killfx == true or nil, lootfx = l.lootfx == true or nil,
@@ -281,6 +297,10 @@ function P.fromCosmeticRow(r)
   end
   if r.kind == 'footprint' then
     return num(r.id) ~= 0 and { kind = 'footprint', art = type(r.art) == 'string' and r.art or nil } or nil
+  end
+  -- a head piece / cape of client pair 83 (O747)
+  if r.kind == 'head' or r.kind == 'cape' then
+    return num(r.id) ~= 0 and num(r.look) > 0 and { kind = 'wear', slot = r.kind, look = num(r.look) } or nil
   end
   -- a loot label and a chat colour: the sample of the row's colour; the Default row (id 0) is the stock one
   if r.kind == 'lootbeam' or r.kind == 'chatcolor' then

@@ -9010,6 +9010,12 @@ return {
 			"Acessório de cabeça de água, animado",
 		["Water wings, animated"] =
 			"Asas de água, animadas",
+		["It has its own layer: wear it with any aura, wings and cape"] =
+			"Tem a sua própria camada: use com qualquer aura, asas e capa",
+		["It has its own layer: wear it with any aura, wings and head accessory"] =
+			"Tem a sua própria camada: use com qualquer aura, asas e acessório de cabeça",
+		["They lift you off the ground"] =
+			"Elas te erguem do chão",
 		["Wear them with any aura, head accessory or cape"] =
 			"Use com qualquer aura, acessório de cabeça ou capa",
 		["White waves rolling over your outfit"] =

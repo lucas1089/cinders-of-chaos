@@ -1,0 +1,239 @@
+# Chaos: a head and cape layer round the body (O747; client/BASE.md "0210"; src/client/chaoswear.h (new, pure), outfit.cpp, outfit.h,
+# creature.cpp, luafunctions_client.cpp; after 0001-0209).
+# Owner 2026-11-24: "com levitação e camada nova". The purchased head pieces and capes of pair 83 are creature looks with a back
+# (y pattern 0) and a front (y pattern 1). The server's cosmetics say who wears which (kinds head and cape, the "looks" of the
+# cosmetics opcode); game_cosmetics hands it in by character name (setCreatureWear, clearCreatureWear). Creature::draw gives the
+# outfit the pieces of a player (a widget's preview creature, id 0, and a player in a list too) and Outfit::draw draws the cape's
+# and the head piece's backs before the body and their fronts after it, each by its anchor tile of chaospiece.h (0209) on the
+# wearer's tile, lifted with the body, in its own looping frame. Never on a mount; a piece without a chaospiece.h row, or a pair
+# without the look, is not drawn. Nothing changes for a character that wears neither.
+diff -ruN a/src/client/chaoswear.h b/src/client/chaoswear.h
+--- /dev/null
++++ b/src/client/chaoswear.h
+@@ -0,0 +1,95 @@
++// Cinders of Chaos (base patch 0210): the head and cape layer (O747). Pure and header-only so client/tools/chaoswear_test.cpp can
++// run it without the engine.
++// A head piece and a cape are creature looks of pair 83 (client/tools/sprites/gen_wst_wear.py): one layer, 4 directions, y pattern
++// 0 the back (with the solid pixels of the front on it), y pattern 1 the front, their frames at 83 ms. Who wears which comes from
++// the server's cosmetics (kinds head and cape, the "looks" of the cosmetics opcode); game_cosmetics hands it in by character name
++// (setCreatureWear). Outfit::draw then draws, round the body and lifted with it (base patch 0209):
++//   before the body: the cape's back, the head piece's back
++//   after the body:  the cape's front, the head piece's front
++// each placed by its anchor tile (chaospiece.h place) and in its own looping frame. A piece needs a row of chaospiece.h (its
++// anchor tile): a look without one, or a pair without the look, is not drawn. Never on a mount (a seated rider's picture has
++// its own head place), never for a thing that is not a creature look.
++#ifndef CHAOSWEAR_H
++#define CHAOSWEAR_H
++
++#include <cctype>
++#include <string>
++#include <unordered_map>
++
++namespace chaos {
++namespace wear {
++
++constexpr int kMaxLook = 0xffff;
++constexpr size_t kMaxNames = 4096;   // more characters than any screen shows: a bad caller is cut off here
++
++struct Worn {
++    int head = 0;
++    int cape = 0;
++};
++
++struct Tables {
++    std::unordered_map<std::string, Worn> byName;  // lower case name -> what it wears
++};
++
++inline Tables& tables()
++{
++    static Tables t;
++    return t;
++}
++
++inline std::string key(const std::string& name)
++{
++    std::string out(name);
++    for (char& c : out)
++        c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
++    return out;
++}
++
++inline bool validLook(int look) { return look >= 0 && look <= kMaxLook; }
++
++// both 0: the character wears neither (the row goes)
++inline bool set(const std::string& name, int head, int cape)
++{
++    if (name.empty() || !validLook(head) || !validLook(cape))
++        return false;
++    const std::string k = key(name);
++    if (head == 0 && cape == 0) {
++        tables().byName.erase(k);
++        return true;
++    }
++    if (!tables().byName.count(k) && tables().byName.size() >= kMaxNames)
++        return false;
++    tables().byName[k] = Worn{ head, cape };
++    return true;
++}
++
++inline void clear() { tables().byName.clear(); }
++
++inline Worn of(const std::string& name)
++{
++    if (name.empty() || tables().byName.empty())
++        return Worn{};
++    auto it = tables().byName.find(key(name));
++    return it == tables().byName.end() ? Worn{} : it->second;
++}
++
++// the draw order round the body: step 0, 1 before it, 2, 3 after it
++struct Step {
++    bool cape;   // false: the head piece
++    int yPattern;
++};
++
++inline Step step(int i)
++{
++    switch (i) {
++        case 0: return Step{ true, 0 };
++        case 1: return Step{ false, 0 };
++        case 2: return Step{ true, 1 };
++        default: return Step{ false, 1 };
++    }
++}
++
++}  // namespace wear
++}  // namespace chaos
++
++#endif
+diff -ruN a/src/client/creature.cpp b/src/client/creature.cpp
+--- a/src/client/creature.cpp
++++ b/src/client/creature.cpp
+@@ -39,6 +39,7 @@
+ #include "chaosrecoil.h"
+ #include "chaosbars.h"
+ #include "chaosshadow.h"
++#include "chaoswear.h"
+ 
+ #include <framework/graphics/graphics.h>
+ #include <framework/core/eventdispatcher.h>
+@@ -353,6 +354,11 @@
+         }
+     }
+     const bool flashing = hitFlash && m_hitFlashEnd != 0;
++    // Chaos (base patch 0210): the head piece and cape this character wears (chaoswear.h, by name; players only on the map)
++    {
++        const chaos::wear::Worn worn = isPlayer() ? chaos::wear::of(getName()) : chaos::wear::Worn{};
++        m_outfit.setWear(worn.head, worn.cape);
++    }
+     m_outfit.draw(dest - jumpOffset + animationOffset, m_walking ? m_walkDirection : m_direction, m_walkAnimationPhase, true, lightView);
+     if (flashing)
+         m_outfit.setShader(shaderBeforeFlash);
+@@ -538,6 +544,12 @@
+     // the outline in a widget only for a widget's own preview creature (id 0, UICreature:setOutfit), never for a
+     // creature of the map shown in a list (battle list, party)
+     m_outfit.setDrawOutline(m_id == 0 && m_outline.width > 0 ? &m_outline : nullptr);
++    // Chaos (base patch 0210): a player in a list, or a widget's own preview creature (id 0, named by game_cosmetics), wears its
++    // head piece and cape here too
++    {
++        const chaos::wear::Worn worn = (m_id == 0 || isPlayer()) ? chaos::wear::of(getName()) : chaos::wear::Worn{};
++        m_outfit.setWear(worn.head, worn.cape);
++    }
+     m_outfit.draw(destRect, direction, 0, animate, ui, oldScaling, mountOnly, ignoreDisplacement);
+     m_outfit.setDrawOutline(nullptr);
+ }
+diff -ruN a/src/client/luafunctions_client.cpp b/src/client/luafunctions_client.cpp
+--- a/src/client/luafunctions_client.cpp
++++ b/src/client/luafunctions_client.cpp
+@@ -57,6 +57,7 @@
+ #include "chaoswinganchor.h"
+ #include "chaosheadfit.h"
+ #include "chaospiece.h"
++#include "chaoswear.h"
+ #include "healthbars.h"
+ #include "uigrid.h"
+ 
+@@ -521,6 +522,9 @@
+     g_lua.bindGlobalFunction("setOutfitPackPiece", chaos::piece::setPiece);
+     g_lua.bindGlobalFunction("setOutfitWingsLift", chaos::piece::setLift);
+     g_lua.bindGlobalFunction("clearOutfitPackPieces", chaos::piece::clear);
++    // Chaos (base patch 0210): who wears which head piece and cape (game_cosmetics, the cosmetics "looks")
++    g_lua.bindGlobalFunction("setCreatureWear", chaos::wear::set);
++    g_lua.bindGlobalFunction("clearCreatureWear", chaos::wear::clear);
+     // Chaos (base patch 0200): the tables of the head accessories' placing (client_chaos_wingfit)
+     g_lua.bindGlobalFunction("setOutfitHeadCentre", chaos::headfit::setBodyHead);
+     g_lua.bindGlobalFunction("setOutfitHeadRef", chaos::headfit::setHeadRef);
+diff -ruN a/src/client/outfit.cpp b/src/client/outfit.cpp
+--- a/src/client/outfit.cpp
++++ b/src/client/outfit.cpp
+@@ -31,6 +31,7 @@
+ #include "chaoswinganchor.h"
+ #include "chaosheadfit.h"
+ #include "chaospiece.h"
++#include "chaoswear.h"
+ 
+ #include <framework/graphics/painter.h>
+ #include <framework/graphics/drawcache.h>
+@@ -570,6 +571,31 @@
+         drawWings(wingPlan.before);
+     }
+ 
++    // Cinders of Chaos (base patch 0210): the head and cape layer round the body (chaoswear.h): steps 0-1 before it, 2-3
++    // after it, each piece by its anchor tile on the wearer's tile (dest, lifted by a pack wing, minus the body's
++    // displacement) and in its own looping frame; never on a mount
++    auto drawWear = [&](int first, int last) {
++        if (m_category != ThingCategoryCreature || m_mount > 0 || (!m_wearHead && !m_wearCape))
++            return;
++        const Point bodyDisplacement = type->getDisplacement();
++        for (int i = first; i <= last; ++i) {
++            const chaos::wear::Step s = chaos::wear::step(i);
++            const int look = s.cape ? m_wearCape : m_wearHead;
++            chaos::piece::Piece piece;
++            if (look <= 0 || !chaos::piece::piece(look, piece) || !g_things.isValidDatId(look, ThingCategoryCreature))
++                continue;
++            ThingType* wearType = g_things.rawGetThingType(look, ThingCategoryCreature);
++            if (!wearType || wearType->getNumPatternY() <= s.yPattern)
++                continue;
++            const chaos::piece::Point2 at = chaos::piece::place(-bodyDisplacement.x, -bodyDisplacement.y, wearType->getWidth(),
++                                                              wearType->getHeight(), piece);
++            const int wearPhase = animate ? chaos::piece::phase(g_clock.millis(), wearType->getAnimationPhases()) : 0;
++            wearType->draw(dest + Point(at.x, at.y) * g_sprites.getOffsetFactor(), 0, direction, s.yPattern, 0, wearPhase,
++                           Color::white, lightView);
++        }
++    };
++    drawWear(0, 1);
++
+     LightView* const baseLightView = NegativeOffset::baseCreatureLightView(
+         lightView,
+         type->hasNegativeDisplacement() ||
+@@ -616,6 +642,8 @@
+         }
+     }
+ 
++    drawWear(2, 3);  // Chaos (base patch 0210): the cape's and the head piece's fronts
++
+     if (m_wings && wingPlan.after != chaos::winglayers::kNone) {
+         if (!wingsAnchored && wingPlan.before == chaos::winglayers::kNone)
+             placeWingsBehindViewer();
+diff -ruN a/src/client/outfit.h b/src/client/outfit.h
+--- a/src/client/outfit.h
++++ b/src/client/outfit.h
+@@ -106,6 +106,10 @@
+     int getManaBar() const { return m_manaBar; }
+     // Chaos (base patch 0209): the lift the last draw gave the body (a pack wing's levitation; map units), for the soft shadow
+     Point getChaosLift() const { return m_chaosLift; }
++    // Chaos (base patch 0210): the head piece and cape looks the next draw puts round the body (0 = none; Creature::draw sets them)
++    void setWear(int head, int cape) { m_wearHead = head; m_wearCape = cape; }
++    int getWearHead() const { return m_wearHead; }
++    int getWearCape() const { return m_wearCape; }
+ 
+ private:
+     ThingCategory m_category;
+@@ -117,6 +121,7 @@
+     const OutfitOutline* m_drawOutline = nullptr;
+     std::vector<CreatureHitPart>* m_hitParts = nullptr;
+     Point m_chaosLift; // Chaos (base patch 0209)
++    int m_wearHead = 0, m_wearCape = 0; // Chaos (base patch 0210)
+ };
+ 
+ struct DrawQueueItemOutfit : public DrawQueueItemTexturedRect {

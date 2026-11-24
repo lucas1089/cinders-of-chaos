@@ -1,0 +1,278 @@
+# Chaos: the purchased wings of pair 83 sit by their anchor tile and lift their wearer (O747; client/BASE.md "0209"; src/client/chaospiece.h
+# (new, pure), outfit.cpp, outfit.h, creature.cpp, luafunctions_client.cpp; after 0001-0208).
+# Owner 2026-11-24: "Pode importar, com levitação e camada nova." The pack wings (client/tools/sprites/gen_wst_wear.py) were drawn for a
+# wearer standing in the anchor tile of their picture, and they lift that wearer: per frame an offset of the body. A wings look with a
+# row of chaospiece.h (setOutfitPackPiece, from client_chaos_wingfit/wear_pieces.lua) is placed with its anchor tile on the wearer's
+# tile (the creature's place minus the body's displacement), not by the torso measure of 0204 nor the table of 0193; it plays its
+# frames at 83 ms; the body (and the head / cape layer of 0210) is drawn at its place plus the lift of that frame
+# (setOutfitWingsLift); the wings stay (they rise inside their frames). No stock GameWingOffset lift and no bounce for such a
+# wing, no lift on a mount. Creature::draw takes the lift out of the soft shadow's place (0155), so the shadow stays on the ground.
+# A wings look without a row, and every other look, draws as before.
+diff -ruN a/src/client/chaospiece.h b/src/client/chaospiece.h
+--- /dev/null
++++ b/src/client/chaospiece.h
+@@ -0,0 +1,127 @@
++// Cinders of Chaos (base patch 0209): the purchased wings, heads and capes of pair 83 (O747) and the levitation of their wings.
++// Pure and header-only so client/tools/chaospiece_test.cpp can run it without the engine.
++// A pack piece is a creature look drawn round a body: a picture of w x h tiles whose anchor tile (column ax, row ay) is the
++// wearer's tile. The picture's top left goes on the wearer's tile minus anchor x 32 px, the wearer's tile being the creature's
++// place minus the body's displacement (where ThingType::draw puts the body's own bottom right tile). ThingType::draw puts a
++// look without displacement at dest - (w - 1, h - 1) tiles, so the point handed to it is
++//   wearer's tile + ((w - 1 - ax) x 32, (h - 1 - ay) x 32)
++// A wings look of the pack also lifts its wearer: per frame of the wings animation an offset of the body (x then y, sprite px
++// at 1x; negative is up and left, the oblique height), the wings themselves stay where they are (they rise inside their own
++// frames, and the ground shadow stays on the ground). The frame is the same for wings and body: (now / frame ms) mod frames.
++// client_chaos_wingfit hands the tables in (wear_pieces.lua, made by client/tools/sprites/gen_wst_wear.py). A look without a row
++// is drawn as before (bases 0193, 0203, 0204).
++#ifndef CHAOSPIECE_H
++#define CHAOSPIECE_H
++
++#include <cstdint>
++#include <sstream>
++#include <string>
++#include <unordered_map>
++#include <vector>
++
++namespace chaos {
++namespace piece {
++
++constexpr int kTile = 32;
++constexpr int kFrameMs = 83;     // 12 frames a second, the pack's speed
++constexpr int kMaxAnchor = 8;    // tiles
++constexpr int kMaxLiftPx = 32;   // a larger lift is a bad row: ignored
++constexpr int kMaxFrames = 64;
++
++struct Point2 {
++    int x = 0;
++    int y = 0;
++};
++
++struct Piece {
++    int ax = 0;
++    int ay = 0;
++};
++
++struct Tables {
++    std::unordered_map<int, Piece> pieces;               // look -> anchor tile
++    std::unordered_map<int, std::vector<Point2>> lifts;  // wings look -> the body's offset per frame
++};
++
++inline Tables& tables()
++{
++    static Tables t;
++    return t;
++}
++
++inline bool setPiece(int look, int ax, int ay)
++{
++    if (look <= 0 || ax < 0 || ay < 0 || ax > kMaxAnchor || ay > kMaxAnchor)
++        return false;
++    tables().pieces[look] = Piece{ ax, ay };
++    return true;
++}
++
++// text: "dx dy dx dy ..." one pair a frame; a bad text sets nothing
++inline bool setLift(int look, const std::string& text)
++{
++    if (look <= 0)
++        return false;
++    std::istringstream in(text);
++    std::vector<Point2> out;
++    int x = 0, y = 0;
++    while (in >> x) {
++        if (!(in >> y))
++            return false;
++        if (x < -kMaxLiftPx || x > kMaxLiftPx || y < -kMaxLiftPx || y > kMaxLiftPx)
++            return false;
++        out.push_back(Point2{ x, y });
++        if (static_cast<int>(out.size()) > kMaxFrames)
++            return false;
++    }
++    if (!in.eof() || out.empty())
++        return false;
++    tables().lifts[look] = out;
++    return true;
++}
++
++inline void clear()
++{
++    tables().pieces.clear();
++    tables().lifts.clear();
++}
++
++inline bool piece(int look, Piece& out)
++{
++    auto it = tables().pieces.find(look);
++    if (it == tables().pieces.end())
++        return false;
++    out = it->second;
++    return true;
++}
++
++// the frame of a looping piece of `phases` frames at `frameMs` each
++inline int phase(int64_t millis, int phases, int frameMs = kFrameMs)
++{
++    if (phases <= 1 || frameMs <= 0 || millis < 0)
++        return 0;
++    return static_cast<int>((millis / frameMs) % phases);
++}
++
++// the body's offset in frame `frame` of a wings look (0, 0 without a row; a row shorter than the animation wraps)
++inline Point2 lift(int look, int frame)
++{
++    auto it = tables().lifts.find(look);
++    if (it == tables().lifts.end() || it->second.empty() || frame < 0)
++        return Point2{};
++    return it->second[static_cast<size_t>(frame) % it->second.size()];
++}
++
++// the point ThingType::draw takes for a piece of w x h tiles, from the wearer's tile (sprite px at 1x); a piece whose anchor is
++// outside its picture is placed as if the anchor were its bottom right tile
++inline Point2 place(int tileX, int tileY, int w, int h, const Piece& p)
++{
++    const int ax = (p.ax >= 0 && p.ax < w) ? p.ax : w - 1;
++    const int ay = (p.ay >= 0 && p.ay < h) ? p.ay : h - 1;
++    return Point2{ tileX + (w - 1 - ax) * kTile, tileY + (h - 1 - ay) * kTile };
++}
++
++}  // namespace piece
++}  // namespace chaos
++
++#endif
+diff -ruN a/src/client/creature.cpp b/src/client/creature.cpp
+--- a/src/client/creature.cpp
++++ b/src/client/creature.cpp
+@@ -384,6 +384,9 @@
+         // the shadow stays on the ground: the jump lifts the pieces, not the floor
+         bodyX += jumpOffset.x;
+         bodyY += jumpOffset.y;
++        // Chaos (base patch 0209): nor does a pack wing's levitation
++        bodyX -= m_outfit.getChaosLift().x;
++        bodyY -= m_outfit.getChaosLift().y;
+         const Point scaleAt = creatureCenter + Point(0, sprSize / 2);
+         const chaos::shadow::Ellipse e = chaos::shadow::place(bodyX, bodyY, shadowTiles, sprSize / 32.f, m_drawScale,
+                                                               static_cast<float>(scaleAt.x), static_cast<float>(scaleAt.y));
+diff -ruN a/src/client/luafunctions_client.cpp b/src/client/luafunctions_client.cpp
+--- a/src/client/luafunctions_client.cpp
++++ b/src/client/luafunctions_client.cpp
+@@ -56,6 +56,7 @@
+ #include "chaoswingfit.h"
+ #include "chaoswinganchor.h"
+ #include "chaosheadfit.h"
++#include "chaospiece.h"
+ #include "healthbars.h"
+ #include "uigrid.h"
+ 
+@@ -516,6 +517,10 @@
+     g_lua.bindGlobalFunction("setOutfitWingsAnchor", chaos::winganchor::setWingsAnchor);
+     g_lua.bindGlobalFunction("setOutfitBodyAnchor", chaos::winganchor::setBodyAnchor);
+     g_lua.bindGlobalFunction("clearOutfitWingAnchors", chaos::winganchor::clearAnchors);
++    // Chaos (base patch 0209): the purchased pieces of pair 83, their anchor tiles and the wings' lift (client_chaos_wingfit, wear_pieces.lua)
++    g_lua.bindGlobalFunction("setOutfitPackPiece", chaos::piece::setPiece);
++    g_lua.bindGlobalFunction("setOutfitWingsLift", chaos::piece::setLift);
++    g_lua.bindGlobalFunction("clearOutfitPackPieces", chaos::piece::clear);
+     // Chaos (base patch 0200): the tables of the head accessories' placing (client_chaos_wingfit)
+     g_lua.bindGlobalFunction("setOutfitHeadCentre", chaos::headfit::setBodyHead);
+     g_lua.bindGlobalFunction("setOutfitHeadRef", chaos::headfit::setHeadRef);
+diff -ruN a/src/client/outfit.cpp b/src/client/outfit.cpp
+--- a/src/client/outfit.cpp
++++ b/src/client/outfit.cpp
+@@ -30,6 +30,7 @@
+ #include "chaoswinglayers.h"
+ #include "chaoswinganchor.h"
+ #include "chaosheadfit.h"
++#include "chaospiece.h"
+ 
+ #include <framework/graphics/painter.h>
+ #include <framework/graphics/drawcache.h>
+@@ -71,7 +72,14 @@
+         direction = Otc::West;
+ 
+     Point wingDest = dest;
+-    if (g_game.getFeature(Otc::GameWingOffset) && m_wings)
++    // Cinders of Chaos (base patch 0209): a wings look of the purchased pack (a row of chaospiece.h) lifts its wearer by its own
++    // table, in the frame its wings are drawn at: no stock lift of GameWingOffset and no bounce for it
++    m_chaosLift = Point();
++    chaos::piece::Piece packWing;
++    const bool packWings = m_wings && m_category == ThingCategoryCreature && chaos::piece::piece(m_wings, packWing);
++    ThingType* const packWingsType = packWings ? g_things.rawGetThingType(m_wings, ThingCategoryCreature) : nullptr;
++    const int packPhase = packWingsType && animate ? chaos::piece::phase(g_clock.millis(), packWingsType->getAnimationPhases()) : 0;
++    if (g_game.getFeature(Otc::GameWingOffset) && m_wings && !packWings)
+         dest -= Point(6, 6) * g_sprites.getOffsetFactor();
+ 
+     auto type = g_things.rawGetThingType(m_category == ThingCategoryCreature ? m_id : m_auxId, m_category);
+@@ -145,7 +153,7 @@
+                 animationPhase += 1;
+             }
+         }
+-        if (g_game.getFeature(Otc::GameWingOffset) && m_wings) {
++        if (g_game.getFeature(Otc::GameWingOffset) && m_wings && !packWings) {
+             wingBounce();
+         }
+         const int animationPhases = type->getAnimationPhases();
+@@ -325,6 +333,9 @@
+                 wingAnimationPhase = (g_clock.millis() % (ticksPerFrame * phases)) / ticksPerFrame;
+             }
+         }
++        // Cinders of Chaos (base patch 0209): a pack wing plays its frames at the pack's speed, the frame its lift was read at
++        if (packWings)
++            wingAnimationPhase = packPhase;
+         wingsType->draw(wingDest, 0, direction, yPattern, wingsZPattern, wingAnimationPhase, Color::white, lightView);
+     };
+ 
+@@ -418,6 +429,24 @@
+         dest += seatedShift[direction <= Otc::West ? direction : Otc::South] * g_sprites.getOffsetFactor();
+     }
+ 
++    // Cinders of Chaos (base patch 0209): a pack wing goes by its anchor tile on the wearer's tile (dest minus the body's
++    // displacement, before the lift: the wings rise inside their own frames), then the body, and every layer drawn with it,
++    // is lifted by the wing's table in this frame. No lift on a mount. m_chaosLift tells Creature::draw, so the soft shadow
++    // stays on the ground.
++    bool packPlaced = false;
++    if (packWingsType) {
++        const Point bodyDisplacement = type->getDisplacement();
++        const chaos::piece::Point2 at = chaos::piece::place(-bodyDisplacement.x, -bodyDisplacement.y, packWingsType->getWidth(),
++                                                          packWingsType->getHeight(), packWing);
++        wingDest = dest + Point(at.x, at.y) * g_sprites.getOffsetFactor();
++        packPlaced = true;
++        if (!riding) {
++            const chaos::piece::Point2 lift = chaos::piece::lift(m_wings, packPhase);
++            m_chaosLift = Point(lift.x, lift.y) * g_sprites.getOffsetFactor();
++            dest += m_chaosLift;
++        }
++    }
++
+     // Cinders of Chaos (base patch 0203): the wings' place when the creature faces north or west, as before; a lambda
+     // because a layered wing is also drawn before the body in these directions
+     auto placeWingsBehindViewer = [&] {
+@@ -464,8 +493,8 @@
+     // holds the lift, the bounce and the mount's moves, and ThingType::draw takes the look's displacement out. Only a
+     // layered wings look (two y patterns, base patch 0203) is a drawn one: a pair that still has the old art under
+     // that id keeps the table of 0193
+-    bool wingsAnchored = false;
+-    if (m_wings && m_category == ThingCategoryCreature && wingPlan.after == chaos::winglayers::kFront) {
++    bool wingsAnchored = packPlaced;  // Chaos (base patch 0209): a pack wing is placed by its anchor tile above
++    if (m_wings && !packPlaced && m_category == ThingCategoryCreature && wingPlan.after == chaos::winglayers::kFront) {
+         chaos::winganchor::Point2 anchor, body, move;
+         if (chaos::winganchor::wingsAnchor(m_wings, anchor)) {
+             bool found = chaos::winganchor::bodyOverride(m_id, direction, body);
+diff -ruN a/src/client/outfit.h b/src/client/outfit.h
+--- a/src/client/outfit.h
++++ b/src/client/outfit.h
+@@ -104,6 +104,8 @@
+     float getShaderParam(int index) const { return index >= 0 && index < 4 ? m_shaderParams[index] : 0.f; }
+     int getHealthBar() const { return m_healthBar; }
+     int getManaBar() const { return m_manaBar; }
++    // Chaos (base patch 0209): the lift the last draw gave the body (a pack wing's levitation; map units), for the soft shadow
++    Point getChaosLift() const { return m_chaosLift; }
+ 
+ private:
+     ThingCategory m_category;
+@@ -114,6 +116,7 @@
+     bool m_center = false;
+     const OutfitOutline* m_drawOutline = nullptr;
+     std::vector<CreatureHitPart>* m_hitParts = nullptr;
++    Point m_chaosLift; // Chaos (base patch 0209)
+ };
+ 
+ struct DrawQueueItemOutfit : public DrawQueueItemTexturedRect {

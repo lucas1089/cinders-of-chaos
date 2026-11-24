@@ -167,6 +167,14 @@ def test_pair78(tmp):
         expect('<wing id="%d" clientid="%d" name="%s" speed="20" />' % (i, lk, n) in xml, 'pair 78: wings.xml line of %s' % n)
     expect(run(78) == xml, 'pair 78: a second run changes nothing')
     expect(run(80) == xml, 'pair 80: the same lines')
+    expect('clientid="3589"' not in xml, 'pair 80: no pair 83 wing')
+    # O747: the purchased wing of pair 83 (chaos_wst_wear_ids.lua) joins at 83, after the six drawn ones
+    xml = run(83)
+    expect(IO.wst83_wings(data) == [(128, 3589, 'Plasma Fly Wings')], 'pair 83: the new wing read: %r' % (IO.wst83_wings(data),))
+    expect('<wing id="128" clientid="3589" name="Plasma Fly Wings" speed="20" />' in xml, 'pair 83: wings.xml line of the new wing')
+    expect('clientid="3555"' in xml, 'pair 83: the drawn wings stay')
+    expect(run(83) == xml, 'pair 83: a second run changes nothing')
+    expect('clientid="3589"' not in run(82), 'back to pair 82: no pair 83 wing')
     xml = run(77)
     expect('clientid="3555"' not in xml, 'back to pair 77: no drawn wings line')
     # an id that wings.xml already has outside the block stops the step

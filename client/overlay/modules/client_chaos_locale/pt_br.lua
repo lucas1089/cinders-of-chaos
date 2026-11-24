@@ -1707,6 +1707,7 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Item looks show on the item, not on the character."] = "A aparência de item aparece no item, não no personagem.",
   ["This shader is not in your client yet."] = "Este shader ainda não está no seu cliente.",
   ["Your client cannot draw outlines yet."] = "Seu cliente ainda não consegue desenhar contornos.",
+  ["Your client cannot draw head pieces and capes yet."] = "Seu cliente ainda não consegue desenhar peças de cabeça e capas.",
   ["Your look cannot ride: the mount is shown with the plain figure."] = "Sua aparência não pode montar: a montaria é mostrada com o boneco simples.",
   -- the samples of a loot label, a chat colour and a name plate on the stage and on the cards (O497); item names stay as the game has them
   ["Ashen Blade"] = "Ashen Blade",
@@ -2980,6 +2981,8 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Auras"] = "Auras",
   ["Head Accessories"] = "Acessórios de Cabeça",
   ["Capes"] = "Capas",
+  ["Head Pieces"] = "Peças de Cabeça",
+  ["Cloaks and Capes"] = "Mantos e Capas",
   ["Outfit Shaders"] = "Shaders de Roupa",
   ["Name Plates"] = "Placas de Nome",
   ["Appearances"] = "Aparências",
@@ -6518,6 +6521,8 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Your highlighted loot labels keep the dark background."] = "Os rótulos de loot em destaque mantêm o fundo escuro.",
   ["Your name in chat keeps the colour of the message."] = "Seu nome no chat mantém a cor da mensagem.",
   ["You leave no footprints."] = "Você não deixa pegadas.",
+  ["You wear no head piece."] = "Você não usa peça de cabeça.",
+  ["You wear no cape."] = "Você não usa capa.",
   ["No outline around you."] = "Nenhum contorno ao seu redor.",
   -- Achievements (achievementsview.lua)
   ["Loot label accent"] = "Destaque do rótulo de loot",

@@ -5,6 +5,7 @@
 local dir = (arg and arg[0] or ''):match('^(.*[/\\])') or './'
 dofile(dir .. 'wing_centres.lua')
 dofile(dir .. 'head_centres.lua')
+dofile(dir .. 'wear_pieces.lua')
 dofile(dir .. 'wingfit_core.lua')
 local C = WingFitCore
 local D = ChaosWingCentres
@@ -145,6 +146,29 @@ gotW, gotB = {}, {}
 nw, nr = C.applyAnchors(junkA, function(l, x, y) gotW[#gotW + 1] = { l, x, y } end, function(l, d, x, y) gotB[#gotB + 1] = { l, d, x, y } end)
 ok(nw == 2 and gotW[1][1] == 4 and gotW[2][1] == 9 and gotW[1][2] == -17, 'only whole ids, sorted, whole pixels')
 ok(nr == 1 and gotB[1][1] == 7 and gotB[1][2] == 2 and gotB[1][3] == -30 and gotB[1][4] == -4, 'only whole hand rows')
+
+-- purchased pieces of pair 83 (O747, base patch 0209): every generated row goes in, every lift has whole pairs
+local P = ChaosWearPieces
+ok(type(P) == 'table' and P.pair == 83 and P.frameMs == 83, 'wear_pieces pair 83')
+local pieces, lifts = {}, {}
+local np, nl = C.applyPieces(P, function(look, ax, ay) pieces[#pieces + 1] = { look, ax, ay } end,
+  function(look, text) lifts[#lifts + 1] = { look, text } end)
+ok(np == #P.pieces and np == 218, 'all 218 pieces: ' .. np)
+local nlifts = 0
+for _ in pairs(P.lifts) do nlifts = nlifts + 1 end
+ok(nl == nlifts and nl == 74, 'a lift per wings look: ' .. nl)
+ok(#P.heads == 66 and #P.capes == 78, 'heads and capes')
+local seen = {}
+for _, row in ipairs(P.pieces) do
+  ok(not seen[row[1]], 'look once ' .. row[1]); seen[row[1]] = true
+end
+for _, h in ipairs(P.heads) do ok(seen[h.look] and h.look >= P.first, 'head look ' .. h.key) end
+for _, c in ipairs(P.capes) do ok(seen[c.look] and c.look >= P.first, 'cape look ' .. c.key) end
+np, nl = C.applyPieces({ pieces = { { 5, 1, 2 }, { 0, 1, 1 }, { 6, 9, 0 }, 'x' },
+  lifts = { [5] = '1 -2', [6] = '1', [7] = '0 0.5', [8] = '0 99' } },
+  function() end, function(look) ok(look == 5, 'only the good lift ' .. look) end)
+ok(np == 1 and nl == 1, 'bad rows skipped')
+ok(C.applyPieces(nil) == 0, 'no table')
 
 if fails > 0 then os.exit(1) end
 print('wingfit_core_test: all checks passed')

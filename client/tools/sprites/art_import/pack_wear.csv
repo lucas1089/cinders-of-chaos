@@ -1,0 +1,219 @@
+cat,key,name,element,look,wings,design,cost,aura,frames,fw,fh,ax,ay,src_back,src_front,lift
+wings,amber_sap_wings,Amber Sap Wings,earth,2385,30,amber_sap,250,,16,128,128,2,2,8d8d1bc7a835,9f49905ac89f,-1 -1 -1 -1 -1 -1 -2 -2 -2 -2 -2 -2 -3 -3 -3 -3 -3 -3 -3 -3 -3 -3 -2 -2 -2 -2 -2 -2 -1 -1 -1 -1
+wings,arc_bolt_wings,Arc Bolt Wings,energy,2386,31,arc_bolt,300,,16,128,128,2,2,05e0e76eda3c,c4cbfc4b5c9d,-4 -4 -3 -3 -2 -2 -2 -2 -1 -1 -2 -2 -2 -2 -3 -3 -4 -4 -3 -3 -2 -2 -2 -2 -1 -1 -2 -2 -2 -2 -3 -3
+wings,aurora_veil_wings,Aurora Veil Wings,light,2387,32,aurora_veil,300,,24,128,128,2,2,93c38d4259fa,3106269c23da,-2 -2 -3 -3 -3 -3 -3 -3 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -3 -3 -3 -3 -3 -3 -3 -3 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2
+wings,banner_wings,Banner Wings,neutral,2388,33,banner,250,,24,128,128,2,2,b0d85fd52076,9a5a709bad67,-2 -2 -2 -2 -3 -3 -3 -3 -3 -3 -3 -3 -3 -3 -4 -4 -4 -4 -3 -3 -3 -3 -3 -3 -3 -3 -3 -3 -2 -2 -2 -2 -2 -2 -2 -2 -1 -1 -1 -1 -1 -1 -1 -1 -2 -2 -2 -2
+wings,bark_owl_wings,Bark Owl Wings,earth,2389,34,bark_owl,250,,20,128,128,2,2,57f5c3cc294c,b42712de3648,-2 -2 -2 -2 -2 -2 -2 -2 -3 -3 -3 -3 -3 -3 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -3 -3 -3 -3 -3 -3 -2 -2 -2 -2 -2 -2
+wings,blaze_dragon_wings,Blaze Dragon Wings,fire,2390,35,blaze_dragon,300,,24,128,128,2,2,454c253e97f4,e553eab64ef1,-3 -3 -3 -3 -4 -4 -4 -4 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -4 -4 -4 -4 -4 -4 -3 -3 -3 -3 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -3 -3
+wings,bonsai_branch_wings,Bonsai Branch Wings,earth,2391,36,bonsai_branch,300,,24,128,128,2,2,11d4c9a2315b,379dd25b9d84,-2 -2 -3 -3 -3 -3 -3 -3 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -3 -3 -3 -3 -3 -3 -3 -3 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2
+wings,boulder_beetle_wings,Boulder Beetle Wings,earth,2392,37,boulder_beetle,250,,16,128,128,2,2,df8dd7e17ad6,58cbf2de48a4,-3 -3 -2 -2 -2 -2 -1 -1 -1 -1 -1 -1 -2 -2 -2 -2 -3 -3 -2 -2 -2 -2 -1 -1 -1 -1 -1 -1 -2 -2 -2 -2
+wings,brass_fan_wings,Brass Fan Wings,neutral,2393,38,brass_fan,250,,20,128,128,2,2,f12d984abb80,171ee5a38fd0,-2 -2 -1 -1 -1 -1 -2 -2 -2 -2 -2 -2 -3 -3 -3 -3 -3 -3 -3 -3 -4 -4 -4 -4 -4 -4 -3 -3 -3 -3 -3 -3 -3 -3 -2 -2 -2 -2 -2 -2
+wings,briar_rose_wings,Briar Rose Wings,dark,2394,39,briar_rose,300,,20,128,128,2,2,21f7fb0a38bb,0a814c3f640a,-2 -2 -3 -3 -3 -3 -3 -3 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -3 -3 -3 -3 -2 -2 -2 -2 -2 -2 -1 -1 -1 -1 -1 -1 -1 -1 -2 -2
+wings,burning_chain_wings,Burning Chain Wings,fire,2396,41,burning_chain,300,,20,128,128,2,2,db00fd3354f7,c6f89dfbd4c4,-2 -2 -2 -2 -3 -3 -3 -3 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -3 -3 -3 -3 -2 -2 -2 -2 -2 -2 -1 -1 -1 -1 -1 -1 -1 -1 -2 -2
+wings,cinder_bat_wings,Cinder Bat Wings,fire,2398,43,cinder_bat,300,,16,128,128,2,2,4ec902a28e32,4d3e0d28647c,-1 -1 -1 -1 -1 -1 -2 -2 -2 -2 -3 -3 -3 -3 -3 -3 -3 -3 -3 -3 -3 -3 -3 -3 -2 -2 -2 -2 -2 -2 -2 -2
+wings,clockwork_wings,Clockwork Wings,neutral,2399,44,clockwork,250,,24,128,128,2,2,6fe8e20a206e,64f073ec6d45,-2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -3 -3 -3 -3 -3 -3 -3 -3 -3 -3 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -3 -3 -3 -3 -3 -3 -3 -3 -2 -2 -2 -2
+wings,dandelion_seed_wings,Dandelion Seed Wings,wind,2401,46,dandelion_seed,250,,20,128,128,2,2,052e3a442194,fd3bc5ff7113,-2 -2 -3 -3 -3 -3 -3 -3 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -3 -3 -3 -3 -3 -3 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2
+wings,dawn_seraph_wings,Dawn Seraph Wings,light,2402,47,dawn_seraph,300,,24,160,128,2,2,df27cc490995,444288b6c158,-3 -3 -4 -4 -4 -4 -5 -5 -5 -5 -5 -5 -6 -6 -6 -6 -6 -6 -6 -6 -5 -5 -5 -5 -5 -5 -4 -4 -4 -4 -4 -4 -3 -3 -3 -3 -3 -3 -2 -2 -2 -2 -3 -3 -3 -3 -3 -3
+wings,deathshead_moth_wings,Deathshead Moth Wings,dark,2403,48,deathshead_moth,250,,16,128,128,2,2,79f6577ec7c4,9e5223f9f036,-2 -2 -2 -2 -3 -3 -3 -3 -2 -2 -2 -2 -1 -1 -1 -1 -2 -2 -2 -2 -3 -3 -3 -3 -2 -2 -2 -2 -1 -1 -1 -1
+wings,deep_ray_wings,Deep Ray Wings,water,2404,49,deep_ray,300,,24,128,128,2,2,26517b2dd752,0e44831ed054,-2 -2 -3 -3 -3 -3 -3 -3 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -3 -3 -3 -3 -3 -3 -3 -3 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2
+wings,demon_rend_wings,Demon Rend Wings,dark,2405,50,demon_rend,300,,24,128,128,2,2,bf0aeeed07a4,d3fa7ec8f993,-3 -3 -3 -3 -4 -4 -4 -4 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -4 -4 -4 -4 -4 -4 -3 -3 -3 -3 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -3 -3
+wings,dove_feather_wings,Dove Feather Wings,light,2406,51,dove_feather,250,,20,128,128,2,2,e380e79daf65,eb37e5a0217f,-2 -2 -3 -3 -3 -3 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -3 -3 -3 -3 -3 -3 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2
+wings,ember_hawk_wings,Ember Hawk Wings,fire,2407,52,ember_hawk,250,,20,128,128,2,2,514421796d84,ad113dd021ff,-1 -1 -1 -1 -2 -2 -2 -2 -3 -3 -3 -3 -3 -3 -4 -4 -4 -4 -4 -4 -4 -4 -3 -3 -3 -3 -3 -3 -3 -3 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2
+wings,fern_frond_wings,Fern Frond Wings,earth,2408,53,fern_frond,300,,20,128,128,2,2,6eff6f83cd5d,3df7b2aa1b76,-2 -2 -2 -2 -3 -3 -3 -3 -3 -3 -4 -4 -4 -4 -4 -4 -4 -4 -3 -3 -3 -3 -3 -3 -2 -2 -2 -2 -2 -2 -1 -1 -1 -1 -1 -1 -1 -1 -2 -2
+wings,firefly_swarm_wings,Firefly Swarm Wings,light,2409,54,firefly_swarm,300,,20,128,128,2,2,f87abcd156f7,4339916b9e2d,-2 -2 -2 -2 -3 -3 -3 -3 -3 -3 -4 -4 -4 -4 -4 -4 -4 -4 -3 -3 -3 -3 -3 -3 -2 -2 -2 -2 -2 -2 -1 -1 -1 -1 -1 -1 -1 -1 -2 -2
+wings,flame_luna_wings,Flame Luna Wings,fire,2411,56,flame_luna,300,,16,128,128,2,2,f0f5864dcde1,c5b4d8c4200b,-2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -1 -1 -1 -1 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -1 -1 -1 -1
+wings,flame_pinions,Flame Pinions,neutral,2412,57,flame_pinions,300,,20,128,128,2,2,3b811878394e,56dd1db00c46,-2 -2 -3 -3 -3 -3 -4 -4 -4 -4 -5 -5 -5 -5 -5 -5 -5 -5 -4 -4 -4 -4 -3 -3 -3 -3 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2
+wings,foam_crest_wings,Foam Crest Wings,water,2413,58,foam_crest,300,,20,128,128,2,2,2fbe183094c1,f82304743c13,-2 -2 -2 -2 -3 -3 -3 -3 -3 -3 -4 -4 -4 -4 -4 -4 -4 -4 -3 -3 -3 -3 -3 -3 -2 -2 -2 -2 -2 -2 -1 -1 -1 -1 -1 -1 -1 -1 -2 -2
+wings,frost_crystal_wings,Frost Crystal Wings,neutral,2414,59,frost_crystal,300,,20,160,128,2,2,a23756d30c8a,ce7fc96cca45,-2 -2 -3 -3 -3 -3 -3 -3 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -3 -3 -3 -3 -3 -3 -2 -2 -2 -2 -1 -1 -1 -1 -1 -1 -1 -1 -2 -2
+wings,gale_streak_wings,Gale Streak Wings,wind,2415,60,gale_streak,250,,16,128,128,2,2,d027b0af279f,cbd089daa73f,-2 -2 -2 -2 -3 -3 -3 -3 -3 -3 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -3 -3 -3 -3 -3 -3 -2 -2 -2 -2 -2 -2
+wings,gargoyle_wings,Gargoyle Wings,dark,2416,61,gargoyle,250,,24,128,128,2,2,54958ba7e8fc,06b9e8eded02,-2 -2 -2 -2 -1 -1 -1 -1 -1 -1 -1 -1 -2 -2 -2 -2 -2 -2 -2 -2 -3 -3 -3 -3 -3 -3 -3 -3 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -3 -3 -3 -3 -3 -3 -2 -2
+wings,geode_wings,Geode Wings,earth,2417,62,geode,300,,24,128,128,2,2,fe89eb0a33d8,de5c73c2137a,-3 -3 -3 -3 -3 -3 -4 -4 -4 -4 -4 -4 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -4 -4 -4 -4 -4 -4 -3 -3 -3 -3 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2
+wings,gold_peacock_wings,Gold Peacock Wings,light,2418,63,gold_peacock,300,,24,128,128,2,2,50f06caa7d47,2fd1f4684093,-2 -2 -2 -2 -1 -1 -1 -1 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -3 -3 -3 -3 -3 -3 -3 -3 -3 -3 -3 -3 -3 -3 -4 -4 -4 -4 -4 -4 -4 -4 -3 -3 -3 -3 -3 -3 -2 -2
+wings,gossamer_fairy_wings,Gossamer Fairy Wings,neutral,2419,64,gossamer_fairy,250,,16,128,128,2,2,2b58b6944f74,25d84b12c751,-1 -1 -2 -2 -2 -2 -2 -2 -2 -2 -1 -1 -1 -1 -1 -1 -1 -1 -2 -2 -2 -2 -2 -2 -2 -2 -1 -1 -1 -1 -1 -1
+wings,grasping_hand_wings,Grasping Hand Wings,dark,2420,65,grasping_hand,250,,20,128,128,2,2,8acf057e217f,d9324f09db14,-2 -2 -3 -3 -3 -3 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -3 -3 -3 -3 -3 -3 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2
+wings,grave_bone_wings,Grave Bone Wings,dark,2421,66,grave_bone,250,,20,128,128,2,2,130fba4f2775,33e0e0bef770,-2 -2 -1 -1 -1 -1 -2 -2 -2 -2 -2 -2 -2 -2 -3 -3 -3 -3 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -3 -3 -3 -3 -3 -3 -2 -2 -2 -2
+wings,halo_ray_wings,Halo Ray Wings,light,2422,67,halo_ray,300,,16,160,128,2,2,18be5a9ec17f,ac5b8e9a1407,-2 -2 -3 -3 -3 -3 -3 -3 -4 -4 -4 -4 -4 -4 -3 -3 -3 -3 -3 -3 -3 -3 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2
+wings,hawk_plume_wings,Hawk Plume Wings,neutral,2423,68,hawk_plume,250,,20,128,128,2,2,11d0cd2f2479,fcf5f1b1e660,-2 -2 -2 -2 -2 -2 -2 -2 -3 -3 -3 -3 -3 -3 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -3 -3 -3 -3 -3 -3 -2 -2 -2 -2 -2 -2 -2 -2
+wings,heraldic_eagle_wings,Heraldic Eagle Wings,neutral,2424,69,heraldic_eagle,300,,24,128,128,2,2,673baa5abb97,a8bbafa0ce43,-2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -3 -3 -3 -3 -3 -3 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -3 -3 -3 -3 -3 -3 -2 -2
+wings,icarus_wax_wings,Icarus Wax Wings,fire,2425,70,icarus_wax,250,,24,128,128,2,2,ba9b9942ffa4,44dd9bd244a8,-3 -3 -3 -3 -4 -4 -4 -4 -4 -4 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -4 -4 -4 -4 -3 -3 -3 -3 -3 -3 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -3 -3
+wings,icicle_harp_wings,Icicle Harp Wings,water,2426,71,icicle_harp,300,,20,160,128,2,2,e5d66389a546,b0784e69e02c,-2 -2 -3 -3 -3 -3 -3 -3 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -3 -3 -3 -3 -3 -3 -2 -2 -2 -2 -1 -1 -1 -1 -1 -1 -1 -1 -2 -2
+wings,ink_splash_wings,Ink Splash Wings,water,2427,72,ink_splash,300,,16,128,128,2,2,60a74c841caf,1f3a7eeadb2a,-2 -2 -3 -3 -3 -3 -3 -3 -3 -3 -2 -2 -1 -1 -1 -1 -2 -2 -3 -3 -3 -3 -3 -3 -3 -3 -2 -2 -1 -1 -1 -1
+wings,ivy_leaf_wings,Ivy Leaf Wings,earth,2428,73,ivy_leaf,250,,20,128,128,2,2,a249380c5b35,f48f7c704d8f,-2 -2 -2 -2 -3 -3 -3 -3 -3 -3 -4 -4 -4 -4 -4 -4 -4 -4 -3 -3 -3 -3 -3 -3 -2 -2 -2 -2 -2 -2 -1 -1 -1 -1 -1 -1 -1 -1 -2 -2
+wings,jellyfish_wings,Jellyfish Wings,water,2429,74,jellyfish,250,,24,128,128,2,2,4693cdd8d8e7,9598512aa2ad,-2 -2 -3 -3 -3 -3 -3 -3 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -3 -3 -3 -3 -3 -3 -3 -3 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2
+wings,koi_fin_wings,Koi Fin Wings,water,2430,75,koi_fin,300,,20,128,128,2,2,162a5683fc08,4acc891214b7,-2 -2 -2 -2 -3 -3 -3 -3 -3 -3 -3 -3 -2 -2 -1 -1 -1 -1 -1 -1 -2 -2 -2 -2 -3 -3 -3 -3 -3 -3 -3 -3 -2 -2 -1 -1 -1 -1 -1 -1
+wings,lava_rock_wings,Lava Rock Wings,fire,2432,77,lava_rock,300,,24,128,128,2,2,69fa5e791e72,10278754c6dc,-3 -3 -3 -3 -4 -4 -4 -4 -4 -4 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -4 -4 -4 -4 -3 -3 -3 -3 -3 -3 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -3 -3
+wings,magic_circle_wings,Magic Circle Wings,energy,2433,78,magic_circle,300,,24,128,128,2,2,1a299f1dfc0f,85fac3f64bf9,-2 -2 -3 -3 -3 -3 -3 -3 -3 -3 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -3 -3 -3 -3 -3 -3 -3 -3 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2
+wings,maple_leaf_wings,Maple Leaf Wings,neutral,2434,79,maple_leaf,250,,20,128,128,2,2,f778f009105d,4918e83b2cdc,-1 -1 -1 -1 -2 -2 -2 -2 -2 -2 -3 -3 -3 -3 -3 -3 -4 -4 -3 -3 -3 -3 -3 -3 -3 -3 -3 -3 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -1 -1
+wings,monarch_wings,Monarch Wings,neutral,2436,81,monarch,300,,16,128,128,2,2,760c17699319,c8f2f841f3a8,-2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -1 -1 -1 -1 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -1 -1 -1 -1
+wings,nebula_wings,Nebula Wings,neutral,2437,82,nebula,300,,24,128,128,2,2,67b20c49f7de,cd3a699d48ae,-3 -3 -3 -3 -4 -4 -4 -4 -4 -4 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -4 -4 -4 -4 -4 -4 -3 -3 -3 -3 -3 -3 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2
+wings,nightmare_bat_wings,Nightmare Bat Wings,dark,2438,83,nightmare_bat,300,,16,128,128,2,2,3313b47e5801,1f9f1d46b347,-2 -2 -1 -1 -2 -2 -2 -2 -3 -3 -3 -3 -3 -3 -4 -4 -4 -4 -4 -4 -3 -3 -3 -3 -3 -3 -2 -2 -2 -2 -2 -2
+wings,obsidian_blade_wings,Obsidian Blade Wings,dark,2439,84,obsidian_blade,250,,20,128,128,2,2,de16b20ead47,bdcebe8d1e52,-2 -2 -2 -2 -2 -2 -2 -2 -3 -3 -3 -3 -3 -3 -4 -4 -4 -4 -4 -4 -4 -4 -5 -5 -4 -4 -4 -4 -4 -4 -4 -4 -3 -3 -3 -3 -3 -3 -2 -2
+wings,ophanim_eye_wings,Ophanim Eye Wings,light,2440,85,ophanim_eye,300,,24,128,128,2,2,318539ea5b83,cadc8de87840,-3 -3 -4 -4 -4 -4 -4 -4 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -4 -4 -4 -4 -3 -3 -3 -3 -3 -3 -3 -3 -2 -2 -2 -2 -2 -2 -3 -3 -3 -3
+wings,origami_crane_wings,Origami Crane Wings,wind,2441,86,origami_crane,300,,20,128,128,2,2,f8bab428cf95,73870758be43,-2 -2 -3 -3 -3 -3 -3 -3 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -3 -3 -3 -3 -2 -2 -2 -2 -2 -2 -1 -1 -1 -1 -1 -1 -1 -1 -2 -2
+wings,pearl_scallop_wings,Pearl Scallop Wings,water,2442,87,pearl_scallop,250,,16,96,96,1,1,7e2d1764a20b,5383288f7308,-2 -2 -2 -2 -3 -3 -3 -3 -2 -2 -2 -2 -1 -1 -1 -1 -2 -2 -2 -2 -3 -3 -3 -3 -2 -2 -2 -2 -1 -1 -1 -1
+wings,petal_bloom_wings,Petal Bloom Wings,earth,2443,88,petal_bloom,300,,20,128,128,2,2,a174e6cf033b,8f7d4b89870a,-1 -1 -2 -2 -2 -2 -2 -2 -2 -2 -3 -3 -3 -3 -3 -3 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -3 -3 -3 -3 -3 -3 -2 -2 -2 -2 -2 -2 -2 -2
+wings,pterosaur_wings,Pterosaur Wings,neutral,2446,91,pterosaur,250,,20,128,128,2,2,9a22cb163279,ebfae45b8bc0,-2 -2 -3 -3 -3 -3 -3 -3 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -3 -3 -3 -3 -3 -3 -2 -2 -2 -2 -2 -2 -2 -2 -1 -1 -2 -2
+wings,pyre_seraph_wings,Pyre Seraph Wings,fire,2447,92,pyre_seraph,300,,24,128,128,2,2,634f6992b8a5,f95b47573cd6,-3 -3 -4 -4 -4 -4 -4 -4 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -4 -4 -4 -4 -3 -3 -3 -3 -3 -3 -3 -3 -2 -2 -2 -2 -2 -2 -3 -3 -3 -3
+wings,rain_veil_wings,Rain Veil Wings,water,2448,93,rain_veil,300,,20,128,128,2,2,387039122698,8c5d54630ea3,-2 -2 -2 -2 -3 -3 -3 -3 -3 -3 -4 -4 -4 -4 -4 -4 -4 -4 -3 -3 -3 -3 -3 -3 -2 -2 -2 -2 -2 -2 -1 -1 -1 -1 -1 -1 -1 -1 -2 -2
+wings,rib_bone_wings,Rib Bone Wings,neutral,2450,95,rib_bone,250,,20,128,128,2,2,c948faebd3e3,1f9eb5cc0b8c,-2 -2 -3 -3 -3 -3 -3 -3 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -3 -3 -3 -3 -3 -3 -2 -2 -2 -2 -1 -1 -1 -1 -1 -1 -1 -1 -2 -2
+wings,rune_sigil_wings,Rune Sigil Wings,energy,2452,97,rune_sigil,250,,20,128,128,2,2,eccd1ea4df18,f80c938b66d3,-2 -2 -3 -3 -3 -3 -3 -3 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -3 -3 -3 -3 -3 -3 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2
+wings,salamander_fan_wings,Salamander Fan Wings,fire,2453,98,salamander_fan,250,,16,128,128,2,2,c391b3428a56,c1c3932c342d,-1 -1 -1 -1 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -1 -1 -1 -1 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2
+wings,sand_dune_wings,Sand Dune Wings,earth,2455,100,sand_dune,300,,20,128,128,2,2,3875048aa3f0,9d33e0ad7fe5,-2 -2 -3 -3 -3 -3 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -3 -3 -3 -3 -3 -3 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2
+wings,shackle_chain_wings,Shackle Chain Wings,dark,2456,101,shackle_chain,250,,20,128,128,2,2,d7837d3b52e2,ec1469811cc2,-2 -2 -2 -2 -3 -3 -3 -3 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -3 -3 -3 -3 -2 -2 -2 -2 -2 -2 -1 -1 -1 -1 -1 -1 -1 -1 -2 -2
+wings,sky_dragonfly_wings,Sky Dragonfly Wings,wind,2458,103,sky_dragonfly,250,,16,128,128,2,2,41407996ebd6,310b2359ce71,-1 -1 -2 -2 -2 -2 -2 -2 -2 -2 -1 -1 -1 -1 -1 -1 -1 -1 -2 -2 -2 -2 -2 -2 -2 -2 -1 -1 -1 -1 -1 -1
+wings,snow_owl_wings,Snow Owl Wings,neutral,2460,105,snow_owl,250,,20,128,128,2,2,0230bf262a32,a489c5136b11,-2 -2 -3 -3 -3 -3 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -3 -3 -3 -3 -3 -3 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2
+wings,snowflake_wings,Snowflake Wings,water,2461,106,snowflake,300,,20,128,128,2,2,1721a00d0a17,999e5ec284fb,-2 -2 -2 -2 -3 -3 -3 -3 -3 -3 -4 -4 -4 -4 -4 -4 -4 -4 -3 -3 -3 -3 -3 -3 -2 -2 -2 -2 -2 -2 -1 -1 -1 -1 -1 -1 -1 -1 -2 -2
+wings,solar_flare_wings,Solar Flare Wings,fire,2462,107,solar_flare,300,,20,128,128,2,2,07af16ea61e2,97c93a4d493b,-2 -2 -3 -3 -3 -3 -4 -4 -4 -4 -5 -5 -5 -5 -5 -5 -5 -5 -4 -4 -4 -4 -3 -3 -3 -3 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2
+wings,soot_moth_wings,Soot Moth Wings,dark,2463,108,soot_moth,250,,16,128,128,2,2,6779199a6b9a,5a89f563c308,-2 -2 -2 -2 -3 -3 -3 -3 -2 -2 -2 -2 -1 -1 -1 -1 -2 -2 -2 -2 -3 -3 -3 -3 -2 -2 -2 -2 -1 -1 -1 -1
+wings,squall_kite_wings,Squall Kite Wings,wind,2464,109,squall_kite,300,,16,160,128,3,2,bdfd8b837848,381d16b1fed1,-2 -2 -2 -2 -3 -3 -3 -3 -2 -2 -2 -2 -1 -1 -1 -1 -2 -2 -2 -2 -3 -3 -3 -3 -2 -2 -2 -2 -1 -1 -1 -1
+wings,star_gossamer_wings,Star Gossamer Wings,light,2465,110,star_gossamer,250,,16,128,128,2,2,c5eef403aaca,da621508b697,-2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -1 -1 -1 -1 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -1 -1 -1 -1
+wings,tide_swan_wings,Tide Swan Wings,water,2471,116,tide_swan,300,,24,128,128,2,2,93f3ebd3a316,59d6c2ba283a,-3 -3 -3 -3 -4 -4 -4 -4 -4 -4 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -4 -4 -4 -4 -3 -3 -3 -3 -3 -3 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -3 -3
+wings,void_raven_wings,Void Raven Wings,dark,2473,118,void_raven,300,,20,128,128,2,2,d18332cee120,6c4e503b4d5d,-2 -2 -2 -2 -2 -2 -2 -2 -3 -3 -3 -3 -3 -3 -4 -4 -4 -4 -4 -4 -4 -4 -3 -3 -3 -3 -3 -3 -3 -3 -3 -3 -2 -2 -2 -2 -2 -2 -2 -2
+wings,volt_bat_wings,Volt Bat Wings,energy,2474,119,volt_bat,250,,16,128,128,2,2,a1c308291148,eb7db4ecb026,-2 -2 -1 -1 -1 -1 -2 -2 -2 -2 -2 -2 -3 -3 -3 -3 -3 -3 -3 -3 -3 -3 -3 -3 -3 -3 -3 -3 -2 -2 -2 -2
+wings,whirlpool_wings,Whirlpool Wings,water,2475,120,whirlpool,300,,20,128,128,2,2,1585f7be5a11,064b53f09ec3,-2 -2 -3 -3 -3 -3 -3 -3 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -3 -3 -3 -3 -3 -3 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2
+wings,zephyr_ribbon_wings,Zephyr Ribbon Wings,wind,2476,121,zephyr_ribbon,250,,24,128,128,2,2,28b23c22667b,008e8856d606,-3 -3 -3 -3 -3 -3 -4 -4 -4 -4 -4 -4 -4 -4 -4 -4 -5 -5 -4 -4 -4 -4 -4 -4 -4 -4 -3 -3 -3 -3 -3 -3 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2
+wings,plasma_fly_wings,Plasma Fly Wings,energy,3589,128,,300,,16,128,128,2,2,a2b1f8d38f9b,7993e3a042aa,-2 -2 -2 -2 -2 -2 -1 -1 -1 -1 -1 -1 -2 -2 -2 -2 -2 -2 -2 -2 -2 -2 -1 -1 -1 -1 -1 -1 -2 -2 -2 -2
+heads,antelope_horns,Antelope Horns,earth,3590,,,150,34,16,64,64,1,1,2cc7ec70a475,2362ac078ec2,
+heads,atom_orbit,Atom Orbit,energy,3591,,,150,,16,96,96,1,1,18d820575c76,e1a22adce2a6,
+heads,bat_ears,Bat Ears,dark,3592,,,150,36,16,64,64,1,1,4d7ff272304e,c84dd1fe37de,
+heads,bolt_horns,Bolt Horns,energy,3593,,,150,37,16,64,64,1,1,45c8ee8d5c5e,1632686b2c08,
+heads,bone_crown,Bone Crown,neutral,3594,,,150,38,16,64,64,1,1,da8e5528f66f,20b0a7504e03,
+heads,bonsai_sprout,Bonsai Sprout,earth,3595,,,150,39,16,64,64,1,1,f24fa53780d4,9b253681d78c,
+heads,broken_halo,Broken Halo,dark,3596,,,150,40,16,64,64,1,1,221f980f0ebb,b5b7575d49ad,
+heads,candle_crest,Candle Crest,fire,3597,,,150,43,16,64,64,1,1,a0327632d9f1,9abfb860330c,
+heads,cat_ears,Cat Ears,neutral,3598,,,150,44,16,64,64,1,1,cc6960f4bf2d,097f031734a8,
+heads,cinder_fox_ears,Cinder Fox Ears,fire,3599,,,150,45,16,64,64,1,1,fbbd5ec41a2b,85ccbb06af5e,
+heads,crow_skull_mask,Crow Skull Mask,dark,3600,,,150,48,16,96,64,1,1,7b903398a6d5,1171c3b31c43,
+heads,crystal_tiara,Crystal Tiara,light,3601,,,150,49,16,64,64,1,1,6f77610eb23f,ca689d3078a3,
+heads,dandelion_crown,Dandelion Crown,wind,3602,,,150,50,16,64,64,1,1,6bcfe0a31368,7d2981a03b4e,
+heads,demon_horns,Demon Horns,dark,3603,,,150,51,16,64,64,1,1,049cc7017068,861e358f8369,
+heads,dragon_horns,Dragon Horns,neutral,3604,,,150,53,16,64,64,1,1,4a57faf6f32c,3640c24e6b7d,
+heads,eclipse_halo,Eclipse Halo,dark,3605,,,150,54,16,64,64,1,1,3396b84cf1c4,952c8cef7ea7,
+heads,elf_ears,Elf Ears,light,3606,,,150,55,16,64,64,1,1,01665e4bf4aa,5405be4370c0,
+heads,ember_wisp_orbit,Ember Wisp Orbit,fire,3607,,,150,57,16,64,64,1,1,4987cc4b015b,4ed0e10413db,
+heads,eye_orbit,Eye Orbit,dark,3608,,,150,58,16,64,64,1,1,f18a07d2e182,3715d7d921da,
+heads,feather_crest,Feather Crest,wind,3609,,,200,60,16,96,96,2,2,8329ef1b59e8,37efad28efa3,
+heads,feather_ring_halo,Feather Ring Halo,light,3610,,,150,61,16,96,96,1,1,13007925ff57,1c7867554814,
+heads,fin_crest,Fin Crest,water,3611,,,150,62,16,64,64,1,1,5524b20aef42,de664214f38e,
+heads,fin_ears,Fin Ears,water,3612,,,150,63,16,64,64,1,1,af1c1ed67569,2a5e85a9e143,
+heads,fire_ring_halo,Fire Ring Halo,fire,3613,,,150,65,16,64,64,1,1,9a4e633b9f61,3be07d1671f1,
+heads,flame_crown,Flame Crown,fire,3614,,,150,66,16,64,64,1,1,c7a2dd87e314,9e86cfd56cd1,
+heads,flame_topknot,Flame Topknot,fire,3615,,,150,67,16,64,64,1,1,bf0508fbfce8,9ec977060994,
+heads,flower_crown,Flower Crown,earth,3616,,,150,68,16,64,64,1,1,32e12978c6d2,db5d081834e1,
+heads,frost_antlers,Frost Antlers,water,3617,,,150,69,16,64,64,1,1,c7e6547b08f6,ae2527bbf999,
+heads,gale_ring_halo,Gale Ring Halo,wind,3618,,,150,70,16,64,64,1,1,51d6d8baa6af,8bef2d6ffe85,
+heads,gem_orbit,Gem Orbit,light,3619,,,150,71,16,64,64,1,1,63f3659051e3,ff7ed73a4650,
+heads,geode_horns,Geode Horns,earth,3620,,,200,72,16,96,96,2,2,f9ef27c24507,1a7eafd5ee6d,
+heads,ghost_wisp_orbit,Ghost Wisp Orbit,dark,3621,,,150,73,16,64,64,1,1,aeb31e3cfddb,6f87bd75dd73,
+heads,goat_horns,Goat Horns,dark,3622,,,150,74,16,64,64,1,1,7f4db089b03e,fb49710c350f,
+heads,leaf_whirl_orbit,Leaf Whirl Orbit,wind,3623,,,150,78,16,64,64,1,1,e10a93741a4c,3aad13331f7c,
+heads,leaf_wreath,Leaf Wreath,earth,3624,,,150,79,16,64,64,1,1,f90f3e9e6b50,7618d56af19a,
+heads,lotus_crown,Lotus Crown,light,3625,,,150,80,16,64,64,1,1,49d92d7cacf8,af3df28f21b6,
+heads,magma_antlers,Magma Antlers,fire,3626,,,150,81,16,64,64,1,1,b541ce1ccf3b,ec0b975df116,
+heads,moon_orbit,Moon Orbit,dark,3627,,,150,83,16,64,64,1,1,dcd8c9360d33,f6cb19b4e86c,
+heads,moss_antlers,Moss Antlers,earth,3628,,,150,84,16,64,64,1,1,c76a323736e4,201d6c8dbb0e,
+heads,oni_horns,Oni Horns,fire,3629,,,150,87,16,64,64,1,1,5cdd8a759b11,79818567fd47,
+heads,owl_tufts,Owl Tufts,wind,3630,,,150,88,16,64,64,1,1,7d87283e0b4a,bb7e8aad4ab4,
+heads,paper_lantern_float,Paper Lantern Float,fire,3631,,,150,89,16,64,64,1,1,03c7b29ba0c2,e66fcd0ebd77,
+heads,plume_antennae,Plume Antennae,wind,3632,,,150,94,16,64,64,1,1,501bcb05d892,23cc3b331e4d,
+heads,ram_horns,Ram Horns,neutral,3633,,,150,98,16,64,64,1,1,ef1fde00c343,b81d9e1dbb74,
+heads,red_fox_ears,Red Fox Ears,neutral,3634,,,150,99,16,64,64,1,1,7c091a0b647a,69f7c7d33e5d,
+heads,rotating_sigil,Rotating Sigil,energy,3635,,,200,100,16,96,96,1,1,40515809ee06,ffca3f19b84a,
+heads,rune_orbit,Rune Orbit,energy,3636,,,150,102,16,96,96,1,1,fdc5160d54f5,b6a0ca2f341b,
+heads,shadow_ring_halo,Shadow Ring Halo,dark,3637,,,150,104,16,64,64,1,1,5a4c8af31459,609c47dd95b5,
+heads,snowflake_orbit,Snowflake Orbit,water,3638,,,150,105,16,64,64,1,1,1f951d90301d,6e436ad0e3f7,
+heads,spark_bells,Spark Bells,energy,3639,,,150,106,16,96,96,1,1,f67a2e3c8395,fcf9fa7d0b3c,
+heads,spider_crown,Spider Crown,dark,3640,,,150,107,16,64,64,1,1,590b638a43a3,becb584c78ee,
+heads,spiked_halo,Spiked Halo,energy,3641,,,150,108,16,96,96,1,1,376e04ca3f81,2dd40403d53e,
+heads,star_wizard_hat,Star Wizard Hat,neutral,3642,,,150,111,16,64,64,1,1,5c704c2bb291,828d8cbd8af5,
+heads,streamer_circlet,Streamer Circlet,wind,3643,,,200,112,16,128,128,2,2,0542480aa34e,2b18bd676b3c,
+heads,swift_ears,Swift Ears,wind,3644,,,150,114,16,64,64,1,1,c31e05a7eedb,2e34e54f5159,
+heads,tentacle_crest,Tentacle Crest,dark,3645,,,150,115,16,96,96,1,1,efd1411c154a,5b702a54a026,
+heads,tesla_crown,Tesla Crown,energy,3646,,,150,,16,64,64,1,1,32434da6a94e,7b232a55e4b7,
+heads,thorn_crown,Thorn Crown,earth,3647,,,150,116,16,64,64,1,1,f160c456c2a2,3d6208a708e0,
+heads,thorn_halo,Thorn Halo,dark,3648,,,150,117,16,64,64,1,1,2ad10a71ba53,f1c78c2d9a38,
+heads,tide_crown,Tide Crown,water,3649,,,150,118,16,64,64,1,1,56a57dac90ea,699fc3f9a04b,
+heads,volt_ring_halo,Volt Ring Halo,energy,3650,,,150,119,16,96,96,1,1,4ab0dd67185e,11ee4c749d41,
+heads,volt_unicorn_horn,Volt Horn,energy,3651,,,150,120,16,96,96,1,1,f721604d2c1e,5c90937de36d,
+heads,water_ring_halo,Water Ring Halo,water,3652,,,150,121,16,96,96,1,1,eca2d42a59cd,21f9eb676d97,
+heads,wind_chime_crown,Wind Chime Crown,wind,3653,,,150,122,16,64,64,1,1,32171f077c9b,5b453bb53eef,
+heads,wisp_horns,Wisp Horns,wind,3654,,,150,123,16,64,64,1,1,99781adeabc8,e9fb8357b0b3,
+heads,wolf_ears,Wolf Ears,neutral,3655,,,150,124,16,64,64,1,1,5346f04b4b44,026aa9ff43e4,
+capes,academic_gown_cape,Academic Gown Cape,neutral,3656,,,200,,24,96,96,1,1,fcf3ec79c20a,362d5a3889b4,
+capes,assassin_hood,Assassin Hood,dark,3657,,,200,126,24,96,96,1,1,2d78660a4d32,841c4b355c2a,
+capes,aurora_drape_cape,Aurora Drape Cape,light,3658,,,200,127,24,96,96,1,1,cbfb7013801f,e05cb1748f29,
+capes,banner_sigil_cape,Banner Sigil Cape,neutral,3659,,,200,128,24,64,64,0,0,ad999a2c3d7d,18ca924d6ebd,
+capes,bone_rib_cape,Bone Rib Cape,dark,3660,,,200,130,24,96,64,1,0,44ada71e30ab,f9c0f54df9d7,
+capes,brazier_mantle,Brazier Mantle,fire,3661,,,250,131,24,96,96,1,1,395a93e163e2,47492665066e,
+capes,bridal_veil_train,Bridal Veil Train,light,3662,,,200,132,24,96,96,1,1,fb81cbc6f6c6,96a05422e267,
+capes,chainmail_cape,Chainmail Cape,neutral,3663,,,200,133,24,64,64,0,0,3a1edd67f6c1,68638db33fef,
+capes,chiffon_layer_cape,Chiffon Layer Cape,wind,3664,,,200,134,24,96,96,1,1,e824b1d0efce,62f451ef55f4,
+capes,cinder_capelet,Cinder Capelet,fire,3665,,,200,135,24,64,96,1,1,4244c7856e6a,0a2c4a7ddbc6,
+capes,clockwork_gear_cape,Clockwork Gear Cape,neutral,3666,,,200,136,24,96,96,1,1,a0d344f9d358,9aee49554db3,
+capes,cloud_mantle,Cloud Mantle,wind,3667,,,200,137,24,96,96,1,1,864d4f12af02,e6944c8d2c52,
+capes,coil_capelet,Coil Capelet,energy,3668,,,200,138,24,64,64,0,0,c7608f407586,2676c99530b6,
+capes,dawn_hood,Dawn Hood,light,3669,,,200,139,24,96,96,1,1,90bd280e4d92,a1c2a555dd6f,
+capes,dove_wing_capelet,Dove Wing Capelet,light,3670,,,200,140,24,96,96,1,1,c48b6bad1455,b84cca411d2c,
+capes,down_capelet,Down Capelet,wind,3671,,,200,141,24,96,96,1,1,d8e25d2a6f4b,89dc4ee182ad,
+capes,dragon_scale_cape,Dragon Scale Cape,fire,3672,,,200,142,24,96,64,1,0,10d167ba0032,bc15cbdd3769,
+capes,ember_hem_cape,Ember Hem Cape,fire,3673,,,200,143,24,96,96,1,1,de040dc02c45,86e29c3fb309,
+capes,ember_hood,Ember Hood,fire,3674,,,200,144,24,96,96,1,1,d1c1cd61f321,cf1c7787eabb,
+capes,fin_veil_cape,Fin Veil Cape,water,3675,,,200,145,24,96,96,1,1,b07ac5d8f294,339eac1efc59,
+capes,fishnet_cloak,Fishnet Cloak,water,3676,,,200,146,24,64,64,0,0,cadfd0950151,4ba0e1342ee4,
+capes,foam_capelet,Foam Capelet,water,3677,,,200,148,24,64,64,0,0,50f168432ef9,87267932dd53,
+capes,fur_pelt_cape,Fur Pelt Cape,neutral,3678,,,200,149,24,64,64,0,0,80e2adee732d,095581838bb1,
+capes,furnace_mantle,Furnace Mantle,fire,3679,,,200,150,24,96,96,1,1,e35db72239e0,e35e0f4a23c6,
+capes,geode_shard_mantle,Geode Shard Mantle,earth,3680,,,200,152,24,96,96,1,1,74d406834853,f2ec915c8bb4,
+capes,ghost_shroud_cloak,Ghost Shroud Cloak,dark,3681,,,200,153,24,96,96,1,1,0cdbc92099e6,3e4e7a718c0c,
+capes,gill_frill_capelet,Gill Frill Capelet,earth,3682,,,200,154,24,96,96,1,1,05a4190e504e,c2801b7f68b3,
+capes,gold_thread_mantle,Gold Thread Mantle,light,3683,,,200,155,24,64,64,0,0,e84ca3bddb24,b5efa4f5a19b,
+capes,gull_wing_cloak,Gull Wing Cloak,wind,3684,,,250,156,24,96,96,1,1,d5c8d33a83ce,ae0f3016e0b0,
+capes,hex_shield_cape,Hex Shield Cape,energy,3685,,,200,,24,96,64,1,0,1417cfd62a9d,e9ced6b8442a,
+capes,ice_shard_cape,Ice Shard Cape,water,3686,,,200,157,24,64,64,0,0,adda0a01d306,a51c4de1c9ee,
+capes,ion_hood,Ion Hood,energy,3687,,,200,,24,96,96,1,1,006085679ca3,aafec6060392,
+capes,kelp_frond_cape,Kelp Frond Cape,water,3688,,,200,158,24,64,96,0,1,b585081957af,394cf263bd87,
+capes,kimono_sleeve_mantle,Kimono Sleeve Mantle,wind,3689,,,200,159,24,96,96,1,1,44a05bc1f73d,981a7a70b5f3,
+capes,lantern_fringe_cape,Lantern Fringe Cape,fire,3690,,,200,161,24,96,96,1,1,6bbc4c6b9104,5260dcb58917,
+capes,leaf_litter_cape,Leaf Litter Cape,earth,3691,,,200,162,24,64,64,0,0,1f7e9c473d5a,9edff55aac6a,
+capes,light_silk_cape,Light Silk Cape,light,3692,,,200,163,24,96,96,1,1,bab79b1f14a6,5ba73695b752,
+capes,lightning_thread_cloak,Lightning Thread Cloak,energy,3693,,,200,164,24,96,64,1,0,f088f72ed155,a9f0e76c9cad,
+capes,lion_mane_mantle,Lion Mane Mantle,neutral,3694,,,200,165,24,96,96,1,1,c1975e5d43fa,098cd242dfb7,
+capes,living_flame_cloak,Living Flame Cloak,fire,3695,,,200,166,24,96,96,1,1,31ed9dc9eef6,eacd78f4f1ea,
+capes,magnet_plate_cape,Magnet Plate Cape,neutral,3696,,,200,,24,96,64,1,0,7c3d7638f884,371fc8811186,
+capes,mermaid_scale_train,Mermaid Scale Train,water,3697,,,200,167,24,96,96,1,1,97c1b72bfe83,8c6e9b12f69a,
+capes,mirror_tile_cape,Mirror Tile Cape,light,3698,,,200,168,24,64,64,0,0,5cae67782824,e8a6a082439b,
+capes,moss_cloak,Moss Cloak,earth,3699,,,200,169,24,64,64,0,0,08b570f34315,410968c856f1,
+capes,mummy_wrap_cape,Mummy Wrap Cape,dark,3700,,,200,170,24,64,64,0,0,b1d56d68b927,a3ba771f92f9,
+capes,night_train,Night Train,dark,3701,,,200,171,24,96,96,1,1,000fcf5dbfae,fed16bbf6d5d,
+capes,octopus_tentacle_cape,Octopus Tentacle Cape,water,3702,,,200,172,24,64,64,0,0,d9ba756793c9,5a6a5d9369c0,
+capes,paladin_tabard_cape,Paladin Tabard Cape,light,3703,,,200,174,24,96,96,1,1,e9b318ef5fac,81d74e40af2b,
+capes,petal_cape,Petal Cape,earth,3704,,,200,178,24,64,64,0,0,831b25a160f2,fe870240ed95,
+capes,phoenix_plume_cape,Phoenix Plume Cape,fire,3705,,,200,179,24,96,96,1,1,49ceeca41cd8,2d616f4ce7c1,
+capes,pirate_rag_cape,Pirate Rag Cape,neutral,3706,,,200,180,24,96,96,1,1,e7fd78ec7805,52b10afbeda1,
+capes,plague_doctor_cloak,Plague Doctor Cloak,dark,3707,,,200,181,24,96,96,1,1,6e2cef211d4f,80b96c2f75a3,
+capes,plasma_train,Plasma Train,energy,3708,,,200,,24,96,64,1,0,ff5e65331813,f3858a319d04,
+capes,rain_cloak,Rain Cloak,water,3709,,,200,185,24,96,96,1,1,f88530893aa7,5effddc7bec9,
+capes,raven_feather_cape,Raven Feather Cape,dark,3710,,,200,186,24,96,64,1,0,2ef3ab3fc2db,fb0516ca7ea3,
+capes,redhot_chain_cape,Red-Hot Chain Cape,fire,3711,,,200,187,24,96,64,1,0,00455c45da01,bdc29256e1a3,
+capes,root_bark_cape,Root Bark Cape,earth,3712,,,200,189,24,64,64,0,0,007be798ee3b,7714a1d5f29a,
+capes,royal_ermine_cape,Royal Ermine Cape,neutral,3713,,,200,190,24,64,64,0,0,a18fbd02bbc5,79e725b83595,
+capes,rune_banner_cape,Rune Banner Cape,energy,3714,,,200,191,24,96,96,1,1,cd12d390575f,7d05fefd8ac5,
+capes,rune_ring_cloak,Rune Ring Cloak,energy,3715,,,200,192,24,96,64,1,0,7c7dbe28774f,81d967f2e5f8,
+capes,salamander_hide_cloak,Salamander Hide Cloak,fire,3716,,,250,193,24,96,96,1,1,a730082ae8ea,b2c38bfeb7bd,
+capes,sand_cascade_cape,Sand Cascade Cape,earth,3717,,,200,194,24,64,64,0,0,0a22e0079830,dd9f2144bef9,
+capes,seaglass_cape,Seaglass Cape,water,3718,,,200,196,24,64,64,0,0,755f3df1595c,f4a9f7f07f44,
+capes,shadow_tatters,Shadow Tatters,dark,3719,,,200,197,24,96,96,1,1,87b1e9eabf1b,be2f69eadbeb,
+capes,smoke_train,Smoke Train,fire,3720,,,200,198,24,96,96,1,1,92feada8866f,d35b491cfe68,
+capes,snowflake_lace_cape,Snowflake Lace Cape,water,3721,,,200,199,24,64,64,0,0,22e4e5e2fced,bb491b04b992,
+capes,solar_ruff_cape,Solar Ruff Cape,light,3722,,,250,200,24,96,96,1,1,37280d7d50b1,46568d723347,
+capes,starry_night_cape,Starry Night Cape,light,3723,,,200,203,24,64,64,0,0,bf1fb5db3ea2,f884b181ecfe,
+capes,stone_scale_mantle,Stone Scale Mantle,earth,3724,,,200,204,24,64,64,0,0,3d624bd9f59b,e52af21eb518,
+capes,straw_sheaf_mantle,Straw Sheaf Mantle,earth,3725,,,200,205,24,64,64,0,0,5dd8fbb1471e,3962969a73cd,
+capes,turtle_shell_cape,Turtle Shell Cape,earth,3726,,,200,206,24,64,64,0,0,ff39a2723cc8,e0b6c946e8f2,
+capes,vampire_collar_cape,Vampire Collar Cape,dark,3727,,,200,207,24,96,96,1,1,43ac4c150e44,d5e8ab3cb4b7,
+capes,vine_trellis_cape,Vine Trellis Cape,earth,3728,,,200,208,24,96,96,1,1,e94dba5ed944,6ac1ec9690f5,
+capes,void_hood,Void Hood,dark,3729,,,200,209,24,96,96,1,1,fee042445548,fc28303e7358,
+capes,water_veil_cape,Water Veil Cape,water,3730,,,200,210,24,64,64,0,0,6d207bad9067,70ffa8f2de02,
+capes,waterfall_cape,Waterfall Cape,water,3731,,,200,211,24,64,64,0,0,f2bb1bb2d368,1f40c0431261,
+capes,wind_torn_streamers,Wind-Torn Streamers,wind,3732,,,250,212,24,96,96,1,1,d8d1f9c68537,b258ba572096,
+capes,wool_hooded_cloak,Wool Hooded Cloak,neutral,3733,,,200,213,24,96,96,1,1,a8eff4ca562d,54de1cf7ba55,

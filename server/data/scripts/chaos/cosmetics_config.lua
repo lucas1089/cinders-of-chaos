@@ -33,6 +33,10 @@
 --   footprint  art = a key of `prints`: the prints every viewer's client leaves behind the walking character (client
 --              game_cosmeticfx draws its own generated pictures on the tiles left; no server work per step); color =
 --              the window's swatch
+--   head, cape look = a creature look of client pair 83 (O747): a head piece / a cape every viewer's client draws round the
+--              character's body (client base patch 0210), its back before the body and its front after it; aura = the
+--              auras.xml id of the same piece of pair 33 (its owners get this one free). The entries come from
+--              data/lib/chaos_wst_wear.lua, appended at the end of this file with `pair = 83`.
 --   outline    art = a key of `glows`: a coloured line around the character's silhouette for every viewer
 --              (game_cosmeticfx CF.OUTLINES holds each art's colours; an old client without base patch 0038 shows a
 --              soft glow picture instead); pulse = true: it breathes in and out; color = the window's swatch
@@ -55,7 +59,9 @@ local config = {
 		footprint = 7102000, outline = 7102001,
 		-- combat cosmetics others see (O318): the level-up effect and the rare-loot effect. 7102004 was the victory emote
 		-- (removed, O564): the key stays reserved, nothing reads or writes it, never reuse it
-		levelfx = 7102002, rarefx = 7102003},
+		levelfx = 7102002, rarefx = 7102003,
+		-- the head piece and the cape of client pair 83 (O747, data/lib/chaos_wst_wear.lua)
+		head = 7102005, cape = 7102006},
 	staffGroup = 4, -- /cosmetic <character>, <key | all>[, revoke]
 	previewCooldownMs = 1500, -- a store / window preview (an effect only the asking player sees)
 	-- the dissolve kill effects (O563, cosmetics.lua `dissolve`): the server sends {action = "kdis"} on the cosmetics opcode
@@ -87,7 +93,11 @@ local config = {
 		{key = "footprint", name = "Footprints", store = "Footprints"},
 		{key = "outline", name = "Outlines", store = "Outlines"},
 		{key = "levelfx", name = "Level-up Effects", store = "Level-up Effects"},
-		{key = "rarefx", name = "Rare Loot Effects", store = "Rare Loot Effects"}
+		{key = "rarefx", name = "Rare Loot Effects", store = "Rare Loot Effects"},
+		-- O747: only while config.lua chaosClientPair is 83 or more (`pair`, the filter at the end of this file); the store name
+		-- "Capes" is the pair 33 aura category
+		{key = "head", name = "Head Pieces", store = "Head Pieces", pair = 83},
+		{key = "cape", name = "Capes", store = "Cloaks and Capes", pair = 83}
 	},
 
 	-- The cosmetics taken out of the game (O564, owner 2026-11-14: the Victory Emotes "do not make sense, take them
@@ -607,8 +617,19 @@ local config = {
 
 -- A cosmetic with `pair = N` needs client pair N (config.lua chaosClientPair): the entry is not in the list below it, so no
 -- store offer, no window row, nothing to select. O597: pair 73 is read by data/lib/chaos_status_vfx_ids.lua `on`; O649: pair 75
--- (the effect footprints) by data/lib/chaos_footprint_fx_ids.lua `on`. A test sets `on` on the table before it loads this file.
+-- (the effect footprints) by data/lib/chaos_footprint_fx_ids.lua `on`; O747: pair 83 (the head pieces and capes, appended here)
+-- by data/lib/chaos_wst_wear.lua `on`. A test sets `on` on the table before it loads this file.
 do
+	local wear = _G.ChaosWstWear
+	if not wear then
+		local ok, v = pcall(dofile, "data/lib/chaos_wst_wear.lua")
+		wear = ok and type(v) == "table" and v or nil
+	end
+	if wear and wear.cosmetics then
+		for _, c in ipairs(wear.cosmetics()) do
+			config.cosmetics[#config.cosmetics + 1] = c
+		end
+	end
 	local function gate(name, path)
 		local ids = _G[name]
 		if not ids then
@@ -618,10 +639,11 @@ do
 		return type(ids) == "table" and ids or nil
 	end
 	local gates = {gate("ChaosStatusVfxIds", "data/lib/chaos_status_vfx_ids.lua"),
-		gate("ChaosFootprintFxIds", "data/lib/chaos_footprint_fx_ids.lua")}
+		gate("ChaosFootprintFxIds", "data/lib/chaos_footprint_fx_ids.lua"), wear and {on = wear.on, PAIR = wear.PAIR} or nil}
 	local function open(pair)
-		for _, g in ipairs(gates) do
-			if g.on == true and g.PAIR == pair then
+		for i = 1, 3 do
+			local g = gates[i]
+			if g and g.on == true and g.PAIR == pair then
 				return true
 			end
 		end
@@ -635,6 +657,13 @@ do
 		end
 	end
 	config.cosmetics = keep
+	local kinds = {}
+	for _, k in ipairs(config.kinds) do
+		if not k.pair or open(k.pair) then
+			kinds[#kinds + 1] = k
+		end
+	end
+	config.kinds = kinds
 	-- the dissolve modes of pair 73 go with them
 	local pairModes = {melt = 73, sink = 73, bones = 73, vapour = 73, stone = 73}
 	local modes = {}

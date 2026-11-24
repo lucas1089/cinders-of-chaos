@@ -128,4 +128,41 @@ function M.applyAnchors(data, setWings, setBody)
   return #ids, rows
 end
 
+-- Purchased pieces of pair 83 (O747, base patch 0209): wear_pieces.lua (ChaosWearPieces) lists per look the anchor tile
+-- {look, ax, ay} and per wings look the lift of the body per frame ("dx dy dx dy ..."). setPiece(look, ax, ay),
+-- setLift(look, text); returns the number of pieces and of lifts handed in. A bad row is skipped.
+local function validLift(text)
+  if type(text) ~= 'string' or #text == 0 or #text > 4096 then return false end
+  local n = 0
+  for v in text:gmatch('%S+') do
+    local x = tonumber(v)
+    if not x or x ~= math.floor(x) or x < -64 or x > 64 then return false end
+    n = n + 1
+  end
+  return n >= 2 and n % 2 == 0
+end
+
+function M.applyPieces(data, setPiece, setLift)
+  if type(data) ~= 'table' or type(data.pieces) ~= 'table' then return 0, 0 end
+  local np = 0
+  for _, row in ipairs(data.pieces) do
+    if type(row) == 'table' and type(row[1]) == 'number' and row[1] >= 1 and row[1] == math.floor(row[1])
+      and type(row[2]) == 'number' and row[2] >= 0 and row[2] <= 7 and type(row[3]) == 'number' and row[3] >= 0
+      and row[3] <= 7 then
+      setPiece(row[1], math.floor(row[2]), math.floor(row[3]))
+      np = np + 1
+    end
+  end
+  local nl = 0
+  if type(data.lifts) == 'table' then
+    local ids = {}
+    for look, text in pairs(data.lifts) do
+      if type(look) == 'number' and look >= 1 and validLift(text) then ids[#ids + 1] = look end
+    end
+    table.sort(ids)
+    for _, look in ipairs(ids) do setLift(look, data.lifts[look]); nl = nl + 1 end
+  end
+  return np, nl
+end
+
 return M

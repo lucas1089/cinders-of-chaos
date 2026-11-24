@@ -761,4 +761,23 @@ if okDrawn and type(DRAWN) == "table" and DRAWN.addStore then
 	DRAWN.addStore(cfg)
 end
 
+-- the purchased wings, head pieces and capes of client pair 83 (data/lib/chaos_wst_wear.lua, O747; nothing while config.lua
+-- chaosClientPair is below 83): the new wing at the end of Wings; the head pieces and capes (cosmetics of the kinds head and
+-- cape, cosmetics_config.lua) in two subcategories of Cosmetics after the pair 33 Capes, "Head Pieces" then "Cloaks and Capes",
+-- built by cosmetics_store.lua like the other cosmetic kinds
+local okWear, WEAR = pcall(dofile, "data/lib/chaos_wst_wear.lua")
+if okWear and type(WEAR) == "table" and WEAR.on and WEAR.addStore then
+	WEAR.addStore(cfg)
+	local after = "Capes"
+	for _, kind in ipairs({"head", "cape"}) do
+		local cat = dofile("data/scripts/chaos/cosmetics_store.lua")(kind)
+		if ChaosShopCore and ChaosShopCore.addSubcategory then
+			ChaosShopCore.addSubcategory(cfg, P_COSMETICS, cat, after)
+		else
+			cfg.categories[#cfg.categories + 1] = under(P_COSMETICS, cat)
+		end
+		after = cat.name
+	end
+end
+
 return cfg

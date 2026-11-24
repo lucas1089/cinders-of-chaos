@@ -16,8 +16,13 @@ CL.KINDS = {
   { key = 'outline', name = 'Outlines' },
   { key = 'levelfx', name = 'Level-ups' },
   { key = 'rarefx', name = 'Rare Loot' },
+  { key = 'head', name = 'Head', wear = true },
+  { key = 'cape', name = 'Capes', wear = true },
   { key = 'collection', name = 'Collection' },
 }
+-- head pieces and capes of client pair 83 (O747): the engine draws them round the body (base patch 0210); their tabs
+-- show only when the server sends rows of the kind (it sends none below pair 83)
+CL.WEAR = { head = true, cape = true }
 -- footprints and outlines: drawn by game_cosmeticfx on every client; the window's settings hide other players' ones
 CL.DRAWN = { footprint = true, outline = true }
 CL.DEFAULT_TEXT = {
@@ -29,12 +34,49 @@ CL.DEFAULT_TEXT = {
   outline = 'No outline around you.',
   levelfx = 'No effect when you gain a level.',
   rarefx = 'No effect when a kill drops a rare item.',
+  head = 'You wear no head piece.',
+  cape = 'You wear no cape.',
 }
 CL.SAMPLE_RARITY = { { name = 'Legendary', color = '#ffd040' }, { name = 'Magic', color = '#4a90ff' },
   { name = 'Divine', color = '#c8e8ff' } }
 
 function CL.validColor(s)
   return type(s) == 'string' and (s:match('^#%x%x%x%x%x%x$') ~= nil or s:match('^#%x%x%x%x%x%x%x%x$') ~= nil)
+end
+
+-- ---------------------------------------------------------------- head pieces and capes (O747)
+-- is the tab of `kind` shown: every tab but a head / cape one, which needs a row of its kind from the server
+function CL.tabShown(rows, kind)
+  if not CL.WEAR[kind] then return true end
+  for _, r in ipairs(type(rows) == 'table' and rows or {}) do
+    if type(r) == 'table' and r.kind == kind then return true end
+  end
+  return false
+end
+
+local function look(v)
+  v = tonumber(v)
+  if not v or v ~= math.floor(v) or v < 0 or v > 65535 then return 0 end
+  return v
+end
+
+-- the "looks" message (server cosmetics.lua) as head / cape changes: {clear = true on a full list, list = {{name, head,
+-- cape}}} in name order. A character without a head piece and a cape gets 0, 0 (the engine drops its row).
+function CL.wearChanges(msg)
+  local out = { clear = type(msg) == 'table' and msg.full == true or false, list = {} }
+  local names = type(msg) == 'table' and type(msg.names) == 'table' and msg.names or {}
+  local keys = {}
+  for name in pairs(names) do
+    if type(name) == 'string' and name ~= '' and #name <= 64 then keys[#keys + 1] = name end
+  end
+  table.sort(keys)
+  for _, name in ipairs(keys) do
+    local l = names[name]
+    local h = type(l) == 'table' and look(l.h) or 0
+    local c = type(l) == 'table' and look(l.c) or 0
+    if not out.clear or h > 0 or c > 0 then out.list[#out.list + 1] = { name, h, c } end
+  end
+  return out
 end
 
 -- ---------------------------------------------------------------- window rows

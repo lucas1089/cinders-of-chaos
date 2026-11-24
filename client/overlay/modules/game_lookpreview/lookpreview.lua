@@ -863,6 +863,15 @@ function Preview:refresh()
     local drawn = fx and c and fx.applyOutline(c, outline.art, outline.pulse) == true
     if not drawn then note = note or P.NO_OUTLINE end
   end
+  -- a head piece / cape (O747, base patch 0210): the engine draws it by name, so the preview's creature takes P.WEAR_NAME
+  -- while it wears one (an engine without the patch: a note)
+  local wear = P.wearOf(opt)
+  if c and type(setCreatureWear) == 'function' then
+    pcall(setCreatureWear, P.WEAR_NAME, wear and wear.head or 0, wear and wear.cape or 0)
+    if wear and type(c.setName) == 'function' then pcall(c.setName, c, P.WEAR_NAME) end
+  elseif wear then
+    note = note or P.NO_WEAR
+  end
   local label = self.widget.stage.note
   label:setVisible(note ~= nil)
   if note then label:setText(tr(note)) end

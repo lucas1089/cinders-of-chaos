@@ -96,6 +96,11 @@ PAIR_CLIFF = 83     # the 42 cliff pieces of our own drawn by code (O746, gen_cl
                     # is told this pair (plan field plateaus.pair or compile_plan(client_pair=...)). Rides with PAIR_MISSILE_U16 in pair 83.
                     # Not built yet: waits for the pair 83 build and the owner's approval.
 
+PAIR_WST_WEAR = 83  # the purchased wings, head pieces and capes (O747, client/tools/sprites/gen_wst_wear.py build on the cliff-built pair 82):
+                    # 73 drawn wings looks get the pack art in place, Plasma Fly Wings is look 3589 (wings.xml id 128), the 66 head pieces
+                    # and 78 capes are looks 3590-3733 (cosmetics of the kinds head / cape, data/lib/chaos_wst_wear.lua M.on); client base
+                    # patches 0209 (levitation) and 0210 (the head and cape layer). Rides with PAIR_CLIFF in pair 83. Not built yet.
+
 PAIR_ASSETS = 82
 PAIR_ASSETS_DAT_MD5 = 'ee8c32fc87be4372f4668b635148b9bf'
 
