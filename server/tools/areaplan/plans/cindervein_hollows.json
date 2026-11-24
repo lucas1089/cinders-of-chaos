@@ -1,0 +1,344 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "cindervein_hollows",
+  "name": "Cindervein Hollows",
+  "biome": "cave",
+  "size": [
+    176,
+    140
+  ],
+  "floors": 1,
+  "level": [
+    2300,
+    2500
+  ],
+  "seed": 1227923,
+  "repair_reach": true,
+  "plateaus": {
+    "count": 2,
+    "size": [
+      15,
+      19
+    ],
+    "height": [
+      1,
+      1
+    ],
+    "ramps": [
+      1,
+      2
+    ],
+    "zones": [
+      "tyrant_shelf",
+      "vein_terrace"
+    ]
+  },
+  "origin": {
+    "x": 16028,
+    "y": 15904,
+    "z": 9
+  },
+  "decoration": "dense",
+  "light": "dim",
+  "zones": [
+    {
+      "id": "camp",
+      "floor": 1,
+      "size": "small",
+      "place": "north",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "vein_gallery",
+      "floor": 1,
+      "size": [
+        38,
+        30
+      ],
+      "place": "center"
+    },
+    {
+      "id": "tyrant_shelf",
+      "floor": 1,
+      "size": [
+        34,
+        28
+      ],
+      "place": "northeast",
+      "shape": "room",
+      "ragged": true
+    },
+    {
+      "id": "stork_nest",
+      "floor": 1,
+      "size": [
+        32,
+        24
+      ],
+      "place": "east"
+    },
+    {
+      "id": "vein_terrace",
+      "floor": 1,
+      "size": [
+        34,
+        28
+      ],
+      "place": "southwest",
+      "shape": "room",
+      "ragged": true
+    },
+    {
+      "id": "wyrm_sump",
+      "floor": 1,
+      "size": [
+        32,
+        24
+      ],
+      "place": "south"
+    },
+    {
+      "id": "gnarl_burrow",
+      "floor": 1,
+      "size": [
+        32,
+        24
+      ],
+      "place": "southeast"
+    },
+    {
+      "id": "ember_seam",
+      "floor": 1,
+      "size": [
+        32,
+        24
+      ],
+      "place": "west"
+    }
+  ],
+  "paths": [
+    {
+      "from": "camp",
+      "to": "vein_gallery",
+      "width": 3
+    },
+    {
+      "from": "camp",
+      "to": "tyrant_shelf",
+      "width": 3
+    },
+    {
+      "from": "vein_gallery",
+      "to": "ember_seam",
+      "width": 3
+    },
+    {
+      "from": "ember_seam",
+      "to": "vein_terrace",
+      "width": 3
+    },
+    {
+      "from": "vein_terrace",
+      "to": "wyrm_sump",
+      "width": 3
+    },
+    {
+      "from": "wyrm_sump",
+      "to": "gnarl_burrow",
+      "width": 3
+    },
+    {
+      "from": "gnarl_burrow",
+      "to": "stork_nest",
+      "width": 3
+    },
+    {
+      "from": "stork_nest",
+      "to": "tyrant_shelf",
+      "width": 3
+    },
+    {
+      "from": "vein_gallery",
+      "to": "wyrm_sump",
+      "width": 3
+    }
+  ],
+  "entry": {
+    "zone": "camp"
+  },
+  "exit": {
+    "zone": "camp"
+  },
+  "spawns": [
+    {
+      "zone": "vein_gallery",
+      "monster": "Pyre Stork",
+      "count": 18,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "vein_gallery",
+      "monster": "Pyrewing Tyrant",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "tyrant_shelf",
+      "monster": "Pyrewing Tyrant",
+      "count": 18,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "tyrant_shelf",
+      "monster": "Gnarlback",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "stork_nest",
+      "monster": "Pyre Stork",
+      "count": 18,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "stork_nest",
+      "monster": "Mirecoil Wyrm",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "vein_terrace",
+      "monster": "Pyrewing Tyrant",
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "vein_terrace",
+      "monster": "Pyre Stork",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "wyrm_sump",
+      "monster": "Mirecoil Wyrm",
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "wyrm_sump",
+      "monster": "Pyre Stork",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "gnarl_burrow",
+      "monster": "Gnarlback",
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "gnarl_burrow",
+      "monster": "Pyrewing Tyrant",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "ember_seam",
+      "monster": "Pyre Stork",
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "ember_seam",
+      "monster": "Gnarlback",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "path": [
+        "vein_gallery",
+        "ember_seam"
+      ],
+      "monster": "Pyre Stork",
+      "count": 3,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "path": [
+        "ember_seam",
+        "vein_terrace"
+      ],
+      "monster": "Pyrewing Tyrant",
+      "count": 3,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "path": [
+        "vein_terrace",
+        "wyrm_sump"
+      ],
+      "monster": "Pyrewing Tyrant",
+      "count": 3,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "path": [
+        "wyrm_sump",
+        "gnarl_burrow"
+      ],
+      "monster": "Gnarlback",
+      "count": 3,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "path": [
+        "gnarl_burrow",
+        "stork_nest"
+      ],
+      "monster": "Gnarlback",
+      "count": 3,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "path": [
+        "stork_nest",
+        "tyrant_shelf"
+      ],
+      "monster": "Pyrewing Tyrant",
+      "count": 3,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "path": [
+        "vein_gallery",
+        "wyrm_sump"
+      ],
+      "monster": "Pyre Stork",
+      "count": 3,
+      "respawn": 75,
+      "pack": 3
+    }
+  ],
+  "notes": "Content plan (O759, levels 2282-2500 in the hall, 2026-11-24): a cave of ember seams for levels 2300-2500 on floor 5 of the teleport hall (server/README.md \"Hunts for 2282-2500 (O759)\"). 7 hunting zones, two raised shelves one floor up with ramps (O744); monsters Pyre Stork, Pyrewing Tyrant, Mirecoil Wyrm, Gnarlback. Display monster: Pyrewing Tyrant."
+}

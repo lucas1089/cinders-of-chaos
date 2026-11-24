@@ -743,6 +743,22 @@ for floor 5. The hall grew for them: z 7 to 10 modules a side, z 5 one module a 
 With them 80 plans and the 37 base hunts of `tools/hall_hunts.csv` take 117 of the hall's 119 slots (56 of 56 on z 7,
 40 of 41 on z 6, 21 of 22 on z 5). The row has one more cell (x 17456), and a row at y 15904 has ten.
 
+**O759** (2026-11-24, server/README.md "Hunts for 2282-2500 (O759)"): six late hunts for floor 5 take the last cell of
+the row y 15700 and five cells of the row y 15904. z 5 grew to 3 modules a side (`room.wings`, 30 slots):
+
+| Plan | Band | Biome | Size | Origin x, y, z | Arrival |
+|---|---|---|---|---|---|
+| rimewrath_steppe | 2150-2350 | ice | 168 x 136 | 17456, 15700, 7 | 17489, 15804, 7 |
+| sorrowmere_crossing | 2200-2400 | forest | 172 x 134 | 15620, 15904, 7 | 15644, 15924, 7 |
+| ashfall_hamlet | 2250-2450 | waste | 170 x 132 | 15824, 15904, 7 | 15845, 15966, 7 |
+| cindervein_hollows | 2300-2500 | cave | 176 x 140 | 16028, 15904, 9 | 16127, 15923, 9 |
+| gravelight_necropolis | 2350-2500 | crypt | 160 x 128, 2 floors | 16232, 15904, 9 | 16262, 15975, 9 |
+| umbral_maw | 2400-2500 | abyss | 164 x 130 | 16844, 15904, 11 | 16867, 15940, 11 |
+
+With them 86 plans and the 37 base hunts take 123 of 127 slots (56 of 56 on z 7, 40 of 41 on z 6, 27 of 30 on z 5). The
+row y 15700 is full. The row y 15904 has x 16436 and 16640 free (Malgrath's lair stands at 16600, 16000, 11: keep a plan
+there off z 11) and x 17048 to 17456.
+
 **The dungeon block x/y 24576-25599** (2026-10-14, owner approval: the queue dungeons 6-9 of `areagen_config.lua`,
 server/README.md "Generated areas"). The 14336-15359 block is full, so the four deep dungeons got a block of their
 own outside the world (world x 30700-34600, y 30900-33850). Checked with `tools/map/otbm.py` on the full map

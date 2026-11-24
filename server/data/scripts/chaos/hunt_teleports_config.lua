@@ -57,9 +57,10 @@ return {
 		-- levels 6-62, and z 5 gets wings of its own, one module a side copied from floor 6 (22 slots, was 18) for three
 		-- hunts of 1500-2100. z 5 has no `sweep`: its new tiles must land where the map has none (the floor above the
 		-- grown floor 6, which spans 6 modules a side), else the install refuses with "target tiles are taken".
+		-- O759: z 5 to 3 modules a side (30 slots, was 22) for six hunts of 2150-2500; still inside floor 6's 6 modules.
 		wings = {
 			{z = 7, from = 6, sweep = true, east = {modules = 10}, west = {modules = 10}},
-			{z = 5, from = 6, east = {modules = 1}, west = {modules = 1}}
+			{z = 5, from = 6, east = {modules = 3}, west = {modules = 3}}
 		}
 	},
 
@@ -90,7 +91,7 @@ return {
 		-- the hunt slots of each floor as the install counts them on the live map (2 a module a side, plus the base
 		-- room's); install_content_areas_test.py refuses more hunts on a floor (the base hunts of hall_hunts.csv and every
 		-- plan, by `levels`) than it has, so CI says "grow it" before an update fails on the server. Raise it with the room.
-		capacity = {{z = 7, slots = 56}, {z = 6, slots = 41}, {z = 5, slots = 22}}, -- O375: z 7 56 (was 52), z 5 22 (was 18)
+		capacity = {{z = 7, slots = 56}, {z = 6, slots = 41}, {z = 5, slots = 30}}, -- O375: z 7 56 (was 52), z 5 22 (was 18); O759: z 5 30
 		quests = {
 			z = 7,
 			north = {y = 32263, x = {31630, 31634, 31638, 31642, 31654, 31658, 31662, 31666}},
@@ -258,7 +259,18 @@ return {
 		{id = "scalewatch_bastion", monster = "Lizard Legionnaire"},
 		{id = "anvilmourn_wastes", monster = "Cinderskull Reaver"},
 		{id = "oathgrave_ossuary", monster = "Cinderhorn Juggernaut"},
-		{id = "pyrecrown_caldera", monster = "Wraithbone Stalker"}
+		{id = "pyrecrown_caldera", monster = "Wraithbone Stalker"},
+		-- O759 (2026-11-24, levels 2282-2500 had fewer than 5 hall hunts within 0.8-1.1 L; server/README.md "Hunts for
+		-- 2282-2500 (O759)"): six late hunts of 2150-2500 on z 5, the last cell of the row y 15700 and five of the row
+		-- y 15904 of the annex block. Display monsters 2x2 (outfit_centre.csv of the newest pair): Oathbroken Colossus
+		-- 3400, Pyre Stork 3190, Ashveil Hierarch 3401, Pyrewing Tyrant 3032; every monster of the two deepest hunts
+		-- shows in another cell, so they take a stand-in (Veiled Crawler 3402, Vyrm 2221)
+		{id = "rimewrath_steppe", monster = "Oathbroken Colossus"},
+		{id = "sorrowmere_crossing", monster = "Pyre Stork"},
+		{id = "ashfall_hamlet", monster = "Ashveil Hierarch"},
+		{id = "cindervein_hollows", monster = "Pyrewing Tyrant"},
+		{id = "gravelight_necropolis", monster = "Veiled Crawler", standIn = true},
+		{id = "umbral_maw", monster = "Vyrm", standIn = true}
 	},
 
 	-- The ways back (owner, 2026-10-20: "many teleports to hunts have no teleport back"; server/README.md "Hall order",

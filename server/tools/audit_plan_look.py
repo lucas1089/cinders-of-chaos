@@ -41,6 +41,12 @@ CODES = ('ROOM_FLOOR_MIX', 'PLAN_FLOOR_SPLIT', 'LONE_PROP', 'WOOD_PROP', 'HANGIN
 def _walls_of(tables):
     ids = set(WALL_IDS)
     ids.update(tables['walls'])
+    # O759: the planner's wall brushes (the buildings' walls, areaplan_build.lua `materials`): a banner hung on a
+    # building wall hangs on a wall
+    import area_plan_buildings as B
+    import area_plan_core as C
+    for brush in C.materials()['walls'].values():
+        ids.update(B.wall_ids_of(brush))
     return ids
 
 

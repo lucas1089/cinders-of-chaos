@@ -604,6 +604,12 @@ Planned hunting areas (80, in `server/tools/areaplan/plans/`, docs/CONTENT.md; 4
 | anvilmourn_wastes | 1500-1650 | waste (O375) |
 | oathgrave_ossuary | 1750-1900 | catacomb (O375) |
 | pyrecrown_caldera | 1900-2100 | lava (O375) |
+| rimewrath_steppe | 2150-2350 | ice (O759, plateaus) |
+| sorrowmere_crossing | 2200-2400 | forest (O759, river and lake) |
+| ashfall_hamlet | 2250-2450 | waste (O759, ruined hamlet) |
+| cindervein_hollows | 2300-2500 | cave (O759, plateaus) |
+| gravelight_necropolis | 2350-2500 | crypt (O759, 2 floors) |
+| umbral_maw | 2400-2500 | abyss (O759, lake) |
 
 Each is four times the first draft (2026-10-14); the four 1000-1500 plans and the two 1500-2000 plans were added the
 same day. Placed, they lift 500-700 from 14 to about 50 parties at once, 700-1000 from 10 to about 46, 1000+ from 0 to

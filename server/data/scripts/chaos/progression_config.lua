@@ -22,9 +22,10 @@ return {
 		-- the narrow window where the hall was thin: in each listed range every level needs minHunts hall hunts within
 		-- 0.8-1.1 x L, the pool's window (a range's third number overrides minHunts). O139: the levels 160-240 (hunts for
 		-- 200), 380-520 (450), 630-770 (700), 900-1100 (1000). O375: 8-100 needs 2 (was 0 at levels 49-57 and 1-2 elsewhere)
-		-- and 1300-2200 needs 5 (was 4 at 2126-2200; O139 asked 3 in 1350-1650 and 1800-2200).
+		-- and 1300-2200 needs 5 (was 4 at 2126-2200; O139 asked 3 in 1350-1650 and 1800-2200). O759: 1300-2500 (was
+		-- 1300-2200; levels 2282-2500 had 2-4) with six hunts of 2150-2500 (server/README.md "Hunts for 2282-2500 (O759)").
 		tight = {lo = 0.8, hi = 1.1, minHunts = 3,
-			ranges = {{8, 100, 2}, {160, 240}, {380, 520}, {630, 770}, {900, 1100}, {1300, 2200, 5}}}},
+			ranges = {{8, 100, 2}, {160, 240}, {380, 520}, {630, 770}, {900, 1100}, {1300, 2500, 5}}}},
 
 	limits = {
 		fromLevel = 8, -- characters start at level 8 (start_stats.lua)

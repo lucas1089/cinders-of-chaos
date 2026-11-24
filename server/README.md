@@ -23698,7 +23698,8 @@ from 434 on as before. `tests/progression_test.lua` checks the peak is x30. Inst
 | 2200-2500 | x13 | 12.52 - 16.05 | 69.5 | 8 | 6 (fewest) |
 
 Levels 8 to 2500 take 415.4 model hours (8 to 1000: 116.4, unchanged). The hall tight range stays 1300-2200 (at least 5 hall
-hunts in 0.8-1.1x): levels 2282-2500 have fewer, a content gap for the owner. The monster level display clamp follows
+hunts in 0.8-1.1x): levels 2282-2500 have fewer, a content gap for the owner. O759 closed it: six hall hunts of 2150-2500, the
+tight range is 1300-2500 ("Hunts for 2282-2500 (O759)"). The monster level display clamp follows
 `toLevel` (`monster_levels_core.lua` `maxEstimate` 2500). Section "One gold curve (O751)" has the gold side.
 
 ## Balance follow-ups (O141, 2026-10-23)
@@ -23882,6 +23883,70 @@ Then a server restart (spawns, config). Afterwards rerun `gen_bounty_pool.py`, `
 on the server (docs/MAP_GUIDE.md "Content plans") so the bounty board knows the O336 monsters. No client update, no
 engine rebuild. Not run on the live map, not played: the planner's validate, compile and QA of the nine plans and the
 synthetic install test pass.
+
+## Hunts for 2282-2500 (O759) (`tools/areaplan/plans/`, `progression_config.lua` `hall.tight`, 2026-11-24)
+
+Owner 2026-11-24 ("pode gerar"). O751 found levels 2282-2500 with fewer than 5 hall hunts within 0.8-1.1 L (2 at level
+2407). Six new area plans close the gap, the way of O375: no new monster, no new sprite, no new engine code.
+
+**The hunts.** Floor 5 of the hall, origins in the annex block: the last cell of the row y 15700 and five cells of the row
+y 15904 (grid of 204 from x 15620; x 16436 and 16640 stay free, Malgrath's lair stands at 16600, 16000, 11). Each passes
+the planner's validate and compile QA, the map tile audit (`audit_map_plans.py`), the look audit (`audit_plan_look.py`,
+no finding of any code but the floor mix of the open biomes, which only the held plans are judged by) and the rules of
+the hunt audit for a planned hunt (band, density, dead ground, size; computed on the compiled area, the audit itself
+needs an installed server). Seeds picked with `compile --candidates` (O738). Respawn 75 s, packs of 3, as O375.
+
+| Plan | Name | Band (hunt level) | Biome, feature | Size | Origin x, y, z | Arrival | Monsters (walkable tiles) | Per 100 | Sweep | Display |
+|---|---|---|---|---|---|---|---|---|---|---|
+| rimewrath_steppe | Rimewrath Steppe | 2150-2350 (2250) | ice, 3 plateaus 1-2 floors high with ramps (O744) | 168 x 136 | 17456, 15700, 7 | 17489, 15804, 7 | 225 (5007): Mirecoil Wyrm 69, Gnarlback 51, Gravecrown Oathbreaker 48, Wraithbone Stalker 33, Oathbroken Colossus 24 | 4.5 | 63 s | Oathbroken Colossus |
+| sorrowmere_crossing | Sorrowmere Crossing | 2200-2400 (2300) | forest, a river with a bridge and a ford, a lake (O739) | 172 x 134 | 15620, 15904, 7 | 15644, 15924, 7 | 186 (3825): Mirecoil Wyrm 51, Gnarlback 36, Pyre Stork 36, Ironmask Warbreaker 33, Gravecrown Oathbreaker 30 | 4.9 | 48 s | Pyre Stork |
+| ashfall_hamlet | Ashfall Hamlet | 2250-2450 (2350) | waste, ruin 40: a ruined chapel, a house with a floor above and a cellar, a burnt shop, a cottage, a raider camp (O740) | 170 x 132 | 15824, 15904, 7 | 15845, 15966, 7 | 189 (4276): Pyre Stork 57, Mirecoil Wyrm 42, Gnarlback 33, Ashveil Hierarch 30, Gravecrown Oathbreaker 27 | 4.4 | 53 s | Ashveil Hierarch |
+| cindervein_hollows | Cindervein Hollows | 2300-2500 (2400) | cave, 2 shelves one floor up (O744) | 176 x 140 | 16028, 15904, 9 | 16127, 15923, 9 | 177 (4188): Pyre Stork 72, Pyrewing Tyrant 57, Gnarlback 30, Mirecoil Wyrm 18 | 4.2 | 52 s | Pyrewing Tyrant |
+| gravelight_necropolis | Gravelight Necropolis | 2350-2500 (2425) | crypt, 2 floors by stairs, style gravewatch_crypt (O743) | 160 x 128 | 16232, 15904, 9 | 16262, 15975, 9 | 300 (7976): Pyre Stork 96, Pyrewing Tyrant 84, Mirecoil Wyrm 69, Gnarlback 39, Gravecrown Oathbreaker 12 | 3.8 | 100 s | Veiled Crawler (stand-in) |
+| umbral_maw | The Umbral Maw | 2400-2500 (2450) | abyss, a black tarn (O739) | 164 x 130 | 16844, 15904, 11 | 16867, 15940, 11 | 222 (4823): Pyre Stork 90, Pyrewing Tyrant 78, Gnarlback 36, Mirecoil Wyrm 18 | 4.6 | 60 s | Vyrm (stand-in) |
+
+All plans have `repair_reach` on (nothing to repair: no pocket cut off). Monsters walk the paths between the zones too
+(3 or 6 on each path that does not touch the camp), so no hunt has 35% dead ground (the audit's limit): 22-31%.
+
+**The monsters are the top of our set.** No hunting monster is above level 2000 (Pyre Stork and Pyrewing Tyrant, 1980-2020;
+the late set of `tune_monsters.py` ends there, the pace curves are flat above 2000). The hunts use the 1700-2000 monsters,
+deeper hunts more of the 2000 ones: 76-100% of each hunt is inside its band by the audit's rule (`audit_hunt_bands.py`
+`BAND_SLACK` 0.2: a monster of 2000 is inside a band from 2500 down), none far outside. The progression model already paced
+levels 2000-2500 by these monsters (its window widens to them), so the hours do not move: 415.4 to 2500, every level of
+`--check` and `--check --today` the same. The hall gives choice of place, not stronger monsters: monsters of 2100-2500 need
+new looks (the shared look and idle rules of O529 / O533) and are not part of O759.
+
+**Display monsters.** One per cell, one look per cell (O536): Oathbroken Colossus (look 3400), Pyre Stork (3190), Ashveil
+Hierarch (3401) and Pyrewing Tyrant (3032) are 2x2 in `outfit_centre.csv` and shown nowhere else. Every monster of the two
+deepest hunts already stands in another cell, so they take a stand-in (`standIn`, like Wyrmspine Hollows): Veiled Crawler
+(3402) and Vyrm (2221), both 2x2. Not seen in a cell of the live pair.
+
+**The hall grows.** z 5 had 22 slots for 21 hunts: `room.wings` z 5 grows from 1 to 3 modules a side (30 slots,
+`hall.capacity`), still above floor 6's 6 modules, so its new tiles land where the map has none (else the install
+refuses, "Hall coverage (O375)"). 86 plans and 37 base hunts take 123 of 127 slots (56 of 56 on z 7, 40 of 41 on z 6,
+27 of 30 on z 5). The slots go by level, so the six stand at the east end of floor 5's corridor.
+
+**Hall hunts within 0.8-1.1 L (fewest; `tools/progression_model.lua`).**
+
+| Levels | before | after |
+|---|---|---|
+| 2000-2200 | 6 (level 2126) | 7 |
+| 2200-2282 | 4 (level 2282) | 10 |
+| 2282-2400 | 3 (level 2344) | 9 |
+| 2400-2500 | 2 (level 2407) | 8 |
+
+`progression_config.lua` `hall.tight.ranges` {1300, 2500, 5} (was {1300, 2200, 5}); `tests/progression_test.lua` takes
+the six plans out and expects the levels up to 2500 named. Also: `hunt_teleports_config.lua` (plans, wings, capacity),
+`goals_config.lua` `hunts`, `tests/hunt_teleports_test.lua` (86 plans), `tools/audit_plan_look.py` (a banner on a
+building wall hangs on a wall: the planner's wall brushes count as walls, the chapel of Ashfall Hamlet).
+
+**Install** (`install_all.py` step `contentareas`; idempotent): the six plans are placed with frame and spawns, z 5
+grows by two modules a side, the hall is ordered again, places file, signs and display spawns follow. On the VPS the
+admin app does it: tab Painel > card Atualizar servidor > button Aplicar e reiniciar (shell fallback:
+`chaos-ctl.sh update-apply`). A dry run first is wise (`install_all.py --only contentareas --dry-run` on the server
+folder): it names any z 5 tile in the way. After the restart rerun `gen_bestiary_spawns.py` and `gen_poi.py` on the
+server (docs/MAP_GUIDE.md "Content plans"); the bounty pool already lists the monsters. No client update, no engine
+rebuild. Not run on the live map, not played.
 
 ## Pack combat (pace) (`pace.lua`, `pace_core.lua`, `pace_config.lua`, 2026-10-14)
 

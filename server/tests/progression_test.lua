@@ -84,13 +84,30 @@ ok(env.cfg.hall.tight and #env.cfg.hall.tight.ranges == 6, "six ranges with the 
 eq(env.cfg.hall.minHunts, 5, "five hall hunts in reach (0.7-1.3 L) of every level")
 local O375 = {thistlewood_hollow = true, copperdelve_mine = true, ashgrave_barrow = true, murkreed_fen = true,
 	chitinmaw_warren = true, scalewatch_bastion = true, anvilmourn_wastes = true, oathgrave_ossuary = true, pyrecrown_caldera = true}
-local before, found = {}, 0
+-- O759: the six hunts of 2150-2500 also fill 2000-2200 in the narrow window, so they leave with the O375 ones here
+local O759 = {rimewrath_steppe = true, sorrowmere_crossing = true, ashfall_hamlet = true, cindervein_hollows = true,
+	gravelight_necropolis = true, umbral_maw = true}
+local before, found, found759 = {}, 0, 0
 for _, b in ipairs(savedBands) do
-	if O375[b[3]] then found = found + 1 else before[#before + 1] = b end
+	if O375[b[3]] then found = found + 1 elseif O759[b[3]] then found759 = found759 + 1 else before[#before + 1] = b end
 end
 eq(found, 9, "the nine O375 plans are hall hunts")
+eq(found759, 6, "the six O759 plans are hall hunts")
 for L = 8, 100 do ok(M.hallCount(env.bands, L, env.cfg.hall) >= 5, "level " .. L .. ": 5 hall hunts in reach") end
-for L = 1300, 2200 do ok(M.hallCount(env.bands, L, env.cfg.hall.tight) >= 5, "level " .. L .. ": 5 hall hunts within 0.8-1.1 L") end
+for L = 1300, 2500 do ok(M.hallCount(env.bands, L, env.cfg.hall.tight) >= 5, "level " .. L .. ": 5 hall hunts within 0.8-1.1 L") end
+-- O759: the narrow window reaches the cap; without the six plans levels 2282-2500 have fewer than 5 (2 at 2407)
+local r5 = env.cfg.hall.tight.ranges[#env.cfg.hall.tight.ranges]
+ok(r5[1] == 1300 and r5[2] == 2500 and r5[3] == 5, "the narrow window holds 1300-2500 to 5 hall hunts")
+local no759 = {}
+for _, b in ipairs(savedBands) do if not O759[b[3]] then no759[#no759 + 1] = b end end
+env.bands = no759
+local gap = M.problems(env)
+env.bands = savedBands
+local named = false
+for _, p in ipairs(gap) do
+	if p:find("fewer than 5 hall hunts within 0.8x-1.1x", 1, true) and p:find("-2500 ", 1, true) then named = true end
+end
+ok(named, "without the O759 hunts the levels up to 2500 have fewer than 5 within 0.8-1.1 L: " .. table.concat(gap, "; "))
 env.bands = before
 local thinner = M.problems(env)
 env.bands = savedBands
@@ -100,7 +117,7 @@ for _, p in ipairs(thinner) do
 	if p:find("fewer than 5 hall hunts within 0.8x-1.1x", 1, true) and p:find("levels 2", 1, true) then late = true end
 end
 ok(low, "without the O375 hunts levels from 8 have fewer than 5 hall hunts in reach: " .. table.concat(thinner, "; "))
-ok(late, "without the O375 hunts levels 2000-2200 have fewer than 5 within 0.8-1.1 L")
+ok(late, "without the O375 and O759 hunts levels 2000-2200 have fewer than 5 within 0.8-1.1 L")
 
 -- O375: the planned monsters the generated pool does not list yet join the model's pool
 local pool = {hunt = {{name = "Known", level = 10, exp = 1, health = 1}}, bosses = {{name = "Big Boss", level = 50}}}
