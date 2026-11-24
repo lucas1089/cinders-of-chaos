@@ -8136,6 +8136,16 @@ Owner (pt-BR), answering "may pair 82 be published?": "pode publicar". `PAIR_ASS
 - **Tables regenerated from it**: `outfit_anchors.lua`, `info_lifts.lua` (and `InfoLiftData.cs`), `wing_centres.lua`, `head_centres.lua`, `foot_marks.lua`: only the dat md5 in their header changed (no outfit moved). `check_content.py` `PAIR_NAME` 'pair 82', `PAIR_OUTFITS` 3588 (unchanged).
 - **Owner step**: ship a client package with pair 82, then admin app Comandos > "Par do cliente" > Gravar 82 (`chaos-ctl.sh client-pair set 82`). Below 82 the O735 gate answers nil and the O734 fixes are only in the client.
 
+## Pair 83 on windows-assets (O746, O747; 2026-11-24, owner: "Aprovado. Pode montar")
+Owner (pt-BR), answering "may pair 83 be built and published?": "Aprovado. Pode montar". `PAIR_ASSETS` is 83 now (`server/tools/client_pair.py`), md5 of the dat below.
+- **What it holds**: pair 82 (windows-assets b94ab23a, dat ee8c32fc... / spr bf973e40...) + the O746 cliff pieces (42 items 44564-44605) + the O747 purchased wings, heads and capes (73 wings looks redrawn in place, Plasma Fly Wings look 3589, heads 3590-3655, capes 3656-3733). The wide missile ids (O737, `PAIR_MISSILE_U16`) ride with it; they need no pair data.
+- **Build**: the order of "Pair 83 build order" above, on a RAM disk. The pack sheets read by local script only.
+- **Pair 83**: dat md5 4169e2cf9b30499b79d3a3f8566f28a2 (15,229,501 bytes), spr md5 31c84fe9e27b8002b787b017ca9be911 (1,786,512,275 bytes).
+- **Archive**: `tar --owner=0 --group=0 --numeric-owner --mtime='2026-11-24 00:00:00' -cf - Tibia.dat Tibia.spr | xz -9 -T0`, `split -b 99614720 -d -a 2`. part00 sha256 7c13347a425c4b139a06a1d7cb178203bd7e376622a5d0478262ef5e91d6a871; part01 sha256 eadbf51c4d081fa1cbf62a308d178fae85322ef802914d442f996d2fe3469c4b; part02 10,671,576 bytes sha256 fb1513cc9309c01ef0fd3456c779d6bec593853f6561ef95ee10388a638ab41c. Read back to the two md5s. windows-assets commit: 4be8c608.
+- **Held**: `check_pair.py` 0 errors, 5,320 warnings. `gen_cliff_art.py live` and `gen_wst_wear.py live` OK, `clean_wing_shadows.py check-clean` OK.
+- **Tables regenerated from it**: `outfit_anchors.lua`, `info_lifts.lua` (and `InfoLiftData.cs`), `wing_centres.lua`, `head_centres.lua`. `check_content.py` `PAIR_NAME` 'pair 83', `PAIR_OUTFITS` 3733.
+- **Owner step**: ship a client package with pair 83, then admin app Comandos > "Par do cliente" > Gravar 83 (`chaos-ctl.sh client-pair set 83`). Below 83 the O746 and O747 gates stay off.
+
 ## Side dock (O732)
 
 Owner 2026-11-23 (pt-BR), option A of the UI mockups: "eu gostei do A. quando for fazer, mantenha a barra de skills embaixo com os orbs ao lado. lembre de manter tudo na skin principal do jogo."
