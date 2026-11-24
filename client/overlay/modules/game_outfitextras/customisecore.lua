@@ -157,6 +157,7 @@ local function entryCard(kind, e)
   if not c or c.value == 0 or c.value == '' then return nil end
   c.locked = e.locked == true or nil
   c.how = e.how
+  c.shop = c.locked and E.shopName(e.shop) or nil
   return c
 end
 
@@ -211,7 +212,7 @@ function C.cards(key, ctx)
   local out = {}
   for _, ch in ipairs(choices) do
     out[#out + 1] = { value = ch.value, text = ch.text, locked = ch.locked, how = ch.how, row = ch.row, look = ch.look,
-      none = ch.value == C.defaultValue(key) or nil }
+      none = ch.value == C.defaultValue(key) or nil, shop = ch.locked and ch.shop or nil }
   end
   return out
 end
@@ -227,6 +228,58 @@ function C.count(cards)
     if not c.none then all = all + 1 end
   end
   return have, all
+end
+
+-- ---------------------------------------------------------------- how a card is got (O762)
+-- The server says how each thing is got (cosmetics_core.lua C.how, wardrobe_core.lua W.sources, exclusives_core.lua K.how,
+-- pets_config.lua how) in English words with a name or a number in them. The card's tooltip shows that text in the player's
+-- language: an exact pt-BR line, else the server's pattern with its name or number kept (a name is tried in pt_br.lua too).
+local HOW = {
+  { '^Store: (%d+) Chaos Coins$', function(n) return tr('Store: %d Chaos Coins', tonumber(n)) end },
+  { '^Store %(([^)]+)%): (%d+) Chaos Coins%.?$', function(c, n) return tr('Store (%s): %d Chaos Coins', tr(c), tonumber(n)) end },
+  { '^Free; addons: (.+)$', function(x) return tr('Free; addons: %s', C.howText(x)) end },
+  { '^Boss: (.+), rare drop$', function(x) return tr('Boss: %s, rare drop', tr(x)) end },
+  { '^Boss: (.+) %(rare drop, whole account%)%.$', function(x) return tr('Boss: %s (rare drop, whole account)', tr(x)) end },
+  { '^Boss: (.+)$', function(x) return tr('Boss: %s', tr(x)) end },
+  { '^PvP: (.+)$', function(x) return tr('PvP: %s', tr(x)) end },
+  { '^Chaos Pact: (.+)$', function(x) return tr('Chaos Pact: %s', tr(x)) end },
+  { '^Collection score: (%d+) points$', function(n) return tr('Collection score: %d points', tonumber(n)) end },
+  { '^Daily reward: a login streak of (%d+) days$', function(n) return tr('Daily reward: a login streak of %d days', tonumber(n)) end },
+  { '^Achievements: (%d+) account points$', function(n) return tr('Achievements: %d account points', tonumber(n)) end },
+  { '^Achievements: complete (.+)$', function(x) return tr('Achievements: complete %s', tr(x)) end },
+  { '^Achievement: (.+)$', function(x) return tr('Achievement: %s', tr(x)) end },
+  { '^Class: (.+)$', function(x) return tr('Class: %s', tr(x)) end },
+  { '^Founder Pack, on sale (%S+) to (%S+) only$', function(a, b) return tr('Founder Pack, on sale %s to %s only', a, b) end },
+}
+
+function C.howText(how)
+  if type(how) ~= 'string' or how == '' then return nil end
+  local exact = tr(how)
+  if exact ~= how then return exact end
+  for _, rule in ipairs(HOW) do
+    local a, b = how:match(rule[1])
+    if a then return rule[2](a, b) end
+  end
+  return how
+end
+
+-- the tooltip of a card: its name, then for one not owned "Not unlocked yet.", how it is got and, when the store sells it,
+-- that the Store button opens it there
+function C.cardTooltip(card)
+  if type(card) ~= 'table' then return nil end
+  local name = tostring(card.text or '')
+  if not card.locked then return name end
+  local lines = { name, tr('Not unlocked yet.') }
+  local how = C.howText(card.how)
+  if how then lines[#lines + 1] = tr('How to get it: %s', how) end
+  if C.storeLink(card) then lines[#lines + 1] = tr('Store: the button opens it in the %s category.', tr(card.shop)) end
+  return table.concat(lines, '\n')
+end
+
+-- the store category a card's Store button opens (a card not owned that the store sells), or nil
+function C.storeLink(card)
+  if type(card) ~= 'table' or not card.locked or card.none then return nil end
+  return E.shopName(card.shop)
 end
 
 -- ---------------------------------------------------------------- the outfit a card draws
@@ -395,10 +448,24 @@ local function cosmeticOption(r)
   if r.kind == 'outline' then
     return num(r.id) ~= 0 and type(r.art) == 'string' and r.art ~= '' and { kind = 'outline', art = r.art, pulse = r.pulse == true } or nil
   elseif r.kind == 'footprint' then
-    return num(r.id) ~= 0 and type(r.art) == 'string' and r.art ~= '' and { kind = 'footprint', art = r.art } or nil
+    if num(r.id) == 0 then return nil end
+    if type(r.art) == 'string' and r.art ~= '' then return { kind = 'footprint', art = r.art } end
+    -- an effect footprint (O649) has no picture: the figure walks and its effect plays behind it (O762: the window
+    -- showed nothing for the 20 effect footprints of pair 75)
+    if type(r.play) == 'table' and #r.play > 0 then return { kind = 'effects', play = r.play, footfx = true } end
+    return nil
   elseif (r.kind == 'spellskin' or r.kind == 'killfx') and type(r.play) == 'table' and #r.play > 0 then
     return { kind = 'effects', play = r.play, killfx = r.kind == 'killfx' or nil, dissolve = C.dissolveOf(r) }
   end
+  return nil
+end
+
+-- the picture of a footprint row: its print, or for an effect footprint (O649, no print) its effect, like a spell skin's
+-- card; nil when the row has neither (O762: the effect footprints had an empty card)
+function C.footprintIcon(r)
+  if type(r) ~= 'table' or r.kind ~= 'footprint' or num(r.id) == 0 then return nil end
+  if type(r.art) == 'string' and r.art:match('^[%w_]+$') then return { kind = 'print', art = r.art } end
+  if type(r.play) == 'table' and #r.play > 0 then return { kind = 'play', row = r } end
   return nil
 end
 
@@ -552,8 +619,8 @@ function C.stripRows(ctx)
         row.icon = { kind = 'outfit', outfit = look, outline = C.cardOutline(key, card) }
       elseif card.row and (key == 'spellskin' or key == 'killfx') and type(card.row.play) == 'table' then
         row.icon = { kind = 'play', row = card.row }
-      elseif card.row and key == 'footprint' and type(card.row.art) == 'string' then
-        row.icon = { kind = 'print', art = card.row.art }
+      elseif card.row and key == 'footprint' then
+        row.icon = C.footprintIcon(card.row)
       elseif C.SAMPLE_KEYS[key] then
         row.icon = { kind = 'sample', option = C.sampleOption(key, card) }
       end

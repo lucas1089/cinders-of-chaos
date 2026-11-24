@@ -146,6 +146,10 @@ end
 -- give what is due at the character's level (once each). The reveals come at once; the hints one per run (cfg.pace),
 -- the rest after the gap, so a new character at level 8 is not given three hints beside the welcome and the Helper.
 function F.run(player)
+	-- O761: on a quiet first login the tips (and the hunting marks they name) wait for their introduction (intros.lua)
+	if ChaosIntros and ChaosIntros.allowed and not ChaosIntros.allowed(player, "tips") then
+		return
+	end
 	local level = player:getLevel()
 	local names = {}
 	local rmask = player:getStorageValue(key("reveals"))

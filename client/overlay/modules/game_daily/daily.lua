@@ -171,6 +171,10 @@ function onDailyReward(protocol, code, buffer)
 
 		CollectInfo()
 
+		-- O761: a window the server opened by itself at login brings no "How it works" card beside it (game_howitworks first open);
+		-- the card comes the first time the player opens the window
+		DailyWindow.howQuiet = (dailyData and dailyData.Login == 1) or nil
+
 		if not DailyWindow:isVisible() then
 			if dailyData and dailyData.Login == 1 then
 				if not waitEvent then

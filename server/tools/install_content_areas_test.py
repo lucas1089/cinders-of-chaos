@@ -1121,6 +1121,20 @@ def guard_checks(root):
     check(res['room'] == 'todo' and not os.path.exists(mp + '.tmp'), 'guard: the same install without the fault goes through')
 
 
+def pair_swap_checks():
+    """an item of a later client pair (the camp's flame campfire 48561, pair 74) is laid as its stock stand-in below that pair"""
+    fam = open(os.path.join(T.HERE, 'areaplan', 'building_families.json'), encoding='utf-8').read()
+    check(48561 in T.PAIR_ITEMS and T.PAIR_ITEMS[48561] == (T.client_pair.PAIR_DECOR, 1428), 'pair items: 48561 -> 1428 below pair 74')
+    check('"campfire": {"block": false, "ids": [48561]' in fam, 'pair items: the camp campfire is the flame campfire the table names')
+    def tiles():
+        return {(1, 1, 7): {'ground': 4515, 'items': [(48561, {'aid': 7}), (1740, {})], 'flags': 0}}
+    for pair, want in ((None, 1428), (60, 1428), (73, 1428), (74, 48561), (83, 48561)):
+        t = tiles()
+        n = T.pair_swap(t, pair)
+        check(t[(1, 1, 7)]['items'][0] == (want, {'aid': 7}) and t[(1, 1, 7)]['items'][1] == (1740, {}) and n == (want == 1428),
+              'pair swap at pair %s: %s' % (pair, t[(1, 1, 7)]['items']))
+
+
 def main():
     root = tempfile.mkdtemp(prefix='content_areas_test_')
     try:
@@ -1380,6 +1394,7 @@ def main():
     csv_name_checks()
     display_monster_checks()
     cache_checks()
+    pair_swap_checks()
     print('install_content_areas_test: %s' % ('ok' if not failed else '%d failed' % failed))
     return 1 if failed else 0
 

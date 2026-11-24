@@ -32,6 +32,11 @@ function sendData(action, data)
   end
 end
 
+-- O761: the Helper's Auto setup was pressed (game_helperrotation autosetup_ui.lua): the main quest's first step is done
+function helperSetUp()
+  if g_game.isOnline() then sendData('mqHelper') end
+end
+
 -- the state of the channel for the main quest window (mainquest.lua, another file of the module)
 function mqState()
   return st
@@ -63,7 +68,17 @@ local function markOnMap(pos, label)
   status(tr('Marked on your map: %s', label ~= '' and label or string.format('%d, %d, %d', pos.x, pos.y, pos.z)))
 end
 
+-- O761: the main quest's first step points at the Helper: it opens on its Auto setup button, which blinks with a hint
+-- (game_helperrotation onboarding.lua); the plain toggle when that module is missing
+local function openHelperSetup()
+  local O = rawget(_G, 'ChaosHelperOnboarding')
+  if not (O and O.open) then return false end
+  local ok, done = pcall(O.open, { openHelper = true, hint = tr('Press Auto setup: your spells and potions go on hotkeys and the Helper casts them.') })
+  return ok and done
+end
+
 function runWhere(where)
+  if V.isHelper(where) and openHelperSetup() then return end
   local a = V.action(where)
   if not a then return end
   if a.call then

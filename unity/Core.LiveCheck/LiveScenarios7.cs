@@ -14,8 +14,8 @@ namespace Chaos.Core.LiveCheck
     public sealed partial class LiveRun
     {
         // ------------------------------------------------------------------------------------ the first login timeline
-        /// <summary>The seconds of a first login the newplayer scenario looks at: the kit and the welcome come 2.5 s after the entry, the first hint about 9 s later, the Tale of
-        /// Cinderhold's introduction 30 s after the welcome (newplayer_config.lua welcome.delayMs, firsthour_config.lua delayMs, tales_config.lua story.delayMs).</summary>
+        /// <summary>The seconds of a first login the newplayer scenario looks at: the kit and the welcome come 2.5 s after the entry, the Tale of Cinderhold's introduction 30 s
+        /// after the welcome (newplayer_config.lua welcome.delayMs, tales_config.lua story.delayMs); the first-hour hint waits for its introduction since O761 (intros_config.lua).</summary>
         public const double FirstLoginWindowMs = 45000;
 
         sealed class TlEntry
@@ -30,6 +30,29 @@ namespace Chaos.Core.LiveCheck
         Dictionary<byte, int> loginSeen;
         int loginFailures, loginUnknown, loginExtBad, tlSaid, tlModals;
         long tlNext;
+
+        // ---- the quiet first login (O761): the main quest's first step and what the scenario watches before it closes the Daily Reward
+        const string HelperStep = "helper";
+        const int QuestAfterCloseMs = 20000, QuestToastGraceMs = 3000, QuestStepMs = 10000;
+        /// <summary>When the server's own Daily Reward (OpenDailyWindow with Login 1) came, ms after the start; -1 not yet.</summary>
+        double dailyLoginAt = -1;
+        /// <summary>The main quest step shown while the Daily Reward was still open ("" none: the quest must wait for the close).</summary>
+        string questBeforeClose = "";
+
+        void WatchQuiet()
+        {
+            if (dailyLoginAt < 0 && s.Daily.Data != null && s.Daily.LoginOpen) dailyLoginAt = s.Now - startedAt;
+            if (dailyLoginAt >= 0 && s.Daily.Visible && questBeforeClose.Length == 0 && s.Progress.Goals.Welcome.Count > 0) questBeforeClose = s.Progress.Goals.Welcome[0].Key;
+        }
+
+        /// <summary>A main quest toast (notifications "journey", mainquest.lua) on screen or waiting.</summary>
+        bool JourneyToast()
+        {
+            if (s.Hud == null) return false;
+            foreach (var x in s.Hud.Toasts.Active) if (x.Type == "JOURNEY") return true;
+            foreach (var x in s.Hud.Toasts.Queue) if (x.Type == "JOURNEY") return true;
+            return false;
+        }
 
         void Tl(string kind, string text)
         {
@@ -55,7 +78,9 @@ namespace Chaos.Core.LiveCheck
         /// <summary>Called by Pump: the first time every packet type was seen, the server lines and the windows with their time, and the counts at the end of the window.</summary>
         void TimelineTick()
         {
-            if (me == null || s == null || Tick < tlNext) return;
+            if (me == null || s == null) return;
+            WatchQuiet();
+            if (Tick < tlNext) return;
             tlNext = Tick + 20;
             double t = s.Now - startedAt;
             if (loginSeen != null && t > FirstLoginWindowMs + 2000) return;
@@ -109,8 +134,9 @@ namespace Chaos.Core.LiveCheck
 
         // ------------------------------------------------------------------------------------ newplayer
         /// <summary>A fresh character's first login: the packets and extended opcodes of its first 45 seconds (every one read, none unknown, no handler error), the start level and the
-        /// kit, the welcome, the hints that come on their own, the outfit window the base first login opens (answered the way a player does: OK, then another look) and the spells the
-        /// class has at once. Skips when the character is not new (no kit line in the first seconds).</summary>
+        /// kit, the welcome line and the spells the class has at once. Quiet first login (O761): only the Daily Reward opens by itself (no outfit window, no modal window, no openHelper
+        /// toast, no first-hour hint), then the scenario closes it as the window does ("closed"), the main quest's step 1 `helper` comes on 178 with its toast, mqHelper completes it.
+        /// Skips when the character is not new (no kit line in the first seconds).</summary>
         void ScNewPlayer(ScenarioResult r)
         {
             // a character that is not new has no kit line in the first seconds: no need to wait out the window
@@ -156,48 +182,23 @@ namespace Chaos.Core.LiveCheck
                 if (inBag.Count < 4) problems.Append("the starter backpack holds " + inBag.Count + " stack(s), the kit has potions, food, a rope, a shovel, a scroll and gold; ");
             }
 
-            // ---- the texts and toasts that come on their own
+            // ---- the lines that come on their own (O761 quiet first login: the welcome stays in the chat; the first-hour hint and its toasts come later, intros_config.lua)
             var checks = new[] { ("kit line", "starter kit"), ("welcome", "Welcome,"), ("level line", "You advanced from Level") };
             foreach (var (what, part) in checks) if (!SawText(part)) problems.Append("no '" + part + "' line (" + what + ") in the first login; ");
             double? hintAt = TextAt("First hunts"), storyAt = TextAt("Tale of Cinderhold");
-            r.Note("first hint 'First hunts' at " + (hintAt.HasValue ? hintAt.Value.ToString("0.0", CultureInfo.InvariantCulture) + " s" : "never") + ", Tale of Cinderhold introduction at " + (storyAt.HasValue ? storyAt.Value.ToString("0.0", CultureInfo.InvariantCulture) + " s" : "never"));
-            if (!hintAt.HasValue) problems.Append("the first hint (firsthour 'start') never came; ");
-            if (!storyAt.HasValue) problems.Append("the Tale of Cinderhold introduction never came in 45 s; ");
-            if (!tlExtCount.ContainsKey(79)) problems.Append("no toast (opcode 79) in the first login; ");
+            r.Note("first-hour hint 'First hunts' at " + (hintAt.HasValue ? hintAt.Value.ToString("0.0", CultureInfo.InvariantCulture) + " s" : "never (held back until its introduction)") + ", Tale of Cinderhold introduction at " + (storyAt.HasValue ? storyAt.Value.ToString("0.0", CultureInfo.InvariantCulture) + " s" : "never") + ", opcode 79 messages " + (tlExtCount.TryGetValue(79, out int n79) ? n79 : 0));
+            if (hintAt.HasValue) problems.Append("the first-hour hint 'First hunts' came at " + hintAt.Value.ToString("0.0", CultureInfo.InvariantCulture) + " s of a quiet first login (it waits for its introduction, intros_config.lua tips); ");
 
-            // ---- the outfit window of the base first login: 0xC8, answered like a player
-            bool asked = SawText("choose your outfit");
+            // ---- only the Daily Reward opens by itself: no outfit window, no modal window, no Helper request
+            r.Note("Daily Reward: " + (dailyLoginAt >= 0 ? "opened by the server at " + (dailyLoginAt / 1000).ToString("0.0", CultureInfo.InvariantCulture) + " s (Login 1)" : "NOT opened by the server"));
+            if (dailyLoginAt < 0) problems.Append("the Daily Reward window (opcode 207 OpenDailyWindow, Login 1) never came in the first login; ");
             var ow = p.Outfits;
-            r.Note("outfit window: asked by the welcome line " + asked + ", opened " + ow.Opens + " time(s), " + ow.Outfits.Count + " outfit(s) [" + string.Join(", ", ow.Outfits.Take(6).Select(x => x.Name + "/" + x.LookType + "/" + x.Addons)) + "], " + ow.Mounts.Count + " mount(s), extras " + ow.HasExtras + " (wings " + ow.Wings.Count + ", auras " + ow.Auras.Count + ", shaders " + ow.Shaders.Count + "), current look " + ow.Current.LookType);
-            if (asked && ow.Opens == 0) problems.Append("the welcome line asks to choose an outfit and no outfit window (0xC8) came; ");
-            if (ow.Opens > 0)
-            {
-                if (ow.Outfits.Count == 0) problems.Append("the outfit window lists no outfit; ");
-                else
-                {
-                    var own = world.Player;
-                    int moved = Seen(0x8E);
-                    s.SetOutfit(ow.Current);   // OK with the look on offer
-                    Pump(900, () => false);
-                    r.Note("outfit window answered OK with the current look " + ow.Current.LookType + ": 0x8E +" + (Seen(0x8E) - moved) + ", own look " + (own != null ? own.Outfit.LookType : 0) + ", window open " + ow.Open);
-                    if (ow.Open) problems.Append("the outfit window stayed open after the answer; ");
-                    var other = ow.Outfits.FirstOrDefault(x => x.LookType != ow.Current.LookType);
-                    if (other != null)
-                    {
-                        var cur = ow.Current;
-                        var pick = new Outfit { LookType = other.LookType, Head = cur.Head, Body = cur.Body, Legs = cur.Legs, Feet = cur.Feet, Addons = other.Addons, Mount = cur.Mount, Wings = cur.Wings, Aura = cur.Aura, Shader = cur.Shader };
-                        int moved2 = Seen(0x8E);
-                        int say0 = me.Said.Count;
-                        s.SetOutfit(pick);
-                        bool applied = WaitFor(3000, () => own != null && own.Outfit.LookType == pick.LookType);
-                        r.Note("outfit " + other.Name + " (look " + other.LookType + ", addons " + other.Addons + ") chosen: " + (applied ? "applied" : "not applied") + ", 0x8E +" + (Seen(0x8E) - moved2) + ", server said [" + string.Join(" | ", me.ServerTexts(say0).Take(2)) + "]");
-                        if (!applied) problems.Append("the chosen outfit " + other.LookType + " was not applied (the player is " + (own != null ? own.Outfit.LookType : 0) + "); ");
-                        else s.SetOutfit(cur);   // back to the class look
-                        Pump(600, () => false);
-                    }
-                }
-            }
-            else r.Note("no outfit window came (the base first login sends it when the character's outfit was never chosen)");
+            if (ow.Opens > 0) problems.Append("the outfit window (0xC8) opened " + ow.Opens + " time(s) at a quiet first login (it comes with its introduction, after the step Meet Warden Ysolde or level 10); ");
+            var modals = TimelineLines("modal").ToList();
+            if (modals.Count > 0) problems.Append(modals.Count + " modal window(s) at a quiet first login; ");
+            int helperAsks = s.Hud != null ? s.Hud.Toasts.HelperRequests : 0;
+            if (helperAsks > 0) problems.Append("a toast asked to open the Helper (openHelper) at a quiet first login; the main quest's first step leads there now; ");
+            if (questBeforeClose.Length > 0) problems.Append("the main quest showed step '" + questBeforeClose + "' while the Daily Reward was still open; ");
 
             // ---- the spells the class has at once
             if (!s.Spells.Loaded) { s.Spells.Open(); WaitFor(5000, () => s.Spells.Loaded); }
@@ -206,13 +207,43 @@ namespace Chaos.Core.LiveCheck
             r.Note("spells ready at level " + p.Level + ": " + all.Count + " (" + attack.Count + " attack) [" + string.Join(", ", all.Take(8).Select(x => x.Name + " L" + x.Level + " " + x.Mana + "mp")) + "]");
             if (!s.Spells.Loaded) problems.Append("the spell list never arrived; ");
             else if (attack.Count == 0) problems.Append("no attack spell ready at the start level (every class has one at level 8); ");
+            // ---- the main quest after the Daily Reward (O761): close it as the window does, step 1 "Set up your Helper" comes as a row on 178 and a toast, mqHelper completes it
+            var g = s.Progress.Goals;
+            string questKey = "", questKeyAfter = "";
+            int questStep = -1, questStepAfter = -1;
+            bool questToast = false, stepDone = false;
+            double closedAt = s.Now;
+            if (s.Closed == null)
+            {
+                s.Daily.Visible = true;   // the window's x: DailyState.Hide sends {"action":"closed"}, the login window queue is done
+                s.Daily.Hide();
+                closedAt = s.Now;
+                WaitFor(QuestAfterCloseMs, () => s.Closed != null || (g.Welcome.Count > 0 && g.Welcome[0].Key == HelperStep));
+                if (g.Welcome.Count > 0) { questKey = g.Welcome[0].Key; questStep = g.WelcomeStep; }
+                if (questKey == HelperStep)
+                {
+                    WaitFor(QuestToastGraceMs, () => JourneyToast());
+                    questToast = JourneyToast();
+                    g.HelperSetUp();   // what Auto setup sends (HelperWindow.PressAutoSetup): mqHelper on 178
+                    stepDone = WaitFor(QuestStepMs, () => g.Welcome.Count > 0 && (g.Welcome[0].Key != HelperStep || g.WelcomeStep > questStep));
+                    if (g.Welcome.Count > 0) { questKeyAfter = g.Welcome[0].Key; questStepAfter = g.WelcomeStep; }
+                }
+            }
+            r.Note("main quest after the Daily Reward closed: step " + questStep + " '" + questKey + "' in " + ((s.Now - closedAt) / 1000).ToString("0.0", CultureInfo.InvariantCulture) + " s at most, toast " + (questToast ? "seen" : "NOT seen")
+                   + ", after mqHelper: " + (stepDone ? "step " + questStepAfter + " '" + questKeyAfter + "'" : "still step " + questStepAfter + " '" + questKeyAfter + "'"));
+            if (questKey != HelperStep) problems.Append("no main quest step 1 '" + HelperStep + "' (opcode 178 welcome) " + (int)(QuestAfterCloseMs / 1000) + " s after the Daily Reward closed" + (questKey.Length > 0 ? " (the row was '" + questKey + "')" : "") + "; ");
+            else
+            {
+                if (!questToast) problems.Append("the main quest's step 1 came without its toast (opcode 79 journey); ");
+                if (!stepDone) problems.Append("the main quest stayed on step 1 " + (int)(QuestStepMs / 1000) + " s after mqHelper; ");
+            }
             if (s.Closed != null) problems.Append("the connection closed: " + s.Closed + "; ");
             if (problems.Length > 0) r.Fail(problems.ToString().Trim());
             else
             {
                 // the server's own pushes and the answers to the session's hellos come in the first seconds; the opcode requests of the live check's own sweep (from 4.5 s, unless --no-ext) add the rest
                 var early = new HashSet<string>(timeline.Where(x => x.Kind == "ext" && x.T <= 4500).Select(x => x.Text.Substring(0, Math.Max(0, x.Text.IndexOf(' ')))));
-                r.Pass("first login read whole: " + p.Seen.Count + " packet types, " + early.Count + " extended opcodes in the first 4.5 s (" + tlExtCount.Count + " by 45 s), level " + p.Level + " with " + worn + " worn pieces, welcome, kit, hints, outfit window answered, " + attack.Count + " attack spell(s) ready");
+                r.Pass("first login read whole: " + p.Seen.Count + " packet types, " + early.Count + " extended opcodes in the first 4.5 s (" + tlExtCount.Count + " by 45 s), level " + p.Level + " with " + worn + " worn pieces, welcome, kit, only the Daily Reward opened, " + attack.Count + " attack spell(s) ready, main quest step 1 '" + questKey + "' after the close, step " + questStepAfter + " '" + questKeyAfter + "' after mqHelper");
             }
         }
 

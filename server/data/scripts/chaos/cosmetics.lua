@@ -422,6 +422,22 @@ local function playLookup(kind, name)
 	return nil
 end
 
+-- the store category of each cosmetic unlock (O762: the Store button of a card not owned in the Customise Character window),
+-- read once from the store's categories; nil until shop.lua has loaded its config
+local shopIndex
+local function shopCategory(c)
+	if not shopIndex then
+		if not ChaosWardrobeCore then
+			pcall(dofile, "data/scripts/chaos/wardrobe_core.lua")
+		end
+		if not (ChaosWardrobeCore and ChaosWardrobeCore.storeIndex and type(ChaosShopConfig) == "table") then
+			return nil
+		end
+		shopIndex = ChaosWardrobeCore.storeIndex(ChaosShopConfig)
+	end
+	return shopIndex.unlock[K.UNLOCK_PREFIX .. tostring(c.key)]
+end
+
 function M.sendState(player, open)
 	-- the collection score first: a milestone reached now grants a cosmetic that the rows below must show (collection.lua)
 	local score = ChaosCollection and ChaosCollection.view and ChaosCollection.view(player) or nil
@@ -439,6 +455,9 @@ function M.sendState(player, open)
 		local play = K.playRows(c, playLookup)
 		r.play = #play > 0 and play or nil
 		r.e = K.footEffect(c, playLookup) -- an effect footprint: the effect the Preview button plays on the walker (O649)
+		if not r.owned then
+			r.shop = shopCategory(c) -- O762: the store category that sells it (the window's Store button), nil if not sold
+		end
 	end
 	local l = K.index(cfg).lines[line or ""]
 	-- the Collection tab: the exclusives of every visual kind and how each is earned (exclusives.lua)

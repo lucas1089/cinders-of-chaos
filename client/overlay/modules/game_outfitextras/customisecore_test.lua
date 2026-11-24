@@ -314,5 +314,121 @@ eq(C.dissolveOf({ kind = 'killfx', dissolve = 'ash', tint = 99 }).t, 7, 'tint ca
 eq(C.dissolveOf({ kind = 'killfx', dissolve = 'ash', tint = -2 }).t, 0, 'tint floor')
 eq(C.hoverOption(temp, layers, 'killfx', { value = 51, text = 'Soul Burst', row = cosmetics.rows[7] }, nil).dissolve, nil, 'a plain kill effect hovers without a dissolve')
 
+-- ---------------------------------------------------------------- every footprint shows (O762)
+-- The owner's test of pair 83: the 20 effect footprints of pair 75 (O649) had an empty card and no preview in this window,
+-- because the window only knew print pictures. Every footprint of the server's cosmetics_config.lua, with every pair gate
+-- open, as the server sends its row (cosmetics_core.lua rows, playRows, footEffect from the generated effect ids): a card
+-- picture, a stage option, and a picture print the client has or an effect of the footprint ids of the pair.
+do
+  local root = dir .. '../../../../'
+  local ids = dofile(root .. 'server/data/lib/chaos_footprint_fx_ids.lua')
+  ids.on = true
+  ids.merge()
+  local savedIds = rawget(_G, 'ChaosFootprintFxIds')
+  ChaosFootprintFxIds = ids
+  local K = dofile(root .. 'server/data/scripts/chaos/cosmetics_core.lua')
+  local cfg = dofile(root .. 'server/data/scripts/chaos/cosmetics_config.lua')
+  ChaosFootprintFxIds = savedIds
+  local function lookup(kind, name)
+    if kind == 'vfx' then return ChaosVfx and ChaosVfx[name] end
+    return nil
+  end
+  local rowsOf = K.rows(cfg, {}, {}, {})
+  local nPrint, nFx = 0, 0
+  for _, r in ipairs(rowsOf) do
+    if r.kind == 'footprint' then
+      local c = K.byId(cfg, r.id)
+      local play = K.playRows(c, lookup)
+      r.play = #play > 0 and play or nil
+      r.e = K.footEffect(c, lookup)
+      local card = { value = r.id, text = r.name, locked = true, row = r }
+      local icon = C.footprintIcon(r)
+      eq(icon ~= nil, true, 'footprint ' .. r.key .. ' has a card picture')
+      local opt = C.hoverOption(temp, layers, 'footprint', card, nil)
+      eq(opt ~= nil, true, 'footprint ' .. r.key .. ' has a preview')
+      if c.fx then
+        nFx = nFx + 1
+        eq(icon and icon.kind, 'play', 'effect footprint ' .. r.key .. ' draws its effect')
+        eq(opt and opt.kind == 'effects' and opt.footfx, true, 'effect footprint ' .. r.key .. ': the figure walks with it')
+        local id = type(r.e) == 'table' and r.e[1] or nil
+        eq(id ~= nil and id >= ids.FIRST and id <= ids.LAST, true, 'effect footprint ' .. r.key .. ' sends an effect of pair ' .. ids.PAIR)
+        eq(play[1] and play[1].b.id, id, 'effect footprint ' .. r.key .. ': the preview plays the effect the map plays')
+        eq((tonumber(c.pair) or 0) >= ids.PAIR, true, 'effect footprint ' .. r.key .. ' waits for its pair')
+        local stripped = C.stripRows({ temp = temp, rows = { { key = 'footprint', current = r.id,
+          options = { { value = r.id, text = r.name, row = r } } } } })
+        for _, sr in ipairs(stripped) do
+          if sr.key == 'footprint' then eq(sr.icon and sr.icon.kind, 'play', 'effect footprint ' .. r.key .. ' on the strip') end
+        end
+      else
+        nPrint = nPrint + 1
+        eq(icon and icon.kind, 'print', 'footprint ' .. r.key .. ' draws its print')
+        local f = io.open(root .. 'client/overlay/modules/game_cosmeticfx/images/prints/' .. tostring(c.art) .. '.png', 'rb')
+        eq(f ~= nil, true, 'footprint ' .. r.key .. ': print picture ' .. tostring(c.art) .. '.png')
+        if f then f:close() end
+      end
+    end
+  end
+  eq(nFx, 20, 'the twenty effect footprints of pair 75') eq(nPrint >= 9, true, 'and the print ones: ' .. nPrint)
+end
+
+-- ---------------------------------------------------------------- how it is got and the Store button (O762)
+do
+  local src2 = { cosmetics = { line = 'ember', rows = {
+      { id = 21, kind = 'footprint', name = 'Ember Prints', owned = true, art = 'ember' },
+      { id = 22, kind = 'footprint', name = 'Frost Prints', owned = false, art = 'frost', how = 'Store: 200 Chaos Coins', shop = 'Footprints' },
+      { id = 23, kind = 'footprint', name = 'Rime Prints', owned = false, art = 'rime', how = 'Boss: Skaldra the Rime Queen' },
+      { id = 24, kind = 'footprint', name = 'Bad', owned = false, art = 'ash', how = 'Store: 1 Chaos Coins', shop = '<b>x</b>' } } },
+    wings = { stock = { { 5, 'Gold Wings' } }, wardrobe = { { l = 7, n = 'Storm Wings', s = 'Store', b = 'Wings' },
+      { l = 8, n = 'Bone Wings', s = 'Boss: Gorvath, rare drop' } }, current = 5 } }
+  local fc = C.cards('footprint', { src = src2 })
+  local byText = {}
+  for _, c in ipairs(fc) do byText[c.text] = c end
+  eq(C.storeLink(byText['Frost Prints']), 'Footprints', 'a store footprint not owned opens the Footprints category')
+  eq(C.storeLink(byText['Rime Prints']), nil, 'a boss drop has no store link')
+  eq(C.storeLink(byText['Ember Prints']), nil, 'an owned card has no store link')
+  eq(C.storeLink(byText['Bad']), nil, 'a bad category name is no link')
+  local wc = C.cards('wings', { src = src2 })
+  local ww = {}
+  for _, c in ipairs(wc) do ww[c.text] = c end
+  eq(C.storeLink(ww['Storm Wings']), 'Wings', 'a store wing not owned links to Wings')
+  eq(C.storeLink(ww['Bone Wings']), nil, 'a boss wing has none')
+  local tip = C.cardTooltip(byText['Frost Prints'])
+  eq(tip:find('Not unlocked yet.', 1, true) ~= nil, true, 'locked tooltip')
+  eq(tip:find('Store: 200 Chaos Coins', 1, true) ~= nil, true, 'how it is got')
+  eq(tip:find('Footprints', 1, true) ~= nil, true, 'and where the button goes')
+  eq(C.cardTooltip(byText['Ember Prints']), 'Ember Prints', 'an owned card: its name')
+  eq(C.cardTooltip(ww['Bone Wings']):find('Boss: Gorvath, rare drop', 1, true) ~= nil, true, 'a wing from a boss says so')
+  -- the look lists (game_unlocks display: e.shop from the wardrobe's b)
+  local lc = C.lookCards('mount', { { 370, 'Racing Bird', locked = true, how = 'Store', shop = 'Mounts' }, { 371, 'Mine', shop = 'Mounts' } })
+  eq(C.storeLink(lc[1]), 'Mounts', 'a mount not owned opens Mounts') eq(lc[2].shop, nil, 'an owned mount carries no link')
+  -- the server's patterns, with a stand-in tr that marks what it translated
+  local savedTr = rawget(_G, 'tr')
+  local seen = {}
+  tr = function(k, ...) seen[k] = true if select('#', ...) > 0 then return '[' .. string.format(k, ...) .. ']' end return k end
+  local cases = {
+    { 'Store: 200 Chaos Coins', 'Store: %d Chaos Coins' }, { 'Store (Pets): 400 Chaos Coins.', 'Store (%s): %d Chaos Coins' },
+    { 'Free; addons: Store', 'Free; addons: %s' }, { 'Boss: Gorvath, rare drop', 'Boss: %s, rare drop' },
+    { 'Boss: The Rotmother (rare drop, whole account).', 'Boss: %s (rare drop, whole account)' },
+    { 'Boss: Skaldra the Rime Queen', 'Boss: %s' }, { 'PvP: Battleground vendor (honor)', 'PvP: %s' },
+    { 'Chaos Pact: While the Chaos Pact is active', 'Chaos Pact: %s' }, { 'Collection score: 60 points', 'Collection score: %d points' },
+    { 'Daily reward: a login streak of 30 days', 'Daily reward: a login streak of %d days' },
+    { 'Achievements: 750 account points', 'Achievements: %d account points' },
+    { 'Achievements: complete Hunting', 'Achievements: complete %s' }, { 'Achievement: Hired Blade', 'Achievement: %s' },
+    { 'Class: Warrior', 'Class: %s' }, { 'Founder Pack, on sale 2026-12-01 to 2026-12-31 only', 'Founder Pack, on sale %s to %s only' },
+  }
+  for _, c in ipairs(cases) do
+    seen = {}
+    local out = C.howText(c[1])
+    eq(seen[c[2]], true, 'how pattern ' .. c[2] .. ' for ' .. c[1])
+    eq(type(out) == 'string' and out:sub(1, 1) == '[', true, 'translated: ' .. c[1])
+  end
+  eq(C.howText('Something new'), 'Something new', 'an unknown text stays as the server wrote it')
+  eq(C.howText(nil), nil, 'no source: nothing')
+  tr = savedTr
+  -- every how pattern above has its pt-BR line
+  local pt = dofile(dir .. '../client_chaos_locale/pt_br.lua')
+  for _, c in ipairs(cases) do eq(type(pt[c[2]]), 'string', 'pt-BR for ' .. c[2]) end
+end
+
 if fails > 0 then print(fails .. ' of ' .. checks .. ' checks FAILED'); os.exit(1) end
 print('customise tests OK (' .. checks .. ' checks)')

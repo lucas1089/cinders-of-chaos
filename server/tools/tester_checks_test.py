@@ -4787,6 +4787,8 @@ class MainQuestWorld:
             return {'action': 'visit', 'label': 'the place', 'radius': 6}
         if kind == 'kill':
             return {'action': 'kill', 'label': 'Troll', 'monsters': ['Troll'], 'target': 12}
+        if kind == 'helper':   # O761: the first step, the Helper's Auto setup
+            return {'action': 'helper', 'flag': 'helper'}
         if kind == 'late':   # O750: a Chapter 8 step, played by the check of its system
             return {'action': 'elsewhere', 'stat': 'tower_floor', 'target': 30, 'check': 'tower_walk'}
         if kind == 'badlate':
@@ -4873,6 +4875,14 @@ class MainQuestIO(FakeIO):
         if text == 'oath' and abs(self.w.pos[0] - self.w.NPC) <= 4:
             self.w.armed = True
 
+    async def request(self, opname, action, data, expect, timeout):
+        self.asked.append((opname, action, data))
+        world = self.w
+        if (opname, action) == ('goals', 'mqHelper') and world.step <= len(world.kinds) and world.kinds[world.step - 1] == 'helper' \
+                and not world.stuck_talk:
+            world.step += 1   # O761: Auto setup reported on the goals channel
+        return None
+
     async def step(self, dx, dy):
         self.w.step_by(dx, dy)
 
@@ -4919,6 +4929,17 @@ class MainQuestWalk(unittest.TestCase):
         self.assertEqual(io.modes[0], (['Tester Aaa'], True, True))
         self.assertEqual(io.modes[-1], (['Tester Aaa'], False, False))
         self.assertIn('steps 1 to', r.detail)
+
+    def test_the_helper_step_first(self):   # O761: the quest starts with the Helper's Auto setup, then Ysolde
+        r, io = self.play(kinds=['helper', 'talk', 'visit', 'kill'])
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn(('goals', 'mqHelper', {}), io.asked)
+        self.assertEqual(io.w.said, ['hi', 'oath'])
+        self.assertGreaterEqual(io.w.step, 4)
+        TX.MQ_STEP_WAIT = 3.0
+        r, _ = self.play(kinds=['helper', 'talk'], stuck_talk=True)
+        self.assertEqual(r.status, TX.FAIL, r.detail)
+        self.assertIn('Auto setup was reported', r.detail)
 
     def test_a_kill_step_proves_the_counter(self):
         r, io = self.play(start=3)

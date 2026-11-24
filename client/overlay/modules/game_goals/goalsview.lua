@@ -213,6 +213,11 @@ end
 --   {call = 'module.function', args = {...}}   a window
 --   {map = pos, label}                         a mark on the map
 --   nil                                        nothing to do
+-- O761: a "where" that opens the Helper (the main quest's first step): the client opens it on its Auto setup button
+function V.isHelper(w)
+  return type(w) == 'table' and w.k == 'window' and w.m == 'game_helper'
+end
+
 function V.action(w)
   if type(w) ~= 'table' then return nil end
   if w.k == 'window' and type(w.m) == 'string' and type(w.f) == 'string' then

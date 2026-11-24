@@ -685,6 +685,9 @@ function M.needs(step)
 	local n = {}
 	for _, c in ipairs(step.conds or {}) do
 		n[c.c] = true
+		if c.c == "flag" and c.key == "helper" then
+			n.spell = true -- O761: the Helper setup took the place of the first cast; a character that played has fought with spells
+		end
 	end
 	return n
 end
@@ -1055,6 +1058,9 @@ function M.botPlan(step, facts, cfg)
 	if c.c == "flag" then
 		if c.key == "daily" then
 			return plan({action = "daily", flag = c.key})
+		end
+		if c.key == "helper" then -- O761: the Auto setup button of the Helper sends mqHelper on the goals channel
+			return plan({action = "helper", flag = c.key})
 		end
 		if acks[c.key] then
 			return plan({action = "go", flag = c.key})

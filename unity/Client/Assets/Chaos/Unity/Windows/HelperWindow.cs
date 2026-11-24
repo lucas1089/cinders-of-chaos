@@ -51,7 +51,7 @@ namespace Chaos.Client
             if (engine == null) return null;
             string m = engine.AutoSetup(Vocation());
             message = m ?? Loc.T("No rotation for this class and level yet (is the spell list loaded?).");
-            if (m != null) { engine.AutoSupport(); dirty = true; }
+            if (m != null) { engine.AutoSupport(); dirty = true; app.Session?.Progress?.Goals?.HelperSetUp(); }
             return m;
         }
 

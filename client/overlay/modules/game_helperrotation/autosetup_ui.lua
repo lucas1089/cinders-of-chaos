@@ -219,6 +219,9 @@ local function apply(ctx, mode)
   lines[#lines + 1] = tr('Targeting: every monster, Auto Target and Magic Shooter on.')
   lines[#lines + 1] = tr('Timers: %d buffs.'):format(#plan.timers)
   if support() then lines[#lines + 1] = tr('Support spells: %d.'):format(#plan.support) end
+  -- O761: the main quest's first step (set up the Helper) is done: game_goals tells the server (mqHelper, opcode 178)
+  local goals = modules.game_goals
+  if goals and type(goals.helperSetUp) == 'function' then pcall(goals.helperSetUp) end
   closeBox()
   local ok = function() closeBox() end
   local undo = function() closeBox() W.undoSetup() end

@@ -43,6 +43,12 @@ local function capital(s)
   return s:sub(1, 1):upper() .. s:sub(2)
 end
 
+-- a store category name the server sent (O762, the Store button of a card not owned): plain words, at most 40 characters
+function E.shopName(v)
+  if type(v) ~= 'string' or v == '' or #v > 40 or not v:match("^[%w][%w %-&',]*$") then return nil end
+  return v
+end
+
 -- ---------------------------------------------------------------- one row per source
 -- cosmetic kinds: the default, then the rows of the kind the account owns (spell skins: of the character's line only)
 function E.cosmeticRow(state, kind)
@@ -180,7 +186,7 @@ function E.lockedOf(src, key)
     for _, c in ipairs(type(w.wardrobe) == 'table' and w.wardrobe or {}) do
       if type(c) == 'table' and num(c.l) > 0 and not have[num(c.l)] then
         have[num(c.l)] = true
-        out[#out + 1] = { value = num(c.l), text = tostring(c.n or c.l), how = c.s }
+        out[#out + 1] = { value = num(c.l), text = tostring(c.n or c.l), how = c.s, shop = E.shopName(c.b) }
       end
     end
   elseif key == 'frame' then
@@ -207,7 +213,8 @@ function E.lockedOf(src, key)
     local state = type(src.cosmetics) == 'table' and src.cosmetics or {}
     for _, r in ipairs(type(state.rows) == 'table' and state.rows or {}) do
       if type(r) == 'table' and r.kind == key and r.owned ~= true and (key ~= 'spellskin' or r.line == state.line) then
-        out[#out + 1] = { value = num(r.id), text = tostring(r.name or r.key or r.id), how = r.how, row = r }
+        out[#out + 1] = { value = num(r.id), text = tostring(r.name or r.key or r.id), how = r.how, row = r,
+          shop = E.shopName(r.shop) }
       end
     end
   end
@@ -224,7 +231,7 @@ function E.choices(src, key, onlyMine, search)
   for _, o in ipairs(row.options) do all[#all + 1] = { value = o.value, text = o.text, row = o.row, look = o.look } end
   if not onlyMine then
     for _, l in ipairs(E.lockedOf(src, key)) do
-      all[#all + 1] = { value = l.value, text = l.text, locked = true, how = l.how, row = l.row, look = l.look }
+      all[#all + 1] = { value = l.value, text = l.text, locked = true, how = l.how, row = l.row, look = l.look, shop = l.shop }
     end
   end
   local q = type(search) == 'string' and search:lower() or ''

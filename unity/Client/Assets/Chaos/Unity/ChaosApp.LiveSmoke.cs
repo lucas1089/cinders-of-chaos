@@ -9,8 +9,10 @@
 // CHAOS_PAIR_DIR. Nothing of that is logged: the log line holds host, port and identity, and the json has every secret cut out.
 // Every window ends as answered, prefetched at login (Skills, Dungeons), local-only (native windows, Helper, Item Finder), needs a condition or no answer; only the last is a listed warning. The exit code is 1 when the login, entering the game or the walk fails, the session closes or an exception is logged.
 // New player first minute (O433, unity/README.md "New player first minute"): when CHAOS_LIVE_NEW_ACCOUNT, _PASSWORD and _CHARACTER are set (a fresh character that never logged in,
-// made by tools/ci/unity_live_check.sh --serve-only), the run first logs that character in, waits for the welcome toast, checks that the Helper opened by itself on Auto setup with the hint,
-// takes helper_onboarding_IDENTITY.png, writes the "newplayer" block of live_smoke.json, logs out and then goes on with the normal character. A fault there is a failure line, never a stop.
+// made by tools/ci/unity_live_check.sh --serve-only), the run first logs that character in and checks the quiet first login (O761): only the Daily Reward opens (no Helper, no outfit
+// window; first_login_IDENTITY.png), the smoke closes it, the main quest's step 1 "Set up your Helper" comes as a toast and a tracker row, the row's action opens the Helper on Auto setup
+// with the hint and the blink (helper_onboarding_IDENTITY.png), Auto setup is pressed and the quest leaves step 1. It writes the "newplayer" block of live_smoke.json, then the first
+// fight, logs out and goes on with the normal character. A fault there is a failure line, never a stop.
 // New player first fight (O433, unity/README.md "New player first fight"): after that shot the fresh character presses Auto setup (the window's own code path), turns the Helper on, walks from the temple to the cave under Cinderhold
 // with the client's click to walk, lets the Helper and the attack kill a Rat, opens the body in the Containers window and takes first_fight_IDENTITY.png (Unity/ChaosApp.LiveFight.cs, the state machine is Core LiveFirstFightStep),
 // writes the "firstfight" block, then logs out. The first minute also records the longest frame and when the Helper took the toast's request, so a main thread freeze shows as such.
@@ -379,36 +381,92 @@ namespace Chaos.Client
                 }
             }
 
-            static bool WelcomeToastOn(ToastCenter t)
+            static bool ToastOn(ToastCenter t, string type)
             {
-                foreach (var x in t.Active) if (x.Type == "NEW_PLAYER") return true;
-                foreach (var x in t.Queue) if (x.Type == "NEW_PLAYER") return true;
+                foreach (var x in t.Active) if (x.Type == type) return true;
+                foreach (var x in t.Queue) if (x.Type == type) return true;
                 return false;
+            }
+
+            /// <summary>The quiet first login as the step reads it (O761): the open windows, the Daily Reward, an outfit window, the main quest's toast and tracker row, the spell list, the Helper.</summary>
+            LiveNewPlayerView NewPlayerView()
+            {
+                var s = app.session;
+                var v = new LiveNewPlayerView();
+                foreach (var w in app.windows) if (w.Open) v.OpenWindows.Add(w.GetType().Name);
+                v.DailyOpen = app.FindWindow<DailyWindow>()?.Open == true;
+                v.OutfitOpen = app.FindWindow<OutfitWindow>()?.Open == true || app.FindWindow<OutfitExtrasWindow>()?.Open == true;
+                var toasts = s.Hud != null ? s.Hud.Toasts : null;
+                v.QuestToast = toasts != null && ToastOn(toasts, "JOURNEY");   // mainquest.lua toast: notifications "journey"
+                var g = s.Progress?.Goals;
+                if (g != null && g.Welcome.Count > 0) { v.QuestKey = g.Welcome[0].Key; v.QuestStep = g.WelcomeStep; }
+                v.SpellsLoaded = s.Spells.Loaded;
+                var win = app.FindWindow<HelperWindow>();
+                v.Helper = win != null ? win.OnboardingView(s.Now) : new LiveHelperView();
+                return v;
             }
 
             void StepNewPlayer()
             {
-                var s = app.session;
-                var win = app.FindWindow<HelperWindow>();
-                var toasts = s.Hud != null ? s.Hud.Toasts : null;
-                var view = win != null ? win.OnboardingView(s.Now) : new LiveHelperView();
-                var act = nbStep.Update(NowMs, toasts != null && WelcomeToastOn(toasts), toasts != null ? toasts.HelperRequests : 0, view);
-                if (act == LiveNewPlayerAction.Screenshot)
+                var act = nbStep.Update(NowMs, NewPlayerView());
+                var r = rep.NewPlayer;
+                var inv = System.Globalization.CultureInfo.InvariantCulture;
+                switch (act)
                 {
-                    var r = rep.NewPlayer;
-                    Debug.Log("chaos live smoke: new player: toast " + (r.ToastSeen ? "seen" : "NOT seen") + ", Helper " + (r.HelperOpened ? "open on tab " + r.Tab : "NOT open") + ", hint " + (r.HintShown ? "shown" : "NOT shown") + ", blink " + (r.BlinkActive ? "on" : "off"));
-                    var inv = System.Globalization.CultureInfo.InvariantCulture;
-                    Debug.Log("chaos live smoke: new player: times after entering: toast seen " + Math.Round(r.ToastMs / 1000.0, 1).ToString("0.0", inv) + " s, the Helper took the request " + (r.HelperTakenMs < 0 ? "never" : Math.Round(r.HelperTakenMs / 1000.0, 1).ToString("0.0", inv) + " s")
-                              + ", seen open " + Math.Round(r.HelperMs / 1000.0, 1).ToString("0.0", inv) + " s, longest frame " + Math.Round(r.LongestFrameMs).ToString("0", inv) + " ms at " + Math.Round(r.LongestFrameAtMs / 1000.0, 1).ToString("0.0", inv) + " s");
-                    RequestShot("helper_onboarding_" + cfg.Identity + ".png", NewShotDone);
+                    case LiveNewPlayerAction.CloseDaily:
+                        {
+                            // the window's x: DailyWindow (ModelWindow) hides the model and tells the server "closed", the login window queue is done
+                            var dw = app.FindWindow<DailyWindow>();
+                            if (dw != null) dw.Open = false;
+                            Debug.Log("chaos live smoke: new player: Daily Reward closed");
+                            break;
+                        }
+                    case LiveNewPlayerAction.OpenHelper:
+                        {
+                            // the quest row's own action (GoalTrackerWindow: a click on the row runs RunWhere of its where)
+                            var g = app.session.Progress?.Goals;
+                            var row = g != null && g.Welcome.Count > 0 ? g.Welcome[0] : null;
+                            bool ran = row != null && row.Where != null && app.RunWhere(row.Where);
+                            Debug.Log("chaos live smoke: new player: quest step 1 at " + Math.Round(r.QuestRowMs / 1000.0, 1).ToString("0.0", inv) + " s (toast " + (r.QuestToastSeen ? "seen" : "NOT seen") + "), row action " + (ran ? "run" : "NOT run"));
+                            break;
+                        }
+                    case LiveNewPlayerAction.PressAutoSetup:
+                        {
+                            var win = app.FindWindow<HelperWindow>();
+                            if (win == null) { nbStep.AutoSetupDone(0, "no Helper window"); break; }
+                            string m = win.PressAutoSetup(app);   // the button's code: it sends mqHelper (Goals.HelperSetUp) when it filled the slots
+                            nbStep.AutoSetupDone(win.FilledSlots(), m ?? "");
+                            Debug.Log("chaos live smoke: new player: Auto setup filled " + win.FilledSlots() + " of the 5 slots");
+                            break;
+                        }
+                    case LiveNewPlayerAction.Screenshot:
+                        {
+                            string name = nbStep.ShotName + "_" + cfg.Identity + ".png";
+                            if (nbStep.ShotName == LiveNewPlayerStep.FirstLoginShot)
+                                Debug.Log("chaos live smoke: new player: Daily Reward " + (r.DailySeen ? "open at " + Math.Round(r.DailyMs / 1000.0, 1).ToString("0.0", inv) + " s" : "NOT seen") + ", Helper by itself " + (r.HelperBeforeQuest ? "YES" : "no")
+                                          + ", outfit window by itself " + (r.OutfitBeforeQuest ? "YES" : "no") + (r.OthersOpened.Count > 0 ? ", also opened: " + string.Join(", ", r.OthersOpened) : ""));
+                            else
+                            {
+                                Debug.Log("chaos live smoke: new player: Helper " + (r.HelperOpened ? "open on tab " + r.Tab : "NOT open") + ", hint " + (r.HintShown ? "shown" : "NOT shown") + ", blink " + (r.BlinkActive ? "on" : "off"));
+                                Debug.Log("chaos live smoke: new player: times after entering: the Helper took the request " + (r.HelperTakenMs < 0 ? "never" : Math.Round(r.HelperTakenMs / 1000.0, 1).ToString("0.0", inv) + " s")
+                                          + ", seen open " + Math.Round(r.HelperMs / 1000.0, 1).ToString("0.0", inv) + " s, longest frame " + Math.Round(r.LongestFrameMs).ToString("0", inv) + " ms at " + Math.Round(r.LongestFrameAtMs / 1000.0, 1).ToString("0.0", inv) + " s");
+                            }
+                            RequestShot(name, () => NewShotDone(name));
+                            break;
+                        }
+                    case LiveNewPlayerAction.Done:
+                        Debug.Log("chaos live smoke: new player: quest " + (r.StepDone ? "moved to step " + r.QuestStepAfter + " ('" + r.QuestKeyAfter + "') at " + Math.Round(r.StepMs / 1000.0, 1).ToString("0.0", inv) + " s" : "did NOT leave step 1") + ", " + (r.Pass ? "pass" : "FAIL"));
+                        foreach (var f in r.Failures()) Debug.Log("chaos live smoke: new player: failure: " + f);
+                        if (app.session != null && app.session.Closed == null && app.screen == Screen.Game) BeginFirstFight();   // the first fight, then the logout
+                        else BeginNewLogout();
+                        break;
                 }
             }
 
-            void NewShotDone()
+            void NewShotDone(string name)
             {
-                nbStep.ShotTaken("helper_onboarding_" + cfg.Identity + ".png");
-                if (app.session != null && app.session.Closed == null && app.screen == Screen.Game) BeginFirstFight();   // the first fight, then the logout
-                else BeginNewLogout();
+                nbStep.ShotTaken(name);
+                SetPhase(Phase.NewPlayer);   // the step goes on (Done comes from its next Update)
             }
 
             void BeginNewLogout()

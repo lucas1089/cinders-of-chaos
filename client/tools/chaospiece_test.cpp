@@ -2,7 +2,8 @@
 //   g++ -std=c++17 -I DIR client/tools/chaospiece_test.cpp -o t   (DIR holds chaospiece.h, extracted from the patch)
 // Checks: the point handed to ThingType::draw puts the anchor tile on the wearer's tile for the frame sizes and anchors of the
 // pack (4x4 at 2,2; 5x4 at 2,2 and 3,2; 3x3 at 1,1; 2x2 at 0,0; 3x2 at 1,0), against the engine's own rule (top left = dest -
-// (size - 1) tiles); the lift table (parse, bounds, bad texts, wrap, a look without a row), the frame of a loop, clear.
+// (size - 1) tiles); the lift table (parse, bounds, bad texts, wrap, a look without a row), the frame of a loop, clear; the Float
+// option off (O762: pieces without lift rows: placed wings, a body on the ground).
 #include "chaospiece.h"
 #include <cstdio>
 
@@ -62,6 +63,20 @@ int main()
 
     clear();
     CHECK(!piece(3600, got) && lift(2385, 0).x == 0, "clear empties both tables");
+
+    // O762, the Float option off: client_chaos_wingfit hands in the pieces without their lift rows. The wings are still
+    // placed by their anchor tile, the body is lifted by nothing in any frame (it stands on the ground)
+    CHECK(setPiece(2385, 2, 2), "float off: the wings' piece row");
+    for (int f = 0; f < 32; ++f)
+        CHECK(lift(2385, f).x == 0 && lift(2385, f).y == 0, "float off: no lift in frame %d", f);
+    CHECK(piece(2385, got) && got.ax == 2 && got.ay == 2, "float off: the wings keep their anchor tile");
+    const Point2 offAt = place(tileX, tileY, 4, 4, got);
+    const Point2 offTl = topLeft(offAt, 4, 4);
+    CHECK(offTl.x == tileX - 2 * kTile && offTl.y == tileY - 2 * kTile, "float off: the wings sit where they sat");
+    // switched back on: the same piece, now with its row
+    CHECK(setLift(2385, "-1 -1 -3 -3"), "float on again: the row");
+    CHECK(lift(2385, 1).y == -3, "float on again: lifted");
+    clear();
 
     if (failures) {
         std::printf("%d failure(s)\n", failures);

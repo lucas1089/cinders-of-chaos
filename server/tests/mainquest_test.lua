@@ -87,7 +87,7 @@ do
 		check(kinds[st], "Chapter 8 points at " .. st)
 	end
 end
-eq(cfg.steps[1].key, "warden", "the first step is Ysolde")
+eq(cfg.steps[1].key, "helper", "the first step is the Helper (O761)"); eq(cfg.steps[2].key, "warden", "then Ysolde")
 for _, c in ipairs(cfg.chapters) do
 	check(c.intro.pt ~= "" and c.name.pt ~= "", "chapter texts " .. c.n)
 end
@@ -175,9 +175,10 @@ check(idx.res2c < idx.boss, "the boss comes after the 500 resistance check")
 check(cfg.boss.minLevel >= pd.penalty.marks[2].level, "the boss level is at the second mark")
 
 -- progress of each kind
-local p, t, running = K.progress(S.spell, {level = 8})
+local p, t, running = K.progress(S.helper, {level = 8, flags = {}})
 eq(p, 0); eq(t, 1); eq(running, true)
-eq(K.isDone(S.spell, {level = 8, spell = true}), true, "a cast")
+eq(K.isDone(S.helper, {level = 8, flags = {helper = true}}), true, "Auto setup pressed (O761)")
+eq(K.botPlan(S.helper).action, "helper", "botPlan: the Helper step is Auto setup")
 eq(K.isDone(S.gear, {level = 8, gear = false}), false, "the kit only")
 eq(K.isDone(S.orb, {level = 20, stats = {orbs_used = 1}}), true, "an orb used")
 eq(K.isDone(S.orb, {level = 19, stats = {orbs_used = 1}}), false, "level 19: the bench is not open")
@@ -305,7 +306,7 @@ end
 eq(K.firstState(cfg, 8), cfg.states.active); eq(K.firstState(cfg, 500), cfg.states.active); eq(K.firstState(cfg, 501), cfg.states.quiet, "above 500: quiet")
 
 -- chapters
-eq(K.nextChapterStart(cfg, 1), idx.spell + 0 > 0 and (function() for i, s in ipairs(cfg.steps) do if s.ch == 2 then return i end end end)(), "the next chapter")
+eq(K.nextChapterStart(cfg, 1), idx.helper + 0 > 0 and (function() for i, s in ipairs(cfg.steps) do if s.ch == 2 then return i end end end)(), "the next chapter")
 eq(K.nextChapterStart(cfg, #cfg.steps), #cfg.steps + 1)
 local cc = K.chapterCounts(cfg, 5)
 eq(cc[1].done, 4); eq(cc[2].done, 0)
@@ -344,11 +345,11 @@ ctx.cooldownLeft = 30
 eq(K.doorProblem(cfg, ctx), "door_cooldown")
 
 -- the NPC side: the talk flag
-local store = {state = cfg.states.active, step = 1, flags = 0}
+local store = {state = cfg.states.active, step = idx.warden, flags = 0}
 local function g(k) return store[k] end
 local function s(k, v) store[k] = v end
-eq(K.talk(cfg, g, s), true, "step 1 wants a talk"); eq(store.flags, 1, "the flag is set")
-store.step = idx.spell
+eq(K.talk(cfg, g, s), true, "the Ysolde step wants a talk"); eq(store.flags, 1, "the flag is set")
+store.step = idx.helper
 eq(K.talk(cfg, g, s), "wait", "the step wants something else")
 store.state = cfg.states.skipped
 eq(K.talk(cfg, g, s), nil, "no open step")
@@ -513,17 +514,17 @@ events.ChaosMainQuestLogin.onLogin(p)
 eq(timers[1].ms, cfg.firstLookMs, "the first look waits")
 runTimers()
 eq(p.store[key("state")], cfg.states.active, "on the quest"); eq(p.store[key("step")], 1)
-check(said(p, "Your Oath begins"), "told it starts"); check(said(p, "Next step: Meet Warden Ysolde"), "told the first step")
+check(said(p, "Your Oath begins"), "told it starts"); check(said(p, "Next step: Set up your Helper"), "told the first step")
 check(said(p, "Chapter 1: Cinder-Born"), "the chapter intro")
 local s1 = lastSent(p)
-eq(s1.op, 178); eq(s1.data.rows[1].key, "warden"); eq(s1.data.chapter, 1); eq(s1.data.count, #cfg.steps)
-eq(s1.data.rows[1].where.k, "npc", "the row names the NPC")
+eq(s1.op, 178); eq(s1.data.rows[1].key, "helper"); eq(s1.data.chapter, 1); eq(s1.data.count, #cfg.steps)
+eq(s1.data.rows[1].where.k, "window", "the row opens the Helper"); eq(s1.data.rows[1].where.m, "game_helper")
 -- the tester bots (O599): what a bot sees and can play (K.botPlan, W.probe)
 do
 	local pr = W.probe(p)
-	check(pr.active and pr.step == 1 and pr.key == "warden" and pr.cond.kind == "talk" and pr.running, "probe: the first step, a talk")
-	check(pr.plan.action == "talk" and pr.plan.label == "Warden Ysolde", "probe: walk to Ysolde and talk")
-	check(pr.where and pr.where.k == "npc" and pr.where.name == "Warden Ysolde", "probe: where is the NPC")
+	check(pr.active and pr.step == 1 and pr.key == "helper" and pr.cond.kind == "flag" and pr.running, "probe: the first step, the Helper (O761)")
+	check(pr.plan.action == "helper", "probe: press Auto setup")
+	check(pr.where and pr.where.k == "window", "probe: the Helper window")
 	check(pr.progress ~= nil and pr.target ~= nil and pr.ready == false, "probe: progress of the step")
 	eq(W.probe(newPlayer(9, 8)).active, false, "probe: a character the quest has not seen is not on it")
 	local kinds = {}
@@ -541,8 +542,8 @@ do
 	end
 	check((kinds.talk or 0) >= 1 and (kinds.visit or 0) >= 1 and (kinds.kill or 0) >= 5 and (kinds.skip or 0) >= 1, "botPlan: the quest has talk, visit, kill and skip steps")
 	-- O650: the later steps: a bring, a Go button, the daily, a cast, a hunt stat, Vael
-	check((kinds.bring or 0) >= 5 and (kinds.go or 0) >= 10 and (kinds.daily or 0) >= 1 and (kinds.cast or 0) >= 1 and (kinds.hunt or 0) >= 2 and (kinds.vael or 0) == 1,
-		"botPlan: the quest has bring, go, daily, cast, hunt and vael steps")
+	check((kinds.bring or 0) >= 5 and (kinds.go or 0) >= 10 and (kinds.daily or 0) >= 1 and (kinds.helper or 0) == 1 and (kinds.hunt or 0) >= 2 and (kinds.vael or 0) == 1,
+		"botPlan: the quest has bring, go, daily, helper, hunt and vael steps")
 	local boss
 	for _, st in ipairs(cfg.steps) do
 		if st.conds[1] and st.conds[1].c == "boss" then boss = st end
@@ -576,19 +577,31 @@ do
 	check(K.condDone({c = "stat", stat = "kills_rare", target = 2}, {stats = {kills_rare = 2}}), "condDone: a stat that reached its target")
 	check(not K.condDone({c = "stat", stat = "kills_rare", target = 2}, {stats = {kills_rare = 1}}), "condDone: not yet")
 end
+-- O761: the Helper step: Auto setup sends mqHelper on the goals channel
+sweep.onThink(1000)
+eq(p.store[key("step")], 1, "no Auto setup yet")
+-- goals.lua passes every action of its channel through the limiter ("goals." .. action) before it calls in here: the
+-- main quest must not ask the limiter again under that key (it would always be refused)
+local savedRL = ChaosRateLimit
+local seen = {}
+ChaosRateLimit = {allow = function(_, k) if seen[k] then return false end seen[k] = true return true end}
+check(not Chaos.limited(p, "goals.mqHelper", 300), "goals.lua's own pass of the limiter")
+W.onAction(p, {action = "mqHelper"})
+ChaosRateLimit = savedRL
+eq(p.store[key("step")], 2, "Auto setup is step 1")
+local bank1 = p.bank
+eq(bank1, K.gold(cfg, income, S.helper), "its gold")
+W.onAction(p, {action = "mqHelper"})
+eq(p.store[key("step")], 2, "a second press moves nothing")
 -- the talk: the NPC script sets the flag (its own Lua state does it with K.talk)
 sweep.onThink(1000)
-eq(p.store[key("step")], 1, "not yet")
+eq(p.store[key("step")], 2, "not yet")
 K.talk(cfg, function(k) return p:getStorageValue(key(k)) end, function(k, val) p:setStorageValue(key(k), val) end)
 sweep.onThink(1000)
-eq(p.store[key("step")], 2, "the talk is step 1")
-eq(p.bank, K.gold(cfg, income, S.warden), "its gold")
-check(said(p, "Warden Ysolde: "), "Ysolde's line"); check(said(p, "Main quest 1/" .. #cfg.steps), "the done line")
+eq(p.store[key("step")], 3, "the talk is step 2")
+eq(p.bank, bank1 + K.gold(cfg, income, S.warden), "its gold")
+check(said(p, "Warden Ysolde: "), "Ysolde's line"); check(said(p, "Main quest 2/" .. #cfg.steps), "the done line")
 eq(p.store[key("flags")], 0, "the talk flag is cleared for the next talk")
--- the cast
-p.cooldown = true
-sweep.onThink(1000)
-eq(p.store[key("step")], 3, "a cast")
 -- a visit: the position
 sweep.onThink(1000)
 eq(p.store[key("step")], 3, "far from the Troll ground")
@@ -1006,7 +1019,8 @@ check(gsrc:find("ChaosMainQuest.skip", 1, true) and gsrc:find("ChaosMainQuest.fo
 -- every flag has a source: a hook of another system, the client's Go button (acks), a probe or a storage
 local HOOKS = {potion = "potions.lua", daily = "daily.lua", market = "market.lua", loadout = "loadouts.lua", bank = "bank.lua",
 	salvage = "salvage.lua", stash = "stash.lua", gambler = "gamble.lua", portal = "townportal.lua", teleports = "hunt_teleports.lua"}
-local OTHER = {sell = "data/npc/scripts/loot_buyer.lua", door = "data/npc/scripts/chaos_faction_npc.lua"}
+local OTHER = {sell = "data/npc/scripts/loot_buyer.lua", door = "data/npc/scripts/chaos_faction_npc.lua",
+	helper = "data/scripts/chaos/mainquest.lua"} -- O761: the client action mqHelper (Auto setup)
 local PROBED = {autoloot = true, weekly = true}
 local acks = {}
 for _, a in ipairs(cfg.acks) do acks[a] = true end

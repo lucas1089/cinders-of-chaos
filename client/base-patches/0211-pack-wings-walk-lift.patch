@@ -1,0 +1,84 @@
+# Chaos: a pack wing's levitation holds steady while its wearer walks (O762; client/BASE.md "0211"; src/client/chaospiecewalk.h
+# (new, pure), outfit.cpp; after 0001-0210).
+# Owner 2026-11-24: "usar a asa parece que deixa o personagem mais lento". The lift of 0209 moved the body by its wings' frame on the
+# 83 ms clock while it walked too, on the oblique height (x = y), so the body's pace on screen was not the walk's. While the wearer
+# walks (walkAnimationPhase > 0) the body is drawn at the mean of its wings' lift row (chaos::piece::drawnLift); standing, it
+# floats as before. The step time and the server speed are untouched. The Float option (O762) is Lua only: client_chaos_wingfit
+# hands the pieces in without their lift rows, so a body stays on the ground and this patch draws no lift either.
+diff -ruN a/src/client/chaospiecewalk.h b/src/client/chaospiecewalk.h
+--- /dev/null
++++ b/src/client/chaospiecewalk.h
+@@ -0,0 +1,51 @@
++// Cinders of Chaos (base patch 0211): a pack wing's levitation while its wearer walks (O762).
++// Pure and header-only so client/tools/chaospiecewalk_test.cpp can run it without the engine; it reads the tables of
++// chaospiece.h (base patch 0209).
++// Owner 2026-11-24: "usar a asa parece que deixa o personagem mais lento". The lift of 0209 moves the body by its wings'
++// frame on the 83 ms clock, on the oblique height (x = y, up and left), 1 to 4 px over a loop of 1.3 to 2 s, whatever the
++// body does. Standing, that is the float. Walking, the body also slides one tile a step; the lift then runs with or
++// against the step (a walk south or east goes down and right, the lift's rise goes up and left), so the body's pace on
++// screen is no longer the walk's and the walk seems to drag. While the wearer walks the lift holds at the row's mean, so
++// the body moves exactly with the walk; standing, it floats as before. A wings look without a row lifts nothing either
++// way (the Float option off, client_chaos_wingfit: no row is handed in).
++#ifndef CHAOSPIECEWALK_H
++#define CHAOSPIECEWALK_H
++
++#include "chaospiece.h"
++
++namespace chaos {
++namespace piece {
++
++// the mean of a sum over n values, to the nearest whole pixel (a half away from zero)
++inline int roundedMean(long sum, long n)
++{
++    if (n <= 0)
++        return 0;
++    return static_cast<int>(sum >= 0 ? (2 * sum + n) / (2 * n) : -((-2 * sum + n) / (2 * n)));
++}
++
++// the steady lift of a wings look: the mean of its row (0, 0 without a row)
++inline Point2 steadyLift(int look)
++{
++    auto it = tables().lifts.find(look);
++    if (it == tables().lifts.end() || it->second.empty())
++        return Point2{};
++    long sx = 0, sy = 0;
++    for (const Point2& p : it->second) {
++        sx += p.x;
++        sy += p.y;
++    }
++    const long n = static_cast<long>(it->second.size());
++    return Point2{ roundedMean(sx, n), roundedMean(sy, n) };
++}
++
++// the lift the body is drawn with: the frame's while it stands, the steady one while it walks
++inline Point2 drawnLift(int look, int frame, bool walking)
++{
++    return walking ? steadyLift(look) : lift(look, frame);
++}
++
++}  // namespace piece
++}  // namespace chaos
++
++#endif
+diff -ruN a/src/client/outfit.cpp b/src/client/outfit.cpp
+--- a/src/client/outfit.cpp
++++ b/src/client/outfit.cpp
+@@ -32,6 +32,7 @@
+ #include "chaosheadfit.h"
+ #include "chaospiece.h"
+ #include "chaoswear.h"
++#include "chaospiecewalk.h"
+ 
+ #include <framework/graphics/painter.h>
+ #include <framework/graphics/drawcache.h>
+@@ -442,7 +443,9 @@
+         wingDest = dest + Point(at.x, at.y) * g_sprites.getOffsetFactor();
+         packPlaced = true;
+         if (!riding) {
+-            const chaos::piece::Point2 lift = chaos::piece::lift(m_wings, packPhase);
++            // Cinders of Chaos (base patch 0211): walking, the body holds the steady lift (the mean of the row), so it moves
++            // with the walk; standing, the lift of the frame (the float)
++            const chaos::piece::Point2 lift = chaos::piece::drawnLift(m_wings, packPhase, walkAnimationPhase > 0);
+             m_chaosLift = Point(lift.x, lift.y) * g_sprites.getOffsetFactor();
+             dest += m_chaosLift;
+         }

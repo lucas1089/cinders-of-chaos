@@ -5767,6 +5767,15 @@ hint above it; a click on it ends the blink and runs Auto setup as usual. Nothin
 helpers `O.plan` / `O.blinkFrames`, `onboarding_test.lua`. Server side: `newplayer.lua` `NP.showWelcome`,
 `newplayer_config.lua` `welcome.helper`.
 
+Quiet first login (O761, server/README.md "Quiet first login (O761)"): a character made after O761 gets no welcome toast
+and no Helper at its first login. Only the Daily Reward window opens. `game_daily` marks it `howQuiet` while the server
+opened it by itself (`Login == 1`), so `game_howitworks` brings no card for it; a later open by the player does. Then
+the main quest starts on "Set up your Helper". `game_goals` `runWhere`: a row whose place is the Helper window
+(`goalsview.lua` `V.isHelper`) opens it through `ChaosHelperOnboarding.open` with the Auto setup blink and the hint
+"Press Auto setup: ...". Auto setup (`autosetup_ui.lua` `apply`) calls `modules.game_goals.helperSetUp`, which sends
+`mqHelper` on the goals opcode (178) and the step is done. Unity: `Goals.HelperSetUp` from `HelperWindow.PressAutoSetup`.
+Tests: `goalsview_test.lua`, `howitworks_test.lua`.
+
 ### Helper spell lists (`game_helper/spellinfo_logic.lua`, O311)
 The helper's spell pickers (shooter slots, healing rows, mana training, haste) list a spell as `Name   120 mana | AOE circle 3 | 4 s`
 (mana or its share of the maximum, single target / AOE with the shape and size / self, cooldown) and show the whole data in a
@@ -8270,6 +8279,30 @@ only). `gen_wst_wear.py build` refuses a pair whose items do not end at 44605, w
 fail `gen_cliff_art.py live`. Not built here: the coordinator builds and publishes pair 83 with the owner's approval, then
 `PAIR_ASSETS` 83. Before that: `live-pair` checks that read the replaced wings looks (`clean_wing_shadows.py check-clean`,
 `gen_wing_centres.py --check`, `gen_drawn_wings.py live`) will see the pack art on 73 looks and need their tables refreshed on pair 83.
+
+## Customise Character: footprints, store links, Float (O762, owner 2026-11-24)
+
+Modules `game_outfitextras`, `game_unlocks`, `client_chaos_wingfit`. No new opcode.
+- **Effect footprints shown.** The window knew only print art (`r.art`). The 20 effect footprints of O649 (effects
+  5334-5353, pair 75) have no art, only `play` and `e`. So the card, the hover preview and the strip were empty.
+  `customisecore.lua` `C.footprintIcon(r)`: the print when the row has art, else the effect (`{kind='play'}`).
+  `cosmeticOption` gives an effect footprint a hover look (`footfx`). The in-game path was right. No footprint is drawn
+  in a protection zone, by design. Test: `customisecore_test.lua` "every footprint shows (O762)" loads the server's
+  `cosmetics_config.lua` and `chaos_footprint_fx_ids.lua`: every footprint has a card icon, a hover look and an effect
+  id inside 5334-5353; 20 effect footprints. It fails on the old code.
+- **A card not owned.** The tooltip says how it is got, from the server's source text, in pt-BR (`C.howText`: the
+  exact key, else the server's patterns: Store, Boss, PvP, Chaos Pact, Collection score, Daily reward, Achievements,
+  Class, Founder Pack, Free; addons). `C.cardTooltip`: name, "Not unlocked yet.", "How to get it: ...", the store line.
+  A Store button on the card (`storeLink`, top right) opens `game_shop.openCategory(category)` when the server names a
+  store category: `b` of a wardrobe entry (outfits, mounts, wings, auras, shaders) and `shop` of a cosmetics row.
+  `E.shopName` and `U.shopName` take at most 40 plain characters. Frames (client `FRAME_CATALOG`) and pets have no link.
+- **Float.** A check on the layers row: "Float" (pt-BR "Flutuar"). Off: the pack wings hand in no lift rows
+  (`wingfit_core.lua` `applyPieces(..., levitate)`), the body stands on the ground, the wings are still drawn. Saved per
+  client in `g_settings` key `chaosWingLevitation`, default on (`isLevitation`, `setLevitation`).
+- **Wings and speed.** No speed rule reads wings. The float of base patch 0209 moved the body while walking, so the
+  walk looked slower. Base patch 0211 holds the lift while walking (client/BASE.md "0211").
+- Tests: `customisecore_test.lua`, `unlocks_core_test.lua`, `wingfit_core_test.lua` (Float off: 0 lifts) in the client
+  loop; `chaospiece_test.cpp`, `chaospiecewalk_test.cpp`; server `tests/wardrobe_test.lua`, `tests/cosmetics_test.lua`.
 
 ## Collection log (O753, `game_collectionlog`)
 

@@ -52,6 +52,12 @@ namespace Chaos.Client
         {
             if (w == null) return false;
             if (w.K == "info" && w.Page.Length > 0) { OpenInfoPage(w.Page); return true; }
+            // O761: the main quest's first step: the Helper opens on Auto setup, which blinks with the hint (the openHelper toast's path)
+            if (w.IsHelper && session?.Hud != null)
+            {
+                session.Hud.Toasts.RequestHelper(Loc.T(HelperOnboarding.QuestHint));
+                return true;
+            }
             if (w.K == "window" && ModuleWindows.TryGetValue(w.M, out string cls))
             {
                 var win = WindowNamed(cls);

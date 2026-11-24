@@ -201,5 +201,19 @@ eq(info.howKey, nil, 'another page: no card key'); eq(info.howButton == nil, tru
 info:hide(); info:show(); handlers[info].onVisibilityChange(info, true)
 eq(root.visible, false, 'shown on a page with no card: no card')
 
+-- O761: a window opened by itself (the Daily Reward at a first login, howQuiet) brings no card; the player's own opening does
+g_game = { getCharacterName = function() return 'Di' end }
+hide()
+local daily = widget('DailyWindow')
+daily.visible = false
+attach(daily, 'tower')
+daily.howQuiet = true
+daily:show(); handlers[daily].onVisibilityChange(daily, true)
+eq(root.visible, false, 'a window opened by itself: no card')
+daily.howQuiet = nil
+daily:hide(); daily:show(); handlers[daily].onVisibilityChange(daily, true)
+eq(root.visible, true, 'the player opens it: the card, the first time')
+hide()
+
 print(string.format('howitworks: %d checks, %d failed', count, fails))
 if fails > 0 then os.exit(1) end

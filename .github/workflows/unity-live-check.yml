@@ -6,16 +6,11 @@ name: Unity live check
 # run. Scenarios: login and walk, tooltip, stairs, floor change, NPC trade, sell, party, shared kill, death, rift, modal
 # (unity/README.md "Live check in CI"). A failed run or scenario fails the job; a skip is listed in the summary.
 # No secret is used: the guard key of the Chaos identity is made in the run (openssl rand) for tfs and the client alike.
-# About 45 minutes (the install of the content takes about 12). Manual, and on pull requests that touch what it checks.
+# About 45 minutes (the install of the content takes about 12). Manual only: the Unity client is on hold (owner 2026-11-24),
+# so pull requests no longer start it.
 
 on:
   workflow_dispatch:
-  pull_request:
-    paths:
-      - "unity/Client/Assets/Chaos/Core/**"
-      - "unity/Core.LiveCheck/**"
-      - "tools/ci/unity_live_check.sh"
-      - ".github/workflows/unity-live-check.yml"
 
 permissions:
   contents: read

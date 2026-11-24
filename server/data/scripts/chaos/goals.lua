@@ -316,13 +316,22 @@ local function trackerSig(rows, lang)
 	return lang .. "|" .. K.sig(rows)
 end
 
+-- O761: on a quiet first login the Next Goals rows of the tracker wait for their introduction (intros.lua `goals`); the main
+-- quest rows (mainquest.lua) are not these
+function G.introRows(player, rows)
+	if ChaosIntros and ChaosIntros.allowed and not ChaosIntros.allowed(player, "goals") then
+		return {}
+	end
+	return rows
+end
+
 function G.sendTracker(player)
 	local st = G.st[player:getGuid()]
 	if not st then
 		return
 	end
 	local lang = G.langOf(player)
-	local rows = K.tracker(cfg, ctxOf(player, st), lang, cfg.tracked)
+	local rows = G.introRows(player, K.tracker(cfg, ctxOf(player, st), lang, cfg.tracked))
 	st.trackerSig = trackerSig(rows, lang)
 	Chaos.send(player, OPCODE, "tracker", {rows = rows})
 end
@@ -337,7 +346,7 @@ function G.refresh(player)
 	end
 	local lang = G.langOf(player)
 	local view = K.view(cfg, ctxOf(player, st), lang, nil)
-	local rows = K.trackerOf(view, cfg.tracked)
+	local rows = G.introRows(player, K.trackerOf(view, cfg.tracked))
 	local sig = trackerSig(rows, lang)
 	if sig ~= st.trackerSig then
 		st.trackerSig = sig

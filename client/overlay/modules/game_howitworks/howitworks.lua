@@ -13,7 +13,8 @@
 --   reposition()                        the card left of the side dock again (game_chaosdock calls it when it widens)
 -- First open (owner request 2026-11-03): attach() also watches the window; the first time a character sees it, the card
 -- opens by itself (once per character and card, settings node chaos_howitworks_seen). The card's check box turns this
--- off for every character (setting chaos_howitworks_auto, on by default).
+-- off for every character (setting chaos_howitworks_auto, on by default). A window with `howQuiet` set opened by itself (O761: the
+-- Daily Reward at a first login): no card then, it comes the first time the player opens it.
 
 local H = HowCore
 local window
@@ -146,7 +147,8 @@ end
 local function watch(target)
   local function check()
     local key = target.howKey
-    if key and alive(target) and visible(target) and firstOpen(key) then
+    -- howQuiet: the window opened by itself (the Daily Reward at login, O761): no card now, it stays due for the next opening
+    if key and not target.howQuiet and alive(target) and visible(target) and firstOpen(key) then
       local later = rawget(_G, 'scheduleEvent')
       if later then later(function() show(key) end, 250) else show(key) end
     end

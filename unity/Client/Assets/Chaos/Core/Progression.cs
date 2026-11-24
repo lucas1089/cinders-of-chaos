@@ -161,6 +161,9 @@ namespace Chaos.Core
             return w;
         }
 
+        /// <summary>The Helper window (game_goals goalsview.lua V.isHelper): the main quest's first step opens it on Auto setup (O761).</summary>
+        public bool IsHelper => K == "window" && M == "game_helper";
+
         /// <summary>The button text, or null when the row has no action (the main client's V.whereButton).</summary>
         public string Button()
         {
@@ -232,6 +235,8 @@ namespace Chaos.Core
         public void Close() { Watching = false; ext.Send(Opcode, "close", new Dictionary<string, object>()); }
         public void RequestTracker() { ext.Send(Opcode, "tracker", new Dictionary<string, object>()); }
         public void SkipWelcome() { ext.Send(Opcode, "welcomeSkip", new Dictionary<string, object>()); }
+        /// <summary>O761: Auto setup was pressed; the main quest's first step (set up the Helper) is done (server mainquest.lua mqHelper).</summary>
+        public void HelperSetUp() { ext.Send(Opcode, "mqHelper", new Dictionary<string, object>()); }
 
         static void Fill(List<GoalRow> list, List<object> rows)
         {

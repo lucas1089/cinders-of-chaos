@@ -10,7 +10,7 @@
   "closed": 15,
   "opcode": 77,
   "out": 24,
-  "passive": 116,
+  "passive": 117,
   "place": 15,
   "staff": 21
  },
@@ -12804,6 +12804,15 @@
     "/instances"
    ],
    "why": "staff command only (/instances); testers are never staff"
+  },
+  "intros": {
+   "files": [
+    "intros.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
   },
   "invasion": {
    "files": [

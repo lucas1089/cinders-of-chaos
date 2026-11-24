@@ -66,6 +66,7 @@ SERVER = os.path.dirname(HERE)
 ROOT = os.path.dirname(SERVER)
 sys.path.insert(0, HERE)
 sys.path.insert(0, os.path.join(ROOT, 'tools', 'map'))
+import client_pair  # noqa: E402  the pair gate of PAIR_ITEMS
 
 PLANS_DIR = os.path.join(HERE, 'areaplan', 'plans')
 EVENTS_DIR = os.path.join(HERE, 'areaplan', 'events')
@@ -273,6 +274,26 @@ def read_area(out_dir, pid):
         if problems:
             raise InstallError('%s: the view frame is not a planner OTBM: %s' % (pid, problems[0]))
     return tiles, man, frame
+
+
+# Items a plan may lay that only exist from a later client pair, with the stock item a server below that pair gets
+# instead (the compile output and its cache stay as they are). The campfire of the camp building kind (O740) is the
+# flame campfire 48561 of the decor flames (O623, install step decorflames, pair 74); without pair 74 items.otb has no
+# such item and the engine refuses the whole map ("Failed to create item"), so the stock campfire 1428 stands in.
+PAIR_ITEMS = {48561: (client_pair.PAIR_DECOR, 1428)}
+
+
+def pair_swap(tiles, pair, table=PAIR_ITEMS):
+    """swap in place the items of `table` whose pair is above `pair` (None: no key, below every pair); returns the count"""
+    n = 0
+    for t in tiles.values():
+        items = t['items']
+        for i, (iid, attrs) in enumerate(items):
+            row = table.get(iid)
+            if row and (pair is None or pair < row[0]):
+                items[i] = (row[1], attrs)
+                n += 1
+    return n
 
 
 def frame_fill(world, areas, pids, claimed):
@@ -1477,6 +1498,7 @@ def run(data_dir, dry=False, only=None, room_on=True, plans_dir=PLANS_DIR, confi
         if cache_dir:
             cache_dir = os.path.join(cache_dir, 'areaplan')
         used, hits = set(), 0
+        pair_now = client_pair.recorded(data_dir)
         for pid, (path, plan) in list(plans.items()) + list(fixed.items()):
             out = (compiled or {}).get(pid)
             if not out:
@@ -1484,6 +1506,10 @@ def run(data_dir, dry=False, only=None, room_on=True, plans_dir=PLANS_DIR, confi
                 out = compiled_area(path, out, cache_dir, used, log)
                 hits += out != os.path.join(tmp, pid)
             tiles, man, frame = read_area(out, pid)
+            swapped = pair_swap(tiles, pair_now)
+            if swapped:
+                log('%s: %d item(s) of a later client pair laid as their stock stand-in (chaosClientPair %s)'
+                    % (pid, swapped, pair_now if pair_now is not None else 'missing'))
             areas[pid] = dict(out=out, tiles=tiles, man=man, plan=plan, frame=frame)
         if cache_dir and not compiled:
             gone = cache_prune(cache_dir, used) if not only else 0

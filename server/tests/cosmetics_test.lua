@@ -1458,4 +1458,37 @@ do
 	ids.on = false
 end
 
+-- O762: the Store button of the Customise Character window. Every cosmetic on sale names the store category that sells it
+-- (wardrobe_core.lua W.storeIndex on the store's categories, as cosmetics.lua sendState sends it), the effect footprints of pair
+-- 75 included; a cosmetic not on sale (achievement, boss, collection ...) names none and its row still says how it is got.
+do
+	dofile("data/scripts/chaos/wardrobe_core.lua")
+	local ids = dofile("data/lib/chaos_footprint_fx_ids.lua")
+	ids.on = true
+	ids.merge()
+	ChaosFootprintFxIds = ids
+	local cfgOn = dofile("data/scripts/chaos/cosmetics_config.lua")
+	local shopOn = dofile("data/scripts/chaos/shop_config.lua")
+	ChaosFootprintFxIds = nil
+	local idx = ChaosWardrobeCore.storeIndex(shopOn)
+	local kinds = {}
+	for _, k in ipairs(cfgOn.kinds) do kinds[k.key] = k.store end
+	local sold, notSold = 0, 0
+	for _, c in ipairs(cfgOn.cosmetics) do
+		local cat = idx.unlock[K.UNLOCK_PREFIX .. c.key]
+		if c.source == "store" and c.price then
+			sold = sold + 1
+			eq(type(cat), "string", c.key .. " is on sale: its store category")
+		elseif c.source ~= "store" then
+			notSold = notSold + 1
+			eq(cat, nil, c.key .. " is not sold: no store link")
+			local how = K.how(c, "x", "y")
+			eq(type(how) == "string" and how ~= "", true, c.key .. " says how it is got")
+		end
+	end
+	eq(sold >= 20 and notSold > 0, true, "store and other cosmetics checked: " .. sold .. " / " .. notSold)
+	eq(idx.unlock.cosmetic_foot_heart, kinds.footprint, "an effect footprint links to the Footprints category")
+	ids.on = false
+end
+
 print(string.format("cosmetics_test: %d checks OK", n))
