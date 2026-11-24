@@ -2,11 +2,14 @@
 // the left, the steps of the chosen chapter on the right, the epilogue cards after the last chapter. Styles from client_chaos_theme.
 // Opened from the tracker ("Chapters and steps") or Adventure > Main Quest.
 
+// the text wraps: in the side dock's column (O760) a chapter name ran past the button's edge; mainquest.lua makes the
+// button as tall as its lines (the engine draws a text at the text offset, not inside the padding)
 MQChapterButton < ChaosButton
   height: 34
   margin-bottom: 4
   text-align: left
-  padding-left: 8
+  text-offset: 8 0
+  text-wrap: true
   font: verdana-11px-antialised
 
 MQStepRow < UIWidget
@@ -25,9 +28,11 @@ MQStepRow < UIWidget
     margin-top: 5
     margin-left: 8
     margin-right: 8
+    height: 14
     font: verdana-11px-rounded
     color: #f6cf72
-    text-align: left
+    text-align: topleft
+    text-wrap: true
     phantom: true
 
   UILabel

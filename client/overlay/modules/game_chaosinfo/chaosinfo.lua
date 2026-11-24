@@ -28,6 +28,8 @@ local stateButtons = {} -- {widget, button} of the page shown that depend on the
 local services         -- last Services state (nil until the server answered)
 local lastResult = ''  -- last command answer on the Services page
 local storeData        -- last Ancestral Store answer
+local builtWidth       -- the width of the rows when they were built (O760: built again when it changes)
+local rebuildEvent
 
 local function send(action, data)
   local protocol = g_game.getProtocolGame()
@@ -167,8 +169,12 @@ local function buildRows(page)
   rows:destroyChildren()
   fields = {}
   stateButtons = {}
+  -- the room the rows have now: in the side dock's column (O755) that is about 150 px, and the buttons wrap to it (O760:
+  -- the rows were built for the window's own width before the dock took it, and "Kills" was cut at the column's edge)
   local avail = rows:getWidth()
-  if avail < 200 then avail = window:getWidth() - 32 - 150 end
+  builtWidth = avail
+  if avail <= 0 then avail = window:getWidth() - 32 - 150 end
+  local fieldWidth = math.max(60, math.min(150, avail - 84 - ROW_SPACING))
   local lines = 0
   for _, row in ipairs(page.rows or {}) do
     local visible = {}
@@ -188,16 +194,16 @@ local function buildRows(page)
       local indent = used
       if row.edit then
         local e = g_ui.createWidget('ChaosTextEdit', line)
-        e:setWidth(150)
+        e:setWidth(fieldWidth)
         e:setHeight(24)
         e:setMaxLength(60)
         if row.hint then e:setTooltip(tr(row.hint)) end
         if e.setPlaceholder and row.hint then e:setPlaceholder(tr(row.hint)) end
         fields[row.edit] = e
-        used = used + (used > 0 and ROW_SPACING or 0) + 150
+        used = used + (used > 0 and ROW_SPACING or 0) + fieldWidth
       elseif row.combo then
         local c = g_ui.createWidget('ChaosComboBox', line)
-        c:setWidth(150)
+        c:setWidth(fieldWidth)
         c:setHeight(24)
         if row.hint then c:setTooltip(tr(row.hint)) end
         if row.combo == 'vocations' then
@@ -206,7 +212,7 @@ local function buildRows(page)
           fillCombo(c, V.frameOptions(services and services.frames), tr('No frames yet'))
         end
         fields[row.combo] = c
-        used = used + (used > 0 and ROW_SPACING or 0) + 150
+        used = used + (used > 0 and ROW_SPACING or 0) + fieldWidth
       end
       -- create the buttons on the first line to measure them, then move the ones that do not fit
       local widgets, widths = {}, {}
@@ -230,6 +236,28 @@ local function buildRows(page)
   end
   rows:setHeight(lines * 30)
   applyState()
+end
+
+-- the rows built again when their width changed (the dock took the window or gave it back); the typed fields keep
+-- their text
+local function rebuildRows()
+  rebuildEvent = nil
+  if not window or not current then return end
+  local w = window.rows:getWidth()
+  if w <= 0 or w == builtWidth then return end
+  local typed = {}
+  for id, f in pairs(fields) do
+    if f.getClassName and f:getClassName() == 'UITextEdit' then typed[id] = f:getText() end
+  end
+  buildRows(V.page(current))
+  for id, text in pairs(typed) do
+    if fields[id] and fields[id].setText then fields[id]:setText(text) end
+  end
+end
+
+local function onRowsGeometry()
+  if rebuildEvent then removeEvent(rebuildEvent) end
+  rebuildEvent = scheduleEvent(rebuildRows, 50)
 end
 
 -- ---------------------------------------------------------------- Ancestral Store
@@ -434,6 +462,7 @@ end
 function init()
   window = g_ui.displayUI('chaosinfo')
   window:hide()
+  connect(window.rows, { onGeometryChange = onRowsGeometry })
   ProtocolGame.registerExtendedOpcode(OPCODE, onExtendedOpcode)
   connect(g_game, { onGameStart = onGameStart, onGameEnd = onGameEnd })
   buildPageList()
@@ -441,6 +470,7 @@ function init()
 end
 
 function terminate()
+  if rebuildEvent then removeEvent(rebuildEvent) rebuildEvent = nil end
   disconnect(g_game, { onGameStart = onGameStart, onGameEnd = onGameEnd })
   ProtocolGame.unregisterExtendedOpcode(OPCODE)
   if window then window:destroy() window = nil end

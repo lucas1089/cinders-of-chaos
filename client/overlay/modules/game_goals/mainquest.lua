@@ -5,8 +5,9 @@ local V = GoalsView
 local mqWindow
 local chosen -- the chapter shown
 
--- the intro and each step's hint as tall as their wrapped lines: in the side dock's one column (O755) a hint of two lines at
--- 760 px wraps to five and ran over the next row
+-- the intro, each step's title and hint and each chapter button as tall as their wrapped lines: in the side dock's one
+-- column (O755) a hint of two lines at 760 px wraps to five and ran over the next row, a step title and a chapter name
+-- ran past the column's edge (O760)
 local fitEvent
 local function textHeight(label)
   local ok, size = pcall(function() return label:getTextSize() end)
@@ -19,10 +20,15 @@ local function fitRows()
   if not mqWindow or not mqWindow:isVisible() then return end
   local ih = textHeight(mqWindow.introLabel)
   if ih > 0 then mqWindow.introLabel:setHeight(math.max(32, ih + 2)) end
+  for _, b in ipairs(mqWindow.chapterList:getChildren()) do
+    b:setHeight(math.max(34, textHeight(b) + 12))
+  end
   for _, row in ipairs(mqWindow.stepList:getChildren()) do
+    local th = math.max(14, textHeight(row.title))
+    row.title:setHeight(th)
     local h = math.max(28, textHeight(row.hint))
     row.hint:setHeight(h)
-    row:setHeight(math.max(52, h + 26))
+    row:setHeight(math.max(52, th + h + 12))
   end
 end
 

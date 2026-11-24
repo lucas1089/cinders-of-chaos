@@ -164,6 +164,52 @@ eq(#COL.faults({ rules = { { id = 'a', col = { right = 'parent.right' } } } }), 
 eq(#COL.faults({ rules = { { id = 'a', col = { wide = 1 } } } }), 1, 'an unknown key is a fault')
 eq(#COL.faults({ rules = { { id = 'a', col = { top = 'b.middle' }, home = { top = false } } } }), 1, 'a bad edge is a fault')
 eq(#COL.faults({ rules = { { id = 'a', col = { height = 4 }, home = { height = 2 } } } }), 1, 'home sets anchors only')
+eq(#COL.faults({ rules = { { id = 'a', col = { wrap = 1 } } } }), 1, 'wrap is a boolean')
+eq(#COL.faults({ rules = { { id = 'a', col = { width = 9 }, autoResize = true } } }), 1, 'autoResize needs wrap')
+eq(#COL.faults({ rules = { { id = 'a', col = { wrap = true }, autoResize = true } } }), 0, 'a wrapped label')
+
+-- no part of a column window is wider than the column (O760): a fixed width over 154 px needs both sides anchored in
+-- the column (by its .otui or its layout), a narrower width or no show there
+local function readFile(path)
+  local f = io.open(path)
+  eq(f ~= nil, true, 'file ' .. path)
+  local text = f:read('*a')
+  f:close()
+  return text
+end
+local hosted = { Inventory = 'game_bagpanel/bagpanel.otui' }
+for entry, layout in pairs(COL.LAYOUTS) do
+  if layout.otui then hosted[entry] = layout.otui end
+end
+local seen = 0
+for entry, file in pairs(hosted) do
+  seen = seen + 1
+  local wide = COL.wideParts(readFile(here .. '../' .. file), COL.layout(entry))
+  eq(table.concat(wide, '; '), '', 'nothing wider than the column: ' .. entry)
+end
+eq(seen, 5, 'every column window with an .otui here (the Quest Log is a base module)')
+local sample = table.concat({
+  'Row < UIWidget', '  width: 300', '  $mobile:', '    width: 900',
+  'ChaosMainWindow', '  size: 760 500', '  @onSetup: |', '    self:x()', '    width: 999',
+  '  UILabel', '    id: wideOne', '    anchors.left: parent.left', '    width: 200',
+  '  UILabel', '    id: both', '    anchors.left: parent.left', '    anchors.right: parent.right', '    width: 400',
+  '  Panel', '    id: frame', '    anchors.left: parent.left', '    size: 230 40',
+  '    UIWidget', '      id: inner', '      anchors.fill: parent', '      width: 500',
+  '  UILabel', '    id: hid', '    width: 300',
+  '  UILabel', '    id: narrow', '    width: 300',
+  '  UILabel', '    id: small', '    width: 154',
+}, '\n')
+local probe = { rules = {
+  { id = 'frame', col = { right = 'parent.right' }, home = { right = false } },
+  { id = 'hid', col = { visible = false } },
+  { id = 'narrow', col = { width = 130, wrap = true } },
+} }
+eq(table.concat(COL.wideParts(sample, probe), '; '), '? (line 1): width 300; wideOne (line 10): width 200',
+  'a style and a widget wider than the column')
+eq(#COL.wideParts(sample, { rules = {} }), 5, 'without the layout: frame, hid and narrow too')
+eq(#COL.otuiWidgets(sample), 9, 'widgets of the sample')
+eq(COL.COLUMN, 154, 'the column with the scroll bar')
+
 eq(COL.target('parent.right'), 'parent', 'target id'); eq(select(2, COL.target('stats.bottom')), 'bottom', 'target edge')
 
 -- the dock stops above the hotbar only when the two meet

@@ -259,7 +259,25 @@ local function anchor(part, edge, target)
   end
 end
 
+-- a label wraps at the column's edge and is as tall as its lines (O760); off, it has its own wrap and its .otui's
+-- text-auto-resize again (rule.autoResize)
+local function setWrap(part, on, wrap, autoResize)
+  if on then
+    pcall(part.setTextHorizontalAutoResize, part, false)
+    pcall(part.setTextWrap, part, true)
+    pcall(part.setTextVerticalAutoResize, part, true)
+  else
+    pcall(part.setTextVerticalAutoResize, part, false)
+    pcall(part.setTextWrap, part, wrap == true)
+    pcall(part.setTextAutoResize, part, autoResize == true)
+  end
+end
+
 local function setProp(part, key, value)
+  if key == 'wrap' then
+    if value == true then setWrap(part, true) end
+    return
+  end
   local s = SETTERS[key]
   local fn = s and part[s[2]]
   if fn then pcall(fn, part, value) end
@@ -282,6 +300,10 @@ local function layoutIn(rec, layout)
     if part then
       local saved = { part = part, rule = rule, props = {} }
       for _, key in ipairs({ 'width', 'height' }) do saved.props[key] = getProp(part, key) end
+      if rule.col.wrap then
+        local ok, wrap = pcall(part.getTextWrap, part)
+        saved.wrap = { wrap = ok and wrap == true }
+      end
       for key in pairs(rule.col) do
         if SETTERS[key] and saved.props[key] == nil then saved.props[key] = getProp(part, key) end
       end
@@ -291,6 +313,7 @@ local function layoutIn(rec, layout)
       for key, value in pairs(rule.col) do
         if SETTERS[key] then setProp(part, key, value) end
       end
+      if rule.col.wrap then setProp(part, 'wrap', true) end
       rec.layoutSaved[#rec.layoutSaved + 1] = saved
     end
   end
@@ -306,6 +329,7 @@ local function layoutOut(rec)
         local home = saved.rule.home and saved.rule.home[edge]
         if home ~= nil then anchor(part, edge, home) end
       end
+      if saved.wrap then setWrap(part, false, saved.wrap.wrap, saved.rule.autoResize) end
       for key, value in pairs(saved.props) do setProp(part, key, value) end
     end
   end
