@@ -38851,3 +38851,54 @@ The pity panel shows the count of every source above, the pinnacle bosses too.
 - Table `chaos_collection_log` (player, item, count, first date). The launch wipe clears it.
 - Menu: Hunt > Records > Collection Log. Unity: on the opcode allowlist, not ported yet.
 - Tests: `tests/collection_log_test.lua`; client `game_collectionlog/collectionlogic_test.lua`.
+
+## Hunt monsters above level 2000 (O763) (`data/monster/apex_hunt_swaps.csv`, install step `apexhunts`, client pair 84)
+
+Owner 2026-11-24: monsters above level 2000 for the six hall hunts of O759, art by PixelLab. Before O763 the top hunt
+monster was 2000 (Pyre Stork, Pyrewing Tyrant), the hunts of 2150-2500 used 1700-2000 monsters.
+
+- **Monsters** (files of ours in `data/monster/monsters/chaos/`, no boss, two a band, `<level>` +-20). Stats by
+  `tools/tune_monsters.py` `APEX_BAND`: `late_targets(L)` health, experience, speed, hit and heal, the speed moved a few points
+  per figure; resist caps (O462) and flat armour / defence (O505) by the same rules as every file of ours.
+
+  | outfit | monster | level | race | element | hunt | stand-in look |
+  |---|---|---|---|---|---|---|
+  | 3734 | Rimehide Mauler | 2100 | blood | ice | Rimewrath Steppe | 3400 |
+  | 3735 | Sorrowmere Weeper | 2100 | undead | death, ice | Sorrowmere Crossing | 3369 |
+  | 3736 | Rimewrath Lancer | 2200 | undead | ice, physical | Rimewrath Steppe | 3294 |
+  | 3737 | Bogwake Mourner | 2200 | venom | earth | Sorrowmere Crossing | 1449 |
+  | 3738 | Ashfall Penitent | 2300 | fire | fire, death | Ashfall Hamlet | 3401 |
+  | 3739 | Soot Hangman | 2300 | blood | physical, fire | Ashfall Hamlet, Cindervein Hollows | 3369 |
+  | 3740 | Emberlode Behemoth | 2400 | fire | fire, earth | Cindervein Hollows | 1449 |
+  | 3741 | Gravelight Warden | 2400 | undead | death, energy, holy | Gravelight Necropolis | 3369 |
+  | 3742 | Ossuary Matriarch | 2500 | undead | death | Gravelight Necropolis, The Umbral Maw | 3294 |
+  | 3743 | Umbral Devourer | 2500 | blood | death, energy | The Umbral Maw | 1532 |
+
+  Experience 60,750 (2100) to 78,000 (2500), health 34,400 to 36,200. Loot: the coin block of the late set and the gear
+  pool of Pyre Stork, no own drop.
+- **Looks.** The files keep a stand-in look of pair 83 (`data/monster/monster_apex_looks.csv`: monster, look, new_look,
+  written by `gen_apex_monsters.py looks`), as O726 did: `check_content.py` holds looks to the recorded pair, and the
+  monsters spawn nowhere before pair 84. look_idle.csv has the 10 new looks (idle group 4 phases, 2 pictures).
+- **Step `apexhunts`** (`tools/install_apex_hunts.py`, after `contentareas`). Guard `client_pair.PAIR_APEX_MONSTERS` = 84: below it
+  a WARNING and nothing written. At 84: each new monster file moves from its stand-in look to its new look; in the spawn file,
+  the blocks of a plan (`chaoscontent="PLAN"`) whose monsters are all the swap's old monster get the new name, chosen in file
+  order by the share (`int((i+1)s) > int(i s)`), marked `chaosapex="OLD"`; whole blocks only, so tiles and density stay. The
+  bounty pool gets the counts of the spawn file and a row for each new monster. Idempotent; a rerun after `contentareas`
+  moves the same blocks. A plan without blocks, a missing file or a file with a third look stops the step.
+- **Swaps** (`apex_hunt_swaps.csv`, monsters of the plan moved, out of its total):
+
+  | hunt | old -> new (share) | moved |
+  |---|---|---|
+  | rimewrath_steppe 2150-2350 | Oathbroken Colossus -> Rimehide Mauler (1), Gravecrown Oathbreaker -> Rimehide Mauler (0.5), Wraithbone Stalker -> Rimewrath Lancer (1) | about 81 of 225 |
+  | sorrowmere_crossing 2200-2400 | Gravecrown Oathbreaker -> Sorrowmere Weeper (1), Ironmask Warbreaker -> Bogwake Mourner (1) | 63 of 186 |
+  | ashfall_hamlet 2250-2450 | Ashveil Hierarch / Gnarlback -> Ashfall Penitent (0.5 each), Gravecrown Oathbreaker -> Soot Hangman (1) | about 59 of 189 |
+  | cindervein_hollows 2300-2500 | Gnarlback -> Emberlode Behemoth (1), Pyre Stork -> Emberlode Behemoth (0.25), Mirecoil Wyrm -> Soot Hangman (1) | about 66 of 177 |
+  | gravelight_necropolis 2350-2500 | Gravecrown Oathbreaker / Gnarlback -> Gravelight Warden (1), Mirecoil Wyrm -> Ossuary Matriarch (0.5) | about 86 of 300 |
+  | umbral_maw 2400-2500 | Gnarlback -> Umbral Devourer (1), Pyre Stork -> Umbral Devourer (0.34), Mirecoil Wyrm -> Ossuary Matriarch (1) | about 85 of 222 |
+
+  Every new monster is inside its hunt's band by the audit's slack 0.2 (`install_apex_hunts_test.py`).
+- **Models.** The committed pool does not list them, so every model is unchanged. On a copy with the pool of pair 84
+  (moved = share of each swap's plan count): unique_pace, gold_faucets, progression (`--check` and `--today`), chase_pity,
+  survival and descent pass.
+- **Open.** Pair 84 is not built (pair 83 is on windows-assets; building and pushing needs the owner). Then:
+  `chaos-ctl.sh client-pair set 84` or the admin app, and the install.
