@@ -125,6 +125,7 @@ function U.display(kind, stock, catalogue, label)
       local e = make({ l = c.l, n = c.n, label = kind == 'shader' and label and label(c.n) or nil })
       e.locked = true
       e.how = c.s
+      e.shop = c.b -- O762: the store category that sells it (the Customise window's Store button)
       out[#out + 1] = e
     end
   end
@@ -166,6 +167,12 @@ function U.presetLocked(outfit, sets)
 end
 
 -- ---------------------------------------------------------------- the wardrobe message
+-- a store category name the server sent (O762): plain words, at most 40 characters, else nil
+function U.shopName(v)
+  if type(v) ~= 'string' or v == '' or #v > 40 or not v:match("^[%w][%w %-&',]*$") then return nil end
+  return v
+end
+
 -- a server "wardrobe" answer -> {outfit, mount, wings, aura, shader} lists (bad parts dropped), or nil
 function U.readWardrobe(data)
   if type(data) ~= 'table' then return nil end
@@ -175,7 +182,7 @@ function U.readWardrobe(data)
     for _, c in ipairs(type(data[kind]) == 'table' and data[kind] or {}) do
       if type(c) == 'table' and (kind == 'shader' and type(c.n) == 'string' or num(c.l) > 0) then
         out[kind][#out[kind] + 1] = { l = num(c.l), n = type(c.n) == 'string' and c.n or '', o = c.o == 1 or c.o == true,
-          a = c.a, s = type(c.s) == 'string' and c.s or nil }
+          a = c.a, s = type(c.s) == 'string' and c.s or nil, b = U.shopName(c.b) }
       end
     end
   end

@@ -832,6 +832,18 @@ jobs:
           g++ -std=c++17 -O1 -fsanitize=address,undefined -I "$d" client/tools/chaospiece_test.cpp -o "$d/chaospiece_asan"
           "$d/chaospiece_asan"
 
+      - name: Pack wings hold their lift while the wearer walks (C++; headers from base patches 0209 and 0211, O762)
+        run: |
+          d=$(mktemp -d)
+          awk '/^\+\+\+ b\/src\/client\/chaospiece\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
+            client/base-patches/0209-pack-wings-levitation.patch > "$d/chaospiece.h"
+          awk '/^\+\+\+ b\/src\/client\/chaospiecewalk\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
+            client/base-patches/0211-pack-wings-walk-lift.patch > "$d/chaospiecewalk.h"
+          g++ -std=c++17 -O1 -Wall -Wextra -I "$d" client/tools/chaospiecewalk_test.cpp -o "$d/chaospiecewalk_test"
+          "$d/chaospiecewalk_test"
+          g++ -std=c++17 -O1 -fsanitize=address,undefined -I "$d" client/tools/chaospiecewalk_test.cpp -o "$d/chaospiecewalk_asan"
+          "$d/chaospiecewalk_asan"
+
       - name: Head and cape layer round the body (C++; header from base patch 0210, O747)
         run: |
           d=$(mktemp -d)

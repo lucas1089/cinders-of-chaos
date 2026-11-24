@@ -171,6 +171,15 @@ np, nl = C.applyPieces({ pieces = { { 5, 1, 2 }, { 0, 1, 1 }, { 6, 9, 0 }, 'x' }
   function() end, function(look) ok(look == 5, 'only the good lift ' .. look) end)
 ok(np == 1 and nl == 1, 'bad rows skipped')
 ok(C.applyPieces(nil) == 0, 'no table')
+-- O762: the Float option off: every piece, no lift (the body stays on the ground, the wings are still placed)
+local offPieces, offLifts = 0, 0
+np, nl = C.applyPieces(P, function() offPieces = offPieces + 1 end, function() offLifts = offLifts + 1 end, false)
+ok(np == 218 and offPieces == 218, 'float off: every piece still goes in')
+ok(nl == 0 and offLifts == 0, 'float off: no lift')
+np, nl = C.applyPieces(P, function() end, function() end, true)
+ok(nl == 74, 'float on: the lifts')
+ok(C.levitationOn(nil) and C.levitationOn(true) and C.levitationOn('true'), 'float is on by default')
+ok(not C.levitationOn(false) and not C.levitationOn('false'), 'float off when saved off')
 
 if fails > 0 then os.exit(1) end
 print('wingfit_core_test: all checks passed')

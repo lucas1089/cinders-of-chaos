@@ -8280,6 +8280,30 @@ fail `gen_cliff_art.py live`. Not built here: the coordinator builds and publish
 `PAIR_ASSETS` 83. Before that: `live-pair` checks that read the replaced wings looks (`clean_wing_shadows.py check-clean`,
 `gen_wing_centres.py --check`, `gen_drawn_wings.py live`) will see the pack art on 73 looks and need their tables refreshed on pair 83.
 
+## Customise Character: footprints, store links, Float (O762, owner 2026-11-24)
+
+Modules `game_outfitextras`, `game_unlocks`, `client_chaos_wingfit`. No new opcode.
+- **Effect footprints shown.** The window knew only print art (`r.art`). The 20 effect footprints of O649 (effects
+  5334-5353, pair 75) have no art, only `play` and `e`. So the card, the hover preview and the strip were empty.
+  `customisecore.lua` `C.footprintIcon(r)`: the print when the row has art, else the effect (`{kind='play'}`).
+  `cosmeticOption` gives an effect footprint a hover look (`footfx`). The in-game path was right. No footprint is drawn
+  in a protection zone, by design. Test: `customisecore_test.lua` "every footprint shows (O762)" loads the server's
+  `cosmetics_config.lua` and `chaos_footprint_fx_ids.lua`: every footprint has a card icon, a hover look and an effect
+  id inside 5334-5353; 20 effect footprints. It fails on the old code.
+- **A card not owned.** The tooltip says how it is got, from the server's source text, in pt-BR (`C.howText`: the
+  exact key, else the server's patterns: Store, Boss, PvP, Chaos Pact, Collection score, Daily reward, Achievements,
+  Class, Founder Pack, Free; addons). `C.cardTooltip`: name, "Not unlocked yet.", "How to get it: ...", the store line.
+  A Store button on the card (`storeLink`, top right) opens `game_shop.openCategory(category)` when the server names a
+  store category: `b` of a wardrobe entry (outfits, mounts, wings, auras, shaders) and `shop` of a cosmetics row.
+  `E.shopName` and `U.shopName` take at most 40 plain characters. Frames (client `FRAME_CATALOG`) and pets have no link.
+- **Float.** A check on the layers row: "Float" (pt-BR "Flutuar"). Off: the pack wings hand in no lift rows
+  (`wingfit_core.lua` `applyPieces(..., levitate)`), the body stands on the ground, the wings are still drawn. Saved per
+  client in `g_settings` key `chaosWingLevitation`, default on (`isLevitation`, `setLevitation`).
+- **Wings and speed.** No speed rule reads wings. The float of base patch 0209 moved the body while walking, so the
+  walk looked slower. Base patch 0211 holds the lift while walking (client/BASE.md "0211").
+- Tests: `customisecore_test.lua`, `unlocks_core_test.lua`, `wingfit_core_test.lua` (Float off: 0 lifts) in the client
+  loop; `chaospiece_test.cpp`, `chaospiecewalk_test.cpp`; server `tests/wardrobe_test.lua`, `tests/cosmetics_test.lua`.
+
 ## Collection log (O753, `game_collectionlog`)
 
 Hunt > Records > Collection Log. pt-BR strings in `client_chaos_locale/pt_br.lua`.

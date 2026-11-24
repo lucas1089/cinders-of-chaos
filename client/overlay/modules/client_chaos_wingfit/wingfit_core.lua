@@ -142,7 +142,9 @@ local function validLift(text)
   return n >= 2 and n % 2 == 0
 end
 
-function M.applyPieces(data, setPiece, setLift)
+-- levitate = false (O762, the option "Float" of the Customise Character window): the pieces go in, the lifts do not, so the
+-- engine draws the body on the ground under its pack wings (chaospiece.h: a wings look without a lift row lifts nothing)
+function M.applyPieces(data, setPiece, setLift, levitate)
   if type(data) ~= 'table' or type(data.pieces) ~= 'table' then return 0, 0 end
   local np = 0
   for _, row in ipairs(data.pieces) do
@@ -154,7 +156,7 @@ function M.applyPieces(data, setPiece, setLift)
     end
   end
   local nl = 0
-  if type(data.lifts) == 'table' then
+  if type(data.lifts) == 'table' and levitate ~= false then
     local ids = {}
     for look, text in pairs(data.lifts) do
       if type(look) == 'number' and look >= 1 and validLift(text) then ids[#ids + 1] = look end
@@ -163,6 +165,12 @@ function M.applyPieces(data, setPiece, setLift)
     for _, look in ipairs(ids) do setLift(look, data.lifts[look]); nl = nl + 1 end
   end
   return np, nl
+end
+
+-- the levitation setting of this client (g_settings value): on unless it was switched off
+M.LEVITATION_KEY = 'chaosWingLevitation'
+function M.levitationOn(value)
+  return not (value == false or value == 'false' or value == 0 or value == '0')
 end
 
 return M

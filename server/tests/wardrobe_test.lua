@@ -143,6 +143,34 @@ for _, kind in ipairs(W.KINDS) do
 	end
 end
 eq(all.outfit[2].a, 3, "access has every addon")
+-- ---------------------------------------------------------------- the store link (O762)
+local idx = W.storeIndex(shop)
+eq(idx.wings[1], "Wings", "wings 1 is sold in the Wings category")
+eq(idx.aura[1], "Auras", "aura 1 in Auras")
+eq(idx.shader[11], "Outfit Shaders", "shader 11 in Outfit Shaders")
+eq(idx.mount[146], nil, "an exclusive mount is in no category")
+local idx2 = W.storeIndex({categories = {
+	{name = "Bundles", offers = {{kind = "bundle", parts = {{kind = "wings", id = 9}, {kind = "aura", id = 4}}}}},
+	{name = "Wings", offers = {{kind = "wings", id = 9}}},
+	{name = "", offers = {{kind = "aura", id = 5}}},
+	{name = "Footprints", offers = {{kind = "unlock", unlock = "cosmetic_foot_ember"}}}}})
+eq(idx2.wings[9], "Wings", "an offer of its own wins over a bundle part")
+eq(idx2.aura[4], "Bundles", "a bundle part alone: the bundle's category")
+eq(idx2.aura[5], nil, "a category without a name links nowhere")
+eq(idx2.unlock.cosmetic_foot_ember, "Footprints", "cosmetic unlocks by key")
+eq(next(W.storeIndex(nil).wings), nil, "no store: no link")
+local blist = W.list(male, src, own)
+eq(blist.wings[1].b, nil, "an owned entry has no store link")
+for _, e in ipairs(blist.aura) do
+	if e.o == nil and e.s == "Store" then
+		eq(type(e.b), "string", "a sold aura not owned names its category: " .. tostring(e.n))
+	end
+end
+for _, e in ipairs(blist.outfit) do
+	if e.o == nil and e.s and e.s:find("^Boss") then
+		eq(e.b, nil, "an exclusive has no store link: " .. tostring(e.n))
+	end
+end
 eq(W.hash("abc"), W.hash("abc"), "hash stable")
 eq(W.hash("abc") ~= W.hash("abd"), true, "hash differs")
 eq(#W.hash("x"), 8, "hash length")

@@ -31,7 +31,22 @@ function applyPieces()
   if clearOutfitPackPieces then clearOutfitPackPieces() end
   if not piecesSupported() then return end
   WingFitCore.applyPieces(ChaosWearPieces, function(look, ax, ay) setOutfitPackPiece(look, ax, ay) end,
-    function(look, text) setOutfitWingsLift(look, text) end)
+    function(look, text) setOutfitWingsLift(look, text) end, isLevitation())
+end
+
+-- O762 (owner 2026-11-24: "o efeito de flutuar funciona. coloque uma opção pra desativar"): the pack wings lift their wearer
+-- unless this client switched it off (the Float box of the Customise Character window). Saved per client, on by default.
+-- Off: the pieces go in without their lifts, so every winged body on this screen stands on the ground, the wings still drawn.
+function isLevitation()
+  local ok, v = pcall(g_settings.getBoolean, WingFitCore.LEVITATION_KEY, true)
+  if not ok then return true end
+  return WingFitCore.levitationOn(v)
+end
+
+function setLevitation(on)
+  on = on ~= false
+  pcall(g_settings.set, WingFitCore.LEVITATION_KEY, on)
+  applyPieces()
 end
 
 function init()

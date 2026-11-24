@@ -60,6 +60,19 @@ CustomiseCard < UIWidget
     color: #d6c9ae
     phantom: true
 
+  // O762: a card not owned that the store sells opens the store at its category
+  ChaosButton
+    id: storeLink
+    anchors.top: parent.top
+    anchors.right: parent.right
+    margin-top: 2
+    margin-right: 2
+    size: 44 18
+    font: verdana-11px-antialised
+    !text: tr('Store')
+    !tooltip: tr('Open the store at this item')
+    visible: false
+
 // a card of the Equipped now strip: slot name and the current choice on the left, its picture on the right
 CustomiseStripCard < UIWidget
   size: 116 52

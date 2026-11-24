@@ -6424,6 +6424,11 @@ look, shaders `{n, o, s}` by shader name.
   `unlocked="yes"` is "Free" ("Free; addons: Store" when its addons are sold). Unknown otherwise.
 - Nothing is granted or worn here: `Game::playerChangeOutfit` refuses an outfit change with a part not owned.
 `tests/wardrobe_test.lua`.
+- **Store category (O762)**: `W.storeIndex(ChaosShopConfig)` maps outfit, mount, wings, aura, shader and unlock
+  keys to the name of the store category that sells them (direct offers first, then bundle parts). An entry not owned
+  carries `b`, that category; the client's Customise window puts a Store button on the card. The cosmetics state row of
+  a cosmetic not owned carries `shop` the same way (`cosmetics.lua` `shopCategory`, offers `unlock = "cosmetic_<key>"`).
+  The state already goes through `Chaos.sendChunked`. A source without a store (boss, PvP, achievement) has no link.
 
 ## Exclusives (`exclusives.lua`, `exclusives_core.lua`, `exclusives_config.lua`, `sql/chaos_exclusives.sql`, client `game_cosmetics` Collection tab)
 

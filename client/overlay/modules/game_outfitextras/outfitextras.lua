@@ -249,8 +249,9 @@ local function specOf(key, card)
   local look = C.cardLook(key, card, temp)
   if look then return { kind = 'outfit', outfit = look, outline = C.cardOutline(key, card) } end
   if card.row and (key == 'spellskin' or key == 'killfx') then return { kind = 'play', row = card.row } end
-  if card.row and key == 'footprint' and not card.none and type(card.row.art) == 'string' then
-    return { kind = 'print', art = card.row.art }
+  if card.row and key == 'footprint' and not card.none then
+    local icon = C.footprintIcon(card.row)
+    if icon then return icon end
   end
   local sample = C.sampleOption(key, card)
   if sample then return { kind = 'sample', option = sample } end
@@ -453,8 +454,20 @@ local function makeCard(grid, key, card)
     -- a locked sample is dimmed less, so the colour stays readable (CustomiseCore.cardOpacity)
     local op = C.cardOpacity(key, card, u.UnlocksCore and u.UnlocksCore.LOCKED_OPACITY)
     if op then w:setOpacity(op) end
-  else
-    w:setTooltip(card.text)
+  end
+  -- O762: the name, and for one not owned how it is got (the server's source, in the player's language)
+  w:setTooltip(C.cardTooltip(card) or card.text)
+  local link = C.storeLink(card)
+  local storeButton = w:getChildById('storeLink')
+  if storeButton then
+    storeButton:setVisible(link ~= nil)
+    if link then
+      storeButton.onClick = function()
+        local shop = modules.game_shop
+        if shop and type(shop.openCategory) == 'function' then shop.openCategory(link) end
+        return true
+      end
+    end
   end
   w.onClick = function() pickCard(key, card) end
   w.onHoverChange = function(_, hovered)
@@ -573,6 +586,17 @@ local function buildLayers()
       refreshView()
     end
     layerBoxes[key] = box
+  end
+  -- O762: the pack wings of pair 83 lift their wearer (base patch 0209); this client may keep every body on the ground
+  -- (client_chaos_wingfit: the lifts are not handed to the engine). Saved per client, on by default; the wings stay.
+  local wf = modules.client_chaos_wingfit
+  if wf and type(wf.setLevitation) == 'function' and type(wf.isLevitation) == 'function' then
+    local box = g_ui.createWidget('CustomiseLayerCheck', panel)
+    box:setId('levitate')
+    box:setText(tr('Float'))
+    box:setTooltip(tr('Wings that float lift the character. Off: the character stands on the ground, the wings stay.'))
+    box:setChecked(wf.isLevitation())
+    box.onCheckChange = function(_, checked) wf.setLevitation(checked) end
   end
 end
 

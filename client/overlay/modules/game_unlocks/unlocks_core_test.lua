@@ -106,4 +106,11 @@ eq(node2.Ann, nil, 'an empty character is dropped')
 eq(U.onlyMine(node, 'Ann', 'outfit'), true, 'the old node is not changed')
 eq(U.onlyMine(U.setOnlyMine(node, '', 'outfit', true), '', 'outfit'), false, 'no character, no setting')
 
+-- O762: the store category of an entry not owned travels from the wardrobe answer to the window's list
+local wr = U.readWardrobe({ mount = { { l = 368, n = 'Widow Queen', s = 'Store', b = 'Mounts' }, { l = 370, n = 'X', b = '<bad>' } } })
+eq(wr.mount[1].b, 'Mounts', 'the store category is kept') eq(wr.mount[2].b, nil, 'a bad name is dropped')
+local md = U.display('mount', {}, wr.mount)
+eq(md[1].shop, 'Mounts', 'a locked entry carries its store category') eq(md[2].shop, nil, 'none for the bad one')
+eq(U.shopName('Cloaks and Capes'), 'Cloaks and Capes', 'words and spaces') eq(U.shopName(string.rep('a', 41)), nil, 'too long')
+
 print(string.format('unlocks_core_test: %d checks OK', n))

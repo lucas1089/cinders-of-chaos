@@ -144,7 +144,61 @@ function W.sources(opts)
 		end
 	end
 	walk(opts.shopOffers, 0)
+	src.shop = W.storeIndex(opts.shopOffers)
 	return src
+end
+
+-- ---------------------------------------------------------------- the store link (O762)
+-- The store category that sells each look and cosmetic, for the Store button of a card the character does not own (client
+-- game_outfitextras opens game_shop at that category): {outfit = {[look] = name}, mount = {[mounts.xml id] = name}, wings /
+-- aura / shader = {[xml id] = name}, unlock = {[unlock key] = name}} from shop_config.lua's categories. An offer of its own
+-- wins over a part of a bundle (the bundle's category is named only for what no category sells alone); the first category
+-- in the store's order wins. Nothing for a category without a name or a look no offer sells.
+function W.storeIndex(shop)
+	local idx = {outfit = {}, mount = {}, wings = {}, aura = {}, shader = {}, unlock = {}}
+	local function put(kind, key, name)
+		if key ~= nil and idx[kind][key] == nil then
+			idx[kind][key] = name
+		end
+	end
+	local function one(o, name)
+		if type(o) ~= "table" or type(o.kind) ~= "string" then
+			return
+		end
+		if o.kind == "outfit" or o.kind == "addons" then
+			put("outfit", tonumber(o.looktype), name)
+			put("outfit", tonumber(o.lookfemale), name)
+		elseif o.kind == "mount" or o.kind == "wings" or o.kind == "aura" or o.kind == "shader" then
+			put(o.kind, tonumber(o.id), name)
+		elseif o.kind == "unlock" and type(o.unlock) == "string" then
+			put("unlock", o.unlock, name)
+		end
+	end
+	local function deep(t, name, depth)
+		if type(t) ~= "table" or depth > 8 then
+			return
+		end
+		one(t, name)
+		for _, v in pairs(t) do
+			if type(v) == "table" then
+				deep(v, name, depth + 1)
+			end
+		end
+	end
+	local cats = type(shop) == "table" and type(shop.categories) == "table" and shop.categories or {}
+	for _, cat in ipairs(cats) do
+		if type(cat) == "table" and type(cat.name) == "string" and cat.name ~= "" then
+			for _, o in ipairs(type(cat.offers) == "table" and cat.offers or {}) do
+				one(o, cat.name)
+			end
+		end
+	end
+	for _, cat in ipairs(cats) do
+		if type(cat) == "table" and type(cat.name) == "string" and cat.name ~= "" then
+			deep(cat.offers, cat.name, 0)
+		end
+	end
+	return idx
 end
 
 -- ---------------------------------------------------------------- the client's list
@@ -159,27 +213,36 @@ function W.list(cat, src, own)
 		return own.access or not e.premium or own.premium
 	end
 	local out = {outfit = {}, mount = {}, wings = {}, aura = {}, shader = {}}
+	local shop = src.shop or {}
+	-- b: the store category of an entry not owned yet (O762, the card's Store button); nil when owned or not sold
+	local function buy(kind, key, owned)
+		if owned then
+			return nil
+		end
+		return shop[kind] and shop[kind][key] or nil
+	end
 	for _, e in ipairs(cat.outfit or {}) do
 		local addons = (own.access and 3) or W.outfitAddons(e.look, own.hasOutfit)
 		local s = src.outfit[e.look]
 		if e.free then
 			s = s and ("Free; addons: " .. s) or "Free" -- an outfit everyone has: the source is its addons'
 		end
-		out.outfit[#out.outfit + 1] = {l = e.look, n = e.name, o = addons and 1 or nil, a = addons, s = s}
+		out.outfit[#out.outfit + 1] = {l = e.look, n = e.name, o = addons and 1 or nil, a = addons, s = s,
+			b = buy("outfit", e.look, addons ~= nil)}
 	end
 	for _, e in ipairs(cat.mount or {}) do
 		local o = own.access or (premiumOk(e) and own.hasMount(e.id) == true)
-		out.mount[#out.mount + 1] = {l = e.look, n = e.name, o = o and 1 or nil, s = src.mount[e.id]}
+		out.mount[#out.mount + 1] = {l = e.look, n = e.name, o = o and 1 or nil, s = src.mount[e.id], b = buy("mount", e.id, o)}
 	end
 	for _, kind in ipairs({"wings", "aura"}) do
 		for _, e in ipairs(cat[kind] or {}) do
 			local o = own.access or (premiumOk(e) and W.bitOwned(W.RANGES[kind], e.id, own.value))
-			out[kind][#out[kind] + 1] = {l = e.look, n = e.name, o = o and 1 or nil, s = src[kind][e.id]}
+			out[kind][#out[kind] + 1] = {l = e.look, n = e.name, o = o and 1 or nil, s = src[kind][e.id], b = buy(kind, e.id, o)}
 		end
 	end
 	for _, e in ipairs(cat.shader or {}) do
 		local o = own.access or (premiumOk(e) and W.bitOwned(W.RANGES.shader, e.id, own.value))
-		out.shader[#out.shader + 1] = {n = e.name, o = o and 1 or nil, s = src.shader[e.id]}
+		out.shader[#out.shader + 1] = {n = e.name, o = o and 1 or nil, s = src.shader[e.id], b = buy("shader", e.id, o)}
 	end
 	return out
 end
