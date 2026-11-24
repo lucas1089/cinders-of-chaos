@@ -307,7 +307,7 @@ local function getActiveSidePanels()
 end
 
 -- Função para calcular posição ideal evitando sobreposição
-local function calculateOptimalPosition()
+local function sidePanelPosition()
     local gameRootPanel_local = modules.game_interface.getRootPanel()
     if not gameRootPanel_local then return {marginRight = 30, y = 35} end
 
@@ -336,6 +336,19 @@ local function calculateOptimalPosition()
 
     -- Nenhum painel ativo: margem padrão
     return {marginRight = 30, y = 35}
+end
+
+-- the side dock (game_chaosdock, O732) covers the right of the game screen while it is open: the toasts keep left of it
+-- (it calls repositionNotifications when the width it covers changes)
+local function calculateOptimalPosition()
+    local pos = sidePanelPosition()
+    local dockModule = modules.game_chaosdock
+    local dock = dockModule and rawget(dockModule, 'ChaosDock')
+    local ok, cover = pcall(function() return dock and dock.coverRight and dock.coverRight() or 0 end)
+    if ok and type(cover) == 'number' and cover > 0 then
+        pos.marginRight = math.max(pos.marginRight, cover + 10)
+    end
+    return pos
 end
 
 -- stack the shown toasts (notifyview.lua ChaosNotifyView.stack): pinned first, then by slot, each below the one above

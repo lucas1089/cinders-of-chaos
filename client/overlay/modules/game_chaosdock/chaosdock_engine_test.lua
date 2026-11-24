@@ -53,6 +53,7 @@ function W:breakAnchors() self.anchors = {} end
 function W:addAnchor(a) self.anchors = self.anchors or {} self.anchors[#self.anchors + 1] = a end
 function W:setMargin() end
 function W:setMarginBottom(m) self.marginBottom = m end
+function W:setMarginTop(m) self.marginTop = m end
 function W:setMarginRight(m) self.marginRight = m end
 function W:getSize() return { width = self.width, height = self.height } end
 function W:setSize(s) self.width, self.height = s.width, s.height end
@@ -78,6 +79,8 @@ root.width, root.height = 1280, 720
 local gameRoot = widget('UIWidget', 'gameRootPanel', root)
 gameRoot.width, gameRoot.height = 1280, 720
 local rightPanels = widget('UIWidget', 'gameRightPanels', gameRoot)
+local menuBar = widget('UIWidget', 'chaosMenuBar', gameRoot) -- the hub menu bar, top centre
+menuBar.x, menuBar.y, menuBar.width, menuBar.height = 458, 2, 364, 36
 local container = widget('UIMiniWindowContainer', 'gameRightPanel', rightPanels)
 local skillsMini = widget('UIMiniWindow', 'skillWindow', container)
 local bag = widget('UIMiniWindow', 'bagPanel', container)
@@ -152,7 +155,10 @@ modules = {
   game_interface = { getRootPanel = function() return gameRoot end },
   client_chaos_topbar = { ChaosTopBar = fakeTopbar, ChaosTopBarGlyphs = dofile(here .. '../client_chaos_topbar/topbar_glyph_index.lua') },
   game_bagpanel = { getWindow = function() return bag end },
+  game_chaosnotify = {},
 }
+local toastMoves = 0
+modules.game_chaosnotify.repositionNotifications = function() toastMoves = toastMoves + 1 end
 ChaosTheme = { palette = { accent2 = '#f6cf72', textDim = '#8c8070' } }
 
 dofile(here .. 'chaosdocklogic.lua')
@@ -173,11 +179,14 @@ eq(panel:isExplicitlyVisible(), true, 'dock shown'); eq(panel.marginRight, 0, 's
 eq(bag.parent, content, 'bag panel in the dock'); eq(bag.draggable, false, 'not draggable while docked')
 eq(bag:getChildById('closeButton').visible, false, 'its close button hidden')
 eq(bag.chaosRmlSkip, true, 'mirror leaves it'); eq(panel.width, 330, 'dock width')
+eq(panel.marginTop, 0, 'the menu bar is left of a narrow dock'); eq(D.coverRight(), 330, 'covers 330 px')
+eq(toastMoves >= 1, true, 'the toasts were told')
 eq(store[ChaosDockLogic.SETTING_TAB], 'equip', 'tab saved')
 local h = D.held()
 eq(#h, 1, 'held'); eq(h[1].home, container, 'home kept'); eq(h[1].index, 2, 'index kept'); eq(h[1].height, 400, 'height kept')
 eq(D.route('Inventory'), true, 'second press'); runEvents()
 eq(panel:isExplicitlyVisible(), false, 'dock hidden'); eq(bag.parent, container, 'bag back home')
+eq(D.coverRight(), 0, 'closed: covers nothing')
 eq(container:getChildIndex(bag), 2, 'at its index'); eq(bag.visible, true, 'still open')
 eq(bag.draggable, true, 'draggable again'); eq(bag:getChildById('closeButton').visible, true, 'close button back')
 eq(bag.width, 200, 'size back'); eq(#D.held(), 0, 'nothing held')
@@ -189,6 +198,7 @@ eq(D.route('Spellbook'), true, 'spellbook routed'); runEvents()
 eq(bag.parent, container, 'tab change gives the bag back')
 eq(ran[#ran], 'Spellbook', 'opened through the raw entry')
 eq(spellbook.parent, content, 'spellbook in the dock'); eq(panel.width, 664, 'dock widened')
+eq(panel.marginTop, 44, 'widened under the menu bar: starts below it')
 eq(store[ChaosDockLogic.SETTING_SUBS], 'equip=1,spells=1', 'windows saved')
 spellbook:hide() -- Escape on the window
 runEvents()
@@ -201,6 +211,7 @@ eq(store960.parent, root, 'store stays a window'); eq(store960.visible, true, 's
 eq(panel:getChildById('note').visible, true, 'the dock says why'); eq(panel.width, 330, 'dock keeps its width')
 eq(store960.x, panel.x - 960 - 4 < 0 and 0 or panel.x - 964, 'placed left of the dock')
 eq(keys['Alt+I'](), true, 'equip key'); runEvents()
+eq(store960.visible, false, 'the floating window the dock opened goes with the tab change')
 eq(bag.parent, content, 'equip tab'); eq(keys['Alt+I'](), true, 'equip key again'); runEvents()
 eq(panel:isExplicitlyVisible(), false, 'key of the tab shown closes')
 

@@ -164,6 +164,15 @@ function L.bottomMargin(dockLeft, bar, rootBottom)
   return math.max(0, rootBottom - bar.y + L.BAR_GAP)
 end
 
+-- the dock's top margin: 0 (from the top of the screen) unless the hub menu bar (client_chaos_topbar, O550) reaches over the
+-- dock's left edge (a dock widened for a wide window), then the dock starts below the bar: the two never cover each other.
+-- dockLeft: x of the dock's left edge; bar: the menu bar rect or nil; rootTop: y of the screen top.
+function L.topMargin(dockLeft, bar, rootTop)
+  if not bar or not dockLeft or not rootTop then return 0 end
+  if bar.x + bar.width <= dockLeft then return 0 end
+  return math.max(0, bar.y + bar.height - rootTop + L.BAR_GAP)
+end
+
 -- the right margins of the slide in, from hidden (-width) to in place (0); out is the same list backwards
 function L.slide(width, steps)
   steps = steps or L.SLIDE_STEPS
