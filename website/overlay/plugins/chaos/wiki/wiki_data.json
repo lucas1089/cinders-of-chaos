@@ -395,8 +395,8 @@
 		"siege.whenPt": "sábado às 20:00",
 		"spell.count": 172,
 		"store.categories": 40,
-		"store.cosmetic": 645,
-		"store.offers": 787,
+		"store.cosmetic": 638,
+		"store.offers": 780,
 		"store.service": 40,
 		"store.unlockCost": 0,
 		"support.count": 20,
@@ -49463,7 +49463,7 @@
 								["Costumes", "6", "300", "Cosmetic"],
 								["Outfit Addons", "9", "150", "Cosmetic"],
 								["Mounts", "125", "350-690", "Cosmetic"],
-								["Wings", "108", "200-350", "Cosmetic"],
+								["Wings", "101", "200-350", "Cosmetic"],
 								["Auras", "24", "150-300", "Cosmetic"],
 								["Head Accessories", "88", "150-200", "Cosmetic"],
 								["Capes", "87", "200-250", "Cosmetic"],
@@ -49532,7 +49532,7 @@
 							"cols": ["Type", "Offers"],
 							"w": [60, 40],
 							"rows": [
-								["Cosmetic", "645"],
+								["Cosmetic", "638"],
 								["Pet (small abilities)", "7"],
 								["Convenience", "9"],
 								["Service", "16"],
@@ -49633,7 +49633,7 @@
 									"Stormcaller Regalia",
 									"-25% of the parts",
 									"Bundle",
-									"The Astral Electric outfit with both addons, the Stormkeep mount, wings and the storm mantle aura."
+									"The Astral Electric outfit with both addons, the Stormkeep mount and the storm mantle aura."
 								]
 							],
 							"sprites": [
@@ -51809,11 +51809,11 @@
 				{
 					"id": "store:22",
 					"name": "Wings",
-					"sub": "108 offers, 200-350 coins. Cosmetic.",
+					"sub": "101 offers, 200-350 coins. Cosmetic.",
 					"color": "#ff70c0",
 					"group": "category",
 					"sections": [
-						{"h": "Category", "p": ["108 offers, 200-350 Chaos Coins. Cosmetic."]},
+						{"h": "Category", "p": ["101 offers, 200-350 Chaos Coins. Cosmetic."]},
 						{
 							"h": "Offers",
 							"cols": ["Offer", "Coins", "Type", "What it is"],

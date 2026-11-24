@@ -163,12 +163,15 @@ end
 
 -- ------------------------------------------------------------------ catalog (static part)
 local byKey, CATS = {}, {}
+-- O748: offers retired from sale (cfg.retired) are never sold; shop_config.lua takes them out already, this keeps them out
+-- of a config that skipped ChaosShopCore.retire. Owners keep theirs (nothing here reads or changes ownership).
+local RETIRED = K.retiredSet(cfg)
 for _, category in ipairs(cfg.categories) do
 	local cat = {name = category.name, icon = category.icon, starter = category.starter, rotationOnly = category.rotationOnly,
 		parent = category.parent, offers = {}}
 	for _, offer in ipairs(category.offers) do
 		offer.key = K.offerKey(offer)
-		local why = K.excluded(offer, Shop.exclusions)
+		local why = K.excluded(offer, Shop.exclusions) or (RETIRED[offer.key] and "retired from sale") or nil
 		-- Founder Pack: a bundle of pieces the exclusives config does not have (the pair 33 switch is off) is not sold
 		for _, p in ipairs(not why and offer.kind == "bundle" and offer.parts or {}) do
 			if type(p) == "table" and p.kind == "exclusive" and not EXCLUSIVE_BY_KEY[p.exclusive] then
