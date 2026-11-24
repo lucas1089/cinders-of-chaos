@@ -23,10 +23,19 @@ tier on top of it (z - 2). Pieces, all from our tables (no new id):
 Pure Python on the compiled tiles; area_plan_compile.py calls place_all after the buildings and before the teleports,
 spawns and decoration, then qa on the final tiles.
 """
+import csv
+import os
 import random
 
 import area_plan_core as C
+import client_pair
 import map_tile_rules as MR
+
+# O746: the cliff pieces of our own (client/tools/sprites/gen_cliff_art.py), used when the compile is told the client pair
+# carries them (plan field plateaus.pair or compile_plan(client_pair=...) >= client_pair.PAIR_CLIFF); below it the O744 look
+CLIFF_ART = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+                         'client', 'tools', 'sprites', 'art_import', 'cliff_art.csv')
+LIP_FAM = 'cliff_lip'       # the pseudo family of the lip cells on a floor above (their border set is the art's lip)
 
 D8 = ((1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (1, -1), (-1, 1), (-1, -1))
 CLEAR = 2           # tiles between a plateau (with its cliff foot) and a route, a building, a crossing or another plateau
@@ -50,7 +59,32 @@ def spec(plan):
         return None
     rng_of = lambda v, d: (v, v) if isinstance(v, int) else tuple(v or d)
     return dict(count=p['count'], size=tuple(p.get('size', (12, 16))), height=rng_of(p.get('height'), (1, 1)),
-                ramps=rng_of(p.get('ramps'), (1, 2)), zones=list(p.get('zones', ())))
+                ramps=rng_of(p.get('ramps'), (1, 2)), zones=list(p.get('zones', ())), pair=p.get('pair', 0))
+
+
+def cliff_art(palette, path=CLIFF_ART):
+    """the server ids of one palette of the O746 cliff pieces -> dict(face={piece: id}, lip={border piece name: id})"""
+    out = dict(face={}, lip={})
+    with open(path, encoding='utf-8', newline='') as f:
+        for r in csv.DictReader(f):
+            if r['palette'] != palette:
+                continue
+            if r['piece'].startswith('lip_'):
+                out['lip'][r['piece'][4:]] = int(r['server_id'])
+            else:
+                out['face'][r['piece']] = int(r['server_id'])
+    return out
+
+
+def cliff_palette(cfam):
+    """the art's palette of a cliff family: brown earth for the cave's earth, grey stone otherwise"""
+    return 'earth' if cfam == 'earth' else 'stone'
+
+
+def art_on(sp, client_pair_=None):
+    """the compile draws the O746 cliff pieces: the pair it was told (the compile option over the plan field) has them"""
+    pair = client_pair_ if client_pair_ is not None else (sp or {}).get('pair', 0)
+    return bool(pair) and pair >= client_pair.PAIR_CLIFF
 
 
 # ------------------------------------------------------------------------------------------------ shapes
@@ -156,12 +190,36 @@ def levels_of(G, ramps1, G2=None, ramps2=()):
     c1 = {_rh(r)[0] for r in ramps1}
     c2 = {_rh(r)[0] for r in ramps2}
     heads = dict(_rh(r) for r in list(ramps1) + list(ramps2))
-    lv = {0: dict(solid=set(G) - N1, built=None, stairs_low=c1, stairs_top=set(), heads=heads),
+    lv = {0: dict(solid=set(G) - N1, built=None, stairs_low=c1, stairs_top=set(), heads=heads, face=set(G) - N1),
           1: dict(solid=(rim(G) - N1) | ((set(G2) - N2) if G2 else set()), built=set(G),
-                  stairs_low=c2, stairs_top=c1, heads=heads)}
+                  stairs_low=c2, stairs_top=c1, heads=heads, face=(set(G2) - N2) if G2 else set())}
     if G2:
-        lv[2] = dict(solid=rim(G2) - N2, built=set(G2), stairs_low=set(), stairs_top=c2, heads=heads)
+        lv[2] = dict(solid=rim(G2) - N2, built=set(G2), stairs_low=set(), stairs_top=c2, heads=heads, face=set())
     return lv
+
+
+def cliff_face_pieces(F, blocked=()):
+    """the cliff pieces of O746 (gen_cliff_art.py) a footprint F wants on the floor below it -> (faces, ends):
+    faces {cell of F: piece}, ends {cell next to F: [piece]}. A tile of F shows its rock when its south-east neighbour is
+    not in F (the floor above is drawn 32 px up and left); its south (S) and east (E) neighbours pick the piece:
+    S out E in a south face, S in E out an east face, both out the outer corner, both in the inner corner. Where a
+    south face ends on the west (its west neighbour out) its end spills onto that tile (outer_sw); where an east face
+    ends on the north, onto the tile north of it (outer_ne). The two variants of a face alternate by position. No end
+    goes on a tile of `blocked` (the stairs)."""
+    F = set(F)
+    blocked = set(blocked)
+    faces, ends = {}, {}
+    for x, y in sorted(F, key=lambda t: (t[1], t[0])):
+        if (x + 1, y + 1) in F:
+            continue
+        s, e = (x, y + 1) in F, (x + 1, y) in F
+        var = 'ab'[(x * 7 + y * 13) % 2]
+        faces[(x, y)] = ('face_s_' + var if e else 'outer_se') if not s else ('inner_se_' + var if e else 'face_e_' + var)
+        if not s and (x - 1, y) not in F and (x - 1, y) not in blocked:
+            ends.setdefault((x - 1, y), []).append('outer_sw')
+        if not e and (x, y - 1) not in F and (x, y - 1) not in blocked:
+            ends.setdefault((x, y - 1), []).append('outer_ne')
+    return faces, ends
 
 
 def pieces_for(cell, fam_at, bd):
@@ -187,7 +245,7 @@ def pieces_for(cell, fam_at, bd):
         got = [names[n] for n in MR.border_pieces((0, -1) in m, (1, 0) in m, (0, 1) in m, (-1, 0) in m, (1, -1) in m,
                                                   (-1, -1) in m, (1, 1) in m, (-1, 1) in m)]
         ids += got
-        if g == bd['cfam']:
+        if g == bd['cfam'] or g == LIP_FAM:
             cliff += got
     return ids, cliff
 
@@ -207,7 +265,8 @@ def cliff_of(meta, mats):
     raise PlateauError('the biome has no cliff family (a blocking rock whose border set runs over any ground)')
 
 
-def place_all(plan, zrect, walk, tiles, special, avoid, arrival, meta, mats, kit, seed, E, Wn, reach_fn, link_edges):
+def place_all(plan, zrect, walk, tiles, special, avoid, arrival, meta, mats, kit, seed, E, Wn, reach_fn, link_edges,
+              client_pair_=None):
     """place and stamp every plateau. Changes tiles and walk. avoid: tiles a plateau and its cliff foot keep CLEAR from
     (routes, buildings, crossings); reach_fn(walk, edges) -> {tile: steps}.
     -> dict(records, edges, extra (tiles above the plan's floors), foot (the base footprints and cliff feet, for the
@@ -236,7 +295,13 @@ def place_all(plan, zrect, walk, tiles, special, avoid, arrival, meta, mats, kit
     rules = {(r_['over'], r_['under']): r_['set'] for r_ in meta['borders']}
     rules.setdefault((cfam, '*'), mats['over_any'][cfam])
     bd = dict(cfam=cfam, cground=cground, fam_of=fam_of, fz=fz, rules=rules, pieces=mats.get('pieces', {}),
-              fwalk={f: d.get('walk', True) for f, d in meta['families'].items()}, border_ids=border_ids, used=set())
+              fwalk={f: d.get('walk', True) for f, d in meta['families'].items()}, border_ids=border_ids, used=set(), art=None)
+    if art_on(sp, client_pair_):     # O746: our cliff faces below, our lip set on the floors above
+        art = cliff_art(cliff_palette(cfam))
+        bd['art'] = art
+        bd['fz'][LIP_FAM] = bd['fz'][cfam]
+        bd['rules'][(LIP_FAM, '*')] = 'cliff_lip_' + cliff_palette(cfam)
+        bd['pieces'] = dict(bd['pieces'], **{'cliff_lip_' + cliff_palette(cfam): art['lip']})
     water = {k for k, t in tiles.items() if (fam_of.get(t['ground']) or '').startswith('water')}
     pick = sp['zones'] or [z['id'] for z in sorted(plan['zones'], key=lambda z: z['id'])
                            if z['floor'] == 1 and z.get('role', 'hunt') not in ('boss', 'camp') and not z.get('pz')]
@@ -297,7 +362,8 @@ def place_all(plan, zrect, walk, tiles, special, avoid, arrival, meta, mats, kit
     used = {stairs_up[r_['heading']] for rec_ in res['records'] for r_ in rec_['ramps']}
     res['ids'] |= {cground, stairs_ground} | set(names.values()) | bd['used'] | (used or {stairs_up['n']})
     res['grounds'] |= {cground, stairs_ground}
-    res['cliff'] = dict(family=cfam, ground=cground)
+    res['cliff'] = dict(family=cfam, ground=cground, art=cliff_palette(cfam) if bd['art'] else None,
+                        lip_ids=sorted(bd['art']['lip'].values()) if bd['art'] else [])
     return res
 
 
@@ -430,7 +496,11 @@ def _stamp_sets(lv, G, z, walk, tiles, bd):
         area = (set(G) | ring(G, 1)) if L == 0 else d['built']
         stairs = d['stairs_top'] | d['stairs_low']
 
-        def fam_at(c, L=L, zz=zz, solid=solid, area=area, stairs=stairs):
+        lipc = (solid - d['face']) if (L and bd.get('art')) else set()
+
+        def fam_at(c, L=L, zz=zz, solid=solid, area=area, stairs=stairs, lipc=lipc):
+            if c in lipc:
+                return LIP_FAM
             if c in solid:
                 return cfam
             if L == 0:
@@ -457,6 +527,17 @@ def _stamp_sets(lv, G, z, walk, tiles, bd):
             pcs, cliff = got
             base_walk = (t in walk) if L == 0 else True
             plan[t] = dict(ground=ground, items=pcs, walk=base_walk and not cliff)
+    if bd.get('art'):        # O746: the face pieces on the visible face tiles, the ends beside them
+        for L, d in lv.items():
+            zz = z - L
+            faces, ends = cliff_face_pieces(d['face'], d['stairs_low'] | d['stairs_top'])
+            for c, piece in faces.items():
+                plan[(c[0], c[1], zz)]['items'] = [bd['art']['face'][piece]]
+                plan[(c[0], c[1], zz)]['face'] = piece
+            for c, pcs in ends.items():
+                q = plan.get((c[0], c[1], zz))
+                if q is not None and not q.get('stairs'):
+                    q['items'] = list(q['items']) + [bd['art']['face'][pc] for pc in pcs]
     for t, p in plan.items():
         if p['walk']:
             new_walk.add(t)
@@ -528,7 +609,8 @@ def _commit(k, zid, height, lv, G, G2, r1, r2, z, st, walk, tiles, bd, stairs_up
     rec = dict(id=pid, zone=zid, height=height, z=z, rect=(min(xs), min(ys), max(xs), max(ys)), foot=sorted(G),
                upper=sorted(G2) if G2 else None, levels=levels, ramps=ramps, clear=clear,
                base=dict(solid=sorted((x, y, z) for x, y in lv[0]['solid']),
-                         feet=sorted(t for t in plan if t[2] == z and plan[t]['items'])))
+                         feet=sorted(t for t in plan if t[2] == z and plan[t]['items'] and t[:2] not in lv[0]['solid'])),
+               faces=sorted((t, plan[t]['face'], plan[t]['items'][0]) for t in plan if plan[t].get('face')))
     return rec
 
 
@@ -556,6 +638,10 @@ def qa(records, tiles, walk, dist, avoid_sets, E, Wn, info, stairs_up, stairs_gr
         for t in rec['base']['solid']:
             if tiles.get(t, {}).get('ground') != cliff_ground or t in walk:
                 E('%s: the cliff face at %s is not the cliff ground' % (label, t))
+                break
+        for t, piece, pid in rec.get('faces', ()):     # O746: every visible face tile shows its piece
+            if pid not in [i for i, _a in tiles.get(t, {}).get('items', [])]:
+                E('%s: the cliff face at %s lost its piece %s' % (label, t, piece))
                 break
         for lv in rec['levels']:
             built = set(lv['built'])

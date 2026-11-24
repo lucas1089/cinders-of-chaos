@@ -91,6 +91,11 @@ PAIR_MISSILE_U16 = 83   # the first pair that may carry missile ids above 255 (O
                     # client that asked; data/lib/chaos_wide_missiles.lua hands a script an id above 255 only from this pair (C.PAIR), and the
                     # import tool that appends a missile must start at 256 (254 stays CONST_ANI_WEAPONTYPE). No such missile yet.
 
+PAIR_CLIFF = 83     # the 42 cliff pieces of our own drawn by code (O746, gen_cliff_art.py build on pair 82): items 44564-44605, server ids
+                    # 48564-48605 (install_cliff_art.py, step `cliffart`); the area planner draws plateaus with them only when the compile
+                    # is told this pair (plan field plateaus.pair or compile_plan(client_pair=...)). Rides with PAIR_MISSILE_U16 in pair 83.
+                    # Not built yet: waits for the pair 83 build and the owner's approval.
+
 PAIR_ASSETS = 82
 PAIR_ASSETS_DAT_MD5 = 'ee8c32fc87be4372f4668b635148b9bf'
 

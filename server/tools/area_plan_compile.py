@@ -323,9 +323,10 @@ def _simple(walk, t):
     return groups <= 1
 
 
-def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
+def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True, client_pair=None):
     """the compiled area: dict(otbm, spawn_xml, manifest, tiles, walk, ...); raises CompileError with the plan's
-    errors when it does not validate"""
+    errors when it does not validate. client_pair: the client pair the area is drawn for (O746: 83 or more draws the
+    plateaus with our cliff pieces, over the plan's plateaus.pair; None leaves the plan's choice)"""
     if pair24 is None:
         pair24 = C.pair24_switch()
     cat = cat or C.catalogue(pair24, dark)
@@ -499,7 +500,8 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
         avoid = corridor_cells() | bprot | crossing | (bres['foot'] if bres else set())
         pres = PL.place_all(plan, zrect, walk, tiles, special, avoid, arrival, meta, mats, kit, seed, E, Wn,
                             lambda w_, e_: C.tile_reach(w_, arrival, (), e_),
-                            [e for l in link_out for e in l['edges']] + (bres['edges'] if bres else []))
+                            [e for l in link_out for e in l['edges']] + (bres['edges'] if bres else []),
+                            client_pair_=client_pair)
         special.update(pres['special'])
         bprot |= pres['prot']
     portal = meta['portal']
@@ -842,6 +844,7 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
     for r in meta['borders']:
         rules[(r['over'], r['under'])] = set(meta['sets'][r['set']])
     open_edges, unbordered, transitions = 0, 0, 0
+    art_lip = set(pres['cliff'].get('lip_ids', ())) if pres else set()
     for k, t in back.items():
         f = fam_of.get(t['ground'])
         if f is None or (pres and k in pres['skip_border']):     # O744: the stone stairs of a ramp lie in the cliff
@@ -864,6 +867,8 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
             if g and g != f and meta['families'][g]['z'] > zf:
                 s = rules.get((g, f)) or rules.get((g, '*'))
                 if s:
+                    if art_lip and g == pres['cliff']['family'] and k in pres['extra']:
+                        s = s | art_lip     # O746: on a plateau's top the lip is our cliff art's own set
                     wanted[g] = s
         for g, s in wanted.items():
             transitions += 1

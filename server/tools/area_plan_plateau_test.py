@@ -320,5 +320,81 @@ t5 = copy.deepcopy(tiles)
 t5[recs[0]['base']['solid'][0]]['ground'] = 103
 ok(any('cliff face' in m for m in qa_of(t5, walk)), 'QA: a cliff face that is not the cliff ground')
 
+# ------------------------------------------------------------------------------------------------ O746: our cliff pieces
+import client_pair  # noqa: E402
+ok(client_pair.PAIR_CLIFF == 83 and client_pair.PAIR_MISSILE_U16 == 83 and client_pair.PAIR_ASSETS < 83,
+   'O746: the cliff pieces ride with pair 83 (with the wide missiles); PAIR_ASSETS not raised')
+ok(not PL.art_on(PL.spec(hh)) and not PL.art_on(PL.spec(hh), 82) and PL.art_on(PL.spec(hh), 83) and PL.art_on({'pair': 83})
+   and not PL.art_on({'pair': 83}, 82), 'O746: the art is on from pair 83, the compile option over the plan field')
+ART = {pal: PL.cliff_art(pal) for pal in ('stone', 'earth')}
+ok(all(set(a['lip']) == set(PL.MR.border_pieces(1, 1, 1, 1, 1, 1, 1, 1)) | {'n', 'e', 's', 'w', 'cnw', 'cne', 'csw', 'cse', 'dnw',
+                                                                             'dne', 'dse', 'dsw'} and len(a['lip']) == 12
+       and len(a['face']) == 9 for a in ART.values()), 'O746: 12 lip pieces and 9 face pieces a palette')
+ids_all = sorted(i for a in ART.values() for d in a.values() for i in d.values())
+ok(ids_all == list(range(48564, 48606)), 'O746: server ids 48564-48605')
+ok(PL.cliff_palette('mountain') == 'stone' and PL.cliff_palette('earth') == 'earth', 'O746: stone in the open, earth in a cave')
+# the face rule on a box with a notch
+box = {(x, y) for x in range(6) for y in range(5)}
+faces, ends = PL.cliff_face_pieces(box - {(2, 4)}, blocked={(2, 4)})
+ok(faces[(5, 4)] == 'outer_se' and faces[(0, 4)].startswith('face_s_') and faces[(5, 0)].startswith('face_e_'),
+   'O746: south face, east face and the outer corner of a box %s' % faces)
+ok(faces[(1, 4)] == 'outer_se' and faces[(3, 4)].startswith('face_s_') and faces[(1, 3)].startswith('inner_se_')
+   and (2, 3) not in faces, 'O746: a notch: an outer corner west of it, an inner corner; the tile behind it is hidden by the top')
+ok(ends == {(-1, 4): ['outer_sw'], (5, -1): ['outer_ne']}, 'O746: the face ends spill west and north, never onto the notch %s' % ends)
+ok(not [c for c in faces if (c[0] + 1, c[1] + 1) in box - {(2, 4)}], 'O746: only tiles whose south-east neighbour is out show rock')
+# the example with the art: same tiles walkable, same spawns, QA and both audits clean
+ra = PC.compile_plan(hh, client_pair=83)
+ok(not errors(ra) and not warns(ra), 'O746 highland_hunt at pair 83: no QA error or warning %s %s' % (errors(ra)[:3], warns(ra)[:3]))
+ok(ra['walk'] == r['walk'] and ra['spawn_xml'] == r['spawn_xml'] and ra['otbm'] != r['otbm'],
+   'O746: the art changes the pictures only (same walkable tiles, same spawns)')
+ok(digest(PC.compile_plan(hh, client_pair=82)) == digest(r), 'O746: pair 82 keeps the O744 bytes')
+ph = copy.deepcopy(hh)
+ph['plateaus']['pair'] = 83
+ok(digest(PC.compile_plan(ph)) == digest(ra) and not vmsgs(ph), 'O746: the plan field pair 83 is the compile option')
+ok(digest(PC.compile_plan(ph, client_pair=82)) == digest(r), 'O746: the compile option overrides the plan field')
+stone = ART['stone']
+face_ids, lip_ids = set(stone['face'].values()), set(stone['lip'].values())
+for rec in ra['plateaus']:
+    lab = 'O746 plateau %s' % rec['id']
+    ok(rec['faces'] and all(ra['tiles'][t]['ground'] == 919 and [i for i, _a in ra['tiles'][t]['items']] == [pid]
+                            and pid == stone['face'][pc] for t, pc, pid in rec['faces']), '%s: the faces on the cliff ground' % lab)
+    vis = {t for t in rec['base']['solid'] if (t[0] + 1, t[1] + 1, t[2]) not in set(rec['base']['solid'])}
+    ok({t for t, _p, _i in rec['faces'] if t[2] == rec['z']} == vis, '%s: every visible face tile of the floor below has its piece' % lab)
+    for lv in rec['levels']:
+        lipped = [t for t in lv['built'] if ra['tiles'][t]['items'] and set(i for i, _a in ra['tiles'][t]['items']) & lip_ids]
+        ok(lipped and not [t for t in lipped if t in ra['walk']], '%s z %d: the lip pieces on top, none walkable' % (lab, lv['z']))
+        up = {(x, y) for lv2 in rec['levels'] if lv2['level'] == lv['level'] + 1 for x, y, _z in lv2['built']}
+        gv_top = [t for t in lv['built'] if set(i for i, _a in ra['tiles'][t]['items']) & gv_ids
+                  and not any((t[0] + dx, t[1] + dy) in up for dx, dy in PL.D8)]
+        ok(not gv_top, '%s z %d: no gravel on the lip, only at the foot of an upper tier %s' % (lab, lv['z'], gv_top[:1]))
+    ok(any(set(i for i, _a in ra['tiles'][t]['items']) & gv_ids for t in rec['base']['feet']), '%s: the cliff foot keeps the gravel' % lab)
+    ok(not [rp for rp in rec['ramps'] if [i for i, _a in ra['tiles'][rp['low']]['items']] != [STAIRS_ID[rp['heading']]]],
+       '%s: the stairs stay alone' % lab)
+t6 = copy.deepcopy(ra['tiles'])
+t6[ra['plateaus'][0]['faces'][0][0]]['items'] = []
+got6 = []
+PL.qa(ra['plateaus'], t6, ra['walk'], C.tile_reach(ra['walk'], ra['arrival'], (), edges), {}, got6.append, got6.append,
+      lambda m: None, STAIRS_ID, STAIRS_GROUND, 919)
+ok(any('lost its piece' in m for m in got6), 'O746 QA: a face tile without its piece')
+try:
+    import numpy  # noqa: F401
+    import audit_map_plans as AMP
+    import audit_map_tiles as AMT
+    fa = AMP.audit_plan(os.path.join(EX, 'highland_hunt.json'), log=lambda *_a: None, client_pair=83)[1]
+    ok(not {c: fa.count(c) for c in AMT.CODES if fa.count(c)}, 'O746 highland_hunt at pair 83: the map tile audit is clean %s'
+       % {c: fa.count(c) for c in AMT.CODES if fa.count(c)})
+except ImportError:
+    print('  (numpy missing: the map tile audit at pair 83 is skipped)')
+ok(not APL.audit_plan(os.path.join(EX, 'highland_hunt.json'), client_pair=83)[1], 'O746 highland_hunt at pair 83: the look audit is clean')
+# a cave: the earth palette (a cave plan of the held plans with one small plateau)
+cv = json.load(open(os.path.join(HERE, 'areaplan', 'plans', 'deepgrudge_warrens.json'), encoding='utf-8'))
+cv['plateaus'] = {'count': 1, 'size': [8, 10], 'height': 1}
+rc0, rc = PC.compile_plan(cv), PC.compile_plan(cv, client_pair=83)
+eids = set(ART['earth']['face'].values()) | set(ART['earth']['lip'].values())
+used = {i for t in rc['tiles'].values() for i, _a in t['items']}
+ok(rc['plateaus'] and used & eids and not used & (face_ids | lip_ids), 'O746 cave: the earth palette')
+ok(rc['walk'] == rc0['walk'] and errors(rc) == errors(rc0) and warns(rc) == warns(rc0),
+   'O746 cave: same walkable tiles, the same QA lines as without the art %s' % (errors(rc)[:2],))
+
 print('area plan plateaus: %d checks, %d failed' % (checks, fails))
 sys.exit(1 if fails else 0)

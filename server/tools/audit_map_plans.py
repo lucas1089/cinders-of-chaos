@@ -32,6 +32,16 @@ import audit_map_tiles as A  # noqa: E402
 PLANS = os.path.join(HERE, 'areaplan', 'plans')
 
 
+def cliff_ids():
+    """the server ids of the O746 cliff pieces (client/tools/sprites/art_import/cliff_art.csv)"""
+    import area_plan_plateau as PL
+    out = set()
+    for pal in ('stone', 'earth'):
+        art = PL.cliff_art(pal)
+        out |= set(art['face'].values()) | set(art['lip'].values())
+    return out
+
+
 class TableDB:
     """the item database of the generator's own tables, in the shape audit_map_tiles.World reads"""
 
@@ -86,6 +96,9 @@ class TableDB:
             if i not in grounds:
                 self.flags[i] |= 1
         self.group[portal_id] = 7
+        for i in cliff_ids():    # O746: our cliff pieces are border pieces (clip, ONTOP, top order 1), like the gravel edge
+            if self.known[i]:
+                self.order[i], self.cls[i] = 1, C['border']
         for i in (cfg['items']['hole'], cfg['items']['ladder'], kits['brushes']['stairs_up'], kits['brushes']['stairs_up_west']):
             self.cls[i] = C['floorchg']
         for i in kits['roof']['ground']:
@@ -102,8 +115,9 @@ class TableDB:
         return self.fam
 
 
-def audit_plan(plan_file, log=print):
-    """-> (plan id, Findings, tiles) for one compiled plan; None for a plan that does not compile"""
+def audit_plan(plan_file, log=print, client_pair=None):
+    """-> (plan id, Findings, tiles) for one compiled plan; None for a plan that does not compile. client_pair: compile
+    for that client pair (O746: 83 draws the plateaus with our cliff pieces)"""
     import area_import
     import area_plan_compile as PC
     import area_plan_decor as D
@@ -112,7 +126,7 @@ def audit_plan(plan_file, log=print):
     if area_import.is_import(plan):
         return None
     try:
-        res = PC.compile_plan(plan)
+        res = PC.compile_plan(plan, client_pair=client_pair)
     except PC.CompileError as e:
         log('%s: does not compile: %s' % (plan['id'], str(e).splitlines()[0]))
         return None

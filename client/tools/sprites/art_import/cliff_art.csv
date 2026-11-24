@@ -1,0 +1,43 @@
+key,palette,piece,client_id,server_id,name,kind,flags,otb_group,otb_flags,top_order,theme,note
+stone_face_s_a,stone,face_s_a,44564,48564,cliff stone south face a,border,clip notmoveable,0,8192,1,blightfang,"the south face; S out, E in"
+stone_face_s_b,stone,face_s_b,44565,48565,cliff stone south face b,border,clip notmoveable,0,8192,1,blightfang,"the south face, second variant"
+stone_face_e_a,stone,face_e_a,44566,48566,cliff stone east face a,border,clip notmoveable,0,8192,1,blightfang,"the east face; S in, E out"
+stone_face_e_b,stone,face_e_b,44567,48567,cliff stone east face b,border,clip notmoveable,0,8192,1,blightfang,"the east face, second variant"
+stone_outer_se,stone,outer_se,44568,48568,cliff stone outer corner south-east,border,clip notmoveable,0,8192,1,blightfang,"S out, E out: south face lower left, east face upper right"
+stone_outer_sw,stone,outer_sw,44569,48569,cliff stone outer corner south-west,border,clip notmoveable,0,8192,1,blightfang,on the tile west of a south face end: the end triangle
+stone_outer_ne,stone,outer_ne,44570,48570,cliff stone outer corner north-east,border,clip notmoveable,0,8192,1,blightfang,on the tile north of an east face end: the end triangle
+stone_inner_se_a,stone,inner_se_a,44571,48571,cliff stone inner corner a,border,clip notmoveable,0,8192,1,blightfang,"S in, E in, SE out: the concave corner"
+stone_inner_se_b,stone,inner_se_b,44572,48572,cliff stone inner corner b,border,clip notmoveable,0,8192,1,blightfang,"the concave corner, second variant"
+stone_lip_n,stone,lip_n,44573,48573,cliff stone lip north,border,clip notmoveable,0,8192,1,blightfang,lip piece n: the higher ground north
+stone_lip_e,stone,lip_e,44574,48574,cliff stone lip east,border,clip notmoveable,0,8192,1,blightfang,lip piece e: the higher ground east
+stone_lip_s,stone,lip_s,44575,48575,cliff stone lip south,border,clip notmoveable,0,8192,1,blightfang,lip piece s: the higher ground south
+stone_lip_w,stone,lip_w,44576,48576,cliff stone lip west,border,clip notmoveable,0,8192,1,blightfang,lip piece w: the higher ground west
+stone_lip_cnw,stone,lip_cnw,44577,48577,cliff stone lip corner north-west,border,clip notmoveable,0,8192,1,blightfang,lip piece cnw: the higher ground corner north-west
+stone_lip_cne,stone,lip_cne,44578,48578,cliff stone lip corner north-east,border,clip notmoveable,0,8192,1,blightfang,lip piece cne: the higher ground corner north-east
+stone_lip_csw,stone,lip_csw,44579,48579,cliff stone lip corner south-west,border,clip notmoveable,0,8192,1,blightfang,lip piece csw: the higher ground corner south-west
+stone_lip_cse,stone,lip_cse,44580,48580,cliff stone lip corner south-east,border,clip notmoveable,0,8192,1,blightfang,lip piece cse: the higher ground corner south-east
+stone_lip_dnw,stone,lip_dnw,44581,48581,cliff stone lip bend north-west,border,clip notmoveable,0,8192,1,blightfang,lip piece dnw: the higher ground bend north-west
+stone_lip_dne,stone,lip_dne,44582,48582,cliff stone lip bend north-east,border,clip notmoveable,0,8192,1,blightfang,lip piece dne: the higher ground bend north-east
+stone_lip_dse,stone,lip_dse,44583,48583,cliff stone lip bend south-east,border,clip notmoveable,0,8192,1,blightfang,lip piece dse: the higher ground bend south-east
+stone_lip_dsw,stone,lip_dsw,44584,48584,cliff stone lip bend south-west,border,clip notmoveable,0,8192,1,blightfang,lip piece dsw: the higher ground bend south-west
+earth_face_s_a,earth,face_s_a,44585,48585,cliff earth south face a,border,clip notmoveable,0,8192,1,bloodmoon,"the south face; S out, E in"
+earth_face_s_b,earth,face_s_b,44586,48586,cliff earth south face b,border,clip notmoveable,0,8192,1,bloodmoon,"the south face, second variant"
+earth_face_e_a,earth,face_e_a,44587,48587,cliff earth east face a,border,clip notmoveable,0,8192,1,bloodmoon,"the east face; S in, E out"
+earth_face_e_b,earth,face_e_b,44588,48588,cliff earth east face b,border,clip notmoveable,0,8192,1,bloodmoon,"the east face, second variant"
+earth_outer_se,earth,outer_se,44589,48589,cliff earth outer corner south-east,border,clip notmoveable,0,8192,1,bloodmoon,"S out, E out: south face lower left, east face upper right"
+earth_outer_sw,earth,outer_sw,44590,48590,cliff earth outer corner south-west,border,clip notmoveable,0,8192,1,bloodmoon,on the tile west of a south face end: the end triangle
+earth_outer_ne,earth,outer_ne,44591,48591,cliff earth outer corner north-east,border,clip notmoveable,0,8192,1,bloodmoon,on the tile north of an east face end: the end triangle
+earth_inner_se_a,earth,inner_se_a,44592,48592,cliff earth inner corner a,border,clip notmoveable,0,8192,1,bloodmoon,"S in, E in, SE out: the concave corner"
+earth_inner_se_b,earth,inner_se_b,44593,48593,cliff earth inner corner b,border,clip notmoveable,0,8192,1,bloodmoon,"the concave corner, second variant"
+earth_lip_n,earth,lip_n,44594,48594,cliff earth lip north,border,clip notmoveable,0,8192,1,bloodmoon,lip piece n: the higher ground north
+earth_lip_e,earth,lip_e,44595,48595,cliff earth lip east,border,clip notmoveable,0,8192,1,bloodmoon,lip piece e: the higher ground east
+earth_lip_s,earth,lip_s,44596,48596,cliff earth lip south,border,clip notmoveable,0,8192,1,bloodmoon,lip piece s: the higher ground south
+earth_lip_w,earth,lip_w,44597,48597,cliff earth lip west,border,clip notmoveable,0,8192,1,bloodmoon,lip piece w: the higher ground west
+earth_lip_cnw,earth,lip_cnw,44598,48598,cliff earth lip corner north-west,border,clip notmoveable,0,8192,1,bloodmoon,lip piece cnw: the higher ground corner north-west
+earth_lip_cne,earth,lip_cne,44599,48599,cliff earth lip corner north-east,border,clip notmoveable,0,8192,1,bloodmoon,lip piece cne: the higher ground corner north-east
+earth_lip_csw,earth,lip_csw,44600,48600,cliff earth lip corner south-west,border,clip notmoveable,0,8192,1,bloodmoon,lip piece csw: the higher ground corner south-west
+earth_lip_cse,earth,lip_cse,44601,48601,cliff earth lip corner south-east,border,clip notmoveable,0,8192,1,bloodmoon,lip piece cse: the higher ground corner south-east
+earth_lip_dnw,earth,lip_dnw,44602,48602,cliff earth lip bend north-west,border,clip notmoveable,0,8192,1,bloodmoon,lip piece dnw: the higher ground bend north-west
+earth_lip_dne,earth,lip_dne,44603,48603,cliff earth lip bend north-east,border,clip notmoveable,0,8192,1,bloodmoon,lip piece dne: the higher ground bend north-east
+earth_lip_dse,earth,lip_dse,44604,48604,cliff earth lip bend south-east,border,clip notmoveable,0,8192,1,bloodmoon,lip piece dse: the higher ground bend south-east
+earth_lip_dsw,earth,lip_dsw,44605,48605,cliff earth lip bend south-west,border,clip notmoveable,0,8192,1,bloodmoon,lip piece dsw: the higher ground bend south-west

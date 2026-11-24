@@ -252,6 +252,12 @@
           },
           "maxItems": 8,
           "description": "the zones they go in, in turn (default every hunt zone of floor 1 that is no boss room, camp or protection zone, the largest first)"
+        },
+        "pair": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 999,
+          "description": "O746: the client pair the area is drawn for; 83 or more draws the cliff with our own pieces (client/tools/sprites/gen_cliff_art.py: rock faces below, a rock lip on top), below it or absent the mountain ground and its gravel edge of O744 (server/README.md \"Plateaus and cliffs (O744)\"); the compile option client_pair overrides it"
         }
       }
     },
