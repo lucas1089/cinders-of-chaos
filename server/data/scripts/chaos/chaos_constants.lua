@@ -267,6 +267,13 @@ Chaos.botReviewTables = {daily = "chaos_bot_daily", actions = "chaos_bot_actions
 ChaosOpcodes.botdet = 169
 Chaos.botdetTables = {events = "chaos_botdet_events", scores = "chaos_botdet_scores"}
 
+-- Collection log and chase pity (O753; collection_log.lua, chase_pity.lua, sql/chaos_collection_log.sql, client module
+-- game_collectionlog): every unique, set piece, raid unique and card by source, owned / seen / not yet, and the pity counts.
+-- 170 is free in the reference server's list, the base client's ExtendedIds, every other ChaosOpcodes value and every client
+-- module (tests/collection_log_test.lua checks all four). Chase pity storages 7106600 - 7106619 (chase_pity_config.lua).
+ChaosOpcodes.collectionLog = 170
+Chaos.storage.chasePity = 7106600
+
 -- Wardrobe: footprints and outlines (cosmetics.lua kinds footprint / outline, client game_cosmeticfx) and the visual
 -- exclusives (exclusives.lua, exclusives_core.lua, exclusives_config.lua, sql/chaos_exclusives.sql; the Collection tab
 -- of client game_cosmetics, cosmetics opcode 225, no new opcode). Storages 7102000 - 7102049 reserved: +0 the chosen
@@ -1967,7 +1974,10 @@ end
 -- Every price in gold is paid with Chaos.pay: carried coins first, then the bank, all or nothing (data/lib/chaos_pay.lua).
 --   Chaos.totalMoney(player)          carried + bank
 --   Chaos.canPay(player, amount)      true when carried + bank >= amount
---   Chaos.pay(player, amount[, quiet]) true, fromCoins, fromBank; false and nothing taken when short
+--   Chaos.pay(player, amount[, quiet[, sink]]) true, fromCoins, fromBank; false and nothing taken when short. A
+--                                     payment that went through is counted as a gold sink (O751, metrics.lua): `sink`
+--                                     names it (metrics_config.lua goldSinks), else "other"
+--   Chaos.goldSink(player, sink, gold[, back])  counts gold a system took another way, or gave back (back = true)
 function Chaos.totalMoney(player)
 	return (ChaosPay.total(player))
 end
@@ -1976,8 +1986,21 @@ function Chaos.canPay(player, amount)
 	return ChaosPay.canPay(player, amount)
 end
 
-function Chaos.pay(player, amount, quiet)
-	return ChaosPay.pay(player, amount, quiet)
+function Chaos.goldSink(player, sink, gold, back)
+	local X = ChaosMetrics
+	if not (X and X.goldSink) then
+		return false
+	end
+	local ok, res = pcall(X.goldSink, player, sink, gold, back)
+	return ok and res or false
+end
+
+function Chaos.pay(player, amount, quiet, sink)
+	local ok, fromCoins, fromBank = ChaosPay.pay(player, amount, quiet)
+	if ok then
+		Chaos.goldSink(player, sink, amount)
+	end
+	return ok, fromCoins, fromBank
 end
 
 -- ---------------------------------------------------------------------------

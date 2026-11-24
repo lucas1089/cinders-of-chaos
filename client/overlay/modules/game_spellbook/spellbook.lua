@@ -499,11 +499,35 @@ function toggleUpgrades()
   if selected then showDetails(selected) else applyTab() end
 end
 
+-- O752: the level of a spell of the list (game_spellranks reads the Form gates with it), nil when it is not in the list
+function spellLevel(id)
+  id = tonumber(id)
+  if not id then return nil end
+  for _, spell in ipairs(spells) do
+    if tonumber(spell.id) == id then return tonumber(spell.level) end
+  end
+  return nil
+end
+
+-- O752: the next spell path milestone of the class under the list (game_spellranks: the server's `ms` of the ranks state)
+local function updateMilestone()
+  if not window or not window.milestoneLabel then return end
+  local R = ranksModule()
+  local short, long
+  if R and R.nextMilestone then
+    local ok, a, b = pcall(R.nextMilestone)
+    if ok then short, long = a, b end
+  end
+  window.milestoneLabel:setText(short or '')
+  window.milestoneLabel:setTooltip(long or '')
+end
+
 -- game_spellranks calls this when the ranks changed (a state or a rank message): the rows and the tab follow
 local buildGen, fittedGen = 0, 0 -- a list build / the build whose names were fitted
 local fitNames
 function onRanksChanged()
   if not window then return end
+  updateMilestone()
   if window:isVisible() then
     for i, row in ipairs(rows) do
       if spells[i] then
@@ -820,6 +844,7 @@ function show()
   cooldownTick()
   local R = ranksModule()
   if R and R.ask then pcall(R.ask, false) end
+  updateMilestone()
   local A = rawget(_G, 'ChaosAltHelp')
   if A then
     A.watch('game_spellbook', function()

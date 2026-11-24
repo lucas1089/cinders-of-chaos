@@ -102,8 +102,8 @@ GAMBLE_MARGIN = 0.9  # a Gambler base sells to an NPC for at most 90% of its exp
 # CRAFT_GEAR_SHARE for equipment, whose copies roll a rarity and item level on top (craft_bonus_config.lua: the
 # expected R x L of a crafted copy is at most ~1.9 (craft_ev), so 0.4 keeps the expected sale under the materials)
 CRAFT_GEAR_SHARE = 0.2  # owner 2026-10-14 (was 0.4)
-# crafted equipment: a plain copy is worth at most CRAFT_HOURS of hunting gold at its level band (gamble_config.lua
-# balance.hunting; the band: its level requirement or the highest lowest-monster level of its materials)
+# crafted equipment: a plain copy is worth at most CRAFT_HOURS of hunting gold at its level band (hunt_gold_config.lua
+# hunting, O751; the band: its level requirement or the highest lowest-monster level of its materials)
 CRAFT_HOURS = 1.0
 # the Wandering Merchant's rarity orbs (invasion_config.lua): gilding or re-rolling a plain item and selling it must not
 # pay; every equipment price is capped so the expected gain at item level 150 stays under MERCHANT_MARGIN of the orb
@@ -659,9 +659,10 @@ def build():
 
 
 def hunting_curve():
-    """hunting gold per hour by character level (gamble_config.lua balance.hunting, the "Respec" model)"""
-    g = read(os.path.join(DATA, 'scripts', 'chaos', 'gamble_config.lua'))
-    body = re.search(r'hunting = \{(.*?)\}\s*\n', g, re.S).group(1)
+    """hunting gold per hour by character level: the one curve, hunt_gold_config.lua `hunting` (O751; it was the "Respec"
+    table of gamble_config.lua)"""
+    g = read(os.path.join(DATA, 'scripts', 'chaos', 'hunt_gold_config.lua'))
+    body = re.search(r'hunting = \{(.*?)\}\s*\n\}', g, re.S).group(1)
     return [(int(a), int(b)) for a, b in re.findall(r'\{(\d+), (\d+)\}', body)]
 
 

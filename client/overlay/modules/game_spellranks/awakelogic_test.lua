@@ -142,4 +142,20 @@ if pt then
   end
 end
 
+-- O752: the level gates of the slots and of the spell
+do
+  local s3 = A.cleanState({ on = true, seals = { 999, 999, 999 }, slots = { 0, 0, 0 }, costs = { { 40, 36, 16 }, { 70, 60, 28 }, { 100, 90, 40 } } })
+  local id
+  for k in pairs(D.spells or D) do if type(k) == 'number' then id = k break end end
+  if id and A.entry(D, id) then
+    local c = A.check(s3, D, id, 20, 1, 1, { level = 1799, slot = { 1800, 1950, 2250 }, spell = 0 })
+    eq(c.why, 'slotlevel', 'slot 1 under its level') eq(c.level, 1800, 'names the level')
+    c = A.check(s3, D, id, 20, 1, 1, { level = 2400, slot = { 1800, 1950, 2250 }, spell = 2500 })
+    eq(c.why, 'level', 'the spell under its level') eq(c.level, 2500, 'names it')
+    eq(A.check(s3, D, id, 20, 1, 1, { level = 2500, slot = { 1800 }, spell = 2500 }).ok, true, 'at the level')
+    eq(A.check(s3, D, id, 20, 1, 1).ok, true, 'no gates given: as before')
+  end
+  eq(A.cleanAnswer({ ok = false, why = 'slotlevel', slot = 1, level = 1800 }).level, 1800, 'the answer keeps the level')
+end
+
 print('awakelogic_test: ' .. n .. ' checks OK')

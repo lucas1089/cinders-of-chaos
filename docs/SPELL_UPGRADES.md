@@ -392,6 +392,26 @@ Corpse Explosion needs a corpse, so its Forms are measured by the probe with a c
 
 Count: 85 attack spell rows and 6 heal rows are written above (the Illusionist's five heals and Kindled Breath; the first count of 7 was a miscount), the rest of the 21 classes follow the template. **Phase 4 built it:** `server/data/spells/forms.csv` has 149 spells (133 attack, 16 heal), 596 rows, every one of the 21 classes covered. A CI check, `tools/ci/check_spell_forms.py`, will hold that every attack and heal spell of every class has a `forms.csv` row, two Form I and two Form II, with a pt-BR name for each.
 
+### 2.6 Spell path milestones (O752)
+
+Owner 2026-11-24, "Buraco de magias": the last new spell comes at level 1200 and the early lists have holes of up to 310 levels. No new attack spell fills them: every class keeps 13 (`check_attack_counts.py`). Systems that already exist get level gates instead, so a character sees something open at least every 150 levels from 190 to 2500.
+
+The gates (`server/data/scripts/chaos/spell_milestones_config.lua`, rule `spell_milestones_core.lua`):
+
+| Milestone | Opens at |
+|---|---|
+| Form I of a spell | spell level + 300 |
+| Form II of a spell | spell level under 500: 1050; under 1200: 1650; else 2400 |
+| Awakening of a spell | spell level under 500: the slot alone; under 1200: 2100; else 2500 |
+| Awakening slots 1 / 2 / 3 | 1800 / 1950 / 2250 |
+| Support sockets 2 / 3 (already built, counted only) | max(80, L + 60) / max(200, L + 150) |
+
+- A gate holds the first pick of a Form tier and a new awakening only. A pick already made stays and can still be changed. The rank rule (10 / 20) still comes first.
+- No gate binds the typical character of `spell_upgrade_model.py`: the main spell reaches rank 20 near level 1740, the model's Seal steps are 1900 / 2100 / 2300 / 2500. The models do not move.
+- Rule: `luajit tools/progression_model.lua --check` fails when a class has a stretch above 150 levels without a milestone. `--spells` prints the count and the longest stretch per class, `--spells --detail` every milestone.
+- Result: every class has its longest stretch at exactly 150 levels. From 1050 every class shares the same steps: 1050 Form II, 1200 last spell, 1260 and 1350 sockets, 1500 Form I, 1650 Form II, 1800 slot 1, 1950 slot 2, 2100 awakening, 2250 slot 3, 2400 Form II, 2500 awakening of the ultimates.
+- Client: the Spellbook shows "Next unlock: level N" with what opens in its tooltip. The Forms tab names the level of a gated tier. A level-up that passes milestones sends a toast "New unlock" (kind `milestone`). pt-BR for every text.
+
 ## 3. Awakening
 
 ### 3.1 What it is

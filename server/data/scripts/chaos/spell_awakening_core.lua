@@ -141,9 +141,10 @@ function A.dormantSlots(cfg, slots, known)
 end
 
 -- ---------------------------------------------------------------- the decision
--- st: {on, entry (the spell has a row in awakened.csv), known, rank, f1, f2 (the Form picks, 0 = none), awakened (bit 9), slots, seals = {waystone, rift, pinnacle}}
+-- st: {on, entry (the spell has a row in awakened.csv), known, rank, f1, f2 (the Form picks, 0 = none), awakened (bit 9), slots, seals = {waystone, rift, pinnacle},
+-- level, slotLevels (O752: {level slot 1 needs, ...}, nil: none), gate (O752: the level the spell may be awakened at, nil / 0: none)}
 -- slot: the slot asked for (nil: the lowest free one). Returns {ok, why, slot, cost, need} with why in
--- off | spell | unknown | rank | forms | already | slot | seals | ok
+-- off | spell | unknown | rank | forms | already | slot | slotlevel | level | seals | ok (slotlevel and level carry `level`, the level needed)
 function A.decide(cfg, rankMax, st, slot)
 	if not st.on then
 		return {ok = false, why = "off"}
@@ -170,6 +171,14 @@ function A.decide(cfg, rankMax, st, slot)
 	slot = slot and floor(num(slot, 0)) or free
 	if slot ~= free then
 		return {ok = false, why = "slot", slot = free}
+	end
+	-- O752 (spell_milestones_config.lua): the slot opens at a level, and a late spell awakens at a level
+	local slotNeed = num((st.slotLevels or {})[slot], 0)
+	if num(st.level, 0) < slotNeed then
+		return {ok = false, why = "slotlevel", slot = slot, level = slotNeed}
+	end
+	if num(st.level, 0) < num(st.gate, 0) then
+		return {ok = false, why = "level", slot = slot, level = num(st.gate, 0)}
 	end
 	local cost = A.slotCost(cfg, slot)
 	local need = {}

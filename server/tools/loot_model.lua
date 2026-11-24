@@ -15,6 +15,16 @@
 -- shares. Gold is coins plus the plain NPC price of every item (the "Respec" model's measure; rarity and item level
 -- are left out). Items are the non-coin corpse entries (a stack is one). Orbs, gems, keys (class other) and plain gear
 -- keep the loot factor under both rules, so their per hour does not change.
+--
+-- O751 (owner 2026-11-24 "Acertar o ouro"): the gold per hour of a hunt by level, the one curve every price in hours of
+-- hunting reads (data/scripts/chaos/hunt_gold_config.lua `hunting`), is this model's SALE gold: the corpse gold above with
+-- the gear at what an NPC pays for the copy that drops (x the expected rarity multiplier of its branch, x 1 + item
+-- level / 200 at the monster's level, data/lib/chaos_item_prices.lua) plus the Chaos extra rolls (loot_config.lua
+-- extraRolls x monster_tiers.lua spawnChance x the monster's loot factor, not thinned). The late bands 800-2500 read
+-- tools/loot_bands_late_data.lua (our own level-scaled monsters, tools/loot_bands.py --late) and the hunts of the
+-- progression window (0.8-1.1 x the band). --check also holds hunt_gold_config.lua to the model (M.TOL.curve).
+--     cd server && luajit tools/loot_model.lua --income     the sale gold per hour by band and the curve it gives
+--
 -- A test can load it as a library: ChaosLootModelLib = true; local M = dofile("tools/loot_model.lua").
 
 if not ChaosPaceCore or not ChaosPaceCore.levelPlan then
@@ -120,7 +130,10 @@ end
 function M.perKill(mon, rule)
 	local mult = mon.scaled and M.countMult(mon.level) or 1
 	local gold, items, pNoCoin, pEmpty = 0, 0, 1, 1
-	local ngold = 0 -- the part of `gold` that is Rare+ gear and rare drops at their notable share (new rule)
+	local ngold = 0
+	-- O751: the gear gold of the corpse at plain price, notable branch (Rare+) and plain branch; the whole stock loot
+	-- before any thinning (coins and junk, gear at plain price) for the extra rolls
+	local gearN, gearP, gearC, stockGold, stockGear = 0, 0, 0, 0, 0 -- the part of `gold` that is Rare+ gear and rare drops at their notable share (new rule)
 	local f = rule.f
 	local loot = f.loot
 	-- new rule: P(no coin dropped), P(no non-coin non-junk entry shows), the junk entries
@@ -134,6 +147,11 @@ function M.perKill(mon, rule)
 			mean = mean + c[1] * c[2]
 		end
 		local keepEntry -- P(the entry shows in the corpse | it dropped)
+		if cls == "gear" then
+			stockGear = stockGear + p * price
+		elseif cls == "coin" or cls == "junk" then
+			stockGold = stockGold + p * mean * price
+		end
 		if rule.kind == "old" then
 			local s = (cls == "coin" or cls == "junk") and loot * rule.g or loot
 			s = math.min(1, s)
@@ -164,6 +182,9 @@ function M.perKill(mon, rule)
 			elseif notableByChance then
 				gold = gold + p * mean * price * f.notable
 				ngold = ngold + p * mean * price * f.notable
+				if cls == "gear" then
+					gearC = gearC + p * mean * price * f.notable
+				end
 				show = f.notable
 			elseif cls == "junk" and f.cheap and f.cheap > 0 and price <= f.cheap then
 				-- O285: cheap junk stays whole (P.levelPlan `cheap`)
@@ -191,6 +212,8 @@ function M.perKill(mon, rule)
 				show = rule.rare * f.notable + (1 - rule.rare) * loot
 				gold = gold + p * price * show
 				ngold = ngold + p * price * rule.rare * f.notable
+				gearN = gearN + p * price * rule.rare * f.notable
+				gearP = gearP + p * price * (1 - rule.rare) * loot
 			else -- other: P.thinPlan with loot
 				show = 0
 				if stack then
@@ -231,7 +254,7 @@ function M.perKill(mon, rule)
 	gold = gold + newC * newN * floorGold
 	local pFloor = newC * newN * (allQuiet - noneDropped)
 	return {gold = gold, items = items, coins = 1 - (newC * noPaid - pFloor), empty = newC * newN * noneDropped,
-		notableGold = ngold}
+		notableGold = ngold, gearN = gearN, gearP = gearP, gearC = gearC, stockGold = stockGold, stockGear = stockGear}
 end
 
 function M.load(opts)
@@ -240,7 +263,94 @@ function M.load(opts)
 	local data = opts.data or dofile("tools/loot_bands_data.lua")
 	local kills = opts.kills or M.killsTable()
 	local ll = cfg.lootLevel or {}
-	return {cfg = cfg, data = data, kills = kills, ll = ll, rare = M.rarePlusShare(nil, ll.notableRarity)}
+	local late = opts.late or dofile("tools/loot_bands_late_data.lua")
+	return {cfg = cfg, data = data, late = late, kills = kills, ll = ll, rare = M.rarePlusShare(nil, ll.notableRarity),
+		sale = opts.sale or M.saleFactors(nil, ll.notableRarity), extra = opts.extra or M.extraRolls()}
+end
+
+-- O751: the late bands (our own level-scaled monsters, tools/loot_bands_late_data.lua) and the hunts they take: the
+-- progression model's window (progression_config.lua window 0.8-1.1 x the level), the base pool ends at 657
+M.LATE_BANDS = {800, 1000, 1300, 1600, 2000, 2500}
+M.LATE_WINDOW = {0.8, 1.1}
+M.LATE_FROM = 658
+-- the bands of the one gold curve (hunt_gold_config.lua): the base bands and the late ones; 40 is the lowest level the
+-- base data holds (every base monster from level 40)
+M.CURVE_BANDS = {40, 100, 300, 500, 650, 800, 1000, 1300, 1600, 2000, 2500}
+M.RANGES[40] = {34, 46}
+-- --check: every point of hunt_gold_config.lua `hunting` within this share of the model's sale gold at its band
+M.TOL.curve = 0.05
+-- a point may stay at the point before it where the model dips (the curve never falls: a price or a prize in hours of
+-- hunting never gets cheaper with the level), at most this far above the model
+M.TOL.flat = 0.10
+-- the rarity multiplier the Rare+ pieces of the stock roll are counted at in the sale gold (1: their plain price)
+M.RARE_KEPT = 1
+
+-- the expected NPC price multiplier of a gear drop by branch (data/lib/chaos_item_prices.lua: rarity x item level):
+-- {notable = Rare or better, plain = no rarity / Common / Uncommon / Magic, all = every drop}, from the stock roll
+-- (chaos_rarity.lua stockRolls) and the price table's rarityMult (by place)
+function M.saleFactors(R, notableRarity)
+	R = R or dofile("data/lib/chaos_rarity.lua")
+	local data = dofile("data/lib/chaos_item_prices_data.lua")
+	local reach = (tonumber(R.stockRollChance) or 70) / 100
+	local left, rows = 1, {}
+	for i, e in ipairs(R.stockRolls) do
+		local hit = left * e.chance / 100
+		rows[#rows + 1] = {id = e.id, p = reach * hit, mult = data.rarityMult[i] or 1}
+		left = left - hit
+	end
+	local nP, nV, pP, pV = 0, 0, 0, 0
+	for _, r in ipairs(rows) do
+		if r.id >= (notableRarity or 4) then
+			nP, nV = nP + r.p, nV + r.p * r.mult
+		else
+			pP, pV = pP + r.p, pV + r.p * r.mult
+		end
+	end
+	local none = 1 - nP - pP
+	return {notable = nV / nP, plain = (none + pV) / (none + pP), all = none + pV + nV, ilvlDiv = data.ilvlDiv or 200}
+end
+
+-- the item level of a drop of a monster of level `level` (chaos_item_mods.lua itemLevel.curve, at most max)
+function M.itemLevel(level)
+	if not M._ilvl then
+		local text = readFile("data/lib/chaos_item_mods.lua")
+		local body = text:match("itemLevel%s*=%s*{.-curve%s*=%s*(%b{})")
+		local pts = {}
+		for a, b in body:gmatch("{%s*(%d+)%s*,%s*(%d+)%s*}") do
+			pts[#pts + 1] = {tonumber(a), tonumber(b)}
+		end
+		M._ilvl = {pts = pts, max = tonumber(text:match("itemLevel%s*=%s*{%s*max%s*=%s*(%d+)")) or 150}
+	end
+	return math.min(M._ilvl.max, P.lin(M._ilvl.pts, level, 1))
+end
+
+-- the expected extra rolls of a kill (loot_config.lua extraRolls x extraChanceMult x monster_tiers.lua spawnChance): the
+-- share of the monster's stock loot that comes again (x its loot factor, loot.lua L.rollExtraLoot), and their count mult
+function M.extraRolls()
+	local lc = dofile("data/scripts/chaos/loot_config.lua")
+	local text = readFile("data/scripts/chaos/monster_tiers.lua")
+	local body = text:match("spawnChance%s*=%s*(%b{})")
+	local out = 0
+	for _, t in ipairs({"magic", "rare", "legendary"}) do
+		local c = tonumber(body:match(t .. "%s*=%s*(%d+)")) or 0
+		out = out + c / 10000 * (lc.extraRolls[t] or 0) * (lc.extraChanceMult[t] or 1) * (lc.extraCountMult[t] or 1)
+	end
+	return out
+end
+
+-- the sale gold of one kill (O751): the corpse gold with its gear at the copy's NPC price, plus the extra rolls
+function M.saleKill(ctx, mon, k)
+	local lm = 1 + M.itemLevel(mon.level) / ctx.sale.ilvlDiv
+	-- gear: the plain branch and gear of a rare loot entry (chance at most 1%: any rarity) at the copy's NPC price; the
+	-- Rare+ pieces of the stock roll at their plain price x the item level (M.RARE_KEPT): they are the pieces a hunter
+	-- equips, salvages or sells on the market, not to an NPC at x6-24 (--income prints what that would add)
+	local plain = k.gold - k.gearN - k.gearP - (k.gearC or 0)
+	local kept = ctx.rareKept or M.RARE_KEPT
+	local anyRarity = ctx.rare * kept + (1 - ctx.rare) * ctx.sale.plain
+	local gear = (k.gearN * kept + k.gearP * ctx.sale.plain + (k.gearC or 0) * anyRarity) * lm
+	local f = P.factors(ctx.cfg, mon.level, mon.scaled)
+	local extra = ctx.extra * math.min(1, f.loot) * (k.stockGold + k.stockGear * anyRarity * lm)
+	return plain + gear + extra, plain, gear, extra
 end
 
 function M.killsPerHour(ctx, mon)
@@ -261,11 +371,31 @@ function M.rules(ctx, mon, override)
 end
 
 -- one band: spawn-weighted per hour of both rules. override = {coins, junkKeep} for every monster (--derive)
-function M.band(ctx, band, override)
-	local lo, hi = M.RANGES[band][1], M.RANGES[band][2]
+function M.bandRange(band)
+	if M.RANGES[band] then
+		return M.RANGES[band][1], M.RANGES[band][2], false
+	end
+	if band > M.LATE_BANDS[1] - 1 then
+		return math.max(M.LATE_FROM, math.floor(band * M.LATE_WINDOW[1])), math.ceil(band * M.LATE_WINDOW[2]), true
+	end
+	return math.floor(band * 0.85), math.ceil(band * 1.15), false
+end
+-- mix (O751, the one gold curve): the hunts of the base data and of the late data inside the range together (the base
+-- pool ends at 657, the late monsters start at 658: a character of level 650 hunts both)
+function M.band(ctx, band, override, mix)
+	local lo, hi, late = M.bandRange(band)
+	local list = late and ctx.late or ctx.data
+	if mix then
+		list = {}
+		for _, src in ipairs({ctx.data, ctx.late}) do
+			for _, mon in ipairs(src) do
+				list[#list + 1] = mon
+			end
+		end
+	end
 	local acc = {w = 0, kills = 0, oldGold = 0, newGold = 0, oldItems = 0, newItems = 0, oldEmpty = 0, newEmpty = 0,
-		oldRare = 0, newRare = 0, notableGold = 0, n = 0}
-	for _, mon in ipairs(ctx.data) do
+		oldRare = 0, newRare = 0, notableGold = 0, n = 0, sale = 0, salePlain = 0, saleGear = 0, saleExtra = 0}
+	for _, mon in ipairs(list) do
 		if mon.level >= lo and mon.level <= hi then
 			local w = mon.spawns
 			local k = M.killsPerHour(ctx, mon)
@@ -278,6 +408,9 @@ function M.band(ctx, band, override)
 			acc.oldItems, acc.newItems = acc.oldItems + w * k * a.items, acc.newItems + w * k * b.items
 			acc.oldEmpty, acc.newEmpty = acc.oldEmpty + w * a.empty, acc.newEmpty + w * b.empty
 			acc.notableGold = acc.notableGold + w * k * b.notableGold
+			local sale, sp, sg, se = M.saleKill(ctx, mon, b)
+			acc.sale, acc.salePlain = acc.sale + w * k * sale, acc.salePlain + w * k * sp
+			acc.saleGear, acc.saleExtra = acc.saleGear + w * k * sg, acc.saleExtra + w * k * se
 			-- Rare+ gear drops per kill that show: the stock gear chances x the Rare+ share x the notable share
 			local gear = 0
 			for _, e in ipairs(mon.loot) do
@@ -293,7 +426,25 @@ function M.band(ctx, band, override)
 	local w = math.max(acc.w, 1)
 	return {band = band, monsters = acc.n, kills = acc.kills / w, oldGold = acc.oldGold / w, newGold = acc.newGold / w,
 		oldItems = acc.oldItems / w, newItems = acc.newItems / w, oldEmpty = acc.oldEmpty / w,
-		newEmpty = acc.newEmpty / w, oldRare = acc.oldRare / w, newRare = acc.newRare / w, notableGold = acc.notableGold / w}
+		newEmpty = acc.newEmpty / w, oldRare = acc.oldRare / w, newRare = acc.newRare / w, notableGold = acc.notableGold / w,
+		sale = acc.sale / w, salePlain = acc.salePlain / w, saleGear = acc.saleGear / w, saleExtra = acc.saleExtra / w}
+end
+
+-- O751: the one gold curve: {level, sale gold per hour, band row} at M.CURVE_BANDS (rounded to 1000; the base data starts
+-- at level 40, the level 8 point of hunt_gold_config.lua is not modelled)
+function M.curve(ctx)
+	local pts = {}
+	for _, b in ipairs(M.CURVE_BANDS) do
+		local r = M.band(ctx, b, nil, true)
+		pts[#pts + 1] = {b, math.floor(r.sale / 1000 + 0.5) * 1000, r}
+	end
+	return pts
+end
+
+-- the hunting gold of hunt_gold_config.lua at a level (linear between its points, flat beyond)
+function M.huntGold(level, cfg)
+	cfg = cfg or dofile("data/scripts/chaos/hunt_gold_config.lua")
+	return P.lin(cfg.hunting, level, 0)
 end
 
 -- the shares (constant over the band) that hold the gold and items per hour a band is held to (`lootLevel.goldPerHour`
@@ -401,10 +552,9 @@ function M.monster(ctx, name)
 	return nil
 end
 
+-- the hunting gold per hour of the one curve (hunt_gold_config.lua; before O751 the "Respec" table of gamble_config.lua)
 function M.respec(level)
-	local g = dofile("data/scripts/chaos/gamble_config.lua")
-	local pts = g.balance and g.balance.hunting
-	return pts and P.lin(pts, level, 0) or 0
+	return M.huntGold(level)
 end
 
 local function fmt(n)
@@ -415,7 +565,7 @@ end
 M.fmt = fmt
 
 function M.report(ctx)
-	local lines = {"| Band | Monsters | Kills/h | Gold/h before | Gold/h after | Items/h before | Items/h after | Per kill: gold, items before / after | Empty corpse before / after | Rare+ gear/h before / after | \"Respec\" gold/h |",
+	local lines = {"| Band | Monsters | Kills/h | Gold/h before | Gold/h after | Items/h before | Items/h after | Per kill: gold, items before / after | Empty corpse before / after | Rare+ gear/h before / after | Sale gold/h (hunt_gold_config.lua) |",
 		"|---|---|---|---|---|---|---|---|---|---|---|"}
 	local rows = {}
 	for _, b in ipairs(M.BANDS) do
@@ -451,6 +601,32 @@ function M.main(args)
 			print(string.format("band %4d  gold %+.1f%%  items %+.1f%%", b, 100 * (r.newGold / r.oldGold - 1),
 				100 * (r.newItems / r.oldItems - 1)))
 		end
+		return 0
+	end
+	if mode == "--income" then
+		print("| Band | Hunts (levels) | Monsters | Kills/h | Corpse gold/h | Coins and junk/h | Gear at sale price/h | Extra rolls/h | Sale gold/h | hunt_gold_config.lua |")
+		print("|---|---|---|---|---|---|---|---|---|---|")
+		for _, pt in ipairs(M.curve(ctx)) do
+			local r = pt[3]
+			local lo, hi = M.bandRange(pt[1])
+			print(string.format("| %d | %d-%d | %d | %s | %s | %s | %s | %s | %s | %s |", pt[1], lo, hi, r.monsters, fmt(r.kills),
+				fmt(r.newGold), fmt(r.salePlain), fmt(r.saleGear), fmt(r.saleExtra), fmt(r.sale), fmt(M.huntGold(pt[1]))))
+		end
+		print(string.format("gear price x%.2f (no rarity to Magic), Rare+ x%g (kept; x%.2f sold to an NPC) before the item level; Rare+ share %.3f; extra rolls %.4f of a kill's stock loot x its loot factor",
+			ctx.sale.plain, M.RARE_KEPT, ctx.sale.notable, ctx.rare, ctx.extra))
+		ctx.rareKept = ctx.sale.notable
+		local t = {}
+		for _, b in ipairs(M.CURVE_BANDS) do
+			t[#t + 1] = string.format("%d: %s", b, fmt(M.band(ctx, b, nil, true).sale))
+		end
+		print("with every Rare+ piece sold to an NPC: " .. table.concat(t, ", "))
+		ctx.rareKept = nil
+		local t, prev = {}, 0
+		for _, pt in ipairs(M.curve(ctx)) do
+			prev = math.max(prev, pt[2])
+			t[#t + 1] = string.format("{%d, %d}", pt[1], prev)
+		end
+		print("hunting = {" .. table.concat(t, ", ") .. "} (never falling)")
 		return 0
 	end
 	if mode == "--derive" then
@@ -530,6 +706,30 @@ function M.main(args)
 						a.band, b.band, step, fmt(a.newGold), fmt(b.newGold), tradeStep, M.MAX_STEP))
 				end
 			end
+		end
+		-- O751: the one gold curve (hunt_gold_config.lua) at the model's sale gold, every band, never falling (a point held
+		-- at the one before where the model dips, at most M.TOL.flat above it)
+		local hg = dofile("data/scripts/chaos/hunt_gold_config.lua")
+		local prev = 0
+		for _, pt in ipairs(M.curve(ctx)) do
+			local have = M.huntGold(pt[1], hg)
+			local d = have / pt[3].sale - 1
+			local held = math.abs(have - prev) < 0.5 and d > 0 and d <= M.TOL.flat
+			if math.abs(d) > M.TOL.curve and not held then
+				bad = bad + 1
+				print(string.format("hunt_gold_config.lua at level %d: %s against the model's sale gold %s (%+.1f%%, allowed %.0f%%)",
+					pt[1], fmt(have), fmt(pt[3].sale), 100 * d, 100 * M.TOL.curve))
+			end
+			if have < prev then
+				bad = bad + 1
+				print(string.format("hunt_gold_config.lua falls at level %d (%s after %s)", pt[1], fmt(have), fmt(prev)))
+			end
+			prev = have
+		end
+		local last = hg.hunting[#hg.hunting][1]
+		if last < M.CURVE_BANDS[#M.CURVE_BANDS] then
+			bad = bad + 1
+			print(string.format("hunt_gold_config.lua ends at level %d, the model to %d", last, M.CURVE_BANDS[#M.CURVE_BANDS]))
 		end
 		print(bad == 0 and "loot model: every band within the tolerances" or "loot model: OUT OF TOLERANCE")
 		return bad == 0 and 0 or 1

@@ -643,6 +643,21 @@ local function worldRewardOf(run, player)
 	end
 	local pool = ChaosWorldBoss and ChaosWorldBoss.uniquePool and ChaosWorldBoss.uniquePool(boss.name) or {}
 	local r = K.worldReward(wb.reward or {}, boss, run.settings.lootMult, pool, math.random, C().worldReward)
+	-- O753: the chase pity (chase_pity.lua "pocket"): a missed unique roll gets a second one that lifts the chance by the
+	-- misses, the n-th pocket of a boss with uniques gives one for sure
+	local CP = ChaosChasePity
+	local uniqueOn = (C().worldReward or {unique = true}).unique ~= false
+	if CP and CP.enabled() and uniqueOn and #pool > 0 then
+		local forced = false
+		if not r.unique then
+			local p = math.min(1, ((wb.reward or {}).uniqueChance or 0) * (run.settings.lootMult or 1) / 10000)
+			forced = CP.forced(player, "pocket")
+			if CP.topUp(player, "pocket", p) then
+				r.unique = pool[math.random(#pool)]
+			end
+		end
+		CP.record(player, "pocket", r.unique ~= nil, forced)
+	end
 	local parts, inboxUsed = {}, false
 	for _, it in ipairs(r.items) do
 		inboxUsed = giveStack(player, it.id, it.count) or inboxUsed
@@ -666,6 +681,9 @@ local function worldRewardOf(run, player)
 			inboxUsed = giveEx(player, item) or inboxUsed
 			if ChaosUniqueIntro then -- O467
 				pcall(ChaosUniqueIntro.found, player)
+			end
+			if ChaosCollectionLog then -- O753
+				pcall(ChaosCollectionLog.note, player, r.unique, 1)
 			end
 			local e = ChaosUniqueById and ChaosUniqueById[r.unique]
 			parts[#parts + 1] = e and e.name or itemName(r.unique)

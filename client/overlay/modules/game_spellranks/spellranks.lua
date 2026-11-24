@@ -89,8 +89,24 @@ function isOn()
   return L.isOn(state)
 end
 
+-- O752: the level of a spell from the Spellbook's list (nil when the list has not come yet: then no level gate is counted)
+local function learnOf(id)
+  local book = modules and modules.game_spellbook
+  if book and book.spellLevel then
+    local ok, v = pcall(book.spellLevel, id)
+    if ok then return v end
+  end
+  return nil
+end
+
 function getPickableCount()
-  return L.pickableCount(state, picks, rawget(_G, 'ChaosFormsData'))
+  return L.pickableCount(state, picks, rawget(_G, 'ChaosFormsData'), playerLevel(), learnOf)
+end
+
+-- O752: the next spell path milestone of the character's class: short, long text (nil when none is known)
+function nextMilestone()
+  if not L.isOn(state) then return nil end
+  return L.milestoneText(state.ms, playerLevel(), tr)
 end
 
 function canShowTab(spell)
@@ -223,6 +239,8 @@ local function awakeWhy(code, chk)
   if code == 'forms' then return tr('Pick both Forms of the spell first.') end
   if code == 'already' then return tr('This spell is awakened.') end
   if code == 'slot' then return tr('All three slots are taken.') end
+  if code == 'slotlevel' then return tr('Awakening slot %d opens at level %d.', chk and chk.slot or 0, chk and chk.level or 0) end
+  if code == 'level' then return tr('This spell can be awakened from level %d.', chk and chk.level or 0) end
   if code == 'seals' then
     local n = chk and chk.need or { 0, 0, 0 }
     return tr('Not enough Seals: %d Waystone, %d Rift and %d Pinnacle more.', n[1], n[2], n[3])
@@ -257,7 +275,9 @@ local function renderAwake(p, id, rank, pk, entry)
     decimal((awake.bonus or 0.1) * 100))
   p.awakeText:setText(table.concat(parts, ' '))
   p.awakeText:setTooltip(table.concat(parts, '\n'))
-  local chk = AL.check(awake, data, id, rank, pk.f1, pk.f2)
+  local learn = shownSpell and tonumber(shownSpell.level) or nil
+  local gates = state and state.ms and { level = playerLevel(), slot = state.ms.sl, spell = learn and L.awakenGate(state.ms, learn) or 0 } or nil
+  local chk = AL.check(awake, data, id, rank, pk.f1, pk.f2, gates)
   p.awakeDo:setText(tr('Awaken'))
   p.awakeDo:setEnabled(chk.ok)
   p.awakeDo:setTooltip(chk.ok and tr('Awaken this spell: %d Waystone, %d Rift and %d Pinnacle Seals', chk.cost[1], chk.cost[2], chk.cost[3])
@@ -323,13 +343,20 @@ local function render()
   for tier = 1, 2 do
     local ids = FORM_IDS[tier]
     local a, b, ta, tb, title = p[ids[1]], p[ids[2]], p[ids[3]], p[ids[4]], p[ids[5]]
-    local st = L.tierState(rl, rank, pk.f1, pk.f2, tier)
-    local usable = not st.locked and not st.needForm1
+    local learn = shownSpell and tonumber(shownSpell.level) or nil
+    local gate = learn and L.formGate(state.ms, tier, learn) or 0
+    local st = L.tierState(rl, rank, pk.f1, pk.f2, tier, gate, playerLevel())
+    local usable = not st.locked and not st.needForm1 and not st.levelLocked
     if tier == 1 then
-      title:setText(st.locked and tr('Form I: opens at rank %d', st.rankNeeded) or tr('Form I'))
+      title:setText(st.locked and tr('Form I: opens at rank %d', st.rankNeeded)
+        or (st.levelLocked and tr('Form I: opens at level %d', st.levelNeeded) or tr('Form I')))
     else
       title:setText(st.locked and tr('Form II: opens at rank %d', st.rankNeeded)
-        or (st.needForm1 and tr('Form II: pick a Form I first') or tr('Form II')))
+        or (st.needForm1 and tr('Form II: pick a Form I first')
+        or (st.levelLocked and tr('Form II: opens at level %d', st.levelNeeded) or tr('Form II'))))
+    end
+    if st.levelNeeded > 0 then
+      title:setTooltip(tr('This Form tier opens at rank %d and level %d.', st.rankNeeded, st.levelNeeded))
     end
     title:setColor(usable and GOLD or DIM)
     local row = forms and forms.tiers[tier]
@@ -383,6 +410,7 @@ local function whyText(code, res)
     return tr('The spell needs rank %d for this Form.', tier)
   end
   if code == 'form1' then return tr('Pick a Form I first.') end
+  if code == 'level' then return tr('This Form opens at level %d.', res and res.need or 0) end
   if code == 'gold' then return tr('You need %s gold, in the bank and your backpack together.', gold(res and res.price or 0)) end
   if code == 'tier' or code == 'pick' then return tr('That Form does not exist.') end
   if code == 'first' then return tr('Form chosen.') end
@@ -410,7 +438,9 @@ onPickClick = function(tier, pick)
   local pk = picks[id] or { f1 = 0, f2 = 0 }
   local rank = L.rank(state, id)
   local rl = rules()
-  local q = L.quote(rl, id, tier, pick, rank, pk.f1, pk.f2, playerLevel(), lastPick, now())
+  local learn = shownSpell and tonumber(shownSpell.level) or nil
+  local gate = learn and state and L.formGate(state.ms, tier, learn) or 0
+  local q = L.quote(rl, id, tier, pick, rank, pk.f1, pk.f2, playerLevel(), lastPick, now(), gate)
   if q.kind == 'locked' then
     say(id, tr('The spell needs rank %d for this Form.', tier == 2 and rl.rank2 or rl.rank1), false)
     render()
@@ -419,6 +449,9 @@ onPickClick = function(tier, pick)
     render()
   elseif q.kind == 'same' then
     say(id, tr('That Form is already chosen.'), false)
+    render()
+  elseif q.kind == 'level' then
+    say(id, tr('This Form opens at level %d.', q.level or 0), false)
     render()
   elseif q.kind == 'paid' then
     local box

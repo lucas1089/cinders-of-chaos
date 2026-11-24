@@ -44,6 +44,16 @@ return {
 	killerSummon = "Player's summon",
 	killerOther = "Environment or unknown",
 
+	-- O751 gold sinks: the gold a character pays to a system, per sink and level band: sink_gold (gold), sink_n
+	-- (payments), sink_back (gold given back when a later step failed). Chaos.pay(player, amount, quiet, sink) reports
+	-- every payment that went through; a call that names no sink, or names one not listed here, counts as "other".
+	-- fusion, salvage and repair take no gold in our scripts today (salvage pays materials, fusion and the base repairs
+	-- are base scripts): the keys are here so a later hook needs no config change. The Chaos Coin store takes no gold.
+	goldSinks = {"gambler", "market_tax", "market_fee", "blessing", "restock", "respec", "fusion", "salvage", "repair",
+		"other"},
+	-- one payment above this is clipped (a bad number never reaches the table)
+	goldSinkMax = 2000000000,
+
 	-- small-number suppression in every report (progress_metrics.py MIN_SHOWN, metrics_core.lua M.suppress): a count
 	-- of 1 to minShown - 1 is shown as "<5", with its share and median left out. Keep both in step.
 	minShown = 5,

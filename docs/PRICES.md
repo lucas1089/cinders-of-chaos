@@ -117,7 +117,7 @@ A tier replaces the flask of its slot. Since O273 no flask has charges, so what 
 
 Owner: "Veja os custos das coisas da Store. Veja se estão muito altos ou muito baixos. Faça uma balanceada nisso."
 `cd server && luajit tools/store_model.lua` prints every table below from the configs and the models (`progression_model.lua` for
-levels per hour, `loot_model.lua` for gold per hour); `--check` enforces the rules (`store_balance_config.lua`). These are
+levels per hour, `hunt_gold_config.lua` for gold per hour since O751, `loot_model.lua` before); `--check` enforces the rules (`store_balance_config.lua`). These are
 computed numbers, not measured in game: nobody has played the store yet (payments are off in the beta).
 
 ### Principles
@@ -161,6 +161,45 @@ computed numbers, not measured in game: nobody has played the store yet (payment
 - **Pets** (400 each, per character) sell small abilities (a heal of 4 to 8%, gold find +2 to 7%). The same pets and abilities come
   free from achievements and bosses, so it is a time saver, not a new power.
 - **World Loot** extra roll: `loot_model.lua` does not model it. Watch it in the beta.
+
+## One gold curve (O751, 2026-11-24)
+
+Owner: "Acertar o ouro". Every price sized in "hours of hunting gold" now reads one table:
+`server/data/scripts/chaos/hunt_gold_config.lua` `hunting`. It is the loot model's sale gold (`cd server && luajit
+tools/loot_model.lua --income`): coins and junk at NPC price, dropped gear at what an NPC pays for the copy, the Chaos extra
+rolls; Rare+ pieces at their plain price. `--check` in CI holds it within 5% of the model to level 2500. Details:
+server/README.md "One gold curve (O751)".
+
+The old "Respec" table (`tools/respec_income.py`) was an unpaced hunt with no corpse rule. It ran 2.1x the real hunt at
+level 100, 4.6x at 500 and 5.9x at 1000.
+
+| Level | 8 | 40 | 100 | 300 | 500 | 1000 | 1500 | 2000 | 2500 |
+|---|---|---|---|---|---|---|---|---|---|
+| Gold / h before | 19,000 | 83,000 | 358,839 | 881,866 | 5,548,330 | 9,519,711 | 9,519,711 | 9,519,711 | 9,519,711 |
+| Gold / h now | 19,000 | 65,000 | 164,000 | 619,000 | 1,197,000 | 1,550,000 | 1,787,000 | 1,839,000 | 1,970,000 |
+
+### Prices that changed
+
+| What | Config | Before | After |
+|---|---|---|---|
+| Gambler crate price curve, item level 20 / 33 / 49 / 67 / 82 / 118 / 150 | `gamble_config.lua` `price.curve` | 20,000 / 56,000 / 97,000 / 300,000 / 850,000 / 1,500,000 / 1,800,000 | 12,900 / 26,000 / 59,700 / 114,000 / 182,200 / 246,400 / 347,400 |
+| Gambler armour piece at level 100 / 500 / 1000 | same | 64,400 / 977,500 / 1,696,200 | 29,900 / 209,500 / 278,700 |
+| Profession material, tiers 2 / 3 / 4 / 5 | `professions_config.lua` tiers `price` | 80 / 350 / 800 / 4,000 | 75 / 160 / 540 / 870 |
+| Refine cost: Delving 3, Delving 5, Wortcunning 3, Flaying 4 | `professions_config.lua` `refine` | 50 each | 80 / 130 / 80 / 60 |
+| Respec full reset at 100 / 300 / 500 / 1000 / 2500 | `respec_config.lua` (37.5 min of the curve) | 225,000 / 565,000 / 3,450,000 / 5,950,000 / 13,450,000 | 102,000 / 386,000 / 748,000 / 968,000 / 1,231,000 |
+| Main quest boss gold | `mainquest_config.lua` | 1,500,000 | 180,000 |
+| Coins of base monsters at level 300 | `pace_config.lua` `base.coins` | 0.2697 | 0.30 |
+| NPC price of 216 gear pieces under the Gambler cap | `gen_item_prices.py` -> `sell_prices.lua` | the old cap | the new cap (lower) |
+| Roulette gold prize, cursed chest gold, Ember Cache and weekly chest gold | their configs read the curve | the "Respec" table | the curve (about 0.2x late) |
+
+The store's coin rate (1,000 gold a coin) and every coin price are unchanged; `store_model.lua --check` passes. A Double
+Experience Potion is now 0.04 hours of gold at level 500 and 0.025 at 2500.
+
+### Open for the owner
+
+- Rift gold still sits on the old table: tier 15 pays 1.5-2x of 9.5M an hour, about 10x the new hunt at level 1000.
+- Base NPC runes are flat: 300 attack runes an hour cost 90% of the hunting gold at level 45 (62% before).
+- Hall hunts thin out above level 2282 (fewer than 5 in 0.8-1.1x).
 
 ## Stash room (O316, 2026-10-29)
 

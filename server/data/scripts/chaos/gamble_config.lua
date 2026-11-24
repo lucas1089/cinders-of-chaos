@@ -141,18 +141,21 @@ C.sets = {
 -- itemLevel.spread below): the price at a hunting level is what it was, within the whole item levels. Before:
 -- {1, 1500} {4, 3000} {5, 3600} {12, 8300} {18, 13000} {22, 20000} {36, 56000} {54, 97000} {67, 150000} {74, 300000}
 -- {90, 850000} {106, 1100000} {118, 1350000} {123, 1500000} {136, 1650000} {150, 1800000}
+-- O751: every point moved by the new hunting gold over the old "Respec" gold at the character levels of that item level
+-- (the one curve, hunt_gold_config.lua), so a piece stays about the same share of an hour. Before:
+-- {1, 1500} {4, 3000} {5, 3600} {11, 8300} {17, 13000} {20, 20000} {33, 56000} {49, 97000} {61, 150000} {67, 300000}
+-- {82, 850000} {99, 1100000} {112, 1350000} {118, 1500000} {142, 1650000} {150, 1800000}
 C.price = {
-	curve = {{1, 1500}, {4, 3000}, {5, 3600}, {11, 8300}, {17, 13000}, {20, 20000}, {33, 56000}, {49, 97000},
-		{61, 150000}, {67, 300000}, {82, 850000}, {99, 1100000}, {112, 1350000}, {118, 1500000}, {142, 1650000},
-		{150, 1800000}},
+	curve = {{1, 1500}, {4, 3000}, {5, 3400}, {11, 6900}, {17, 10100}, {20, 12900}, {33, 26000}, {49, 59700},
+		{61, 102200}, {67, 114000}, {82, 182200}, {99, 194500}, {112, 222100}, {118, 246400}, {142, 318700}, {150, 347400}},
 	slot = {weapon = 1.3, armor = 1.15, shield = 1.0, helmet = 1.0, legs = 1.0, boots = 0.9, amulet = 1.1, ring = 1.1,
 		quiver = 1.0},
 	round = 100
 }
 C.balance = {
 	minShare = 0.08, maxShare = 0.35,
-	-- hunting gold per hour by character level (professions_config.lua C.balance.hunting; server/README.md "Respec")
-	hunting = {{8, 19000}, {40, 83000}, {100, 358839}, {300, 881866}, {500, 5548330}, {1000, 9519711}}
+	-- hunting gold per hour by character level: the one curve (hunt_gold_config.lua, O751)
+	hunting = dofile("data/scripts/chaos/hunt_gold_config.lua").hunting
 }
 
 -- early refresh (a new stock before the 4-hour mark): the price is `mult` x the price of an armour piece at the gate,

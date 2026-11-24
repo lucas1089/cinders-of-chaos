@@ -63,7 +63,7 @@ function M.bandFor(level)
 	return (V.bandAt or {})[level] or V.band
 end
 
--- the hunting gold per hour of the level (the Boss Roulette's curve, the same as gamble_config.lua balance.hunting)
+-- the hunting gold per hour of the level (the Boss Roulette's curve: the one curve of hunt_gold_config.lua, O751)
 function M.goldPerHour(level)
 	return K.curve(M.load("boss").gold.hunting, level)
 end
@@ -85,7 +85,8 @@ function M.entryMinutes(cfg, e, level)
 	elseif e.kind == "gold" then
 		return e.count[1] * cfg.gold.perUnit * 60
 	elseif e.kind == "chest" then
-		return assert(M.price(e.id), "no price for " .. e.id) / (M.goldPerHour(level) / 60)
+		local gph = cfg.gold and cfg.gold.hunting and K.curve(cfg.gold.hunting, level) or M.goldPerHour(level)
+		return assert(M.price(e.id), "no price for " .. e.id) / (gph / 60)
 	elseif e.kind == "unique" then
 		return V.uniqueMinutes
 	end

@@ -13518,6 +13518,18 @@ class SpellUpgradesLive(unittest.TestCase):
         self.assertEqual(TX.spell_forms_verdict({'steps': []})[0], TX.SKIP)
         self.assertIn('no hit', TX.spell_forms_verdict(self.forms_trace(log=[]))[1])
 
+    def test_level_gate_skip(self):
+        """O752: a step refused under the level gate of a Form tier or an awakening slot is a SKIP, not a FAIL"""
+        t = self.forms_trace()
+        t['steps'][1] = ('first Form I pick', {'ok': True, 'why': 'first'}, self.pick_answer(False, 'level', need=450))
+        st, text = TX.spell_forms_verdict(t)
+        self.assertEqual((st, 'level 450' in text), (TX.SKIP, True), text)
+        steps = [('slot 1', {'ok': True, 'why': 'ok'}, {'ok': False, 'why': 'slotlevel', 'level': 1800})]
+        st, text = TX.level_gate_skip(steps, 'awakening')
+        self.assertEqual((st, 'level 1800' in text), (TX.SKIP, True))
+        self.assertIsNone(TX.level_gate_skip([('x', {'ok': False, 'why': 'level'}, {'ok': False, 'why': 'level'})], 'Forms'), 'an expected refusal is no skip')
+        self.assertIsNone(TX.level_gate_skip(self.forms_trace()['steps'], 'Forms'))
+
     def forms_io(self, rules=None):
         """a game that answers the picks by the rules of F.decide, for the flow of the check"""
         io = FakeIO()

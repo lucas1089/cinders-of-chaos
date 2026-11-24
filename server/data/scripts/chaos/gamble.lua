@@ -324,11 +324,12 @@ local function money(player)
 end
 
 local function takeMoney(player, amount)
-	return Chaos.pay(player, amount) and true or false
+	return Chaos.pay(player, amount, nil, "gambler") and true or false
 end
 
 local function refund(player, amount)
 	player:setBankBalance(player:getBankBalance() + amount)
+	Chaos.goldSink(player, "gambler", amount, true) -- O751: the metrics take it back
 end
 
 function P.near(player)

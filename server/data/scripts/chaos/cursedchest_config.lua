@@ -127,11 +127,11 @@ return {
 	-- Value, so it stays inside the economy models: a player opens about 4-5 chests an hour of hunting (the chances
 	-- above; at most 10 with the cooldown), each after a fight of 2-4 minutes whose monsters drop no loot (they are
 	-- husks: experience only, at the hunt's pace). The gold is `goldMinutes` of hunting gold at the player's level
-	-- (the "Respec" table = gamble_config.lua balance.hunting): 3 minutes x 4.5 an hour = 13% of an hour's gold,
+	-- (the one curve, hunt_gold_config.lua, O751): 3 minutes x 4.5 an hour = 13% of an hour's gold,
 	-- which the fight time (no regular drops) takes back. Orbs: one Orb of Upheaval (a rift tier 15 run gives 3-6 in
 	-- about 8 minutes) and a few percent of an Orb of Fate. Gear: 1-2 pieces with a better rarity than a rare kill.
 	loot = {
-		hunting = {{8, 19000}, {40, 83000}, {100, 358839}, {300, 881866}, {500, 5548330}, {1000, 9519711}},
+		hunting = dofile("data/scripts/chaos/hunt_gold_config.lua").hunting,
 		goldMinutes = 3, goldMin = 80, goldMax = 125, -- percent of the average
 		chaosOrb = {id = 29856, min = 1, max = 1, perLevels = 400, cap = 4},
 		divineOrb = {id = 29857, chance = 3}, -- percent, x item find

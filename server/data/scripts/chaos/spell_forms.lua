@@ -38,6 +38,11 @@ if not ChaosSpellEvents or not ChaosSpellEvents.set then
 	pcall(dofile, "data/lib/chaos_spell_events.lua")
 end
 
+if not ChaosSpellMilestonesCore or not ChaosSpellMilestonesCore.formLevel then
+	dofile("data/scripts/chaos/spell_milestones_core.lua")
+end
+ChaosSpellMilestonesConfig = ChaosSpellMilestonesConfig or dofile("data/scripts/chaos/spell_milestones_config.lua")
+
 local FE = ChaosSpellForms
 local F = ChaosSpellFormsCore
 local R = ChaosSpellRanks
@@ -687,6 +692,17 @@ function FE.picksOf(player)
 	return list
 end
 
+-- O752: the level the Form tier of a spell opens at (spell_milestones_config.lua), nil while the milestones are off. The spell's own
+-- level is the ranks catalog's (spells.xml)
+function FE.gateLevel(spellId, tier)
+	local mc = ChaosSpellMilestonesConfig
+	if not mc or mc.enabled ~= true then
+		return nil
+	end
+	local info = R.catalog and R.catalog[tonumber(spellId) or -1]
+	return ChaosSpellMilestonesCore.formLevel(mc, tier, info and info.level or 0)
+end
+
 -- the answer of a pick: {ok, why, price, spell, tier, pick, f1, f2}
 function FE.pick(player, spellId, tier, pick)
 	spellId, tier, pick = tonumber(spellId), tonumber(tier), tonumber(pick)
@@ -700,7 +716,8 @@ function FE.pick(player, spellId, tier, pick)
 	local rank, f1, f2 = FE.state(player, spellId)
 	local k = cfg.storage
 	local st = {rank = rank, f1 = f1, f2 = f2, level = player:getLevel(), spellId = spellId, now = os.time(),
-		lastAt = player:getStorageValue(k.lastPickAt), lastWhat = player:getStorageValue(k.lastPickWhat)}
+		lastAt = player:getStorageValue(k.lastPickAt), lastWhat = player:getStorageValue(k.lastPickWhat),
+		gate = FE.gateLevel(spellId, tier)}
 	local d = F.decide(st, tier, pick, cfg)
 	if not d.ok or d.noop then
 		d.spell, d.tier, d.pick, d.f1, d.f2 = spellId, tier, pick, f1, f2

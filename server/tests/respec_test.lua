@@ -22,10 +22,15 @@ end
 
 -- curve
 check(C.fullCost(49) == 0 and C.nodeCost(49) == 0, "free below level 50")
+-- O751: the curve is 37.5 minutes of the one gold curve (hunt_gold_config.lua), rounded down to 1,000
+local HG = {}
+for _, p in ipairs(dofile("data/scripts/chaos/hunt_gold_config.lua").hunting) do HG[p[1]] = p[2] end
+local function want(level) return math.floor(HG[level] * 37.5 / 60 / 1000) * 1000 end
 check(C.fullCost(50) == 50000, "level 50 point")
-check(C.fullCost(100) == 225000 and C.fullCost(300) == 565000 and C.fullCost(1000) == 5950000, "curve points")
-check(C.fullCost(200) == 395000, "linear between points")
-check(C.fullCost(1200) == 6950000, "last slope past the last point")
+check(C.fullCost(100) == want(100) and C.fullCost(300) == want(300) and C.fullCost(1000) == want(1000), "curve points")
+check(C.fullCost(200) == math.floor((want(100) + want(300)) / 2 / 1000) * 1000, "linear between points")
+check(C.fullCost(3000) == math.floor((want(2500) + (want(2500) - want(2000)) * 500 / 500) / 1000) * 1000,
+	"last slope past the last point")
 local last = 0
 for level = 50, 2000, 7 do
 	local cost = C.fullCost(level)
@@ -33,10 +38,23 @@ for level = 50, 2000, 7 do
 	last = cost
 end
 check(C.fullCost(600, "paragon") == C.fullCost(600) * cfg.paragonFactor, "paragon factor")
-check(C.nodeCost(1000) == 238000 and C.nodeCost(100) == 9000, "node refund = 4% of the full reset")
+check(C.nodeCost(1000) == math.floor(want(1000) * 0.04 / 1000) * 1000 and C.nodeCost(100) == math.floor(want(100) * 0.04 / 1000) * 1000,
+	"node refund = 4% of the full reset")
 check(C.nodeCost(50) == 2000, "node refund at level 50")
--- ~37.5 minutes / ~1.5 minutes of the measured income (respec_income.py)
-local income = {[100] = 358839, [300] = 881866, [500] = 5548330, [600] = 6342606, [1000] = 9519711}
+-- ~37.5 minutes / ~1.5 minutes of the hunting gold (hunt_gold_config.lua, O751; respec_income.py before)
+local income = {}
+for _, L in ipairs({100, 300, 500, 600, 1000, 1500, 2000, 2500}) do
+	income[L] = HG[L]
+	if not income[L] then
+		local hg = dofile("data/scripts/chaos/hunt_gold_config.lua").hunting
+		for i = 2, #hg do
+			if L <= hg[i][1] then
+				income[L] = hg[i - 1][2] + (hg[i][2] - hg[i - 1][2]) * (L - hg[i - 1][1]) / (hg[i][1] - hg[i - 1][1])
+				break
+			end
+		end
+	end
+end
 for level, perHour in pairs(income) do
 	local minutes = C.fullCost(level) / perHour * 60
 	check(minutes >= 30 and minutes <= 45, string.format("full reset at %d = %.1f min of hunting", level, minutes))
@@ -112,24 +130,26 @@ dofile("data/scripts/chaos/respec.lua")
 local A = ChaosPassiveTree.extraActions
 local R = ChaosRespec
 
-local p = newPlayer(1000, 4, 10000000)
+-- O751: 1.5M gold pays a node and one reset at level 1000, not two resets
+local FULL, NODE, GOLD = want(1000), math.floor(want(1000) * 0.04 / 1000) * 1000, 1500000
+local p = newPlayer(1000, 4, GOLD)
 registered.ChaosRespecLogin.onLogin(p)
 check(p.storage[cfg.freeVocationStorage] == 4, "first login records the vocation")
-check(R.fullCost(p, "tree") == 5950000, "full cost for the player")
+check(R.fullCost(p, "tree") == FULL, "full cost for the player")
 
 -- single-node refund
 A.refundNode(p, {id = 9})
-check(#saved.nodes == 3 and p.gold == 10000000, "refund refused when others depend on it")
+check(#saved.nodes == 3 and p.gold == GOLD, "refund refused when others depend on it")
 A.refundNode(p, {id = 11})
-check(#saved.nodes == 2 and p.gold == 10000000 - 238000, "leaf refunded for the node price")
+check(#saved.nodes == 2 and p.gold == GOLD - NODE, "leaf refunded for the node price")
 local poor = newPlayer(1000, 4, 1000)
 poor.storage[cfg.freeVocationStorage] = 4
 A.refundNode(poor, {id = 9})
-check(#saved.nodes == 2 and texts[#texts]:find("238,000"), "refund without gold refused")
+check(#saved.nodes == 2 and texts[#texts]:find(C.formatGold(NODE)), "refund without gold refused")
 
 -- full reset: paid, then free once after an ascension, then paid again
 A.resetPreset(p, 1)
-check(#saved.nodes == 0 and p.gold == 10000000 - 238000 - 5950000, "full reset paid")
+check(#saved.nodes == 0 and p.gold == GOLD - NODE - FULL, "full reset paid")
 saved.nodes = {2, 9}
 p.voc = 8 -- ascended
 check(R.info(p).full == 0 and R.info(p).free == "vocation", "free reset offered after the class change")
@@ -202,7 +222,7 @@ local bot = newTester("Tester Abc")
 saved.nodes = {2, 9, 11}
 A.resetPreset(bot, 1)
 check(#saved.nodes == 0 and bot.gold == 0, "tester: full reset at level 1000 without gold, none created")
-check(printed[#printed] and printed[#printed]:find("waived 5,950,000 gold for tester Tester Abc"), "tester: the waiver is logged")
+check(printed[#printed] and printed[#printed]:find("waived " .. C.formatGold(FULL) .. " gold for tester Tester Abc"), "tester: the waiver is logged")
 check(bot.storage[w.storageUsed] == 1, "tester: counted")
 saved.nodes = {2, 9, 11}
 A.refundNode(bot, {id = 11})
@@ -236,7 +256,7 @@ for _, c in ipairs({
 	A.resetPreset(who, 1)
 	check(#saved.nodes == 3 and who.gold == 0 and who.storage[w.storageUsed] == nil, c[1] .. ": pays like everybody")
 end
-check(R.fullCost(bot, "tree") == 5950000, "tester: the price shown is unchanged (only the payment is waived)")
+check(R.fullCost(bot, "tree") == FULL, "tester: the price shown is unchanged (only the payment is waived)")
 print = rawPrint
 
 print(string.format("respec_test: %d checks, %d failures", count, failures))

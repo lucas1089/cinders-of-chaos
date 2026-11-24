@@ -84,11 +84,11 @@ return {
 	},
 
 	-- gold prizes: unit = the displayed crystal coins; each is perUnit of an hour of hunting gold at the winner's level
-	-- (hunting = gamble_config.lua balance.hunting: {level, gold per hour}, linear between, flat beyond). Paid
+	-- (hunting = the one curve, hunt_gold_config.lua (O751): {level, gold per hour}, linear between, flat beyond). Paid
 	-- as coin stacks (at least one crystal coin).
 	gold = {
 		perUnit = 0.2,
-		hunting = {{8, 19000}, {40, 83000}, {100, 358839}, {300, 881866}, {500, 5548330}, {1000, 9519711}},
+		hunting = dofile("data/scripts/chaos/hunt_gold_config.lua").hunting,
 	},
 
 	-- the unique chest: a unique that no season holds back and that is not an Ascended or boss-only one, of an item level

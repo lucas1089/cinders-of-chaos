@@ -1268,7 +1268,7 @@ function RF.deliver(player, run, auto)
 		-- item sets (itemsets.lua): one chase roll over the sets of this rift's theme
 		if not data.omen and ChaosItemSets and ChaosItemSets.grantChase then
 			local piece = ChaosItemSets.grantChase(player, "rift", run.themeName or run.theme,
-				{tier = data.tier, itemFind = itemFind}, rand)
+				{tier = data.tier, itemFind = itemFind, pityKey = "rift"}, rand)
 			if piece then
 				found[#found + 1] = "{" .. piece .. "}"
 			end

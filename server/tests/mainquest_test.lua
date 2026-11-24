@@ -271,8 +271,8 @@ for _, s in ipairs(cfg.steps) do
 end
 check(gold > 1000000 and gold < 10000000, "total gold of the Oath: " .. gold)
 check(gold8 > 1000000 and gold8 < 30000000, "total gold of Chapter 8: " .. gold8)
-eq(K.gold(cfg, income, {level = 8, mins = 60}), 21000, "an hour of hunting at level 8")
-eq(K.gold(cfg, income, {level = 8, mins = 1}), 400, "rounded to 100")
+eq(K.gold(cfg, income, {level = 8, mins = 60}), 19000, "an hour of hunting at level 8 (hunt_gold_config.lua, O751)")
+eq(K.gold(cfg, income, {level = 8, mins = 1}), 300, "rounded to 100 (19,000 / 60 = 317)")
 eq(K.int(1234567), "1,234,567")
 local rw = K.rewardOf(cfg, income, S.orb)
 eq(rw.items[1][1], 29856); eq(rw.items[1][2], 2)

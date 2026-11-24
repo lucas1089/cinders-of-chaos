@@ -183,7 +183,7 @@ do
 	eq(r1.gold, math.floor(1.0 * E.income(cfg.income, 20) + 0.5), "gold is hours of income")
 	eq(r1.items[1].id, 29856); eq(r1.items[1].count, 2, "band 1 orbs x1")
 	local r6 = K.reward(cfg, 1000, cfg.chest)
-	eq(r6.items[1].count, 6, "band 6 orbs x3"); check(r6.gold > r1.gold * 100, "gold grows with the level")
+	eq(r6.items[1].count, 6, "band 6 orbs x3"); check(r6.gold > r1.gold * 30, "gold grows with the level") -- O751: x30 (was x100), the one gold curve: x43 from 20 to 1000
 	eq(K.bandOf(cfg, 1), 1); eq(K.bandOf(cfg, 49), 1); eq(K.bandOf(cfg, 50), 2); eq(K.bandOf(cfg, 5000), 6)
 	eq(K.bonusOption(cfg, 0), 1); eq(K.bonusOption(cfg, 0.5), 2); eq(K.bonusOption(cfg, 0.999), 3); eq(K.bonusOption(cfg, 5), 3, "die clamped")
 	eq(K.bonusOption(cfg, 0 / 0), 1, "NaN die")

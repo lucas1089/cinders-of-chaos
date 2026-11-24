@@ -63,9 +63,9 @@ do
 end
 -- the hunting gold table is the same as the gamble model's (one source of truth in two files)
 do
-	local g = dofile("data/scripts/chaos/gamble_config.lua")
+	local g = {balance = dofile("data/scripts/chaos/hunt_gold_config.lua")}
 	local pts = g.balance and g.balance.hunting
-	ok(pts ~= nil, "gamble_config.lua balance.hunting")
+	ok(pts ~= nil, "hunt_gold_config.lua hunting (O751)")
 	if pts then
 		eq(#pts, #cfg.loot.hunting, "hunting points")
 		for i, p in ipairs(pts) do
@@ -363,11 +363,14 @@ eq(#K.allChestIds(cfg), 4, "four ids count as a cursed chest")
 
 -- ------------------------------------------------------------------ the loot
 eq(K.hourlyGold(cfg, 1), 19000, "gold per hour below the table")
-eq(K.hourlyGold(cfg, 100), 358839, "gold per hour at 100")
-eq(K.hourlyGold(cfg, 5000), 9519711, "flat beyond the table")
-near(K.hourlyGold(cfg, 70), (83000 + 358839) / 2, 1, "linear between points")
+-- O751: the one curve (hunt_gold_config.lua)
+local HG = {}
+for _, p in ipairs(cfg.loot.hunting) do HG[p[1]] = p[2] end
+eq(K.hourlyGold(cfg, 100), HG[100], "gold per hour at 100")
+eq(K.hourlyGold(cfg, 5000), cfg.loot.hunting[#cfg.loot.hunting][2], "flat beyond the table")
+near(K.hourlyGold(cfg, 70), (HG[40] + HG[100]) / 2, 1, "linear between points")
 local gv = K.goldValue(cfg, 100, 1, function() return 100 end)
-eq(gv, math.floor(358839 * 3 / 60), "gold: three minutes of the level's hunting gold")
+eq(gv, math.floor(HG[100] * 3 / 60), "gold: three minutes of the level's hunting gold")
 for _, level in ipairs({8, 40, 100, 300, 500, 1000}) do
 	local v = K.goldValue(cfg, level, 1, high)
 	local hourly = K.hourlyGold(cfg, level)

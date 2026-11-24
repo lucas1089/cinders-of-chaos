@@ -205,7 +205,31 @@ function PN.grantClear(player, source, info)
 		return 0
 	end
 	local got = 0
-	for _, f in ipairs(K.rollClear(cfg, source, info, player:getLevel(), PN.focus(player), rand)) do
+	local list = K.rollClear(cfg, source, info, player:getLevel(), PN.focus(player), rand)
+	-- O753: the chase pity (chase_pity.lua "fragment"): a clear without the source's own kind gets a second roll that lifts
+	-- the chance by the misses; the n-th clear gives it for sure. Only a clear whose character opens a boss counts.
+	local CP = ChaosChasePity
+	local row = K.sourceOf(cfg, source, info)
+	if CP and CP.enabled() and row then
+		local own, boss = false, list[1] and list[1].boss or nil
+		for _, f in ipairs(list) do
+			own = own or f.kind == row.kind
+		end
+		boss = boss or K.dropBoss(cfg, player:getLevel(), PN.focus(player), rand)
+		if boss then
+			local forced = false
+			if not own then
+				local extra = source == "waystone" and math.max(0, tonumber(info and info.fragmentChance) or 0) or 0
+				forced = CP.forced(player, "fragment")
+				if CP.topUp(player, "fragment", math.min(1, ((row.chance or 0) + extra) / 100)) then
+					list[#list + 1] = {boss = boss, kind = row.kind}
+					own = true
+				end
+			end
+			CP.record(player, "fragment", own, forced)
+		end
+	end
+	for _, f in ipairs(list) do
 		if PN.grant(player, f.boss, f.kind) then
 			got = got + 1
 		end
@@ -756,6 +780,9 @@ local function deliver(run, player)
 			inbox = giveEx(player, item) or inbox
 			if ChaosUniqueIntro then
 				pcall(ChaosUniqueIntro.found, player)
+			end
+			if ChaosCollectionLog then -- O753
+				pcall(ChaosCollectionLog.note, player, e.id, 1)
 			end
 			found[#found + 1] = "{" .. e.name .. "}"
 		else

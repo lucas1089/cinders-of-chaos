@@ -565,10 +565,32 @@ function S.grantChase(player, source, key, ctx, rand)
 	if eligible then
 		ctx.itemFind = base * CQ.pityMult(player, "set")
 	end
+	-- O753: the chase pity (chase_pity.lua) of ctx.pityKey: a roll that could drop a piece raises the item find by the
+	-- misses, the n-th drops one for sure, and counts
+	local CP = ctx.pityKey and ChaosChasePity or nil
+	local pityOn = false
+	if CP and CP.enabled() then
+		for _, set in ipairs(S.sets or {}) do
+			if S.chaseChance(set, source, key, ctx) > 0 then
+				pityOn = true
+				break
+			end
+		end
+	end
+	local forced = false
+	if pityOn then
+		ctx.itemFind = ctx.itemFind * CP.mult(player, ctx.pityKey)
+		forced = CP.forced(player, ctx.pityKey)
+		ctx.force = forced
+	end
 	local hit = S.rollChase(source, key, ctx, rand)
 	ctx.itemFind = base
+	ctx.force = nil
 	if eligible then
 		CQ.pityRecord(player, "set", hit ~= nil, hit and hit.piece.id or nil)
+	end
+	if pityOn then
+		CP.record(player, ctx.pityKey, hit ~= nil, forced)
 	end
 	if not hit then
 		return nil
@@ -581,6 +603,9 @@ function S.grantChase(player, source, key, ctx, rand)
 		ChaosMakeUnique(item)
 	end
 	local inbox = give(player, item)
+	if ChaosCollectionLog then -- O753
+		pcall(ChaosCollectionLog.note, player, hit.piece.id, 1)
+	end
 	if ChaosUniqueIntro then -- O467
 		pcall(ChaosUniqueIntro.found, player)
 	end

@@ -908,7 +908,9 @@ return {
 		phases = {{above = 0.75, element = "fire", say = "phase1"}, {above = 0.50, element = "ice", say = "phase2"},
 			{above = 0.25, element = "energy", say = "phase3"}, {above = 0, element = "earth", say = "phase4"}},
 		retryCooldownSeconds = 60,
-		reward = {gold = 1500000, items = {{FATE, 2}, {SOCKETS, 1}}, title = "Ember-Sworn", repGain = 800},
+		-- O751: gold 180,000 (was 1,500,000, about 16 minutes of the old "Respec" gold at 500): the one gold curve
+		-- (hunt_gold_config.lua) pays 1.2M an hour at 500, and the steps and the boss stay under 7% of the ideal hunt
+		reward = {gold = 180000, items = {{FATE, 2}, {SOCKETS, 1}}, title = "Ember-Sworn", repGain = 800},
 		keeper = "Warden Ysolde", range = 6
 	}
 }

@@ -383,7 +383,7 @@ do
 	ok(P.rouletteReward(30, roulette(), WIN, "boss"), "a gold prize is given")
 	local want = K.goldFor(cfg, 5, 1000)
 	eq(coins(pl), want, "5 coins on the tile at level 1000: " .. want .. " gold")
-	ok(want >= 5 * 0.15 * 9000000, "level 1000: an hour of hunting gold is millions")
+	ok(want >= 5 * 0.15 * 1500000, "level 1000: an hour of hunting gold is over a million (hunt_gold_config.lua, O751)")
 	ok(pl.msgs[#pl.msgs]:find(tostring(want), 1, true) ~= nil, "the player is told the amount")
 
 	pl = newPlayer(31, 20)

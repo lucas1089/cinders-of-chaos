@@ -112,7 +112,8 @@ for _, key in ipairs({"exercise", "premium", "crystal"}) do
 	ok(cfg.tokenCount >= 1, key .. ": a token count")
 	ok(cfg.gold == dofile("data/scripts/chaos/boss_roulette_config.lua").gold or cfg.gold.perUnit == 0.2,
 		key .. ": the gold of the boss roulette")
-	ok(cfg.gold.hunting and #cfg.gold.hunting == 6, key .. ": a hunting gold curve")
+	ok(cfg.gold.hunting and #cfg.gold.hunting == #dofile("data/scripts/chaos/hunt_gold_config.lua").hunting,
+		key .. ": a hunting gold curve (hunt_gold_config.lua, O751)")
 	ok(cfg.unique and cfg.unique.low and cfg.unique.high, key .. ": a unique band")
 	ok(cfg.rareThreshold and cfg.rareThreshold >= 1 and cfg.rareThreshold <= 1000, key .. ": a broadcast threshold")
 	for _, aid in ipairs(cfg.actionIds) do
@@ -321,8 +322,8 @@ do
 	for i, p in ipairs(pts) do
 		ok(V.kph[i] and V.kph[i][1] == p[1] and V.kph[i][2] == p[2], "pace point " .. i)
 	end
-	-- the gold curve is the one of gamble_config.lua (the boss test checks that too)
-	local hunting = dofile("data/scripts/chaos/gamble_config.lua").balance.hunting
+	-- the gold curve is the one curve of hunt_gold_config.lua (O751; the boss test checks that too)
+	local hunting = dofile("data/scripts/chaos/hunt_gold_config.lua").hunting
 	for i, p in ipairs(hunting) do
 		ok(boss.gold.hunting[i][1] == p[1] and boss.gold.hunting[i][2] == p[2], "gold curve point " .. i)
 	end
@@ -378,8 +379,11 @@ for _, key in ipairs(M.KEYS) do
 end
 
 -- before: what the counted value of a spin was (the chests by price; the Moist gear, the cosmetics and the units are not counted
--- here, they only sold to an NPC), against the cost of the token
+-- here, they only sold to an NPC), against the cost of the token. The gold of then: the "Respec" table the configs read
+-- before O751 (the token cost is the same in both units, so the share is the one of then)
 do
+	local oldGold = {perUnit = boss.gold.perUnit, hunting = {{8, 19000}, {40, 83000}, {100, 358839}, {300, 881866},
+		{500, 5548330}, {1000, 9519711}}}
 	local oldEx = {}
 	for i = 0, 6 do oldEx[#oldEx + 1] = {id = 27761 + i, chance = 6000} end
 	for i = 0, 6 do oldEx[#oldEx + 1] = {id = 27768 + i, chance = 2500} end
@@ -389,7 +393,7 @@ do
 	local o = K.odds(pool)
 	local v = 0
 	for i, e in ipairs(oldEx) do
-		v = v + o[i] * M.entryMinutes({gold = boss.gold}, {id = e.id, count = {1, 1}, kind = "chest"}, 1000)
+		v = v + o[i] * M.entryMinutes({gold = oldGold}, {id = e.id, count = {1, 1}, kind = "chest"}, 1000)
 	end
 	local cost = M.cost("exercise", cfgs.exercise)
 	ok(v < 0.1 * cost, "exercise before: chests were worth " .. string.format("%.1f", v) .. " min of a " .. string.format("%.0f", cost) ..

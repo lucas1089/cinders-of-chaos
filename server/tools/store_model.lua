@@ -5,7 +5,7 @@
 -- Inputs: shop_coins_config.lua (packs, brlPerUsd), shop_config.lua (offers), pact_config.lua, seasonpass_config.lua,
 -- chaos_constants.lua (world buffs), gentledeath_config.lua (blessing gold), xpcap_config.lua, apothecary_config.lua and
 -- data/lib/chaos_rune_supply.lua (NPC asks), data/lib/chaos_item_prices.lua (NPC bids), progression_model.lua (levels per
--- hour), loot_model.lua (gold per hour), store_balance_config.lua (the limits --check enforces).
+-- hour), hunt_gold_config.lua (gold per hour, O751: the one curve), store_balance_config.lua (the limits --check enforces).
 local M = {}
 
 -- engine globals the configs read (constants are numbered on first use, as in tests/shop_test.lua)
@@ -647,24 +647,21 @@ local function real(coins) return string.format("R$ %.2f", coins / 10):gsub("%."
 function M.report(env)
 	local R = env.rules
 	local PM
-	-- the levels of the table: the loot model's bands (O285: 100 / 300 / 500 / 650, the pool ends at hunting level 657)
-	ChaosLootModelLib = true
-	local okL, LM = pcall(dofile, "tools/loot_model.lua")
-	local bands = okL and LM.BANDS or {100, 300, 500, 650}
+	-- the levels of the table: the points of the one gold curve from level 100 to 2500 (O751, hunt_gold_config.lua)
+	local hunting = dofile("data/scripts/chaos/hunt_gold_config.lua").hunting
+	local bands = {}
+	for _, p in ipairs(hunting) do if p[1] >= 100 then bands[#bands + 1] = p[1] end end
 	ChaosProgressionLib = true
 	local okP, mod = pcall(dofile, "tools/progression_model.lua")
 	local levelsPerHour = {}
 	if okP then
 		PM = mod
 		local penv = PM.load()
-		local curve = PM.curve(penv, 1500)
+		local curve = PM.curve(penv, bands[#bands])
 		for _, L in ipairs(bands) do levelsPerHour[L] = 60 / curve[L].min end
 	end
 	local goldPerHour = {}
-	if okL then
-		local ctx = LM.load()
-		for _, b in ipairs(bands) do goldPerHour[b] = LM.band(ctx, b).newGold end
-	end
+	for _, p in ipairs(hunting) do goldPerHour[p[1]] = p[2] end
 	local function line(...) print(string.format(...)) end
 
 	print("Coin packs (Pix by brlPerUsd " .. env.coins.payments.brlPerUsd .. ")")
@@ -718,7 +715,7 @@ function M.report(env)
 	end
 	if okP then
 		print("\nWhat one hour of x2 experience is worth by level (progression_model.lua)")
-		print("| Level | Levels gained in 1 extra hour | Coins per level (potion) | Gold per hour (loot_model.lua) | Potion in hours of gold |")
+		print("| Level | Levels gained in 1 extra hour | Coins per level (potion) | Gold per hour (hunt_gold_config.lua) | Potion in hours of gold |")
 		print("|---|---|---|---|---|")
 		for _, L in ipairs(bands) do
 			line("| %d | %.2f | %.0f | %s | %.3f |", L, levelsPerHour[L], 50 / levelsPerHour[L], goldPerHour[L] and string.format("%d", math.floor(goldPerHour[L] + 0.5)) or "-",

@@ -476,6 +476,9 @@ function S.rollChase(source, key, ctx, rand)
 	local hits = {}
 	for _, set in ipairs(S.sets) do
 		local chance = S.chaseChance(set, source, key, ctx) * (tonumber(ctx.itemFind) or 1)
+		if ctx.force and chance > 0 then -- O753: the chase pity's n-th chest (itemsets.lua grantChase)
+			chance = 10000
+		end
 		if chance > 0 and rand(1, 10000) <= math.min(10000, chance) then
 			hits[#hits + 1] = set
 		end

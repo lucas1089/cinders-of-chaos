@@ -8,11 +8,11 @@
  ],
  "counts": {
   "closed": 15,
-  "opcode": 76,
+  "opcode": 77,
   "out": 24,
-  "passive": 115,
+  "passive": 116,
   "place": 15,
-  "staff": 20
+  "staff": 21
  },
  "effects": [
   {
@@ -9342,6 +9342,25 @@
     "clientguard"
    ]
   },
+  "collectionLog": {
+   "actions": [
+    "sync"
+   ],
+   "client": [
+    "game_collectionlog"
+   ],
+   "dataKeys": [],
+   "files": [
+    "collection_log.lua"
+   ],
+   "opcode": 170,
+   "out": false,
+   "skip": [],
+   "skipWhy": {},
+   "systems": [
+    "collection_log"
+   ]
+  },
   "combatLog": {
    "actions": [
     "open",
@@ -12053,6 +12072,17 @@
    "talkactions": [],
    "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
   },
+  "chase_pity": {
+   "files": [
+    "chase_pity.lua"
+   ],
+   "kind": "staff",
+   "opcodes": [],
+   "talkactions": [
+    "/chasepity"
+   ],
+   "why": "staff command only (/chasepity); testers are never staff"
+  },
   "chronicle": {
    "files": [
     "chronicle.lua",
@@ -12131,6 +12161,16 @@
    "opcodes": [],
    "talkactions": [],
    "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "collection_log": {
+   "files": [
+    "collection_log.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "collectionLog"
+   ],
+   "talkactions": []
   },
   "combat_stats": {
    "files": [
@@ -13907,6 +13947,15 @@
   "spell_forms": {
    "files": [
     "spell_forms.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "spell_milestones": {
+   "files": [
+    "spell_milestones.lua"
    ],
    "kind": "passive",
    "opcodes": [],

@@ -75,10 +75,10 @@ return {
 	-- kill credit: party members on the same floor within this many squares of the kill count it too
 	partyRange = 30,
 
-	-- hunting gold per hour by level (median class, NPC sell value; linear between the points, flat beyond): the
-	-- "Respec" table (gamble_config.lua balance.hunting, tools/respec_income.py) x 1.12, the gold per hour of pack combat
-	-- against the old model (server/README.md "Pack combat": 1.10-1.16 by band). Rewards are hours of this income.
-	income = {{8, 21000}, {40, 93000}, {100, 402000}, {300, 988000}, {500, 6214000}, {1000, 10662000}},
+	-- hunting gold per hour by level (linear between the points, flat beyond): the one curve, hunt_gold_config.lua (O751;
+	-- it was the "Respec" table x 1.12: 402,000 at 100, 988,000 at 300, 6,214,000 at 500, 10,662,000 from 1000; the pack
+	-- combat is in the curve now). Rewards are hours of this income.
+	income = dofile("data/scripts/chaos/hunt_gold_config.lua").hunting,
 
 	-- Reward sizes (owner answer 2026-10-15: our estimate; the Spark worth 10-15 minutes of normal hunting, the
 	-- milestones about 1 / 2 / 4 hours). A reward is `hours` of hunting gold plus a few orbs. Orb values: per hour a

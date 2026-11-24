@@ -238,6 +238,29 @@ def main():
     check(rc4 == 2, 'unknown option')
     check('no data' == pm.minutes_text(None) and pm.minutes_text(30) == '30 min' and pm.minutes_text(180) == '3.0 h'
           and pm.minutes_text(60 * 72) == '3.0 days', 'minutes_text')
+    # O751 gold sinks: gold, payments, gold back, net, top band; small sinks hidden; sorted by net gold
+    sink_rows = [('sink_gold', 'gambler', '101-150', 900000), ('sink_gold', 'gambler', '501-700', 2500000),
+                 ('sink_n', 'gambler', '101-150', 30), ('sink_n', 'gambler', '501-700', 12),
+                 ('sink_back', 'gambler', '501-700', 100000),
+                 ('sink_gold', 'market_tax', '-', 40000), ('sink_gold', 'market_tax', '201-300', 60000),
+                 ('sink_n', 'market_tax', '-', 3), ('sink_n', 'market_tax', '201-300', 9),
+                 ('sink_gold', 'blessing', '31-40', 70000), ('sink_n', 'blessing', '31-40', 2),
+                 ('sink_gold', 'restock', '1-5', 0), ('death_area', 'Cave', '1-5', 9)]
+    gs = pm.report(sink_rows)['goldSinks']
+    check([e['sink'] for e in gs] == ['gambler', 'market_tax', 'blessing'], 'sinks by net gold, hidden last, zero dropped: %r' % (gs,))
+    g = gs[0]
+    check(g['gold'] == 3400000 and g['payments'] == 42 and g['back'] == 100000 and g['net'] == 3300000, 'gambler sums: %r' % (g,))
+    check(g['topBand'] == '501-700', 'the band that paid the most gold')
+    check(gs[1]['net'] == 100000 and gs[1]['topBand'] == '201-300' and gs[1]['payments'] == 12, 'market tax with an offline fill: %r' % (gs[1],))
+    b = gs[2]
+    check(b['payments'] == '<5' and b['gold'] is None and b['net'] is None and b['back'] is None and b['topBand'] == '',
+          'a sink of 2 payments shows no gold: %r' % (b,))
+    gt = pm.text(pm.report(sink_rows))
+    check('gambler     net 3,300,000 gold (paid 3,400,000, back 100,000) in 42 payments, mostly level 501-700' in gt,
+          'gold sink text: ' + gt)
+    check('blessing    <5 payments' in gt and '70,000' not in gt, 'a small sink hides its gold in the text')
+    check(pm.report([])['goldSinks'] == [], 'no sink rows: an empty list')
+    check(json.loads(json.dumps(pm.report(sink_rows)))['goldSinks'][0]['net'] == 3300000, 'goldSinks in the JSON')
     print('progress_metrics_test: %d failures' % failures)
     return 1 if failures else 0
 

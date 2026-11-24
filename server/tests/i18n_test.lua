@@ -240,6 +240,7 @@ local SITES = {
 	["classes.lua"] = CORE_T, ["class_unlocks_core.lua"] = CORE_T, ["class_migration.lua"] = {}, ["partyframes.lua"] = {},
 	["../../lib/chaos_archery_core.lua"] = {}, ["buffbar.lua"] = {},
 	["weekly_class.lua"] = {}, ["weekly_class_core.lua"] = CORE_T,
+	["spell_milestones.lua"] = {"[^%w_.:]t%(%s*"},
 }
 local used = 0
 for f, extra in pairs(SITES) do

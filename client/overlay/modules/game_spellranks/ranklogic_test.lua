@@ -141,4 +141,58 @@ if cfg then
   end
 end
 
+-- O752: the spell path milestones of the state (server spell_milestones_core.lua M.wire)
+do
+  local wire = { f1 = 300, f2 = { { 500, 1050 }, { 1200, 1650 }, { 0, 2400 } }, aw = { { 500, 0 }, { 1200, 2100 }, { 0, 2500 } },
+    sl = { 1800, 1950, 2250 }, nx = { l = 1500, k = 'form1', n = 'Doomtide', c = 2 } }
+  local s2 = L.cleanState({ on = true, s = { { 7, 20, 0, 0 }, { 8, 20, 0, 0 } }, ms = wire })
+  local ms = s2.ms
+  eq(ms.f1, 300, 'ms: Form I add')
+  eq(ms.f2[3].below, nil, 'ms: the last row takes the rest')
+  eq(L.formGate(ms, 1, 100), 400, 'Form I gate')
+  eq(L.formGate(ms, 2, 100), 1050, 'Form II gate of an early spell')
+  eq(L.formGate(ms, 2, 500), 1650, 'of a line spell')
+  eq(L.formGate(ms, 2, 1200), 2400, 'of an ultimate')
+  eq(L.formGate(nil, 2, 1200), 0, 'no ms: no gate')
+  eq(L.awakenGate(ms, 100), 0, 'an early spell awakens by its slot')
+  eq(L.awakenGate(ms, 1200), 2500, 'an ultimate at the cap')
+  eq(L.slotGate(ms, 2), 1950, 'slot 2') eq(L.slotGate(ms, 9), 0, 'no slot 9')
+  eq(L.cleanMilestones('x'), nil, 'junk ms')
+  eq(L.cleanMilestones({ nx = { l = 10, k = 'nonsense' } }).nx, nil, 'an unknown kind is dropped')
+  eq(L.cleanState({ on = true }).ms, nil, 'a state with no ms')
+  -- the tier under its level
+  local rules = L.pickRules(nil)
+  local t1 = L.tierState(rules, 20, 0, 0, 1, 400, 399)
+  eq(t1.levelLocked, true, 'Form I under its level') eq(t1.levelNeeded, 400, 'its level')
+  eq(L.tierState(rules, 20, 1, 0, 1, 400, 10).levelLocked, false, 'a pick already made is never level locked')
+  eq(L.tierState(rules, 20, 0, 0, 1, 400, 400).levelLocked, false, 'at the level it opens')
+  eq(L.tierState(rules, 20, 0, 0, 1).levelLocked, false, 'no gate given')
+  local q = L.quote(rules, 7, 1, 1, 20, 0, 0, 399, nil, 0, 400)
+  eq(q.kind, 'level', 'the quote under the level') eq(q.level, 400, 'names it')
+  eq(L.quote(rules, 7, 1, 1, 5, 0, 0, 399, nil, 0, 400).kind, 'locked', 'the rank first')
+  eq(L.quote(rules, 7, 1, 1, 20, 0, 0, 400, nil, 0, 400).kind, 'first', 'at the level: the first pick')
+  -- the badge does not count a tier under its level
+  local data = { spells = {}, kinds = {} }
+  for _, id in ipairs({ 7, 8 }) do
+    data.spells[id] = { forms = { { { 'SPLIT', 'a' }, { 'SPLIT', 'b' } }, { { 'SPLIT', 'c' }, { 'SPLIT', 'd' } } } }
+  end
+  local learn = { [7] = 100, [8] = 1200 }
+  eq(L.pickableCount(s2, {}, data), 2, 'no levels known: both count')
+  eq(L.pickableCount(s2, {}, data, 1000, function(id) return learn[id] end), 1, 'the ultimate waits for level 1500')
+  eq(L.pickableCount(s2, {}, data, 1500, function(id) return learn[id] end), 2, 'at 1500 both')
+  -- the next milestone
+  local tr = function(f, ...) return string.format(f, ...) end
+  local short, long = L.milestoneText(ms, 1400, tr)
+  eq(short, 'Next unlock: level 1500', 'short text')
+  eq(long, 'At level 1500: Form I of Doomtide opens and 1 more.', 'long text')
+  eq(L.milestoneText(ms, 1500, tr), nil, 'past it: nothing until the next state')
+  eq(L.milestoneText(nil, 1, tr), nil, 'no ms')
+  for _, k in ipairs(L.MILESTONE_KINDS) do
+    local m = L.cleanMilestones({ nx = { l = 10, k = k, n = 'X', s = 2 } })
+    local a, b = L.milestoneText(m, 1, tr)
+    eq(type(a) == 'string' and type(b) == 'string', true, 'a text for ' .. k)
+  end
+  eq(L.cleanPick({ ok = false, why = 'level', need = 1050 }).need, 1050, 'the pick answer keeps the level')
+end
+
 print('ranklogic_test: ' .. n .. ' checks OK')

@@ -65,7 +65,7 @@ server/
     paragon.lua (Paragon track past the passive tree, see "Paragon")
     buildshare.lua  buildshare_core.lua (passive tree build codes, see "Build sharing")
     respec.lua  respec_core.lua  respec_config.lua (respec prices, single-node refund, see "Respec")
-  tools/respec_income.py              gold per hour of hunting per level, the basis of the respec prices
+  tools/respec_income.py              the old "Respec" gold per hour (history; O751: hunt_gold_config.lua is the curve)
   tools/loot_bands.py, loot_bands_data.lua   the stock loot of the hunting bands (from a base install; see "Loot by monster level")
   tools/loot_model.lua                gold and items per hour by band, old and new corpse rule (--check in CI, --fit)
   data/lib/chaos_item_prices.lua      ChaosItemPrices: what an NPC pays for an item, per copy (see "Item prices")
@@ -739,6 +739,7 @@ collision check") and be added here.
 | 189 | `clientGuard` | engine (src-patch 0021) | client C++ (base patch 0035) | HMAC handshake, never reaches Lua |
 | 190 | `clientGuardHello` | `clientguard.lua` | `game_chaosguard` | client -> server |
 | 169 | `botdet` | `botdet.lua` | `game_chaosguard` | client -> server `integrity` (module digests) and `tools` (codes of known tools, O722); server -> client `tools` (the list staff keep); see "Bot detection events and scores (O722)" |
+| 170 | `collectionLog` | `collection_log.lua` | `game_collectionlog` | client -> server `sync`; server -> client `state {rows, groups, pity, owned, seen, total}` (over 8192 bytes: `Chaos.send` splits it); see "Collection log (O753)" |
 | 191 | `levelWings` | `levelwings.lua` | `game_levelwings` | server -> client |
 | 192 | `hideout` | `hideout.lua` | `game_hideout` | |
 | 193 | `pvpZone` | `pvpzone.lua` | `game_pvpzone` | |
@@ -895,6 +896,7 @@ names it here and in `chaos_constants.lua` (or its own `*_config.lua`).
 | 7100040 - 7100041 | mirrors of the passive state for the spell scripts (another Lua state): 7100040 the tree's item find (`loot_config.lua` `itemFindStorage`), 7100041 the Vocation Trials' minion damage in whole percent (`Chaos.classes.companion.minionStorage`, O332, "Wolves as the main damage") |
 | 7104400 - 7104619 | Deck of Cards (`cards_config.lua` `deck.storage`, O570): +0 .. +80 copies owned of the card whose own storage is 37000 + n, +100 .. +180 the card is new (unseen), +200 the migration version done, +201 the Deck is open for good (the character held an old deck), +203 decks found by the migration; +202 free; the card on / off storages stay 37000-37080 |
 | 7106400 - 7106459 | pinnacle bosses (`pinnacle_config.lua` `storage`, O667): +0 .. +15 fragments held (boss index 0-3 x 4 + kind 0-3), +16 the focus (boss index + 1, 0 none), +20 .. +23 first kills (a bit per season, `season id % 30`), +24 .. +27 deathless (1 once), +28 .. +31 kills, +32 .. +35 kills since the last unique (the bad-luck count), +36 a run in progress (boss index + 1, given back at the next login after a crash), +37 when it opened, +38 the last opening; +39 .. +59 free |
+| 7106600 - 7106619 | chase pity (`chase_pity_config.lua` `storage`, `Chaos.storage.chasePity`, O753): +0 .. +4 the misses of rift, waystone, guardian, pocket, fragment; +5 .. +19 free |
 | 7107000 - 7108099 | spell ranks (`spell_ranks_config.lua` `storage`, `Chaos.storage.spellRanks`, O686): +0 .. +499 the packed state of the spell with that id (bits 0-4 rank, 5-6 Form I, 7-8 Form II, 9 awakened), +500 version of the block, +501 awakened spells held, +502 Form changes, +503 reserved (the launch grant was removed), +504 time of the last Form pick, +505 its spell id x 10 + tier (the free change window, phase 4), +510 .. +512 Seals (phase 7), +520 .. +529 awakened ids by slot, +600 .. +1099 SP in 1/10000 SP of the spell with that id |
 | 7101000 - 7101004 | ascension quest (`ascension_quest_config.lua`) |
 | 7101040 - 7101069 | line spell quests (`Chaos.storage.spellQuest`, `spellquest_core.lua` `keys(n)`; 10 per quest n = 1..3): +0 step (0 none, 1 hunt, 2 trial open, 3 done), +1 kills, +2 fragments, +3 pity, +4 trial attempts, +5 trial cooldown, +6 done time, +7 lines done (a bit per line), +8 and +9 free |
@@ -4728,14 +4730,18 @@ Left out (fewer than 3 characters): thief 100-299, thief 1000+.
 
 ## Respec (`respec.lua`, `respec_core.lua`, `respec_config.lua`, `tools/respec_income.py`)
 What taking passive points back costs. Every number is in `respec_config.lua`.
-- **Full reset** of the tree (Reset button) and of the Paragon track (its Reset button): a level curve worth about 37.5 minutes of
-  hunting gold at the level, linear between the points below (and the last slope past level 1000). Paragon uses the same curve
-  (`paragonFactor` 1.0). Rounded down to 1,000 gold. Paid from carried gold, then the bank (`Chaos.pay`).
+- **Full reset** of the tree (Reset button) and of the Paragon track (its Reset button): a level curve worth 37.5 minutes
+  (`minutes`) of hunting gold at the level, linear between the points below (and the last slope past level 2500). Since O751
+  the points are the one gold curve (`hunt_gold_config.lua`, "One gold curve (O751)") from level 100, plus 50,000 at 50.
+  Paragon uses the same curve (`paragonFactor` 1.0). Rounded down to 1,000 gold. Paid from carried gold, then the bank
+  (`Chaos.pay`).
 
-| Level | 49 | 50 | 100 | 200 | 300 | 500 | 600 | 1000 | 1200 |
-|---|---|---|---|---|---|---|---|---|---|
-| Full reset | free | 50,000 | 225,000 | 395,000 | 565,000 | 3,450,000 | 3,950,000 | 5,950,000 | 6,950,000 |
-| Single-node refund | free | 2,000 | 9,000 | 15,000 | 22,000 | 138,000 | 158,000 | 238,000 | 278,000 |
+| Level | 49 | 50 | 100 | 200 | 300 | 500 | 650 | 800 | 1000 | 1300 | 1600 | 2000 | 2500 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Full reset | free | 50,000 | 102,000 | 244,000 | 386,000 | 748,000 | 788,000 | 828,000 | 968,000 | 1,054,000 | 1,148,000 | 1,149,000 | 1,231,000 |
+| Single-node refund | free | 2,000 | 4,000 | 9,000 | 15,000 | 29,000 | 31,000 | 33,000 | 38,000 | 42,000 | 45,000 | 45,000 | 49,000 |
+
+  Before O751: 225,000 / 565,000 / 3,450,000 / 5,950,000 at 100 / 300 / 500 / 1000 (node 9,000 / 22,000 / 138,000 / 238,000).
 
 - **Single-node refund:** right-click a saved node in the tree, confirm (the dialog shows the price). The server checks that the
   node is allocated and that every other allocated node stays connected to the start without it (a leaf, or a node on a loop),
@@ -4753,7 +4759,8 @@ What taking passive points back costs. Every number is in `respec_config.lua`.
 - Protocol (opcode 65, `ChaosPassiveTree.extraActions`): `respecInfo` -> `respecInfo`; `refundNode {id}` -> `sendNodes`,
   `sendPoints`, `respecInfo`; `resetPreset` and `paragonReset` are handled here (the old handlers in `passivetree.lua` /
   `paragon.lua` remain as the level x 250 fallback when `respec.lua` is not loaded).
-- **Measured income** (`python3 -I server/tools/respec_income.py <server>/data`): for each level the best of the hunts that are
+- **Measured income, history** (before O751; `python3 -I server/tools/respec_income.py <server>/data`). Superseded by the one
+  gold curve: this hunt had no corpse rule and the old kill speed. For each level the best of the hunts that are
   spawned in the map, gold per hour = kills per hour x (expected coins + NPC sell value of the drops from `sell_prices.lua`, i.e.
   what the Auto Seller pays) x 1.11 (the Chaos loot layer's extra rolls at the tier spawn chances). Coin counts use the stock
   level count multiplier; health the engine's level bonus. Kills per hour = 3600 x 0.47 x average 5-target rotation DPS
@@ -14821,18 +14828,22 @@ base NPC asked; at least 2 for the 10-a-blank runes. Flagged for the owner (docs
 | Reaper's Rune | 45 | 50 (108 most NPCs) | **220** | 25, 1770 gold, 15 | 121.3 |
 | Shackle Rune | 54 | 700 | **890** | 25, 2400 gold, 5 | 490.0 |
 
-**Gold sink by level band** (hunting gold per hour from "Respec" / `gamble_config.lua` `balance.hunting`, linear in
-between; a caster firing 300 attack runes and 30 support runes an hour, all bought):
+**Gold sink by level band** (hunting gold per hour from the one gold curve, `hunt_gold_config.lua` (O751; "Respec"
+before), linear in between; a caster firing 300 attack runes and 30 support runes an hour, all bought):
 
 | Level | Hunting gold / h | 300 attack runes | 30 support runes |
 |---|---|---|---|
 | 8 | 19,000 | Pebblestorm 3,300 (17%) | Blightpatch 1,200 (6%) |
-| 20 | 43,000 | Stonefang 6,000 (14%) | Grand Mending 7,200 (17%) |
-| 30 | 63,000 | Searing Orb 25,200 (40%) | Bastion 4,800 (8%) |
-| 45 | 106,000 | Reaper's 66,000 (62%) | Shackle 26,700 (25%) |
-| 100 | 358,839 | Reaper's 66,000 (18%) | Shackle 26,700 (7%) |
-| 300 | 881,866 | Reaper's 66,000 (7%) | Shackle 26,700 (3%) |
-| 500+ | 5,548,330+ | Reaper's 66,000 (1%) | Shackle 26,700 (under 1%) |
+| 20 | 36,250 | Stonefang 6,000 (17%) | Grand Mending 7,200 (20%) |
+| 30 | 50,625 | Searing Orb 25,200 (50%) | Bastion 4,800 (9%) |
+| 45 | 73,250 | Reaper's 66,000 (90%) | Shackle 26,700 (36%) |
+| 100 | 164,000 | Reaper's 66,000 (40%) | Shackle 26,700 (16%) |
+| 300 | 619,000 | Reaper's 66,000 (11%) | Shackle 26,700 (4%) |
+| 500 | 1,197,000 | Reaper's 66,000 (6%) | Shackle 26,700 (2%) |
+| 1000+ | 1,550,000+ | Reaper's 66,000 (4%) | Shackle 26,700 (2%) |
+
+O751: on the old table the runes were a token sink from 500. On the one curve they stay a real one up to about 300 and
+take most of the hour at 45 (owner, open).
 
 A flat NPC price cannot follow the income curve: runes are a real sink from level 8 to about 300 (heaviest at 30-60,
 where the strong runes unlock) and a token one past 500. The prices are per item in the base NPC shop module, so a
@@ -23660,6 +23671,19 @@ Model hours (with the newcomer bonus of O370): 8-100 1.1 (was 1.2), 8-300 9.0 (w
 8-1000 119.6 (was 116.6), 8-2200 349.6 (was 346.6). Minutes a level: 0.7 at 50 (0.6), 1.0 at 100 (0.7), 3.5 at 300 (2.7);
 from 434 on as before. `tests/progression_test.lua` checks the peak is x30. Install: step `lategame` and a server restart.
 
+### Levels to 2500 (O751, 2026-11-24)
+
+`progression_config.lua` `limits.toLevel` 2200 -> 2500, the level cap. The limits are unchanged; `--check` now walks to 2500.
+
+| Levels | Stage | Minutes a level | Hours | Pool hunts | Hall hunts |
+|---|---|---|---|---|---|
+| 2000-2200 | x13 | 10.98 - 12.46 | 39.4 | 11 | 9 (fewest) |
+| 2200-2500 | x13 | 12.52 - 16.05 | 69.5 | 8 | 6 (fewest) |
+
+Levels 8 to 2500 take 415.4 model hours (8 to 1000: 116.4, unchanged). The hall tight range stays 1300-2200 (at least 5 hall
+hunts in 0.8-1.1x): levels 2282-2500 have fewer, a content gap for the owner. The monster level display clamp follows
+`toLevel` (`monster_levels_core.lua` `maxEstimate` 2500). Section "One gold curve (O751)" has the gold side.
+
 ## Balance follow-ups (O141, 2026-10-23)
 
 The open items noted after the O135-O140 balance pass, each checked with the repo's models before changing anything. All numbers are
@@ -24325,12 +24349,15 @@ gold per hour 5%, items (non-coin corpse entries) per hour 7%, Rare+ gear per ho
 gear chances x the Rare+ share x the `notable` share of the monster's level; the check holds every band to
 `lootLevel.rarePerHour` or, for the bands between, to the rule from before the pool scale on the same monsters.
 
-| Band | Monsters | Kills/h | Gold/h before | Gold/h after | Items/h before | Items/h after | Per kill: gold, items before / after | Empty corpse before / after | Rare+ gear/h before / after | "Respec" gold/h |
+| Band | Monsters | Kills/h | Gold/h before | Gold/h after | Items/h before | Items/h after | Per kill: gold, items before / after | Empty corpse before / after | Rare+ gear/h before / after | Sale gold/h (`hunt_gold_config.lua`) |
 |---|---|---|---|---|---|---|---|---|---|---|
-| 100 | 40 | 1,574 | 128,252 | 137,999 (+7.6%) | 261 | 542 (+107.7%) | 81, 0.17 / 88, 0.34 | 21% / 6% | 3.9 / 3.8 | 358,839 |
-| 300 | 48 | 1,285 | 1,088,012 | 468,999 (-56.9%) | 875 | 688 (-21.4%) | 847, 0.68 / 365, 0.54 | 15% / 5% | 9.7 / 9.6 | 881,866 |
-| 500 | 44 | 1,211 | 1,420,818 | 859,800 (-39.5%) | 307 | 378 (+22.9%) | 1,173, 0.25 / 710, 0.31 | 65% / 7% | 25.7 / 25.7 | 5,548,330 |
-| 650 | 9 | 1,210 | 3,256,841 | 1,339,802 (-58.9%) | 606 | 547 (-9.8%) | 2,692, 0.50 / 1,107, 0.45 | 51% / 4% | 5.5 / 5.5 | 6,739,744 |
+| 100 | 40 | 1,574 | 123,948 | 135,624 (+9.4%) | 255 | 556 (+118.1%) | 79, 0.16 / 86, 0.35 | 21% / 6% | 3.9 / 3.8 | 164,000 |
+| 300 | 48 | 1,285 | 865,304 | 461,119 (-46.7%) | 732 | 705 (-3.7%) | 673, 0.57 / 359, 0.55 | 18% / 5% | 9.7 / 9.6 | 619,000 |
+| 500 | 44 | 1,211 | 1,366,710 | 825,928 (-39.6%) | 294 | 354 (+20.7%) | 1,129, 0.24 / 682, 0.29 | 66% / 7% | 25.7 / 25.7 | 1,197,000 |
+| 650 | 9 | 1,210 | 2,928,780 | 1,290,285 (-55.9%) | 567 | 509 (-10.2%) | 2,420, 0.47 / 1,066, 0.42 | 52% / 4% | 5.5 / 5.5 | 1,262,000 |
+
+(O751: the numbers after the price round of the one gold curve; the last column is the curve, the loot model's sale gold,
+`--income` prints it to level 2500. The "Respec" column it replaced read 358,839 / 881,866 / 5,548,330 / 6,739,744.)
 
 ("Before" is the 2026-10-20 rule at the new loot factor, no longer the reference, except in the Rare+ column where it is the
 rule from before the pool scale (`M.OLD_RULE`): the targets are `lootLevel.goldPerHour` (100 -> 138k, 300 -> 469k, 500 ->
@@ -24375,6 +24402,103 @@ pace cases added to `monster_tiers_test`, `xpcap_test`, `loot_caps_test`, `monst
 `bounty_test`, `bestiary_test`, `base_spawns_patch_test` (blocks of 3, the 600+ band, base dungeon thinning and the
 100-monster floor), `areagen_test` (densities, packs, the run model with pace, 100+ monsters per dungeon),
 `gen_spawn_density_test.py` (blocks, spacing, the low-level rule), `instance_limits_systems_test` (15 minutes).
+
+## One gold curve (O751) (`hunt_gold_config.lua`, `tools/loot_model.lua --income`, `tools/loot_bands.py --late`)
+
+Owner 2026-11-24 ("Acertar o ouro"). Two gold-per-hour curves disagreed. The "Respec" table (`tools/respec_income.py`)
+said 5.55M an hour at level 500. `tools/loot_model.lua` said 834k. The Respec table priced the Gambler, the roulettes,
+the professions, the cursed chest, the Ember Cache, the weekly chest and the respec. It was measured on an unpaced hunt:
+old kill speed, no corpse rule, Soul War as the best hunt. The corpse rule of 2026-10-20 / O285 cut that gold, so the
+table ran 2.1x the hunt at 100, 4.6x at 500 and 5.9x at 1000. The loot model was the nearer one.
+
+**The curve.** `data/scripts/chaos/hunt_gold_config.lua` `hunting` is the one table of gold per hour by character level.
+Linear between points, flat past the ends. Every reader `dofile`s it:
+
+- `gamble_config.lua` `balance.hunting` (the Gambler share check) and `tools/gen_item_prices.py` (the crafted gear cap, the
+  Gambler's caps on NPC gear prices).
+- `professions_config.lua` `balance.hunting`.
+- `boss_roulette_config.lua` and `cursedchest_config.lua` (prize gold; the four other roulettes share the boss table).
+- `embercache_config.lua` `income` (the weekly chest and `tools/mainquest_model.lua` read it there).
+- `respec_config.lua` `fullCurve` (37.5 minutes of the curve from level 100).
+- `tools/store_model.lua`, `tools/roulette_model.lua`.
+
+**What the number is.** The loot model's sale gold (`luajit tools/loot_model.lua --income`):
+
+- The pool hunts of the level: +-15% of it up to 650, then the progression window 0.8-1.1 x the level.
+- From 658 on, our own level-scaled monsters are counted too (`tools/loot_bands_late_data.lua`, written by
+  `python3 -I server/tools/loot_bands.py --late`; `--late --check` in CI).
+- Their stock loot is thinned by the corpse rule of `pace_config.lua` at the pack model's kills per hour.
+- Coins and junk count at the NPC price.
+- Gear counts at what an NPC pays for the dropped copy: rarity x (1 + item level / 200).
+- Rare+ pieces of the stock roll count at their plain price. A hunter equips, salvages or trades them. Sold to an NPC at
+  x6-24 they would make 234k / 977k / 2.58M / 2.29M at 100 / 300 / 500 / 1000 (the ceiling).
+- The Chaos extra rolls are added (0.0527 x the loot factor x the stock value).
+- Not counted: gold find, item find, pets, events, the tiers' rarity floors, rifts and waystones.
+- The level 8 point is not modelled; it keeps 19,000.
+- The level 40 point sits 4% above the model (62,744), so the first profession tiers keep their prices.
+
+`--check` holds every point from 40 to 2500 within 5% of the model. A point may instead equal the one before it and sit at
+most 10% over the model. The curve never falls and must reach 2500.
+
+| Level | Respec table (before) | Loot model corpse gold | Curve now | Now / before |
+|---|---|---|---|---|
+| 8 | 19,000 | - | 19,000 | 1.00 |
+| 40 | 83,000 | 53,711 | 65,000 | 0.78 |
+| 100 | 358,839 | 135,624 | 164,000 | 0.46 |
+| 300 | 881,866 | 461,119 | 619,000 | 0.70 |
+| 500 | 5,548,330 | 825,928 | 1,197,000 | 0.22 |
+| 650 | 6,739,744 | 811,381 | 1,262,000 | 0.19 |
+| 800 | 7,931,159 | 826,843 | 1,325,000 | 0.17 |
+| 1000 | 9,519,711 | 974,420 | 1,550,000 | 0.16 |
+| 1300 | 9,519,711 (flat) | 1,071,124 | 1,687,000 | 0.18 |
+| 1600 | 9,519,711 | 1,132,738 | 1,837,000 | 0.19 |
+| 2000 | 9,519,711 | 1,135,769 | 1,839,000 | 0.19 |
+| 2500 | 9,519,711 | 1,195,450 | 1,970,000 | 0.21 |
+
+The table has a fixed point: the Gambler's prices cap NPC gear prices, those prices feed the loot data and the model, and the
+model sets the curve. The loop was run until nothing moved. `tools/loot_bands_data.lua` was repriced from the new price
+table (333 entries, what `loot_bands.py` writes).
+
+**Prices that moved** (before -> after; all computed, not measured):
+
+| What | Before | After |
+|---|---|---|
+| Gambler `price.curve` (gold at item level 5 / 20 / 33 / 49 / 67 / 82 / 99 / 118 / 150) | 3,600 / 20,000 / 56,000 / 97,000 / 300,000 / 850,000 / 1,100,000 / 1,500,000 / 1,800,000 | 3,400 / 12,900 / 26,000 / 59,700 / 114,000 / 182,200 / 194,500 / 246,400 / 347,400 |
+| Gambler armour piece at the gate, level 100 / 500 / 1000 (item level 33 / 82 / 117) | 64,400 / 977,500 / 1,696,200 | 29,900 / 209,500 / 278,700 |
+| Profession material price, tiers 2 / 3 / 4 / 5 (tier 1 kept at 20) | 80 / 350 / 800 / 4,000 | 75 / 160 / 540 / 870 |
+| Refine cost: Delving 3, Delving 5, Wortcunning 3, Flaying 4 | 50 / 50 / 50 / 50 | 80 / 130 / 80 / 60 |
+| Respec full reset, level 100 / 300 / 500 / 1000 | 225,000 / 565,000 / 3,450,000 / 5,950,000 | 102,000 / 386,000 / 748,000 / 968,000 |
+| Respec node refund (4%), level 1000 | 238,000 | 38,000 |
+| Main quest boss (Vael Ashmourn) gold | 1,500,000 | 180,000 |
+| `pace_config.lua` base coins at monster level 300 | 0.2697 | 0.30 |
+| NPC gear prices under the Gambler cap (`sell_prices.lua`, `chaos_item_prices_data.lua`) | 216 prices | lower (the cap follows the Gambler) |
+| Roulette gold prize unit (`perUnit` of an hour) at level 1000 | 0.2 x 9,519,711 | 0.2 x 1,550,000 |
+| Cursed chest gold (3 minutes of the hour) at level 100 | 17,941 | 8,200 |
+| Ember Cache Spark at level 100 (0.15 h) | 60,300 | 24,600 |
+| Ember Cache milestone 3 at level 1000 (3.4 h) | 36,250,800 | 5,270,000 |
+
+The main quest share is 6.9% of the ideal hunting gold (limit 7%; it was 6.4% on the old numbers, 14.1% on the new curve
+before the boss gold moved). The roulette, store, unique pace and main quest models pass in luajit and lua5.3.
+
+**Progression to 2500.** `progression_config.lua` `toLevel` 2200 -> 2500; `progression_model.lua` reads it. 2200-2500:
+12.5 to 16.1 minutes a level, 69.5 hours, 8 pool hunts and 6 hall hunts at the fewest. Levels 8 to 2500 take 415.4 model
+hours (8 to 1000 unchanged at 116.4). The display clamp of monster levels (`monster_levels_core.lua` `maxEstimate`, tied to
+`toLevel` by its test) moved to 2500 with it.
+
+**Open points for the owner.**
+
+- Hall hunts thin out at the top. Levels 2282-2500 have fewer than 5 hall hunts in 0.8-1.1x, so the hall tight range of
+  `progression_config.lua` stays 1300-2200. More content there would let it reach 2500.
+- Rift gold was sized on the old table. `tests/rift_test.lua` holds tier 15 solo gold to 1.5-2x of 9.5M an hour. On the new
+  curve that is about 10x hunting at level 1000. A reward, not on the price list: not moved.
+- Base NPC rune prices are flat. 300 attack runes an hour at level 45 are now 90% of the hunting gold (62% before). They
+  live in the base shop module ("Gold sink by level band" above).
+- Gold-to-coin comparisons of the store (`store_model.lua`) now see much less gold late. A Double Experience Potion is
+  0.04 hours of gold at 500 (was 0.01). The coin rate of 1,000 gold is unchanged.
+
+Tests: `tests/gamble_test.lua`, `professions_test.lua`, `boss_roulette_test.lua`, `roulette_pools_test.lua`,
+`cursedchest_test.lua`, `embercache_test.lua`, `weeklychest_test.lua`, `respec_test.lua`, `prizes_test.lua`,
+`mainquest_test.lua`, `monster_levels_test.lua`; `tools/loot_bands_test.py` (the `--late` reader on a synthetic tree).
 
 ## Spawn density and respawn (`tools/patch_base_spawns.py`, `tools/spawn_tuning.json`, `respawn.lua`, `respawn_core.lua`, `respawn_config.lua`, engine patch 0022)
 
@@ -30150,21 +30274,23 @@ of the character's level gives (`ChaosItemMods.sourceLevel`, tier normal: 36 at 
 the drops' own curve.
 
 **Prices** (gold, `price.curve` x `price.slot`, rounded to 100). An armour piece costs about 18% of an hour of hunting at the
-level whose kills give that item level (the hunting model of `professions_config.lua`; the test checks every level 8-1500
-stays between 8% and 35%). A whole stock costs about two and a half hours of hunting, so nobody buys every crate of every
+level whose kills give that item level (the one gold curve, `hunt_gold_config.lua`; the test checks every level 8-1500
+stays between 8% and 35%). O751 moved every curve point by the new over the old hunting gold ("One gold curve (O751)"). A whole stock costs about two and a half hours of hunting, so nobody buys every crate of every
 window. Gold comes from the backpack first, then the bank (`Chaos.pay`).
 
 | Level | Gate | Weapon x1.3 | Armour x1.15 | Amulet, ring x1.1 | Helmet, legs, shield x1 | Boots x0.9 | Early refresh | Hunting / h |
 |---|---|---|---|---|---|---|---|---|
 | 8 | 4 | 3,900 | 3,400 | 3,300 | 3,000 | 2,700 | 1,700 | 19,000 |
-| 50 | 22 | 26,000 | 23,000 | 22,000 | 20,000 | 18,000 | 11,500 | 129,000 |
-| 100 | 36 | 72,800 | 64,400 | 61,600 | 56,000 | 50,400 | 32,200 | 358,839 |
-| 200 | 54 | 126,100 | 111,500 | 106,700 | 97,000 | 87,300 | 55,700 | 620,352 |
-| 300 | 67 | 195,000 | 172,500 | 165,000 | 150,000 | 135,000 | 86,200 | 881,866 |
-| 500 | 90 | 1,105,000 | 977,500 | 935,000 | 850,000 | 765,000 | 488,700 | 5,548,330 |
-| 700 | 106 | 1,430,000 | 1,265,000 | 1,210,000 | 1,100,000 | 990,000 | 632,500 | 7,136,882 |
-| 1000 | 123 | 1,950,000 | 1,725,000 | 1,650,000 | 1,500,000 | 1,350,000 | 862,500 | 9,519,711 |
-| 1500 | 136 | 2,145,000 | 1,897,500 | 1,815,000 | 1,650,000 | 1,485,000 | 948,700 | 9,519,711 |
+| 50 | 21 | 18,000 | 15,900 | 15,200 | 13,900 | 12,500 | 7,900 | 81,500 |
+| 100 | 33 | 33,800 | 29,900 | 28,600 | 26,000 | 23,400 | 14,900 | 164,000 |
+| 200 | 50 | 82,200 | 72,700 | 69,500 | 63,200 | 56,900 | 36,300 | 391,500 |
+| 300 | 62 | 135,400 | 119,700 | 114,500 | 104,100 | 93,700 | 59,800 | 619,000 |
+| 500 | 82 | 236,800 | 209,500 | 200,400 | 182,200 | 163,900 | 104,700 | 1,197,000 |
+| 700 | 98 | 251,900 | 222,800 | 213,100 | 193,700 | 174,300 | 111,400 | 1,283,000 |
+| 1000 | 117 | 315,000 | 278,700 | 266,500 | 242,300 | 218,100 | 139,300 | 1,550,000 |
+| 1500 | 134 | 382,900 | 338,700 | 324,000 | 294,600 | 265,100 | 169,300 | 1,787,000 |
+| 2000 | 144 | 423,600 | 374,700 | 358,400 | 325,800 | 293,200 | 187,300 | 1,839,000 |
+| 2500 | 148 | 442,200 | 391,200 | 374,200 | 340,200 | 306,200 | 195,600 | 1,970,000 |
 
 (Prices at the gate; a piece a few item levels lower costs a little less.)
 
@@ -30516,18 +30642,20 @@ every character). Season characters are characters of their own (levels and caps
 the broker like everyone (selling to an NPC is not trading).
 
 **Gold per hour** (`K.balance`, checked by the test): the best case per tier (profession 100, the best demand week, no daily cap)
-against hunting gold per hour at the tier's character level ("Respec" table: 358,839 at 100, 881,866 at 300, 5,548,330 at 500;
-levels 8 and 40 from the same model on Gutworm / Troll / Orc and Cyclops / Dwarf Guard / Minotaur Guard hunts: 19,000 and 83,000).
+against hunting gold per hour at the tier's character level (the one gold curve, `hunt_gold_config.lua`, O751: 19,000 at 8,
+65,000 at 40, 164,000 at 100, 505,250 at 250, 1,197,000 at 500; the "Respec" table before: 19,000 / 83,000 / 358,839 /
+751,109 / 5,548,330). O751 moved the material prices of tiers 2-5 from 80 / 350 / 800 / 4,000 to 75 / 160 / 540 / 870 and
+four refine costs (Delving 3 and 5, Wortcunning 3, Flaying 4) from 50 to 80 / 130 / 80 / 60, so refining still costs gold.
 Pace model: node professions min(3600 / (channel + 12 s walking), nodes of the tier x 60 / 6 min) = 100 gathers an hour (one area
 of 10 nodes); Flaying 3600 / (2.5 s + 10 s per kill) x 40%; Angling 1,200 rolls x 10%.
 
 | Tier | Delving | Wortcunning | Flaying | Angling | Hunting / h |
 |---|---|---|---|---|---|
-| 1 Common | 6,750 (35.5%) | 6,750 (35.5%) | 6,682 (35.2%) | 6,948 (36.6%) | 19,000 |
-| 2 Fine | 21,600 (26.0%) | 21,600 (26.0%) | 26,730 (32.2%) | 24,768 (29.8%) | 83,000 |
-| 3 Rare | 88,425 (24.6%) | 88,425 (24.6%) | 116,943 (32.6%) | 104,958 (29.2%) | 358,839 |
-| 4 Grim | 210,960 (28.1%) | 210,960 (28.1%) | 234,900 (31.3%) | 209,808 (27.9%) | 751,109 |
-| 5 Infernal | 751,800 (13.6%) | 751,800 (13.6%) | 1,012,500 (18.2%) | 901,008 (16.2%) | 5,548,330 |
+| 1 Common | 6,750 (35.5%) | 6,750 (35.5%) | 6,683 (35.2%) | 6,948 (36.6%) | 19,000 |
+| 2 Fine | 20,445 (31.5%) | 20,445 (31.5%) | 25,171 (38.7%) | 23,382 (36.0%) | 65,000 |
+| 3 Rare | 41,400 (25.2%) | 41,400 (25.2%) | 53,460 (32.6%) | 48,528 (29.6%) | 164,000 |
+| 4 Grim | 143,100 (28.3%) | 143,100 (28.3%) | 158,558 (31.4%) | 141,948 (28.1%) | 505,250 |
+| 5 Infernal | 164,925 (13.8%) | 164,925 (13.8%) | 220,219 (18.4%) | 196,758 (16.4%) | 1,197,000 |
 
 Since O395 the table counts the level 75 / 50 perks (shorter channel, Lucky, Sure Hand) and the by-products at the price
 table's 120 gold (1,800 an hour for Delving and Wortcunning, 2,160 at tier 4 with 12 nodes; Angling 1,008). Node areas count
@@ -33172,6 +33300,29 @@ Owner request 2026-10-26: see where players stop playing and where they die, so 
 - **Report.** `chaos-ctl.sh metrics` prints text, `--json` one line (`ok`, `churn` {days, at, gone, active, bands}, `deathAreas` and `deathMonsters` (top 10: name, deaths, topBand), `firstSession`, `milestones` {level, medianMinutes, characters}, and since O437 `retention`, `retentionAll`, `retentionSince`); `{"ok": false, "error": "no-table" | "database"}` and exit 1 when it cannot read. The query is fixed and takes no argument.
 - **Limits and assumptions.** `players.onlinetime` is assumed to be seconds saved at logout (the mentor system reads it the same way); the engine fork is not run here. Hunt areas are named by the nearest arrival tile, not by the hunt's real boundary, so a death far inside a large hunt may fall to "Outside hunts" (raise `areaRadius`; not measured on the real map). Changing `bands` later leaves old rows under their old labels. Deaths are counted when the character has a session, so a death during the first seconds of a login is counted and a `/reload` loses the open sessions' first-session counts. Not run on a live server.
 - **Tests.** `tests/metrics_test.lua` (bands, buckets, counters and flush SQL, churn SQL and rows, areas, milestone mask, tester and staff exclusion, privacy of every statement, the engine file against a mocked engine), `tools/progress_metrics_test.py` (report, medians), `deploy/chaos_ctl_test.py` (the command, errors, refusals).
+
+### Gold sinks in the metrics (O751)
+
+The beta recorded supplies and respec gold (balance telemetry) but not the other sinks. Now every gold payment counts.
+
+- **Where.** `Chaos.pay(player, amount, quiet, sink)` (`chaos_constants.lua`) counts a payment that went through as a sink.
+  The sink is its fourth argument, else `other`. `Chaos.goldSink(player, sink, gold, back)` counts gold taken another way,
+  or given back (`back`). Both call `ChaosMetrics.goldSink` (`metrics.lua`) inside a `pcall`: a metrics fault never stops a
+  payment, and without `metrics.lua` nothing happens.
+- **Sinks** (`metrics_config.lua` `goldSinks`): `gambler` (crates and early refresh; a failed save gives the gold back as
+  `sink_back`), `market_fee` (listing fee of an offer and of a buy order), `market_tax` (the gold tax of a purchase and of a
+  buy order fill, in the buyer's band; a fill whose seller is offline counts in band `-`), `blessing` (the blessing gold of
+  `gentledeath.lua`), `restock` (the Hunt Tracker's Restock, the gold "store" of supplies), `respec`, and `other` (every
+  other `Chaos.pay`: transmog, gems, guild, rumours, atlas, waystones, ...). `fusion`, `salvage` and `repair` are listed but
+  nothing sends them: salvage pays materials, not gold; fusion and the base repairs are base scripts. The Chaos Coin store
+  takes no gold. Base NPC trades (`removeTotalMoney` of the base) are not counted.
+- **Rows.** `sink_gold` (k1 sink, k2 level band, n gold), `sink_n` (payments), `sink_back` (gold given back). Testers and
+  staff have no session, so they are never counted. A payment is clipped at `goldSinkMax`; 0, negative or not a number is
+  dropped.
+- **Report.** `progress_metrics.py` `goldSinks`: per sink the gold paid, payments, gold back, net and the band that paid the
+  most, sorted by net gold. A sink of fewer than 5 payments shows `<5` and no gold.
+- Tests: `tests/metrics_test.lua` (the core counters, `Chaos.pay` and `Chaos.goldSink` on the mocked engine, the call sites),
+  `tools/progress_metrics_test.py` (the report, small sinks hidden).
 
 ## Opcode input audit (O252) (`partyframes_core.lua`, `mentor.lua`, `nameplate_core.lua`, `monster_tiers.lua`)
 
@@ -38350,6 +38501,19 @@ Owner 2026-11-21 (pt-BR "Ligar agora"): the spell upgrades of O686 are on. Ranks
 
 **Rollback.** `enabled = false` in `spell_ranks_config.lua` and a restart: the state stays in storage and the table, nothing is felt, the opcode answers `on = false` and the client hides the tab. Do not turn `track` off alone while `enabled` is true.
 
+## Spell path milestones (O752) (`spell_milestones_config.lua`, `spell_milestones_core.lua`, `spell_milestones.lua`)
+
+Owner 2026-11-24 ("Buraco de magias"): fill the spell unlock gaps without new attack spells. Design and the gate table: docs/SPELL_UPGRADES.md 2.6.
+
+- **Config.** `enabled`, `limit` 150, `from` 190, `to` 2500. `formI.add` 300, `formII` and `awaken` bands by spell level, `slots` 1800 / 1950 / 2250. Off: no gate, no toast, no `ms` in the state.
+- **Core.** `ChaosSpellMilestonesCore`: the gate levels, `list` of one class (spells, Form tiers, awakening above slot 1, support sockets), `gaps`, `problems` over all classes, `nextAfter`, `reached` (what a level-up passed), `wire`.
+- **Gates.** `spell_forms_core.lua` `F.decide` refuses a first pick under the gate (`why = "level"`, `need`). `spell_awakening_core.lua` `A.decide` refuses a slot under its level (`why = "slotlevel"`) and a spell under its awakening level (`why = "level"`). Picks already made are never refused.
+- **Engine.** `spell_milestones.lua`: the class list from the Spellbook list (runes and conjures out), cached per book. Login and advance events. On a level-up that passes milestones: a status line and `ChaosNotify.send(..., "milestone")`, title "New unlock", at most 3 names then "and N more". Support sockets are counted, never toasted (they show in the supports window).
+- **Wire.** Opcode 168 `state` gains `ms`: `f1`, `f2` and `aw` rows `{below or 0, level}`, `sl`, `nx = {l, k, n, s, c}` (next milestone level, kind, spell name, slot, count at that level). No new opcode, no new storage.
+- **Rule.** `tools/progression_model.lua --check` holds every class at most 150 levels without a milestone in 190-2500 (`K.problems`); `--spells` prints count and longest stretch, `--spells --detail` the list.
+- **Bots.** `tester_checks.py` `level_gate_skip`: a Forms or awakening check refused under a gate is a SKIP that names the level.
+- **Tests.** `tests/spell_milestones_test.lua` (gates, the typical-character bounds, gaps, the 21 classes, limit 100 fails, gates off fails, wire, the engine on mocks), gate cases in `tests/spell_forms_test.lua` and `tests/spell_awakening_test.lua`; client `ranklogic_test.lua`, `awakelogic_test.lua`.
+
 ## Drawn wings (O581 phase 2; `data/lib/chaos_drawn_wings.lua`, `data/lib/chaos_drawn_wings_ids.lua`, install step `outfits`, gate `chaosClientPair` 78)
 Owner 2026-11-22 ("Todas as 6"): the six code-drawn wings of O581 are wings players can buy. Art: `client/tools/sprites/gen_drawn_wings.py` (ours, no art file); the pair: client/MANIFEST.md "Code-drawn wings as cosmetics (O581 phase 2)".
 - **What.** Ember Pinions, Ossuary Wings, Void Orbit, Bladefan, Rimeshard, Grave Lanterns: wings.xml ids 122 to 127 on client looks 3555 to 3560 (the looks follow the last outfit of pair 77, 3554). The 121 old wings keep ids 1 to 121. `chaos_drawn_wings_ids.lua` is generated from `client/tools/sprites/drawn_wings/new_looks.csv` (`gen_drawn_wings.py new-table`, CI `--check`; `tests/drawn_wings_test.lua` reads the csv too).
@@ -38433,3 +38597,53 @@ account at login and when the Cosmetics window opens (`cosmetics.lua` `grantTwin
 **Tests.** `tests/pack_wear_test.lua` (ids, twins, the gate off and on, the config and the store validate with the real cores,
 rows, store look, choose, refusals of a bad piece, pt-BR of every description sentence), `tests/cosmetics_test.lua`,
 `tools/install_outfits_test.py` (the wing line at 83 only). Not run in a game yet.
+
+## Chase pity (O753) (`chase_pity.lua`, `chase_pity_core.lua`, `chase_pity_config.lua`, `tools/chase_pity_model.lua`)
+
+Owner 2026-11-24 chose "Pity e coleção". Each long chase counts its misses per character.
+Each miss raises the chance. The N-th eligible event is a sure drop. A drop resets the count.
+
+Rule (`ChaosChasePityCore`): chance = p x (1 + ramp x k / n), k the misses, ramp 0.25.
+At k = n - 1 the roll is forced. The count stops at n - 1.
+The source's own roll goes first. A miss gets one top-up roll (`K.topUp`) with the extra chance.
+N is the smallest that moves the mean chase by at most 10% (`maxShift`, `deriveN`).
+p is the source's lowest chance, so a better roll moves the mean less.
+
+| Source | Event | p | N | Mean events before | after | Shift |
+|---|---|---|---|---|---|---|
+| `rift` | rift chest with a set chase open | 0.025 | 114 | 40.0 | 36.0 | 9.9% |
+| `waystone` | waystone boss kill | 0.2034 | 13 | 4.9 | 4.5 | 8.8% |
+| `guardian` | rift / Greater Rift guardian kill (tier 15, level 1000) | 0.1719 | 15 | 5.8 | 5.3 | 9.6% |
+| `pocket` | world pocket boss kill with a unique in its pool | 0.003 | 961 | 333 | 300 | 10.0% |
+| `fragment` | pinnacle fragment roll | 0.25 | 10 | 4.0 | 3.6 | 9.0% |
+| pinnacle unique | pinnacle boss kill (O667, shown only) | 0.22 | 8 | 4.5 | 3.9 | 13.7% |
+
+The pinnacle unique pity is the one of O667 and stays as it was. The Collection log only shows it.
+The Conquest soft pity (`conquest_config.lua`) still runs on top.
+
+Hooks:
+- `content_rewards.lua` `addUniques`: waystone boss and guardian. A forced roll gives one unique of the pool.
+- `itemsets.lua` `grantChase` with `ctx.pityKey = "rift"` from `rift.lua`. `ctx.force` makes `S.rollChase` sure.
+- `pocketboss.lua` `worldRewardOf`: a top-up after `K.worldReward`.
+- `pinnacle.lua` `grantClear`: the fragment roll.
+
+A forced drop sends "Your persistence pays off: %s." (pt-BR in `i18n_strings.lua`).
+Staff: `/chasepity Name` shows the counts, `/chasepity Name, reset` clears them.
+Model: `cd server && luajit tools/chase_pity_model.lua --check` (also lua5.3). It reads p from the configs.
+Tests: `tests/chase_pity_test.lua`. The pinnacle, greater rift, waystone endgame and unique pace models stay green.
+Note: the pinnacle model gives a fragment set in 2.77 hours (band 2.5-7). Fragment pity may cut it by up to 9%.
+
+## Collection log (O753) (`collection_log.lua`, `collection_log_core.lua`, `collection_log_config.lua`, `sql/chaos_collection_log.sql`, client `game_collectionlog`)
+
+One window lists every unique, set piece, raid unique, card and pinnacle item by source.
+Each row is owned, seen or not yet, with the count and the first drop date.
+The pity panel shows the count of every source above, the pinnacle bosses too.
+
+- Owned: a row of `chaos_collection_log`, a row of `chaos_conquest_seen`, or a Deck of Cards copy.
+- Seen: a bestiary kill of a monster that lists the item.
+- Drops are noted by `ChaosCollectionLog.note` in loot, item sets, pocket bosses, pinnacle and raid. Testers are skipped.
+- Opcode 170 (`ChaosOpcodes.collectionLog`), JSON. The client sends `{"action":"sync"}`, at most once in 1.5 s.
+- The answer goes through `Chaos.send`, chunked over 8192 bytes.
+- Table `chaos_collection_log` (player, item, count, first date). The launch wipe clears it.
+- Menu: Hunt > Records > Collection Log. Unity: on the opcode allowlist, not ported yet.
+- Tests: `tests/collection_log_test.lua`; client `game_collectionlog/collectionlogic_test.lua`.

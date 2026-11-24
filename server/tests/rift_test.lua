@@ -1067,6 +1067,9 @@ end
 
 -- ------------------------------------------------------------------ the income model (server/README.md "Rifts", Income)
 -- hunting at level 1000 ("Respec" table and the audit): 9.5M gold, 2.5 Orbs of Upheaval, 1.3 Orbs of Fate an hour.
+-- O751: the one gold curve (hunt_gold_config.lua) gives 1.55M at 1000, so the rift gold below is ~10x hunting there.
+-- The rift gold is not resized in O751 (a reward, not a price of the list); the bound stays on the number of then
+-- until the owner decides (server/README.md "One gold curve (O751)", open points).
 -- Rifting: four tier 15 chests an hour at +128% quantity (the highest sum with tier V modifiers).
 do
 	local hunt = {gold = 9519711, chaos = 2.5, divine = 1.3}

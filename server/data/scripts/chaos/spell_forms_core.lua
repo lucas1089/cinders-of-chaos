@@ -837,8 +837,10 @@ function F.rankNeeded(tier, cfg)
 	return tier == 2 and cfg.forms.rank2 or cfg.forms.rank1
 end
 
--- decide a pick request. st = {rank, f1, f2 (current picks 0|1|2), level, lastAt, lastWhat (spell id * 10 + tier), now, spellId}
--- Returns {ok = true, price = n, free = bool, why = "first" | "same" | "window" | "paid"} or {ok = false, why = "..."}
+-- decide a pick request. st = {rank, f1, f2 (current picks 0|1|2), level, lastAt, lastWhat (spell id * 10 + tier), now, spellId,
+-- gate (O752: the level the tier opens for this spell, spell_milestones_core.lua formLevel; nil: none)}
+-- Returns {ok = true, price = n, free = bool, why = "first" | "same" | "window" | "paid"} or {ok = false, why = "...", need}
+-- The level gate holds only the first pick of a tier: a pick already made stays and may be changed.
 function F.decide(st, tier, pick, cfg)
 	if tier ~= 1 and tier ~= 2 then
 		return {ok = false, why = "tier"}
@@ -857,6 +859,9 @@ function F.decide(st, tier, pick, cfg)
 		return {ok = true, price = 0, free = true, why = "same", noop = true}
 	end
 	if cur == 0 then
+		if st.gate and num(st.level, 0) < num(st.gate, 0) then
+			return {ok = false, why = "level", need = num(st.gate, 0)}
+		end
 		return {ok = true, price = 0, free = true, why = "first"}
 	end
 	local what = num(st.spellId, 0) * 10 + tier

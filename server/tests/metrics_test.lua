@@ -1,7 +1,7 @@
 -- Run from the server/ folder: luajit tests/metrics_test.lua (or lua5.3; CI runs both)
 -- Progress metrics (O253): level bands, buckets, the in-memory counters and their flush SQL, the churn SQL and rows,
--- area naming, the milestone mask, the exclusion of tester bots and staff, privacy (no name reaches a counter), and
--- metrics.lua against a mocked engine (login -> death -> advance -> logout -> flush -> shutdown). All data is synthetic.
+-- area naming, the milestone mask, the exclusion of tester bots and staff, privacy (no name reaches a counter), the
+-- O751 gold sinks (Chaos.pay and Chaos.goldSink), and metrics.lua against a mocked engine (login -> death -> advance -> logout -> flush -> shutdown). All data is synthetic.
 local n = 0
 setmetatable(_G, {__index = function(t, k)
 	if type(k) == "string" and k:match("^[A-Z_0-9]+$") then n = n + 1; rawset(t, k, n); return n end
@@ -724,6 +724,97 @@ registry.ChaosMetricsThink.onThink(60000)
 eq(key("stop", "Ember Caves", "6-10"), 7, "stop: the snapshot replaces")
 eq(key("stop", "Ember Caves", "1-5"), nil, "stop: old rows are gone")
 eq(key("stop", "Outside hunts, floor 9", "1-5"), nil, "stop: old rows are gone, outside")
+
+-- O751 gold sinks: the core counters
+do
+	local s = M.newState()
+	eq(M.sinkKey("gambler", cfg), "gambler", "a listed sink")
+	eq(M.sinkKey("market_tax", cfg), "market_tax", "the market tax is listed")
+	eq(M.sinkKey("nope", cfg), "other", "an unknown sink counts as other")
+	eq(M.sinkKey(nil, cfg), "other", "no sink counts as other")
+	for _, k in ipairs({"gambler", "market_tax", "market_fee", "blessing", "restock", "respec", "fusion", "salvage", "repair",
+		"other"}) do
+		eq(M.sinkKey(k, cfg), k, "sink " .. k .. " listed")
+	end
+	check(M.addGoldSink(s, "gambler", "31-40", 1500.7, false, cfg), "a payment")
+	check(M.addGoldSink(s, "gambler", "31-40", 500, false, cfg), "a second payment")
+	check(M.addGoldSink(s, "gambler", "31-40", 300, true, cfg), "gold given back")
+	check(not M.addGoldSink(s, "gambler", "31-40", 0, false, cfg), "0 gold is no payment")
+	check(not M.addGoldSink(s, "gambler", "31-40", -5, false, cfg), "negative gold is refused")
+	check(not M.addGoldSink(s, "gambler", "31-40", 0 / 0, false, cfg), "NaN is refused")
+	check(not M.addGoldSink(s, "gambler", "31-40", "lots", false, cfg), "text is refused")
+	check(M.addGoldSink(s, "market_tax", nil, 3e12, false, cfg), "a huge payment is clipped, not dropped")
+	local got = {}
+	for _, r in ipairs(M.rows(s)) do got[r.kind .. "|" .. r.k1 .. "|" .. r.k2] = r.n end
+	eq(got["sink_gold|gambler|31-40"], 2000, "gold summed, whole gold")
+	eq(got["sink_n|gambler|31-40"], 2, "payments counted, a refund is not a payment")
+	eq(got["sink_back|gambler|31-40"], 300, "gold given back on its own row")
+	eq(got["sink_gold|market_tax|-"], cfg.goldSinkMax, "no band: '-', clipped at goldSinkMax")
+	local n = 0
+	for _ in pairs(got) do n = n + 1 end
+	eq(n, 5, "nothing else counted")
+	local q = M.flushSql(s, "chaos_progress_metrics", function(v) return "'" .. tostring(v) .. "'" end)[1]
+	check(q:find("('sink_gold', 'gambler', '31-40', 2000)", 1, true) ~= nil, "the flush writes the sink row")
+end
+
+-- O751 gold sinks: Chaos.pay and Chaos.goldSink on the engine (carried coins, then the bank)
+do
+	local function wallet(p, carried, bank)
+		p.money, p.bank = carried, bank
+		function p:getMoney() return self.money end
+		function p:removeMoney(n) if self.money < n then return false end self.money = self.money - n return true end
+		function p:getBankBalance() return self.bank end
+		function p:setBankBalance(v) self.bank = v return true end
+		function p:sendTextMessage() end
+		return p
+	end
+	local payer = wallet(mk({id = 30, guid = 30, name = "Synthetic Payer", player = true, level = 120, group = 1, lastLogin = 5,
+		pos = {x = 1, y = 1, z = 7}}), 1000, 50000)
+	local tester = wallet(mk({id = 31, guid = 31, name = "Tester Payer", player = true, level = 120, group = 1, lastLogin = 5,
+		pos = {x = 1, y = 1, z = 7}, storage = {[Chaos.storage.tester] = 1}}), 1000, 50000)
+	onlineList = {payer, tester}
+	registry.ChaosMetricsLogin.onLogin(payer)
+	registry.ChaosMetricsLogin.onLogin(tester)
+	local ok, fromCoins, fromBank = Chaos.pay(payer, 3000, true, "gambler")
+	check(ok == true and fromCoins == 1000 and fromBank == 2000, "Chaos.pay keeps its results")
+	check(Chaos.pay(payer, 400, true), "a payment with no sink")
+	check(Chaos.pay(payer, 200, true, "made_up"), "a payment with an unknown sink")
+	check(not Chaos.pay(payer, 10 ^ 9, true, "gambler"), "a payment that cannot be paid")
+	check(Chaos.pay(payer, 0, true, "gambler"), "a payment of 0")
+	check(Chaos.goldSink(payer, "gambler", 1000, true), "a refund counted")
+	check(Chaos.pay(tester, 500, true, "gambler"), "a tester bot pays")
+	check(not Chaos.goldSink(tester, "gambler", 500), "a tester bot is never counted")
+	check(Chaos.goldSink(nil, "market_tax", 77), "a market fill with the seller offline counts in band '-'")
+	-- the systems name their sink
+	local function src(path)
+		local f = assert(io.open(path, "r"))
+		local t = f:read("*a")
+		f:close()
+		return t
+	end
+	check(src("data/scripts/chaos/gamble.lua"):find('Chaos.pay(player, amount, nil, "gambler")', 1, true) ~= nil, "the Gambler names its sink")
+	check(src("data/scripts/chaos/gamble.lua"):find('Chaos.goldSink(player, "gambler", amount, true)', 1, true) ~= nil, "a Gambler refund")
+	check(src("data/scripts/chaos/gentledeath.lua"):find('"blessing")', 1, true) ~= nil, "blessings name their sink")
+	check(src("data/scripts/chaos/respec.lua"):find('"respec")', 1, true) ~= nil, "respec names its sink")
+	check(src("data/scripts/chaos/restock.lua"):find('"restock")', 1, true) ~= nil, "restock names its sink")
+	local mk_ = src("data/scripts/chaos/market.lua")
+	local _, fees = mk_:gsub('Chaos.goldSink%(player, "market_fee"', "")
+	local _, taxes = mk_:gsub('"market_tax", f?tax%)', "")
+	eq(fees, 2, "the market's two listing fees (an offer, a buy order)")
+	eq(taxes, 2, "the market's two gold taxes (a purchase, a buy order fill)")
+	flushAll()
+	eq(key("sink_gold", "gambler", "101-150"), 3000, "Gambler gold in the payer's band")
+	eq(key("sink_n", "gambler", "101-150"), 1, "one Gambler payment")
+	eq(key("sink_back", "gambler", "101-150"), 1000, "the Gambler refund")
+	eq(key("sink_gold", "other", "101-150"), 600, "no sink and an unknown one count as other")
+	eq(key("sink_n", "other", "101-150"), 2, "two other payments")
+	eq(key("sink_gold", "market_tax", "-"), 77, "the offline fill tax")
+	eq(payer.money + payer.bank, 1000 + 50000 - 3600, "the payer paid 3,600 gold")
+	Chaos.metricsConfig.enabled = false
+	check(not Chaos.goldSink(payer, "gambler", 10), "disabled: no gold sink counted")
+	Chaos.metricsConfig.enabled = true
+	onlineList = {}
+end
 
 -- privacy: no player name, id or IP in any statement
 local all = table.concat(queries, "\n")

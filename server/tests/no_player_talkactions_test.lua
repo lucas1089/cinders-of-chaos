@@ -35,7 +35,7 @@ local STAFF = {
 	["/coins"] = "shop.lua", ["/storecosmetics"] = "shop.lua", ["/siege"] = "siege.lua", ["/spells"] = "spellbook.lua", ["/spellquest"] = "spellquest.lua", ["/supports"] = "supports.lua",
 	["/telemetry"] = "telemetry.lua", ["/transmog"] = "transmog.lua", ["/goblin"] = "treasure_goblin.lua",
 	["/treestats"] = "treestats.lua", ["/trial"] = "trials.lua", ["/ascended"] = "uber.lua",
-	["/weather"] = "weather.lua", ["/worldboss"] = "worldboss.lua",
+	["/chasepity"] = "chase_pity.lua", ["/weather"] = "weather.lua", ["/worldboss"] = "worldboss.lua",
 }
 local PLAYER = {["!bless"] = "gentledeath.lua"} -- the owner's one exception
 
