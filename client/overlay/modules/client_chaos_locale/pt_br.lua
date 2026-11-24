@@ -7667,7 +7667,6 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Attributes"] = "Atributos",
   ["Quest Log"] = "Quest Log",
   ["Quest Tracker"] = "Quest Tracker",
-  ["This window is too wide for the panel on this screen: it opened beside it."] = "Esta janela é larga demais para o painel nesta tela: ela abriu ao lado dele.",
   ["This window is not available now."] = "Esta janela não está disponível agora.",
   -- game_hotbar/hotbar.otui (O732: the side dock in Layout options)
   ["Side panel"] = "Painel lateral",

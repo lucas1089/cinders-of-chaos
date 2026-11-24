@@ -112,7 +112,7 @@ ChaosDockPanel < UIWidget
     anchors.right: parent.right
     margin-top: 4
 
-  // the hosted window fills this area
+  // the hosted window fills this area; one taller than it scrolls (the bar shows then, chaosdock.lua fit)
   UIWidget
     id: content
     anchors.top: rule.bottom
@@ -122,6 +122,23 @@ ChaosDockPanel < UIWidget
     margin-top: 4
     clipping: true
     focusable: false
+
+    UIScrollArea
+      id: scroller
+      anchors.fill: parent
+      vertical-scrollbar: scrollBar
+      clipping: true
+      focusable: false
+      auto-focus: none
+
+    ChaosScrollBar
+      id: scrollBar
+      anchors.top: parent.top
+      anchors.right: parent.right
+      anchors.bottom: parent.bottom
+      step: 24
+      pixels-scroll: true
+      visible: false
 
   ChaosLabelDim
     id: note

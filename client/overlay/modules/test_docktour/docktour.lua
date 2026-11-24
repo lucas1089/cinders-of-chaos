@@ -54,6 +54,13 @@ local function panel()
   return rootWidget:recursiveGetChildById('chaosDock')
 end
 
+-- the dock's own scroll bar (content > scrollBar; a hosted window has bars of its own deeper down)
+local function dockBar()
+  local p = panel()
+  local content = p and p:getChildById('content')
+  return content and content:getChildById('scrollBar') or nil
+end
+
 local function shownTab()
   for _, id in ipairs({'equip', 'quests', 'attributes', 'spells', 'shop'}) do
     local b = rootWidget:recursiveGetChildById('chaosDockTab_' .. id)
@@ -73,7 +80,11 @@ local function state()
       tostring(p:isVisible()))
     local title = p:getChildById('title')
     if title then parts[#parts + 1] = 'title "' .. title:getText() .. '"' end
-    local note = p:recursiveGetChildById('note')
+    local bar = dockBar()
+    if bar and bar:isVisible() then
+      parts[#parts + 1] = ('scroll %d of %d'):format(bar:getValue(), bar:getMaximum())
+    end
+    local note = p:getChildById('note')
     if note and note:isVisible() then parts[#parts + 1] = 'note "' .. note:getText() .. '"' end
   else
     parts[#parts + 1] = 'no panel'
@@ -99,15 +110,35 @@ local function closeWindows()
 end
 
 -- the How it works card (game_howitworks, O331) opens the first time each window opens and would hide the dock in the
--- film: closed as it comes (logged once per card), every other window is left alone
+-- film: it stays L.CARD_SHOW_MS (its place left of the dock is logged and filmed), then closes; every other window is
+-- left alone
 local cardsClosed = 0
+local cardSeen = nil
 local function keepCardsClosed()
   if finished then return end
+  -- the Patch Notes window opens by itself a while after the entry (game_patchnotes) and would cover the dock
+  local notes = rootWidget:recursiveGetChildById('patchNotesWindow')
+  if notes and notes:isVisible() then
+    log('Patch Notes window closed')
+    pcall(notes.hide, notes)
+  end
   local card = rootWidget:recursiveGetChildById('howWindow')
   if card and card:isVisible() then
-    cardsClosed = cardsClosed + 1
-    log('How it works card closed (' .. cardsClosed .. ')')
-    pcall(card.hide, card)
+    if not cardSeen then
+      cardSeen = g_clock.millis()
+      local p = panel()
+      local dockLeft = (p and p:isVisible()) and p:getX() or nil
+      local right = card:getX() + card:getWidth()
+      log(('How it works card "%s" at x %d..%d, dock left %s: %s'):format(card:getText(), card:getX(), right,
+        tostring(dockLeft), (not dockLeft or right <= dockLeft) and 'clear of the dock' or 'OVER THE DOCK'))
+    elseif g_clock.millis() - cardSeen >= L.CARD_SHOW_MS then
+      cardsClosed = cardsClosed + 1
+      log('How it works card closed (' .. cardsClosed .. ')')
+      pcall(card.hide, card)
+      cardSeen = nil
+    end
+  else
+    cardSeen = nil
   end
   scheduleEvent(keepCardsClosed, 300)
 end
@@ -215,6 +246,15 @@ local function runStep(step)
   elseif step['do'] == 'sub' then
     clickSub(step.sub)
     later(1500, function() log('after sub ' .. step.sub .. ': ' .. state()) end)
+  elseif step['do'] == 'scroll' then
+    local bar = dockBar()
+    if bar and bar:isVisible() then
+      bar:setValue(bar:getMaximum())
+      log('scroll to ' .. bar:getMaximum())
+    else
+      log('scroll: no scroll bar (the window fits)')
+    end
+    later(1000, function() log('after scroll: ' .. state()) end)
   elseif step['do'] == 'exit' then
     T.finish('ok')
   end

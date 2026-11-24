@@ -89,7 +89,7 @@ eq(L.pickSub(st, 4), nil, 'sub past the tab'); eq(L.pickSub(st, 0), nil, 'sub 0'
 L.apply(st, a)
 eq(L.pickTab(st, 'quests', false).sub, 2, 'tab remembers its window')
 
--- width: 330 for a narrow window, wider for a wide one, beside the dock past the screen less 320 px, phone sheet
+-- width: 330 for a narrow window, wider for a wide one, on its own past the screen less 280 px, phone sheet
 local w, float = L.width(nil, 1280, false)
 eq(w, 330, 'no window'); eq(float, false, 'no window float')
 eq((L.width(230, 1280, false)), 330, 'narrow window')
@@ -98,8 +98,23 @@ w, float = L.width(640, 1280, false)
 eq(w, 664, 'spellbook widens the dock'); eq(float, false, 'spellbook docked')
 w, float = L.width(900, 1280, false)
 eq(w, 924, 'market'); eq(float, false, 'market docked at 1280')
+-- the Store (960) fits at 1280, with its scroll bar too: the game keeps 280 px (owner 2026-11-24: nothing overlaps)
 w, float = L.width(960, 1280, false)
+eq(w, 984, 'store docked at 1280'); eq(float, false, 'store does not float at 1280')
+w, float = L.width(960 + L.SCROLL, 1280, false)
+eq(w, 1000, 'store and its scroll bar'); eq(float, false, 'still docked'); eq(1280 - w, L.MIN_GAME, 'the game keeps its room')
+w, float = L.width(960, 1100, false)
 eq(w, 330, 'too wide: dock keeps its width'); eq(float, true, 'too wide floats')
+
+-- scrolling: a window taller than the room scrolls, a miniwindow never (it scrolls its own contents)
+eq(L.scrolls(false, 537, 410), true, 'quest log under the menu bar scrolls')
+eq(L.scrolls(false, 407, 410), false, 'fits: no scroll')
+eq(L.scrolls(true, 900, 410), false, 'miniwindow fills the room')
+eq(L.scrolls(false, nil, 410), false, 'no size: no scroll')
+eq(L.room(720, 44, 0, 120), 556, 'room: screen less margins and chrome')
+eq(L.room(720, 44, 132, 0), 720 - 44 - 132 - L.CHROME, 'chrome not laid out: the default')
+eq(L.room(720, 44, 132, 9000), 720 - 44 - 132 - L.CHROME, 'chrome wild: the default')
+eq(L.room(100, 44, 132, 120), 0, 'never below 0')
 w, float = L.width(960, 1920, false)
 eq(w, 984, 'wide screen'); eq(float, false, 'wide screen docked')
 w, float = L.width(900, 1170, true)
@@ -147,5 +162,23 @@ eq(L.releaseForOther({ { spec = L.TABS[1].windows[1] } }, 'Rifts'), false, 'not 
 -- every text the dock shows through tr() has its pt-BR
 local pt = io.open(here .. '../client_chaos_locale/pt_br.lua'):read('*a')
 for _, text in ipairs(L.texts()) do eq(pt:find('["' .. text .. '"] =', 1, true) ~= nil, true, 'pt-BR: ' .. text) end
+
+-- a docked hook names a global function of its module (the Inventory panel hides its title bar and tab row in the dock)
+local hooks = 0
+for _, t in ipairs(L.TABS) do
+  for _, spec in ipairs(t.windows) do
+    if spec.docked then
+      hooks = hooks + 1
+      local dir = here .. '../' .. spec.module .. '/'
+      local found = false
+      for _, f in ipairs({ dir .. spec.module:gsub('^game_', '') .. '.lua' }) do
+        local h = io.open(f)
+        if h then found = h:read('*a'):find('\nfunction ' .. spec.docked .. '%(') ~= nil h:close() end
+      end
+      eq(found, true, 'docked hook ' .. spec.module .. '.' .. spec.docked)
+    end
+  end
+end
+eq(hooks, 1, 'the Inventory panel has the docked hook')
 
 print('chaosdock_test: ' .. n .. ' checks OK')

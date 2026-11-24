@@ -109,7 +109,8 @@ ChaosMainWindow
     margin-top: 2
     text-align: left
     text-wrap: true
-    height: 28
+    // as tall as its lines: a page text of three lines ran under the buttons (seen in the side dock, O732 follow-up)
+    text-auto-resize: true
 
   UIWidget
     id: rows

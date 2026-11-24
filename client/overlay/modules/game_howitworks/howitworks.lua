@@ -3,11 +3,14 @@
 -- (howitworks_data.lua, server/tools/gen_howitworks_data.lua); howcore.lua picks the cards. No opcode.
 -- API (modules.game_howitworks), every call is safe to make when the module is missing (guard with the module table):
 --   attach(window, key [, moduleName])  a "?" button in the top right of a feature window; key = card key, or nil to use
---                                       the card whose `window` is moduleName
+--                                       the card whose `window` is moduleName (a window of many pages attaches the card
+--                                       of the page shown, O732 follow-up)
+--   detach(window)                      no "?" button and no first-open card (a page with no card)
 --   attachGoal(row, goalKey)            a "?" button in a Next Goals row (only when a card answers that goal)
 --   show(key) / showForUnlock(unlockKey) / showForGoal(goalKey)   open the card; true when there is one
 --   hasUnlock(unlockKey) / hasGoal(goalKey)                       is there a card for it
 --   hide()
+--   reposition()                        the card left of the side dock again (game_chaosdock calls it when it widens)
 -- First open (owner request 2026-11-03): attach() also watches the window; the first time a character sees it, the card
 -- opens by itself (once per character and card, settings node chaos_howitworks_seen). The card's check box turns this
 -- off for every character (setting chaos_howitworks_auto, on by default).
@@ -48,6 +51,33 @@ function hide()
   if alive(window) then window:hide() end
 end
 
+-- the card keeps left of the side dock (game_chaosdock, O732) while the dock is open; centred otherwise
+local placed = false
+local naturalWidth = nil -- the card's own width (it narrows to the room left of a wide dock)
+local function place()
+  if not alive(window) then return end
+  local dockModule = rawget(_G, 'modules') and modules.game_chaosdock
+  local dock = (dockModule and rawget(dockModule, 'ChaosDock')) or rawget(_G, 'ChaosDock')
+  local ok, cover = pcall(function() return dock and dock.coverRight and dock.coverRight() or 0 end)
+  cover = ok and tonumber(cover) or 0
+  if cover <= 0 and not placed then return end
+  local parent = window:getParent()
+  if not parent then return end
+  local pr = parent:getRect()
+  naturalWidth = naturalWidth or window:getWidth()
+  local x, width = H.cardFit(pr.x, pr.width, naturalWidth, cover)
+  local y = math.max(pr.y, pr.y + math.floor((pr.height - window:getHeight()) / 2))
+  window:breakAnchors()
+  if window:getWidth() ~= width then window:setWidth(width) end
+  window:setPosition({ x = x, y = y })
+  placed = cover > 0
+end
+
+-- the dock calls this when the width it covers changes (it widens for a window after the card opened)
+function reposition()
+  if alive(window) and window:isVisible() then pcall(place) end
+end
+
 local function draw(card)
   window:setText(tr('How it works') .. ': ' .. H.title(card, lang(), convert))
   local list = window:getChildById('list')
@@ -60,6 +90,7 @@ local function draw(card)
     text:setText(r.text)
   end
   window:show()
+  pcall(place)
   window:raise()
   window:focus()
 end
@@ -111,9 +142,11 @@ local function visible(w)
 end
 
 -- the card opens a moment after the window, so it lands on top of it
-local function watch(target, key)
+-- the key is read when the window shows: a window of many pages changes it with the page (target.howKey)
+local function watch(target)
   local function check()
-    if alive(target) and visible(target) and firstOpen(key) then
+    local key = target.howKey
+    if key and alive(target) and visible(target) and firstOpen(key) then
       local later = rawget(_G, 'scheduleEvent')
       if later then later(function() show(key) end, 250) else show(key) end
     end
@@ -152,8 +185,16 @@ function attach(target, key, moduleName)
   b:setMarginTop(top)
   b:setMarginRight(right)
   target.howButton = b
-  watch(target, card.key)
+  target.howKey = card.key
+  watch(target)
   return b
+end
+
+function detach(target)
+  if not alive(target) then return end
+  if alive(target.howButton) then target.howButton:destroy() end
+  target.howButton = nil
+  target.howKey = nil
 end
 
 function attachGoal(row, goalKey)

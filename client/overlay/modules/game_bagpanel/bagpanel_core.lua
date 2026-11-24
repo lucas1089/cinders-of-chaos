@@ -644,3 +644,45 @@ function C.sortStep(s, entries)
   s.steps = s.steps + 1
   return 'move', slot
 end
+
+-- ---------------------------------------------------------------- in the side dock (game_chaosdock, O732)
+-- The dock has its own title and tabs: while it hosts the panel, the panel's title bar (text and frame header) and its
+-- own tab row (Equip / Quest / Stats / Buffs / Shop) are hidden, and the contents move up. Given back, all of it returns.
+-- parts = { window, row, contents } (widgets; any may be nil); saved = what the last call with on = true returned.
+-- Returns the saved state (on) or nil (off). Widget methods only, so the test runs it on fake widgets.
+C.DOCK_TOP = 2            -- the contents' top margin in the dock (the miniwindow's is 20, under its title)
+C.WINDOW_IMAGE = '/images/ui/window' -- the MiniWindow frame (data/styles/30-miniwindow.otui) when the engine cannot tell
+function C.dockChrome(parts, on, saved)
+  local w, row, contents = parts.window, parts.row, parts.contents
+  if on then
+    if saved then return saved end
+    saved = {
+      text = w and w:getText() or nil,
+      image = w and w.getImageSource and w:getImageSource() or C.WINDOW_IMAGE,
+      rowHeight = row and row:getHeight() or nil,
+      rowVisible = row and row:isVisible() or nil,
+      top = contents and contents:getMarginTop() or nil,
+    }
+    if w then
+      w:setText('')
+      w:setImageSource('')
+    end
+    if row then
+      row:setHeight(0)
+      row:hide()
+    end
+    if contents then contents:setMarginTop(C.DOCK_TOP) end
+    return saved
+  end
+  if not saved then return nil end
+  if w then
+    if saved.text then w:setText(saved.text) end
+    w:setImageSource((saved.image and saved.image ~= '') and saved.image or C.WINDOW_IMAGE)
+  end
+  if row then
+    if saved.rowHeight then row:setHeight(saved.rowHeight) end
+    row:setVisible(saved.rowVisible ~= false)
+  end
+  if contents and saved.top then contents:setMarginTop(saved.top) end
+  return nil
+end

@@ -55,6 +55,7 @@ function W:setMargin() end
 function W:setMarginBottom(m) self.marginBottom = m end
 function W:setMarginTop(m) self.marginTop = m end
 function W:setMarginRight(m) self.marginRight = m end
+function W:setValue(v) self.value = v end
 function W:getSize() return { width = self.width, height = self.height } end
 function W:setSize(s) self.width, self.height = s.width, s.height end
 function W:getWidth() return self.width end
@@ -86,6 +87,7 @@ local skillsMini = widget('UIMiniWindow', 'skillWindow', container)
 local bag = widget('UIMiniWindow', 'bagPanel', container)
 bag.width, bag.height = 200, 400
 widget('UIButton', 'closeButton', bag)
+local bagDocked = {} -- the calls of game_bagpanel.setDocked (its title bar and tab row: BagPanelCore.dockChrome)
 
 local function makeDock(parent)
   local p = widget('UIWidget', 'chaosDock', parent)
@@ -93,6 +95,10 @@ local function makeDock(parent)
   for _, id in ipairs({ 'title', 'closeX', 'tabs', 'subs', 'rule', 'note' }) do widget('UIWidget', id, p) end
   local content = widget('UIWidget', 'content', p)
   content.width, content.height = 310, 600
+  local scroller = widget('UIScrollArea', 'scroller', content)
+  scroller.width, scroller.height = 310, 600
+  local bar = widget('UIScrollBar', 'scrollBar', content)
+  bar.visible = false
   return p
 end
 
@@ -135,7 +141,7 @@ function tr(s) return s end
 
 -- the windows the menu entries open (a module that keeps its window local: the dock finds it as the new one)
 local opened = {}
-local spellbook, store960
+local spellbook, store960, questlog
 local ran = {}
 local fakeTopbar = { runRaw = function(text)
   ran[#ran + 1] = text
@@ -143,9 +149,19 @@ local fakeTopbar = { runRaw = function(text)
     spellbook = spellbook or widget('UIWindow', 'spellbookWindow', root)
     spellbook.width, spellbook.height = 640, 460
     spellbook:show()
+  elseif text == 'Quest Log' then
+    if not questlog then
+      questlog = widget('UIWindow', 'questLogWindow', root)
+      -- parts of its own with the ids of the dock's parts: the dock must never take them for its own
+      local inner = widget('UIWidget', 'panel', questlog)
+      widget('UIScrollBar', 'scrollBar', inner).visible = false
+      widget('UILabel', 'note', inner)
+    end
+    questlog.width, questlog.height = 789, 600 -- taller than the room under the tabs (556 here)
+    questlog:show()
   elseif text == 'Store' then
     store960 = store960 or widget('UIWindow', 'shopWindow', root)
-    store960.width, store960.height = 960, 530
+    store960.width, store960.height = 960, 560 -- taller than the room here: it scrolls
     store960:show()
   end
   opened[#opened + 1] = text
@@ -154,11 +170,13 @@ end }
 modules = {
   game_interface = { getRootPanel = function() return gameRoot end },
   client_chaos_topbar = { ChaosTopBar = fakeTopbar, ChaosTopBarGlyphs = dofile(here .. '../client_chaos_topbar/topbar_glyph_index.lua') },
-  game_bagpanel = { getWindow = function() return bag end },
+  game_bagpanel = { getWindow = function() return bag end, setDocked = function(on) bagDocked[#bagDocked + 1] = on end },
   game_chaosnotify = {},
 }
 local toastMoves = 0
 modules.game_chaosnotify.repositionNotifications = function() toastMoves = toastMoves + 1 end
+local cardMoves = 0
+modules.game_howitworks = { reposition = function() cardMoves = cardMoves + 1 end }
 ChaosTheme = { palette = { accent2 = '#f6cf72', textDim = '#8c8070' } }
 
 dofile(here .. 'chaosdocklogic.lua')
@@ -172,15 +190,20 @@ eq(#panel:getChildById('tabs').children, 5, 'five tabs')
 
 -- Inventory: the panel window moves into the dock and back to its place, still open
 local content = panel:getChildById('content')
+local scroller = content:getChildById('scroller')
+local scrollBar = content:getChildById('scrollBar')
 eq(D.route('Bestiary'), false, 'not a dock entry')
 eq(D.route('Inventory'), true, 'inventory routed')
 runEvents()
 eq(panel:isExplicitlyVisible(), true, 'dock shown'); eq(panel.marginRight, 0, 'slid in')
-eq(bag.parent, content, 'bag panel in the dock'); eq(bag.draggable, false, 'not draggable while docked')
+eq(bag.parent, scroller, 'bag panel in the dock'); eq(bag.draggable, false, 'not draggable while docked')
 eq(bag:getChildById('closeButton').visible, false, 'its close button hidden')
 eq(bag.chaosRmlSkip, true, 'mirror leaves it'); eq(panel.width, 330, 'dock width')
+eq(bagDocked[1], true, 'the bag panel was told: its title bar and tab row hide')
+eq(scrollBar.visible, false, 'a miniwindow fills the room: no scroll bar')
+eq(#bag.anchors, 4, 'filled: anchored on four sides')
 eq(panel.marginTop, 0, 'the menu bar is left of a narrow dock'); eq(D.coverRight(), 330, 'covers 330 px')
-eq(toastMoves >= 1, true, 'the toasts were told')
+eq(toastMoves >= 1, true, 'the toasts were told'); eq(cardMoves >= 1, true, 'the How it works card was told')
 eq(store[ChaosDockLogic.SETTING_TAB], 'equip', 'tab saved')
 local h = D.held()
 eq(#h, 1, 'held'); eq(h[1].home, container, 'home kept'); eq(h[1].index, 2, 'index kept'); eq(h[1].height, 400, 'height kept')
@@ -190,14 +213,15 @@ eq(D.coverRight(), 0, 'closed: covers nothing')
 eq(container:getChildIndex(bag), 2, 'at its index'); eq(bag.visible, true, 'still open')
 eq(bag.draggable, true, 'draggable again'); eq(bag:getChildById('closeButton').visible, true, 'close button back')
 eq(bag.width, 200, 'size back'); eq(#D.held(), 0, 'nothing held')
+eq(bagDocked[#bagDocked], false, 'given back: its title bar and tab row return')
 
 -- Spellbook: opened through its menu entry, found as the new window, widens the dock; its own close closes the dock
 eq(keys['Alt+D'](), true, 'toggle key'); runEvents()
-eq(bag.parent, content, 'toggle opens the last tab')
+eq(bag.parent, scroller, 'toggle opens the last tab')
 eq(D.route('Spellbook'), true, 'spellbook routed'); runEvents()
 eq(bag.parent, container, 'tab change gives the bag back')
 eq(ran[#ran], 'Spellbook', 'opened through the raw entry')
-eq(spellbook.parent, content, 'spellbook in the dock'); eq(panel.width, 664, 'dock widened')
+eq(spellbook.parent, scroller, 'spellbook in the dock'); eq(panel.width, 664, 'dock widened')
 eq(panel.marginTop, 44, 'widened under the menu bar: starts below it')
 eq(store[ChaosDockLogic.SETTING_SUBS], 'equip=1,spells=1', 'windows saved')
 spellbook:hide() -- Escape on the window
@@ -205,15 +229,37 @@ runEvents()
 eq(panel:isExplicitlyVisible(), false, 'window closed: dock closed'); eq(spellbook.parent, root, 'spellbook back')
 eq(spellbook.visible, false, 'closed as before')
 
--- Store: wider than the dock may grow at 1280: it floats beside the dock
+-- Quest Log: taller than the room under the tabs (720 less the menu bar margin, the hotbar and the chrome): it keeps its
+-- height in the scroll area and the bar shows; nothing is cut
+eq(D.route('Quest Log'), true, 'quest log routed'); runEvents()
+eq(questlog.parent, scroller, 'quest log in the scroll area')
+eq(questlog.height, 600, 'its own height kept'); eq(#questlog.anchors, 3, 'top, left, right: no bottom anchor')
+eq(scrollBar.visible, true, 'scroll bar shown'); eq(scroller.marginRight, ChaosDockLogic.SCROLL, 'room for the bar')
+eq(questlog:recursiveGetChildById('scrollBar').visible, false, 'the window\'s own bar left alone')
+eq(questlog:recursiveGetChildById('note').visible, true, 'the window\'s own note left alone')
+eq(panel.width, 789 + 24 + ChaosDockLogic.SCROLL, 'the dock grows by the bar')
+eq(D.route('Quest Log'), true, 'second press'); runEvents()
+eq(questlog.parent, root, 'given back'); eq(questlog.visible, false, 'closed as before'); eq(questlog.height, 600, 'height back')
+eq(scrollBar.visible, false, 'bar hidden again'); eq(scroller.marginRight, 0, 'scroll area full width again')
+
+-- Store (960): fits at 1280 with its bar since the game keeps 280 px; nothing overlaps the dock
+eq(D.route('Store'), true, 'store routed'); runEvents()
+eq(store960.parent, scroller, 'store in the dock'); eq(panel.width, 960 + 24 + ChaosDockLogic.SCROLL, 'dock 1000 wide')
+eq(gameRoot.width - panel.width >= ChaosDockLogic.MIN_GAME, true, 'the game keeps its room')
+D.close(); runEvents()
+eq(store960.parent, root, 'store given back'); eq(store960.visible, false, 'closed as before')
+
+-- a smaller screen: the Store is wider than the dock may grow; it opens centred on its own and the dock gives way
+gameRoot.width = 1100
 eq(D.route('Store'), true, 'store routed'); runEvents()
 eq(store960.parent, root, 'store stays a window'); eq(store960.visible, true, 'store open')
-eq(panel:getChildById('note').visible, true, 'the dock says why'); eq(panel.width, 330, 'dock keeps its width')
-eq(store960.x, panel.x - 960 - 4 < 0 and 0 or panel.x - 964, 'placed left of the dock')
+eq(store960.x, 70, 'centred on the game screen')
+eq(panel:isExplicitlyVisible(), false, 'the dock gave way: never under the store'); eq(D.isOpen(), false, 'closed')
 eq(keys['Alt+I'](), true, 'equip key'); runEvents()
-eq(store960.visible, false, 'the floating window the dock opened goes with the tab change')
-eq(bag.parent, content, 'equip tab'); eq(keys['Alt+I'](), true, 'equip key again'); runEvents()
+eq(store960.visible, false, 'the floating window the dock opened goes when the dock opens again')
+eq(bag.parent, scroller, 'equip tab'); eq(keys['Alt+I'](), true, 'equip key again'); runEvents()
 eq(panel:isExplicitlyVisible(), false, 'key of the tab shown closes')
+gameRoot.width = 1280
 
 -- turned off: entries float as before, keys gone; on again
 D.setEnabled(false)
@@ -224,7 +270,7 @@ eq(keys['Alt+D'] ~= nil, true, 'on: keys back')
 
 -- logout gives everything back and drops the dock
 D.route('Inventory'); runEvents()
-eq(bag.parent, content, 'docked before logout')
+eq(bag.parent, scroller, 'docked before logout')
 online = false
 gameHandlers.onGameEnd()
 runEvents()

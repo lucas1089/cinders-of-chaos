@@ -6,7 +6,10 @@ ChaosDockLogic = {}
 local L = ChaosDockLogic
 
 L.WIDTH = 330          -- the dock as drawn in the mockup
-L.MIN_GAME = 320       -- the game left of a dock that widens for a wide window
+L.MIN_GAME = 280       -- the game left of a dock that widens for a wide window (320 before: the 960 px Store and its
+                       -- scroll bar fit at 1280 now, owner 2026-11-24 "nothing overlaps the dock")
+L.SCROLL = 16          -- the scroll bar and its gap, right of a window taller than the dock (owner 2026-11-24)
+L.CHROME = 135         -- the dock's frame, title, tabs, sub tabs and rule above its content, when it cannot be measured
 L.PAD = 12             -- the dock frame around the hosted window, each side
 L.BAR_GAP = 6          -- between the dock's bottom and a hotbar it would cover
 L.ORB_SLACK = 40       -- the docked globes may grow out of the hotbar frame
@@ -18,10 +21,12 @@ L.TOGGLE_KEY = 'Alt+D'
 
 -- windows: entry = the menu entry text (also the tr() key of the sub tab), module / vars = where the module keeps the
 -- window when it does (else the dock takes the window that the entry opened), getter = a module function that gives it,
--- shared = the module shows other pages in the same window (Character Info is one page of game_chaosinfo).
+-- shared = the module shows other pages in the same window (Character Info is one page of game_chaosinfo),
+-- docked = a module function called with true when the dock takes the window and false when it gives it back (the
+-- Inventory panel hides its own title bar and tab row: the dock has both).
 L.TABS = {
   { id = 'equip', name = 'Equip.', glyph = 'pack', key = 'Alt+I', windows = {
-    { entry = 'Inventory', module = 'game_bagpanel', getter = 'getWindow' },
+    { entry = 'Inventory', module = 'game_bagpanel', getter = 'getWindow', docked = 'setDocked' },
   } },
   { id = 'quests', name = 'Quests', glyph = 'book', key = 'Alt+Q', windows = {
     { entry = 'Quest Log', module = 'game_questlog', vars = { 'questLogWindow', 'questlogWindow' } },
@@ -154,6 +159,20 @@ function L.width(natural, screenW, phone)
   local want = natural + 2 * L.PAD
   if want > cap then return L.WIDTH, true end
   return want, false
+end
+
+-- whether a window scrolls in the dock: taller than the room under the dock's tabs (nothing is cut, owner 2026-11-24).
+-- A miniwindow fills the room and scrolls its own contents; a window that fits keeps the whole room.
+function L.scrolls(mini, height, room)
+  if mini or not height or not room then return false end
+  return height > room
+end
+
+-- the room under the dock's tabs: the screen height less the dock's margins and its chrome (measured: panel height less
+-- content height; L.CHROME when that is not laid out yet)
+function L.room(screenH, top, bottom, chrome)
+  if not chrome or chrome <= 0 or chrome > 3 * L.CHROME then chrome = L.CHROME end
+  return math.max(0, (tonumber(screenH) or 0) - (top or 0) - (bottom or 0) - chrome)
 end
 
 -- the dock's bottom margin: 0 (the whole height) unless the hotbar (and its globes) reach under the dock, then the dock

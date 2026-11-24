@@ -544,4 +544,34 @@ eq(C.previousFor(memo, 'main'), 2, 'previousFor skips a pinned bag')
 eq(#C.superseded(memo, 5, 'main'), 1, 'superseded skips a pinned bag')
 eq(C.superseded(memo, 5, 'main')[1], 2, 'only the unpinned one')
 
+-- in the side dock (O732): title, frame header and tab row hidden, contents moved up; given back, all restored
+local function fake(t)
+  local w = { text = t.text or '', image = t.image, height = t.height or 20, visible = true, top = t.top or 20 }
+  function w:getText() return self.text end
+  function w:setText(v) self.text = v end
+  function w:getImageSource() return self.image end
+  function w:setImageSource(v) self.image = v end
+  function w:getHeight() return self.height end
+  function w:setHeight(v) self.height = v end
+  function w:isVisible() return self.visible end
+  function w:setVisible(v) self.visible = v end
+  function w:hide() self.visible = false end
+  function w:getMarginTop() return self.top end
+  function w:setMarginTop(v) self.top = v end
+  return w
+end
+local win, row, contents = fake({ text = 'Inventory', image = '/images/ui/window' }), fake({ height = 20 }), fake({ top = 20 })
+local parts = { window = win, row = row, contents = contents }
+local saved = C.dockChrome(parts, true, nil)
+eq(win.text, '', 'docked: no title'); eq(win.image, '', 'docked: no frame header')
+eq(row.visible, false, 'docked: tab row hidden'); eq(row.height, 0, 'docked: tab row takes no room')
+eq(contents.top, C.DOCK_TOP, 'docked: contents up')
+eq(C.dockChrome(parts, true, saved), saved, 'docked twice: the first state kept')
+eq(C.dockChrome(parts, false, saved), nil, 'given back')
+eq(win.text, 'Inventory', 'title back'); eq(win.image, '/images/ui/window', 'frame back')
+eq(row.visible, true, 'tab row back'); eq(row.height, 20, 'tab row height back'); eq(contents.top, 20, 'contents back')
+eq(C.dockChrome(parts, false, nil), nil, 'given back twice: nothing changes')
+eq(win.text, 'Inventory', 'title kept')
+eq(C.dockChrome({}, true, nil) ~= nil, true, 'no widgets: no error')
+
 if fails == 0 then print('bagpanel_core_test: ok') else os.exit(1) end

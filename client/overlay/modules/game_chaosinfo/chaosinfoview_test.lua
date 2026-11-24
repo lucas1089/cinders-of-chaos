@@ -21,6 +21,14 @@ end
 eq(V.page('services').title, 'Services', 'page lookup')
 eq(V.page('nope'), nil, 'unknown page')
 
+-- the How it works card belongs to its page (O732 follow-up: Character Info opened the Invasions card)
+eq(V.page('events').card, 'invasion', 'Events: the Invasions card')
+eq(V.page('character').card, nil, 'Character Info: no card')
+local howData = io.open(dir .. '../game_howitworks/howitworks_data.lua'):read('*a')
+for _, p in ipairs(V.PAGES) do
+  if p.card then eq(howData:find('key = "' .. p.card .. '"', 1, true) ~= nil, true, p.id .. ' card exists') end
+end
+
 -- Character Info shows the cards on its own: the deck command runs when the page opens (at most eight commands a request,
 -- the server's MAX_IDS), under its heading
 do

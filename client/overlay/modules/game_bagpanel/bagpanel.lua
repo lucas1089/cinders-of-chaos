@@ -1183,3 +1183,11 @@ function togglePin() M.togglePin() end
 function lootArrow(delta) M.lootArrow(delta) end
 -- the panel window, for the side dock (game_chaosdock, O732: its Equip. tab hosts it)
 function getWindow() return alive(window) and window or nil end
+-- hosted in the dock (O732 follow-up, owner 2026-11-24): no title bar, no tab row of its own (the dock has both);
+-- given back, both return (BagPanelCore.dockChrome)
+local dockSaved = nil
+function setDocked(on)
+  if not alive(window) then dockSaved = nil return end
+  local parts = { window = window, row = child('tabRow'), contents = window:getChildById('contentsPanel') }
+  dockSaved = C.dockChrome(parts, on == true, dockSaved)
+end

@@ -5,7 +5,8 @@
 -- A page: id, title, text (what it is for), auto (commands run when the page opens; their answers fill the page),
 -- headings (command id -> a heading over its answer), idle (the text shown before any answer), ids (more command ids
 -- that make the page offered), state ('services': the page asks the server its state and enables its buttons by it),
--- store (the Ancestral Store list instead of the text box), rows (controls). A row: label, hint (its tooltip),
+-- store (the Ancestral Store list instead of the text box), card (the "How it works" card of the page, game_howitworks:
+-- only the Events page has one, so Character Info no longer opens the Invasions card, O732 follow-up), rows (controls). A row: label, hint (its tooltip),
 -- edit = <field id> (a text field) or combo = 'vocations' / 'frames' (a choice list from the server), and buttons
 -- {text, id = <command id>, param = <template>, hint, need = <state field>, why = <tooltip while disabled>} or
 -- {text, fn = <client action>}. A template puts the row's field in with '$'. Every text here goes through tr() where it
@@ -86,7 +87,7 @@ V.PAGES = {
                     { text = 'Bind Greater Key', id = 'greater', param = 'key',
                       hint = 'Bind a Greater Rift Key (tier 16) from omen fragments.' } } },
     } },
-  { id = 'events', title = 'Events',
+  { id = 'events', title = 'Events', card = 'invasion',
     text = 'Server events running today, world buffs and the world boss.',
     auto = { 'events', 'worldbuffs', 'worldboss' },
     headings = { events = 'Events today', worldbuffs = 'World buffs', worldboss = 'World boss' },
