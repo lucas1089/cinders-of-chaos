@@ -9,6 +9,8 @@ namespace Chaos.Core
         public static readonly Dictionary<string, string> PtBr = new Dictionary<string, string>
         {
             { "Set up your helper in one click", "Configure seu helper com um clique" },
+            // O761: the main quest's first step opens the Helper on Auto setup
+            { "Press Auto setup: your spells and potions go on hotkeys and the Helper casts them.", "Use a Configuração automática: suas magias e poções vão para as hotkeys e o Helper as usa." },
         };
     }
 }

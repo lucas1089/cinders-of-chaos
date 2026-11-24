@@ -323,32 +323,110 @@ namespace Chaos.Core.Tests
             check(wins.All(w => new[] { "answered", "prefetched", "local", "needsCondition", "noAnswer" }.Contains(Json.Text(w, "status"))) && Json.List(pj, "opcodesAtLogin").Count == 3, "live account json: every window has a status, and the opcodes at login are listed");
         }
 
-        // ------------------------------------------------------------------------------------ the new player first minute (O433)
-        static LiveHelperView OpenView(int tab = 1, bool hint = true, bool blink = true) => new LiveHelperView { Open = true, Tab = tab, HintDrawn = hint, Hint = hint ? "Set up your helper in one click" : "", BlinkActive = blink };
-        static readonly LiveHelperView Shut = new LiveHelperView();
-
-        /// <summary>Runs the step with a script: the toast shows from toastAt, the Helper is open from helperAt (ms after the start), until the screenshot is asked. Returns that time, or -1.</summary>
-        static double Drive(LiveNewPlayerStep st, double toastAt, double helperAt, Func<LiveHelperView> shown, int asks = 1, double limit = 60000)
+        // ------------------------------------------------------------------------------------ the new player first minute (O433, quiet first login O761)
+        // A scripted first login: the Daily Reward opens, the smoke closes it, the server starts the main quest on step 1 (row and toast), the row opens the Helper, Auto setup moves
+        // the quest to step 2. Every time is in ms after the step start; -1 is never.
+        sealed class FirstLoginSim
         {
-            for (double t = 0; t <= limit; t += 100)
+            public double DailyAt = 2000, QuestDelay = 1500, QuestNoDailyAt = -1, ToastDelay = 0, HelperDelay = 200, SpellsAt = 0, StepDelay = 500;
+            public double HelperSelfAt = -1, OutfitAt = -1, HelperShutAt = -1;
+            public string QuestKey = "helper";
+            public int Tab = 1, Slots = 3;
+            public bool Hint = true, Blink = true;
+            public readonly List<KeyValuePair<string, double>> Extra = new List<KeyValuePair<string, double>>();
+            public readonly List<string> Shots = new List<string>();
+            public double ClosedAt = -1, HelperAt = -1, StepAt = -1;
+            public int Closes, Opens, Presses;
+
+            double RowAt => ClosedAt >= 0 && QuestDelay >= 0 ? ClosedAt + QuestDelay : QuestNoDailyAt;
+            bool Row(double t) => RowAt >= 0 && t >= RowAt;
+            bool Moved(double t) => StepAt >= 0 && t >= StepAt;
+
+            public LiveNewPlayerView View(double t)
             {
-                bool toast = toastAt >= 0 && t >= toastAt;
-                bool open = helperAt >= 0 && t >= helperAt;
-                var act = st.Update(1000 + t, toast, toast ? asks : 0, open ? shown() : Shut);
-                if (act == LiveNewPlayerAction.Screenshot) { st.ShotTaken("helper_onboarding_extended.png"); return t; }
+                var v = new LiveNewPlayerView();
+                v.OpenWindows.Add("HotkeyBarWindow");   // open from the start: the baseline
+                v.DailyOpen = DailyAt >= 0 && t >= DailyAt && ClosedAt < 0;
+                if (v.DailyOpen) v.OpenWindows.Add("DailyWindow");
+                v.OutfitOpen = OutfitAt >= 0 && t >= OutfitAt;
+                foreach (var e in Extra) if (t >= e.Value) v.OpenWindows.Add(e.Key);
+                if (Row(t))
+                {
+                    v.OpenWindows.Add("GoalTrackerWindow");
+                    v.QuestKey = Moved(t) ? "warden" : QuestKey;
+                    v.QuestStep = Moved(t) ? 2 : 1;
+                    v.QuestToast = ToastDelay >= 0 && t >= RowAt + ToastDelay && t < RowAt + ToastDelay + 8000;
+                }
+                v.SpellsLoaded = SpellsAt >= 0 && t >= SpellsAt;
+                bool open = (HelperSelfAt >= 0 && t >= HelperSelfAt) || (HelperAt >= 0 && t >= HelperAt);
+                if (HelperShutAt >= 0 && t >= HelperShutAt) open = false;
+                v.Helper = open ? new LiveHelperView { Open = true, Tab = Tab, HintDrawn = Hint, Hint = Hint ? "Press Auto setup" : "", BlinkActive = Blink, TakenMs = HelperAt >= 0 ? 1000 + HelperAt : -1 } : new LiveHelperView();
+                if (open) v.OpenWindows.Add("HelperWindow");
+                return v;
             }
-            return -1;
+
+            public void Act(LiveNewPlayerStep st, LiveNewPlayerAction a, double t)
+            {
+                switch (a)
+                {
+                    case LiveNewPlayerAction.CloseDaily: Closes++; ClosedAt = t; break;
+                    case LiveNewPlayerAction.OpenHelper: Opens++; if (HelperDelay >= 0) HelperAt = t + HelperDelay; break;
+                    case LiveNewPlayerAction.PressAutoSetup:
+                        Presses++;
+                        st.AutoSetupDone(Slots, Slots > 0 ? "Auto setup: 3 spells" : "No rotation for this class and level yet");
+                        if (Slots > 0 && StepDelay >= 0) StepAt = t + StepDelay;
+                        break;
+                    case LiveNewPlayerAction.Screenshot: { string n = st.ShotName + "_extended.png"; Shots.Add(n); st.ShotTaken(n); break; }
+                }
+            }
+
+            /// <summary>Runs the step frame by frame (100 ms) until Done; returns the time of Done, or -1.</summary>
+            public double Run(LiveNewPlayerStep st, double limit = 200000)
+            {
+                for (double t = 0; t <= limit; t += 100)
+                {
+                    var a = st.Update(1000 + t, View(t));
+                    Act(st, a, t);
+                    if (a == LiveNewPlayerAction.Done) return t;
+                }
+                return -1;
+            }
         }
 
         static LiveNewPlayerResult Fresh() => new LiveNewPlayerResult { Ran = true, LoginOk = true, EnterOk = true };
+
+        static LiveNewPlayerResult RunSim(FirstLoginSim sim, out double end, out LiveNewPlayerStep st)
+        {
+            var res = Fresh();
+            st = new LiveNewPlayerStep(res, 1000);
+            end = sim.Run(st);
+            return res;
+        }
+
+        static LiveNewPlayerResult RunSim(FirstLoginSim sim) => RunSim(sim, out _, out _);
+
+        /// <summary>A result as a good quiet first login leaves it.</summary>
+        static LiveNewPlayerResult GoodNewPlayer()
+        {
+            var n = Fresh();
+            n.LoggedOut = true; n.DailySeen = true; n.DailyMs = 2000; n.DailyClosed = true; n.FirstLoginShot = "first_login_extended.png";
+            n.QuestRowSeen = true; n.QuestRowMs = 8600; n.QuestToastSeen = true; n.QuestToastMs = 8600; n.QuestStepFirst = 1; n.QuestKeyFirst = "helper"; n.RowClicked = true;
+            n.HelperOpened = true; n.HelperMs = 8800; n.Tab = 1; n.HintShown = true; n.Hint = "Press Auto setup"; n.BlinkActive = true; n.Screenshot = "helper_onboarding_extended.png";
+            n.AutoSetupPressed = true; n.AutoSetupSlots = 3; n.AutoSetupMessage = "Auto setup: 3 spells"; n.StepDone = true; n.StepMs = 10100; n.QuestStepAfter = 2; n.QuestKeyAfter = "warden";
+            return n;
+        }
 
         static LiveSmokeReport WithNewPlayer(LiveNewPlayerResult n)
         {
             var r = Good();
             var to = r.NewPlayer;
-            to.Ran = n.Ran; to.LoginOk = n.LoginOk; to.EnterOk = n.EnterOk; to.LoggedOut = n.LoggedOut; to.ToastSeen = n.ToastSeen; to.HelperAsked = n.HelperAsked;
-            to.HelperOpened = n.HelperOpened; to.HintShown = n.HintShown; to.BlinkActive = n.BlinkActive; to.Tab = n.Tab; to.Hint = n.Hint; to.Error = n.Error;
-            to.Screenshot = n.Screenshot; to.ToastMs = n.ToastMs; to.HelperMs = n.HelperMs; to.HelperTakenMs = n.HelperTakenMs; to.LongestFrameMs = n.LongestFrameMs; to.LongestFrameAtMs = n.LongestFrameAtMs;
+            to.Ran = n.Ran; to.LoginOk = n.LoginOk; to.EnterOk = n.EnterOk; to.LoggedOut = n.LoggedOut; to.Error = n.Error;
+            to.DailySeen = n.DailySeen; to.DailyMs = n.DailyMs; to.DailyClosed = n.DailyClosed; to.HelperBeforeQuest = n.HelperBeforeQuest; to.OutfitBeforeQuest = n.OutfitBeforeQuest;
+            to.OthersOpened.AddRange(n.OthersOpened); to.FirstLoginShot = n.FirstLoginShot;
+            to.QuestToastSeen = n.QuestToastSeen; to.QuestToastMs = n.QuestToastMs; to.QuestRowSeen = n.QuestRowSeen; to.QuestRowMs = n.QuestRowMs; to.QuestStepFirst = n.QuestStepFirst; to.QuestKeyFirst = n.QuestKeyFirst;
+            to.RowClicked = n.RowClicked; to.HelperOpened = n.HelperOpened; to.HelperMs = n.HelperMs; to.Tab = n.Tab; to.HintShown = n.HintShown; to.Hint = n.Hint; to.BlinkActive = n.BlinkActive; to.Screenshot = n.Screenshot;
+            to.AutoSetupPressed = n.AutoSetupPressed; to.AutoSetupSlots = n.AutoSetupSlots; to.AutoSetupMessage = n.AutoSetupMessage; to.StepDone = n.StepDone; to.StepMs = n.StepMs; to.QuestStepAfter = n.QuestStepAfter; to.QuestKeyAfter = n.QuestKeyAfter;
+            to.HelperTakenMs = n.HelperTakenMs; to.LongestFrameMs = n.LongestFrameMs; to.LongestFrameAtMs = n.LongestFrameAtMs;
             return r;
         }
 
@@ -364,65 +442,105 @@ namespace Chaos.Core.Tests
             e = LiveSmokeEnv.Read(Env("CHAOS_LIVE_ACCOUNT", "a", "CHAOS_LIVE_PASSWORD", "p", "CHAOS_LIVE_NEW_ACCOUNT", "lcn1x"));
             check(!e.Ok && !e.HasNewPlayer && !string.Join(" ", e.Errors).Contains("lcn1x"), "newplayer env: one or two of the three is an error that holds no value");
 
-            // the good first minute: toast at 2.6 s, the Helper opens 100 ms later, draws, shot
-            var res = Fresh();
-            var st = new LiveNewPlayerStep(res, 1000);
-            check(st.State == LiveNewPlayerStep.Phase.WaitToast && st.Update(1000, false, 0, Shut) == LiveNewPlayerAction.Wait, "newplayer step: starts waiting for the toast");
-            double end = Drive(st, 2600, 2700, () => OpenView());
-            check(end >= 0 && st.State == LiveNewPlayerStep.Phase.Done && res.ToastSeen && res.HelperAsked && res.HelperOpened && res.Tab == 1 && res.HintShown && res.BlinkActive && res.Hint.Length > 0, "newplayer step: toast, Helper on tab 1, hint and blink recorded");
-            check(Math.Abs(res.ToastMs - 2600) < 1 && Math.Abs(res.HelperMs - 2700) < 1, "newplayer step: toast and Helper times from the start of the step");
-            check(end >= 2700 + LiveNewPlayerStep.SettleMs - 1 && end < 2700 + LiveNewPlayerStep.SettleMs + 300, "newplayer step: the shot waits for the settle time after the Helper opened (" + end + ")");
-            check(st.Update(99999, true, 1, OpenView()) == LiveNewPlayerAction.Done && res.Screenshot == "helper_onboarding_extended.png", "newplayer step: done after the screenshot, the file name kept");
-            check(res.Pass && res.Failures().Count == 0, "newplayer result: the good run passes");
+            // the quest row's "where" (mainquest_config.lua step helper): the Helper; a click asks the Helper window the way an openHelper toast does
+            var hw = GoalWhere.From(Json.TryParse("{\"k\":\"window\",\"m\":\"game_helper\",\"f\":\"toggle\"}"));
+            check(hw != null && hw.IsHelper && hw.Button() != null && !GoalWhere.From(Json.TryParse("{\"k\":\"window\",\"m\":\"game_skills\",\"f\":\"toggle\"}")).IsHelper && !GoalWhere.From(Json.TryParse("{\"k\":\"npc\",\"name\":\"Warden Ysolde\"}")).IsHelper, "newplayer quest row: the Helper step's where is the Helper, others are not");
+            var tc = new ToastCenter(null);
+            tc.RequestHelper(HelperOnboarding.QuestHint);
+            check(tc.TakeHelperRequest(out string qh) && qh == HelperOnboarding.QuestHint && tc.HelperRequests == 1 && !tc.TakeHelperRequest(out _), "newplayer quest row: the row's request reaches the Helper once, with the quest's hint");
 
-            // the Helper was already open when the toast came
-            res = Fresh();
-            Drive(new LiveNewPlayerStep(res, 1000), 500, 0, () => OpenView());
-            check(res.Pass && res.HelperOpened, "newplayer step: a Helper that was open before the toast still passes");
+            // the good quiet first login: Daily Reward at 2 s, quiet 5 s, first shot, closed, quest row and toast 1.5 s later, Helper from the row, shot, Auto setup, step 2
+            var sim = new FirstLoginSim();
+            var res = RunSim(sim, out double end, out var st);
+            check(st.State == LiveNewPlayerStep.Phase.Done && end > 0, "newplayer step: the good first login ends (" + end + ")");
+            check(res.DailySeen && Math.Abs(res.DailyMs - 2000) < 1 && res.DailyClosed && sim.Closes == 1 && Math.Abs(sim.ClosedAt - (2000 + LiveNewPlayerStep.QuietMs)) < 101, "newplayer step: Daily Reward seen at 2 s, closed once after the quiet time (" + sim.ClosedAt + ")");
+            check(!res.HelperBeforeQuest && !res.OutfitBeforeQuest && res.OthersOpened.Count == 0, "newplayer step: nothing else opened by itself (the tracker and the baseline windows do not count)");
+            check(sim.Shots.Count == 2 && sim.Shots[0] == "first_login_extended.png" && sim.Shots[1] == "helper_onboarding_extended.png" && res.FirstLoginShot == sim.Shots[0] && res.Screenshot == sim.Shots[1], "newplayer step: two pictures, first_login then helper_onboarding: " + string.Join(",", sim.Shots));
+            check(res.QuestRowSeen && res.QuestToastSeen && res.QuestStepFirst == 1 && res.QuestKeyFirst == "helper" && Math.Abs(res.QuestRowMs - (sim.ClosedAt + 1500)) < 1, "newplayer step: the quest's step 1 row and toast recorded after the close (" + res.QuestRowMs + ")");
+            check(res.RowClicked && sim.Opens == 1 && res.HelperOpened && res.Tab == 1 && res.HintShown && res.BlinkActive && res.Hint == "Press Auto setup" && Math.Abs(res.HelperMs - (res.QuestRowMs + 200)) < 1, "newplayer step: the row opens the Helper on Auto setup with the hint and the blink");
+            check(res.HelperTakenMs >= 0 && Math.Abs(res.HelperTakenMs - (res.QuestRowMs + 200)) < 1, "newplayer step: when the Helper took the row's request (" + res.HelperTakenMs + ")");
+            check(sim.Presses == 1 && res.AutoSetupPressed && res.AutoSetupSlots == 3 && res.StepDone && res.QuestStepAfter == 2 && res.QuestKeyAfter == "warden" && res.StepMs > res.HelperMs, "newplayer step: Auto setup pressed once, the quest moved to step 2");
+            check(res.Pass && res.Failures().Count == 0 && res.Warnings().Count == 0, "newplayer result: the good run passes with no warning: " + string.Join("|", res.Failures()));
+            check(st.Update(999999, sim.View(1)) == LiveNewPlayerAction.Done && sim.Shots.Count == 2, "newplayer step: Done stays Done");
 
-            // no toast: the step waits the limit, still asks for the shot, and fails with the line
+            // the first call is the baseline: windows open then never count as opened by themselves
+            st = new LiveNewPlayerStep(Fresh(), 0);
+            check(st.State == LiveNewPlayerStep.Phase.WaitDaily && st.Update(0, new LiveNewPlayerView()) == LiveNewPlayerAction.Wait, "newplayer step: starts waiting for the Daily Reward");
+
+            // the Helper or the outfit window opening by itself before the quest is a failure line each; another window is a warning
+            sim = new FirstLoginSim { HelperSelfAt = 3000 };
+            res = RunSim(sim);
+            check(res.HelperBeforeQuest && res.Failures().Count == 1 && res.Failures()[0] == "newplayer: the Helper opened by itself before the main quest pointed to it", "newplayer result: a Helper open by itself is a failure line: " + string.Join("|", res.Failures()));
+            sim = new FirstLoginSim { OutfitAt = 1500 };
+            res = RunSim(sim);
+            check(res.OutfitBeforeQuest && res.Failures().Count == 1 && res.Failures()[0].Contains("outfit window opened by itself") && res.OthersOpened.Count == 0, "newplayer result: the outfit window at the first login is a failure line");
+            sim = new FirstLoginSim();
+            sim.Extra.Add(new KeyValuePair<string, double>("PatchNotesWindow", 2500));
+            sim.Extra.Add(new KeyValuePair<string, double>("PatchNotesWindow", 2600));
+            res = RunSim(sim);
+            check(res.Pass && res.OthersOpened.Count == 1 && res.OthersOpened[0] == "PatchNotesWindow" && res.Warnings().Count == 1 && res.Warnings()[0] == "newplayer: opened by themselves at the first login: PatchNotesWindow", "newplayer result: another window that opened by itself is a warning, once: " + string.Join("|", res.Warnings()));
+            sim = new FirstLoginSim();
+            sim.Extra.Add(new KeyValuePair<string, double>("SpellbookWindow", 0));
+            res = RunSim(sim);
+            check(res.Pass && res.OthersOpened.Count == 0, "newplayer result: a window open from the first frame is the baseline, not opened by itself");
+
+            // no Daily Reward: its failure line; the quest that starts anyway is still followed to the end
+            sim = new FirstLoginSim { DailyAt = -1, QuestNoDailyAt = 9000 };
+            res = RunSim(sim, out end, out st);
+            check(!res.DailySeen && !res.DailyClosed && sim.Closes == 0 && sim.Shots.Count == 2, "newplayer step: no Daily Reward: nothing to close, both pictures still taken");
+            check(res.Failures().Count == 1 && res.Failures()[0] == "newplayer: no Daily Reward window 30 s after entering" && res.StepDone, "newplayer result: no Daily Reward is one failure line, the quest part still passes: " + string.Join("|", res.Failures()));
+
+            // no quest row: the step waits the limit, takes the Helper picture of what there is, and ends with one line
+            sim = new FirstLoginSim { QuestDelay = -1 };
+            res = RunSim(sim, out end, out st);
+            check(st.State == LiveNewPlayerStep.Phase.Done && end >= sim.ClosedAt + LiveNewPlayerStep.QuestLimitMs - 1 && end < sim.ClosedAt + LiveNewPlayerStep.QuestLimitMs + 400 && sim.Opens == 0 && sim.Presses == 0 && sim.Shots.Count == 2, "newplayer step: no quest row ends after its limit, no Helper opened, no Auto setup (" + end + ")");
+            check(!res.Pass && res.Failures().Count == 1 && res.Failures()[0] == "newplayer: no main quest step 1 (Set up your Helper) on the tracker 30 s after the Daily Reward closed", "newplayer result: no quest row is one failure line: " + string.Join("|", res.Failures()));
+            sim = new FirstLoginSim { QuestKey = "warden" };
+            res = RunSim(sim);
+            check(!res.QuestRowSeen && res.QuestKeyFirst == "warden" && res.Failures().Count == 1 && res.Failures()[0].EndsWith("(the tracker showed step 'warden')", StringComparison.Ordinal), "newplayer result: a quest on another step names it: " + string.Join("|", res.Failures()));
+
+            // a row without its toast: the step goes on after the grace time, one line
+            sim = new FirstLoginSim { ToastDelay = -1 };
+            res = RunSim(sim);
+            check(res.QuestRowSeen && !res.QuestToastSeen && res.HelperOpened && res.StepDone && res.Failures().Count == 1 && res.Failures()[0] == "newplayer: the main quest started without its toast", "newplayer result: a quest without its toast is one failure line: " + string.Join("|", res.Failures()));
+            check(Math.Abs(res.HelperMs - (res.QuestRowMs + LiveNewPlayerStep.ToastGraceMs + 200)) < 101, "newplayer step: without a toast the row is used after the grace time (" + res.HelperMs + ")");
+
+            // the Helper does not open from the row: one line, no Auto setup
+            sim = new FirstLoginSim { HelperDelay = -1 };
+            res = RunSim(sim);
+            check(!res.HelperOpened && res.Tab == -1 && !res.HintShown && sim.Presses == 0 && !res.AutoSetupPressed && res.Failures().Count == 1 && res.Failures()[0] == "newplayer: the Helper did not open from the quest row", "newplayer result: a Helper that stays shut is one line, no tab, no Auto setup: " + string.Join("|", res.Failures()));
+            // opened, then shut again before the picture: not open
+            sim = new FirstLoginSim { HelperDelay = 100 };
+            sim.HelperShutAt = 0;   // set below once the open time is known
             res = Fresh();
             st = new LiveNewPlayerStep(res, 1000);
-            end = Drive(st, -1, -1, () => OpenView());
-            check(end >= LiveNewPlayerStep.ToastLimitMs - 1 && end < LiveNewPlayerStep.ToastLimitMs + 200 && !res.ToastSeen && st.State == LiveNewPlayerStep.Phase.Done, "newplayer step: no toast ends after the limit with a shot (" + end + ")");
-            check(!res.Pass && res.Failures().Count == 1 && res.Failures()[0].StartsWith("newplayer: no welcome toast after 30 s", StringComparison.Ordinal), "newplayer result: no toast is a failure line: " + string.Join("|", res.Failures()));
-
-            // toast but the Helper never opens
-            res = Fresh();
-            st = new LiveNewPlayerStep(res, 1000);
-            end = Drive(st, 2000, -1, () => OpenView());
-            check(end >= 2000 + LiveNewPlayerStep.HelperLimitMs - 1 && end < 2000 + LiveNewPlayerStep.HelperLimitMs + 200 && res.ToastSeen && !res.HelperOpened, "newplayer step: a Helper that stays shut ends after its limit (" + end + ")");
-            check(!res.Pass && res.Failures().Any(x => x.Contains("Helper did not open by itself")) && res.Tab == -1 && !res.HintShown, "newplayer result: a Helper that did not open is a failure line, no tab or hint recorded");
-
-            // the toast came without openHelper
-            res = Fresh();
-            Drive(new LiveNewPlayerStep(res, 1000), 1000, -1, () => OpenView(), 0);
-            check(res.ToastSeen && !res.HelperAsked && res.Failures().Any(x => x.Contains("without openHelper")), "newplayer result: a toast without openHelper is its own failure line");
+            for (double t = 0; t <= 60000 && st.State != LiveNewPlayerStep.Phase.Done; t += 100)
+            {
+                if (sim.HelperAt >= 0) sim.HelperShutAt = sim.HelperAt + 300;
+                else sim.HelperShutAt = -1;
+                sim.Act(st, st.Update(1000 + t, sim.View(t)), t);
+            }
+            check(!res.HelperOpened && res.Tab == -1 && sim.Presses == 0, "newplayer step: a Helper shut again before the picture is not open");
 
             // wrong tab, no hint, no blink: a separate line each
-            res = Fresh();
-            Drive(new LiveNewPlayerStep(res, 1000), 500, 600, () => OpenView(0, true, true));
+            res = RunSim(new FirstLoginSim { Tab = 0 });
             check(res.HelperOpened && res.Tab == 0 && res.Failures().Count == 1 && res.Failures()[0].Contains("tab 0, not on Auto setup"), "newplayer result: the Healing tab is a failure line");
-            res = Fresh();
-            Drive(new LiveNewPlayerStep(res, 1000), 500, 600, () => OpenView(1, false, true));
+            res = RunSim(new FirstLoginSim { Hint = false });
             check(res.Failures().Count == 1 && res.Failures()[0].Contains("no hint") && !res.HintShown, "newplayer result: no hint drawn is a failure line");
-            res = Fresh();
-            Drive(new LiveNewPlayerStep(res, 1000), 500, 600, () => OpenView(1, true, false));
+            res = RunSim(new FirstLoginSim { Blink = false });
             check(res.Failures().Count == 1 && res.Failures()[0].Contains("does not blink"), "newplayer result: no blink is a failure line");
 
-            // a Helper that opened and was shut again before the shot does not count as open
-            res = Fresh();
-            st = new LiveNewPlayerStep(res, 0);
-            st.Update(0, true, 1, Shut); st.Update(100, true, 1, OpenView());
-            var act = LiveNewPlayerAction.Wait;
-            for (double t = 200; t <= 3000 && act != LiveNewPlayerAction.Screenshot; t += 100) act = st.Update(t, true, 1, Shut);
-            check(act == LiveNewPlayerAction.Screenshot && !res.HelperOpened && res.Tab == -1, "newplayer step: a Helper shut again before the shot is not open");
-
-            // the toast seen is kept when it leaves the screen
-            res = Fresh();
-            st = new LiveNewPlayerStep(res, 0);
-            st.Update(0, true, 1, Shut); st.Update(100, false, 1, OpenView());
-            check(res.ToastSeen && res.HelperAsked && res.HelperOpened && st.State == LiveNewPlayerStep.Phase.Settle, "newplayer step: the toast is latched when it leaves the screen");
+            // Auto setup: no spell list, no slot filled, the quest that stays on step 1
+            sim = new FirstLoginSim { SpellsAt = -1 };
+            res = RunSim(sim);
+            check(sim.Presses == 0 && !res.AutoSetupPressed && res.Failures().Count == 1 && res.Failures()[0] == "newplayer: Auto setup was not pressed (no spell list 20 s after the Helper shot)", "newplayer result: no spell list, no Auto setup, one line: " + string.Join("|", res.Failures()));
+            sim = new FirstLoginSim { SpellsAt = 20000 };
+            res = RunSim(sim);
+            check(sim.Presses == 1 && res.Pass, "newplayer step: Auto setup waits for the spell list");
+            res = RunSim(new FirstLoginSim { Slots = 0 });
+            check(res.AutoSetupPressed && !res.StepDone && res.QuestStepAfter == 1 && res.QuestKeyAfter == "helper" && res.Failures().Count == 1 && res.Failures()[0] == "newplayer: the main quest stayed on step 1 10 s after Auto setup (Auto setup filled no slot: No rotation for this class and level yet)", "newplayer result: Auto setup that filled nothing names it: " + string.Join("|", res.Failures()));
+            res = RunSim(new FirstLoginSim { StepDelay = -1 });
+            check(!res.StepDone && res.Failures().Count == 1 && res.Failures()[0] == "newplayer: the main quest stayed on step 1 10 s after Auto setup", "newplayer result: a quest that does not move is one line");
 
             // login and entry faults of the fresh character
             res = new LiveNewPlayerResult { Ran = true, Error = "login: Account name or password is not correct." };
@@ -430,37 +548,45 @@ namespace Chaos.Core.Tests
             res = new LiveNewPlayerResult { Ran = true, LoginOk = true };
             check(!res.Pass && res.Failures().Any(x => x.Contains("did not get into the game")), "newplayer result: not entering the game without a message still fails");
             res = new LiveNewPlayerResult();
-            check(res.Pass && res.Failures().Count == 0 && res.ToJson(null) == "{\"ran\":false}", "newplayer result: a run without a fresh character has no failure and an empty block");
+            check(res.Pass && res.Failures().Count == 0 && res.Warnings().Count == 0 && res.ToJson(null) == "{\"ran\":false}", "newplayer result: a run without a fresh character has no failure and an empty block");
 
             // the report: the failure lines join the gate rule, the other checks stay as they were
-            var good = new LiveNewPlayerResult { Ran = true, LoginOk = true, EnterOk = true, LoggedOut = true, ToastSeen = true, HelperAsked = true, HelperOpened = true, Tab = 1, HintShown = true, Hint = "Set up your helper in one click", BlinkActive = true, ToastMs = 2600, HelperMs = 2700, Screenshot = "helper_onboarding_extended.png" };
+            var good = GoodNewPlayer();
+            check(good.Pass && good.Warnings().Count == 0, "newplayer result: the good result passes");
             var rep = WithNewPlayer(good);
             check(rep.Pass && rep.Failures().Count == 0 && rep.SummaryLine().Contains("0 layout errors, newplayer ok, pass"), "newplayer report: a good first minute passes and shows on the summary line: " + rep.SummaryLine());
-            rep = WithNewPlayer(new LiveNewPlayerResult { Ran = true, LoginOk = true, EnterOk = true, LoggedOut = true, ToastSeen = false });
-            check(!rep.Pass && rep.Failures().Any(x => x.StartsWith("newplayer: no welcome toast", StringComparison.Ordinal)) && rep.SummaryLine().Contains("newplayer FAIL, FAIL"), "newplayer report: a missing toast fails the run: " + rep.SummaryLine());
+            var bad = GoodNewPlayer(); bad.QuestRowSeen = false;
+            rep = WithNewPlayer(bad);
+            check(!rep.Pass && rep.Failures().Any(x => x.StartsWith("newplayer: no main quest step 1", StringComparison.Ordinal)) && rep.SummaryLine().Contains("newplayer FAIL, FAIL"), "newplayer report: a missing quest step fails the run: " + rep.SummaryLine());
             rep = WithNewPlayer(good);
             rep.StepsConfirmed = 0;
             check(!rep.Pass && !rep.Failures().Any(x => x.StartsWith("newplayer", StringComparison.Ordinal)), "newplayer report: a good first minute does not hide a failed walk");
             rep = WithNewPlayer(good); rep.NewPlayer.LoggedOut = false;
             check(rep.Pass && rep.Warnings().Any(x => x.StartsWith("newplayer: no clean logout", StringComparison.Ordinal)), "newplayer report: no clean logout of the fresh character is a warning, not a failure");
+            var other = GoodNewPlayer(); other.OthersOpened.Add("PatchNotesWindow");
+            check(WithNewPlayer(other).Pass && WithNewPlayer(other).Warnings().Any(x => x.Contains("PatchNotesWindow")), "newplayer report: a window that opened by itself is a run warning");
             check(Good().Pass && !Good().SummaryLine().Contains("newplayer") && Good().Warnings().Count == 0, "newplayer report: a run without a fresh character reads as before");
 
             // the json block
-            rep = WithNewPlayer(good);
+            rep = WithNewPlayer(other);
             var pj = Json.TryParse(rep.ToJson(null));
             var nb = Json.Get(pj, "newplayer");
-            check(nb != null && Json.Bool(nb, "ran") && Json.Bool(nb, "pass") && Json.Bool(nb, "toastSeen") && Json.Bool(nb, "openHelper") && Json.Bool(nb, "helperOpened") && Json.Int(nb, "tab") == 1 && Json.Bool(nb, "autoSetupTab"), "newplayer json: ran, pass, toast, openHelper, Helper opened on tab 1");
-            check(Json.Bool(nb, "hintShown") && Json.Text(nb, "hint") == "Set up your helper in one click" && Json.Bool(nb, "blinkActive") && Json.Text(nb, "screenshot") == "helper_onboarding_extended.png" && Json.Int(nb, "toastMs") == 2600 && Json.Bool(nb, "loggedOut"), "newplayer json: hint, blink, screenshot name, times");
+            check(nb != null && Json.Bool(nb, "ran") && Json.Bool(nb, "pass") && Json.Bool(nb, "dailySeen") && Json.Int(nb, "dailyMs") == 2000 && Json.Bool(nb, "dailyClosed") && !Json.Bool(nb, "helperBeforeQuest") && !Json.Bool(nb, "outfitBeforeQuest"), "newplayer json: ran, pass, the Daily Reward, nothing else by itself");
+            var others = Json.List(nb, "othersOpened");
+            check(others.Count == 1 && (others[0] as string) == "PatchNotesWindow" && Json.Text(nb, "firstLoginShot") == "first_login_extended.png", "newplayer json: othersOpened and the first picture");
+            check(Json.Bool(nb, "questToastSeen") && Json.Bool(nb, "questRowSeen") && Json.Int(nb, "questRowMs") == 8600 && Json.Int(nb, "questStepFirst") == 1 && Json.Text(nb, "questKeyFirst") == "helper" && Json.Bool(nb, "rowClicked"), "newplayer json: the quest's step 1 row, toast and the row click");
+            check(Json.Bool(nb, "helperOpened") && Json.Int(nb, "tab") == 1 && Json.Bool(nb, "autoSetupTab") && Json.Bool(nb, "hintShown") && Json.Text(nb, "hint") == "Press Auto setup" && Json.Bool(nb, "blinkActive") && Json.Text(nb, "screenshot") == "helper_onboarding_extended.png", "newplayer json: the Helper on Auto setup, hint, blink, picture");
+            check(Json.Bool(nb, "autoSetupPressed") && Json.Int(nb, "autoSetupSlots") == 3 && Json.Bool(nb, "questStepDone") && Json.Int(nb, "questStepAfter") == 2 && Json.Text(nb, "questKeyAfter") == "warden" && Json.Int(nb, "questStepMs") == 10100 && Json.Bool(nb, "loggedOut"), "newplayer json: Auto setup and the quest's step 2");
             check(Json.Bool(pj, "pass") && Json.Bool(Json.Get(pj, "login"), "ok"), "newplayer json: the normal login and pass stay at their places");
             pj = Json.TryParse(Good().ToJson(null));
             check(!Json.Bool(Json.Get(pj, "newplayer"), "ran"), "newplayer json: no fresh character gives {\"ran\":false}");
-            rep = WithNewPlayer(new LiveNewPlayerResult { Ran = true, LoginOk = true, EnterOk = true, ToastSeen = false, Error = "boom with np-secret and Live Fresh A" });
+            bad = GoodNewPlayer(); bad.Error = "boom with np-secret and Live Fresh A"; bad.AutoSetupMessage = "lcn1x said hi";
+            rep = WithNewPlayer(bad);
             string text = rep.ToJson(new[] { "np-secret", "lcn1x", "Live Fresh A" });
             pj = Json.TryParse(text);
-            check(pj != null && !text.Contains("np-secret") && !text.Contains("Live Fresh A") && text.Contains("<removed>") && !Json.Bool(pj, "pass") && !Json.Bool(Json.Get(pj, "newplayer"), "pass"), "newplayer json: a failing block says why and holds no secret");
+            check(pj != null && !text.Contains("np-secret") && !text.Contains("Live Fresh A") && !text.Contains("lcn1x") && text.Contains("<removed>") && !Json.Bool(pj, "pass") && !Json.Bool(Json.Get(pj, "newplayer"), "pass"), "newplayer json: a failing block says why and holds no secret");
             check(!text.Any(c => c > 0x7e), "newplayer json: ASCII only");
         }
-
 
         // ============================================================================================================================ the first fight (O433, "New player first fight")
         // A simulated game: the temple floor with the stair the client calls not walkable, the cave below with Rats, steps one tile each 250 ms, a kill after some seconds of attack, a body, a container
@@ -866,8 +992,8 @@ namespace Chaos.Core.Tests
             check(rep.Pass && rep.Warnings().Any(x => x.StartsWith("firstfight: skipped: no Rat in view", StringComparison.Ordinal)) && rep.SummaryLine().Contains("firstfight skipped"), "first fight report: a skip is a warning, the run passes");
             rep = Good();
             check(!rep.SummaryLine().Contains("firstfight") && rep.Warnings().Count == 0 && !Json.Bool(Json.Get(Json.TryParse(rep.ToJson(null)), "firstfight"), "ran"), "first fight report: no fresh character, nothing about the first fight and the json says ran false");
-            rep = Good();
-            rep.NewPlayer.Ran = true; rep.NewPlayer.LoginOk = true; rep.NewPlayer.EnterOk = true; rep.NewPlayer.ToastSeen = true; rep.NewPlayer.HelperAsked = true; rep.NewPlayer.HelperOpened = true; rep.NewPlayer.Tab = 1; rep.NewPlayer.HintShown = true; rep.NewPlayer.BlinkActive = true; rep.NewPlayer.LoggedOut = false;
+            rep = WithNewPlayer(GoodNewPlayer());
+            rep.NewPlayer.LoggedOut = false;
             check(rep.Warnings().Any(x => x.StartsWith("newplayer: no clean logout", StringComparison.Ordinal)), "first fight report: a fresh character that did not log out is a warning when it did not fight");
             rep.FirstFight.Ran = true; rep.FirstFight.RatInReach = true; rep.FirstFight.Kills = 1; rep.FirstFight.ExpBefore = 1; rep.FirstFight.ExpAfter = 5; rep.FirstFight.ExpTexts = 1; rep.FirstFight.AutoSetupPressed = true; rep.FirstFight.AutoSetupSlots = 1; rep.FirstFight.HelperOn = true; rep.FirstFight.LootOpened = true; rep.FirstFight.LootWindowOpen = true;
             check(!rep.Warnings().Any(x => x.StartsWith("newplayer: no clean logout", StringComparison.Ordinal)) && rep.Notes().Any(x => x.Contains("refuses a logout")) && rep.Pass, "first fight report: after a fight the dropped connection is a note, the server refuses a logout in the minute after a fight");
@@ -879,12 +1005,12 @@ namespace Chaos.Core.Tests
             // ---- the new player step records the frame gaps and when the Helper took the request (the 22 s stall of the first CI run)
             var np = Fresh();
             var step = new LiveNewPlayerStep(np, 1000);
-            step.Update(1000, false, 0, Shut);
-            step.Update(1100, false, 0, Shut);
-            step.Update(3400, true, 1, new LiveHelperView { TakenMs = -1 });
-            step.Update(25400, true, 1, new LiveHelperView { Open = true, Tab = 1, HintDrawn = true, Hint = "h", BlinkActive = true, TakenMs = 3450 });
+            step.Update(1000, new LiveNewPlayerView());
+            step.Update(1100, new LiveNewPlayerView());
+            step.Update(3400, new LiveNewPlayerView { Helper = new LiveHelperView { TakenMs = -1 } });
+            step.Update(25400, new LiveNewPlayerView { DailyOpen = true, Helper = new LiveHelperView { TakenMs = 3450 } });
             check(Math.Abs(np.LongestFrameMs - 22000) < 1 && Math.Abs(np.LongestFrameAtMs - 2400) < 1, "new player step: the longest frame gap is 22 s and it began 2.4 s after the start (" + np.LongestFrameMs + " at " + np.LongestFrameAtMs + ")");
-            check(Math.Abs(np.HelperTakenMs - 2450) < 1 && Math.Abs(np.HelperMs - 24400) < 1 && np.ToastSeen && np.HelperOpened, "new player step: the Helper took the request at 2.4 s and was seen open at 24.4 s: a stall, not a window that stayed shut");
+            check(Math.Abs(np.HelperTakenMs - 2450) < 1 && Math.Abs(np.DailyMs - 24400) < 1 && np.DailySeen, "new player step: a request taken at 2.4 s and the Daily Reward seen at 24.4 s: a stall, not a late window");
             check(np.Warnings().Count == 1 && np.Warnings()[0].Contains("one frame took 22.0 s, 2.4 s after") && WithNewPlayer(np).Warnings().Any(x => x.StartsWith("newplayer: one frame took", StringComparison.Ordinal)) && !WithNewPlayer(np).Failures().Any(x => x.Contains("frame")), "new player step: a frame of seconds is a warning, never a failure");
             check(Fresh().Warnings().Count == 0, "new player step: normal frames give no warning");
             var npj = Json.TryParse(WithNewPlayer(np).ToJson(null));

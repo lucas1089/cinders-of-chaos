@@ -126,6 +126,8 @@ namespace Chaos.Core
     public static class HelperOnboarding
     {
         public const string FallbackHint = "Set up your helper in one click";
+        /// <summary>The hint of the main quest's first step (O761: a click on its tracker row opens the Helper on Auto setup, game_goals goals.lua openHelperSetup).</summary>
+        public const string QuestHint = "Press Auto setup: your spells and potions go on hotkeys and the Helper casts them.";
         public const double BlinkMs = 12000, StepMs = 400;
 
         /// <summary>The hint of the toast, or the fallback text when it has none (an empty hint is none).</summary>
@@ -233,7 +235,8 @@ namespace Chaos.Core
         /// <summary>How many openHelper toasts came this session.</summary>
         public int HelperRequests;
 
-        void RequestHelper(string hint)
+        /// <summary>Asks the Helper window to open on Auto setup with the hint: an openHelper toast, or the main quest's first step row (O761).</summary>
+        public void RequestHelper(string hint)
         {
             HelperRequested = true;
             HelperHint = HelperOnboarding.HintOf(hint, Loc.T(HelperOnboarding.FallbackHint));

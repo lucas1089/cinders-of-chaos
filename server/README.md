@@ -31973,8 +31973,10 @@ mostrar primeiro como funciona o helper. depois introduza as outras coisas."
 - **Tests.** `tests/intros_test.lua`: rules, the real config against the quest, the order Daily Reward > quest > introductions on a mocked engine, once each, the gap,
   open, staff and tester characters, the hooks. `tests/mainquest_test.lua`: first step, `mqHelper`. Client `howitworks_test.lua`, `goalsview_test.lua`.
   `tester_checks_test.py`: `mainquest_walk` presses Auto setup through `mqHelper`.
-- **Unity.** `Goals.HelperSetUp` (Core/Progression.cs) sends `mqHelper` from the Helper window's Auto setup. The live smoke's `newplayer` block still expects the
-  welcome toast with the Helper at a first login (`LiveSmoke.cs` `LiveNewPlayerResult`). Open: move it to the quest step on the next live run.
+- **Unity.** `Goals.HelperSetUp` (Core/Progression.cs) sends `mqHelper` from the Helper window's Auto setup. A click on the quest's tracker row opens the Helper
+  on Auto setup with the blink (`GoalTrackerWindow`, `ChaosApp.RunWhere`). The player live smoke's `newplayer` step checks this flow (O761b, unity/README.md "New player
+  first minute, quiet first login"): Daily Reward only, closed, quest step 1 toast and row, the Helper from the row, Auto setup, step 2. Not run live yet. Open: the
+  Core.LiveCheck scenario `newplayer` still asks for the first-hour hint and a toast in the first 45 s.
 
 ## Welcome path (O370, `welcomepath.lua`, `welcomepath_core.lua`, `welcomepath_config.lua`, client `game_goals`)
 

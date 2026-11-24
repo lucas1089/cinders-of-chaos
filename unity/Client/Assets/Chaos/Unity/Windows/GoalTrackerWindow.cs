@@ -1,5 +1,5 @@
 // Goal tracker: the compact list the main client keeps on the map. Sections in order: the welcome path of a new character (with a Skip
-// button that asks twice), Next Goals, the ascension quest and the line's spell quest, each row a line of text and a thin bar. It opens
+// button that asks twice; a click on its open row runs the row's "where", O761), Next Goals, the ascension quest and the line's spell quest, each row a line of text and a thin bar. It opens
 // by itself when the server sends rows (opcode 178 "tracker", "welcome", "ascension", "spellquest"); close it with the x, open it again
 // from the Adventure menu. Core: Core/Progression.cs (Goals).
 using System.Collections.Generic;
@@ -59,7 +59,10 @@ namespace Chaos.Client
                 y += Header(app, x, y, w, Loc.T("Welcome Path {0}/{1}", g.WelcomeStep, g.WelcomeCount));
                 foreach (var r in g.Welcome)
                 {
-                    y += Row(app, x, y, w, r.TrackerText(true) + (r.Hint.Length > 0 && !r.Done ? "\n" + r.Hint : ""), r.Percent, Hex(r.Done ? "#7fc86a" : "#f6cf72"));
+                    float h = Row(app, x, y, w, r.TrackerText(true) + (r.Hint.Length > 0 && !r.Done ? "\n" + r.Hint : ""), r.Percent, Hex(r.Done ? "#7fc86a" : "#f6cf72"));
+                    // a click on an open row runs its "where" (the main client's tracker row; O761: the quest's first step opens the Helper on Auto setup)
+                    if (!r.Done && r.Where != null && r.Where.Button() != null && GUI.Button(new Rect(x, y, w, h), GUIContent.none, GUIStyle.none)) app.RunWhere(r.Where);
+                    y += h;
                 }
                 bool armed = skipArmedAt >= 0 && app.Session.Now - skipArmedAt < 4000;
                 if (GUI.Button(new Rect(x, y, w, 22), armed ? Loc.T("Click again to skip") : Loc.T("Skip welcome path")))

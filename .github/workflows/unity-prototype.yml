@@ -460,9 +460,13 @@ jobs:
                   notes.append("- %s: %s" % (ident, w))
               n = d.get("newplayer") or {}
               if n.get("ran"):
-                  notes.append("- %s: new player first minute (helper_onboarding_%s.png): welcome toast %s, openHelper %s, Helper opened by itself %s on tab %s (Auto setup is tab 1), hint %s, blink %s, %s" % (
-                      ident, ident, "seen" if n.get("toastSeen") else "NOT seen", "yes" if n.get("openHelper") else "NO", "yes" if n.get("helperOpened") else "NO", n.get("tab"),
-                      "shown" if n.get("hintShown") else "NOT shown", "on" if n.get("blinkActive") else "off", "pass" if n.get("pass") else "FAIL"))
+                  # the quiet first login (O761b): Daily Reward only, closed, the main quest's step 1, the Helper from its row, Auto setup, step 2
+                  notes.append("- %s: new player first minute (first_login_%s.png, helper_onboarding_%s.png): Daily Reward %s, Helper by itself %s, outfit window by itself %s, other windows [%s]; quest step 1 row %s, toast %s; Helper from the row %s on tab %s (Auto setup is tab 1), hint %s, blink %s; Auto setup %s (%s slots), quest %s; %s" % (
+                      ident, ident, ident, "seen" if n.get("dailySeen") else "NOT seen", "YES" if n.get("helperBeforeQuest") else "no", "YES" if n.get("outfitBeforeQuest") else "no",
+                      ", ".join(n.get("othersOpened") or []), "seen" if n.get("questRowSeen") else "NOT seen", "seen" if n.get("questToastSeen") else "NOT seen",
+                      "opened" if n.get("helperOpened") else "NOT opened", n.get("tab"), "shown" if n.get("hintShown") else "NOT shown", "on" if n.get("blinkActive") else "off",
+                      "pressed" if n.get("autoSetupPressed") else "NOT pressed", n.get("autoSetupSlots"), "moved to step %s" % n.get("questStepAfter") if n.get("questStepDone") else "stayed on step 1",
+                      "pass" if n.get("pass") else "FAIL"))
                   if n.get("longestFrameMs", 0) >= 3000:
                       notes.append("- %s: new player first minute: the longest frame took %.1f s, %.1f s after entering (the Helper took the request at %.1f s, seen open at %.1f s)" % (
                           ident, n["longestFrameMs"] / 1000.0, n.get("longestFrameAtMs", 0) / 1000.0, n.get("helperTakenMs", -1000) / 1000.0, n.get("helperMs", 0) / 1000.0))

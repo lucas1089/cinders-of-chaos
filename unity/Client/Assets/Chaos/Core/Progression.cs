@@ -161,6 +161,9 @@ namespace Chaos.Core
             return w;
         }
 
+        /// <summary>The Helper window (game_goals goalsview.lua V.isHelper): the main quest's first step opens it on Auto setup (O761).</summary>
+        public bool IsHelper => K == "window" && M == "game_helper";
+
         /// <summary>The button text, or null when the row has no action (the main client's V.whereButton).</summary>
         public string Button()
         {

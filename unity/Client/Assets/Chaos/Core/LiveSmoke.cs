@@ -322,28 +322,55 @@ namespace Chaos.Core
         public bool Open, HintDrawn, BlinkActive;
         public int Tab = -1;
         public string Hint = "";
-        /// <summary>The caller's clock (ms) when the window took the welcome toast's request and opened itself; -1 when it has not yet. Open is read by the smoke once a frame, the window
+        /// <summary>The caller's clock (ms) when the window took a Helper request (the quest row, an openHelper toast) and opened itself; -1 when it has not yet. Open is read by the smoke once a frame, the window
         /// opens in the first OnGUI pass of a frame: a long frame between the two shows as a gap between this and HelperMs (run 42602032582 of 2026-11-09: the request was taken at once
         /// and the smoke saw the window 22 s later, because the main thread had no frame in between).</summary>
         public double TakenMs = -1;
     }
 
-    public enum LiveNewPlayerAction { Wait, Screenshot, Done }
+    public enum LiveNewPlayerAction { Wait, CloseDaily, Screenshot, OpenHelper, PressAutoSetup, Done }
 
-    /// <summary>The first minute of a new player in the live run (O433): the "newplayer" block of live_smoke.json and its failure lines. `Ran` is false when the run had no fresh
-    /// character (the variables CHAOS_LIVE_NEW_* unset): no failure.</summary>
+    /// <summary>What the player shows this frame to the new player step (built by the caller from the windows, the toasts and the goals channel).</summary>
+    public sealed class LiveNewPlayerView
+    {
+        /// <summary>The Daily Reward window is open; an outfit window (Outfit or Customise Character) is open.</summary>
+        public bool DailyOpen, OutfitOpen;
+        /// <summary>The class names of every open window (the step keeps the ones open at its first call as the baseline).</summary>
+        public IList<string> OpenWindows = new List<string>();
+        /// <summary>A main quest toast (JOURNEY, mainquest.lua `toast`) is on screen or in the queue.</summary>
+        public bool QuestToast;
+        /// <summary>The main quest's tracker row (opcode 178 "welcome", Goals.Welcome[0]): its step key ("" when none) and the step index (Goals.WelcomeStep).</summary>
+        public string QuestKey = "";
+        public int QuestStep;
+        /// <summary>The spell list arrived (Auto setup needs it).</summary>
+        public bool SpellsLoaded;
+        public LiveHelperView Helper = new LiveHelperView();
+    }
+
+    /// <summary>The first minute of a new player in the live run (O433, quiet first login O761): the "newplayer" block of live_smoke.json and its failure lines. `Ran` is false when the run had
+    /// no fresh character (the variables CHAOS_LIVE_NEW_* unset): no failure.</summary>
     public sealed class LiveNewPlayerResult
     {
         /// <summary>The Helper's Shooter tab, where Auto setup is (HelperWindow tab 1).</summary>
         public const int ShooterTab = 1;
+        /// <summary>The main quest's first step (mainquest_config.lua `helper`, "Set up your Helper").</summary>
+        public const string HelperStepKey = "helper";
+        /// <summary>Windows that may open by themselves at a first login: the Daily Reward and the goal tracker (it opens when the quest row comes).</summary>
+        public static readonly string[] AllowedWindows = { "DailyWindow", "GoalTrackerWindow" };
 
-        public bool Ran, LoginOk, EnterOk, ToastSeen, HelperAsked, HelperOpened, HintShown, BlinkActive, LoggedOut;
-        public int Tab = -1;
-        public string Hint = "", Error = "", Screenshot = "";
-        public double ToastMs = -1, HelperMs = -1;
+        public bool Ran, LoginOk, EnterOk, LoggedOut;
+        public bool DailySeen, DailyClosed, HelperBeforeQuest, OutfitBeforeQuest;
+        public readonly List<string> OthersOpened = new List<string>();
+        public bool QuestToastSeen, QuestRowSeen, RowClicked, HelperOpened, HintShown, BlinkActive;
+        public bool AutoSetupPressed, StepDone;
+        public int Tab = -1, QuestStepFirst = -1, QuestStepAfter = -1, AutoSetupSlots;
+        public string Hint = "", Error = "", Screenshot = "", FirstLoginShot = "", QuestKeyFirst = "", QuestKeyAfter = "", AutoSetupMessage = "";
+        public double DailyMs = -1, QuestToastMs = -1, QuestRowMs = -1, HelperMs = -1, StepMs = -1;
         /// <summary>When the Helper window took the request (relative to the step start; -1: not seen), the longest gap between two frames of the step and where it began (ms after the step start). A frame gap
-        /// of seconds explains a toast or a Helper that is seen late: it is a main thread stall, not the window.</summary>
+        /// of seconds explains a window that is seen late: it is a main thread stall, not the window.</summary>
         public double HelperTakenMs = -1, LongestFrameMs, LongestFrameAtMs;
+
+        static string S(double ms) => ((int)(ms / 1000)).ToString(CultureInfo.InvariantCulture);
 
         public List<string> Failures()
         {
@@ -351,27 +378,39 @@ namespace Chaos.Core
             if (!Ran) return f;
             if (Error.Length > 0) f.Add("newplayer: " + Error);
             if (!(LoginOk && EnterOk)) { if (Error.Length == 0) f.Add("newplayer: the fresh character did not get into the game"); return f; }
-            if (!ToastSeen) { f.Add("newplayer: no welcome toast after " + (int)(LiveNewPlayerStep.ToastLimitMs / 1000) + " s in the game"); return f; }
-            if (!HelperAsked) f.Add("newplayer: the welcome toast came without openHelper");
-            if (!HelperOpened) f.Add("newplayer: the Helper did not open by itself on the welcome toast");
-            else
+            if (!DailySeen) f.Add("newplayer: no Daily Reward window " + S(LiveNewPlayerStep.DailyLimitMs) + " s after entering");
+            if (HelperBeforeQuest) f.Add("newplayer: the Helper opened by itself before the main quest pointed to it");
+            if (OutfitBeforeQuest) f.Add("newplayer: the outfit window opened by itself at the first login");
+            if (!QuestRowSeen)
             {
-                if (Tab != ShooterTab) f.Add("newplayer: the Helper opened on tab " + Tab + ", not on Auto setup (tab " + ShooterTab + ")");
-                if (!HintShown) f.Add("newplayer: the Helper shows no hint above Auto setup");
-                if (!BlinkActive) f.Add("newplayer: the Auto setup button does not blink");
+                f.Add("newplayer: no main quest step 1 (Set up your Helper) on the tracker " + S(LiveNewPlayerStep.QuestLimitMs) + " s after the Daily Reward closed"
+                    + (QuestKeyFirst.Length > 0 ? " (the tracker showed step '" + QuestKeyFirst + "')" : ""));
+                return f;
             }
+            if (!QuestToastSeen) f.Add("newplayer: the main quest started without its toast");
+            if (!HelperOpened) { f.Add("newplayer: the Helper did not open from the quest row"); return f; }
+            if (Tab != ShooterTab) f.Add("newplayer: the Helper opened on tab " + Tab + ", not on Auto setup (tab " + ShooterTab + ")");
+            if (!HintShown) f.Add("newplayer: the Helper shows no hint above Auto setup");
+            if (!BlinkActive) f.Add("newplayer: the Auto setup button does not blink");
+            if (!AutoSetupPressed) f.Add("newplayer: Auto setup was not pressed (no spell list " + S(LiveNewPlayerStep.SpellsLimitMs) + " s after the Helper shot)");
+            else if (!StepDone)
+                f.Add("newplayer: the main quest stayed on step 1 " + S(LiveNewPlayerStep.StepLimitMs) + " s after Auto setup"
+                    + (AutoSetupSlots == 0 ? " (Auto setup filled no slot: " + (AutoSetupMessage.Length > 0 ? AutoSetupMessage : "no message") + ")" : ""));
             return f;
         }
 
-        /// <summary>A frame of the step that took StallWarnMs or more: the player froze that long (software rendering on a runner, a first-use cost). Not a failure: the Helper and the toast are only seen late by that much.</summary>
+        /// <summary>A frame of the step that took StallWarnMs or more: the player froze that long (software rendering on a runner, a first-use cost). Not a failure: the windows are only seen late by that much.</summary>
         public const double StallWarnMs = 3000;
 
         public List<string> Warnings()
         {
             var w = new List<string>();
-            if (Ran && LongestFrameMs >= StallWarnMs)
-                w.Add("newplayer: one frame took " + Math.Round(LongestFrameMs / 1000.0, 1).ToString("0.0", CultureInfo.InvariantCulture) + " s, " + Math.Round(LongestFrameAtMs / 1000.0, 1).ToString("0.0", CultureInfo.InvariantCulture)
-                    + " s after the fresh character entered (a main thread stall: the toast and the Helper window are seen that late, the Helper took its request at " + (HelperTakenMs < 0 ? "no time" : Math.Round(HelperTakenMs / 1000.0, 1).ToString("0.0", CultureInfo.InvariantCulture) + " s") + ")");
+            if (!Ran) return w;
+            var inv = CultureInfo.InvariantCulture;
+            if (LongestFrameMs >= StallWarnMs)
+                w.Add("newplayer: one frame took " + Math.Round(LongestFrameMs / 1000.0, 1).ToString("0.0", inv) + " s, " + Math.Round(LongestFrameAtMs / 1000.0, 1).ToString("0.0", inv)
+                    + " s after the fresh character entered (a main thread stall: the windows are seen that late, the Helper took its request at " + (HelperTakenMs < 0 ? "no time" : Math.Round(HelperTakenMs / 1000.0, 1).ToString("0.0", inv) + " s") + ")");
+            if (OthersOpened.Count > 0) w.Add("newplayer: opened by themselves at the first login: " + string.Join(", ", OthersOpened));
             return w;
         }
 
@@ -383,32 +422,48 @@ namespace Chaos.Core
         {
             var inv = CultureInfo.InvariantCulture;
             if (!Ran) return "{\"ran\":false}";
+            Func<double, string> ms = v => Math.Round(v).ToString("0", inv);
             var b = new StringBuilder("{\"ran\":true,\"pass\":").Append(B(Pass));
             b.Append(",\"loginOk\":").Append(B(LoginOk)).Append(",\"enterOk\":").Append(B(EnterOk)).Append(",\"error\":").Append(LiveSmokeReport.Quote(Error, secrets));
-            b.Append(",\"toastSeen\":").Append(B(ToastSeen)).Append(",\"toastMs\":").Append(Math.Round(ToastMs).ToString("0", inv));
-            b.Append(",\"openHelper\":").Append(B(HelperAsked));
-            b.Append(",\"helperOpened\":").Append(B(HelperOpened)).Append(",\"helperMs\":").Append(Math.Round(HelperMs).ToString("0", inv));
-            b.Append(",\"helperTakenMs\":").Append(Math.Round(HelperTakenMs).ToString("0", inv)).Append(",\"longestFrameMs\":").Append(Math.Round(LongestFrameMs).ToString("0", inv)).Append(",\"longestFrameAtMs\":").Append(Math.Round(LongestFrameAtMs).ToString("0", inv));
+            b.Append(",\"dailySeen\":").Append(B(DailySeen)).Append(",\"dailyMs\":").Append(ms(DailyMs)).Append(",\"dailyClosed\":").Append(B(DailyClosed));
+            b.Append(",\"helperBeforeQuest\":").Append(B(HelperBeforeQuest)).Append(",\"outfitBeforeQuest\":").Append(B(OutfitBeforeQuest));
+            b.Append(",\"othersOpened\":[").Append(string.Join(",", OthersOpened.Select(x => LiveSmokeReport.Quote(x, secrets)))).Append(']');
+            b.Append(",\"firstLoginShot\":").Append(LiveSmokeReport.Quote(FirstLoginShot, secrets));
+            b.Append(",\"questToastSeen\":").Append(B(QuestToastSeen)).Append(",\"questToastMs\":").Append(ms(QuestToastMs));
+            b.Append(",\"questRowSeen\":").Append(B(QuestRowSeen)).Append(",\"questRowMs\":").Append(ms(QuestRowMs));
+            b.Append(",\"questStepFirst\":").Append(QuestStepFirst.ToString(inv)).Append(",\"questKeyFirst\":").Append(LiveSmokeReport.Quote(QuestKeyFirst, secrets));
+            b.Append(",\"rowClicked\":").Append(B(RowClicked));
+            b.Append(",\"helperOpened\":").Append(B(HelperOpened)).Append(",\"helperMs\":").Append(ms(HelperMs));
+            b.Append(",\"helperTakenMs\":").Append(ms(HelperTakenMs)).Append(",\"longestFrameMs\":").Append(ms(LongestFrameMs)).Append(",\"longestFrameAtMs\":").Append(ms(LongestFrameAtMs));
             b.Append(",\"tab\":").Append(Tab.ToString(inv)).Append(",\"autoSetupTab\":").Append(B(Tab == ShooterTab));
             b.Append(",\"hintShown\":").Append(B(HintShown)).Append(",\"hint\":").Append(LiveSmokeReport.Quote(Hint, secrets));
             b.Append(",\"blinkActive\":").Append(B(BlinkActive)).Append(",\"screenshot\":").Append(LiveSmokeReport.Quote(Screenshot, secrets));
+            b.Append(",\"autoSetupPressed\":").Append(B(AutoSetupPressed)).Append(",\"autoSetupSlots\":").Append(AutoSetupSlots.ToString(inv)).Append(",\"autoSetupMessage\":").Append(LiveSmokeReport.Quote(AutoSetupMessage, secrets));
+            b.Append(",\"questStepDone\":").Append(B(StepDone)).Append(",\"questStepAfter\":").Append(QuestStepAfter.ToString(inv)).Append(",\"questKeyAfter\":").Append(LiveSmokeReport.Quote(QuestKeyAfter, secrets));
+            b.Append(",\"questStepMs\":").Append(ms(StepMs));
             b.Append(",\"loggedOut\":").Append(B(LoggedOut)).Append('}');
             return b.ToString();
         }
     }
 
-    /// <summary>The state machine of the new player step, after the fresh character is in the game: wait for the welcome toast (the server sends it 2.5 s after the first login),
-    /// wait for the Helper to open on its own, let it draw a moment, take the screenshot, done. A timeout does not stop the step: the flags stay false and the screenshot is still
-    /// taken, so a failed run shows what the screen had. Time is in ms on the caller's clock; nothing here reads a clock.</summary>
+    /// <summary>The state machine of the new player step (quiet first login, O761), after the fresh character is in the game:
+    /// (1) wait for the Daily Reward window and watch for QuietMs that nothing else opens by itself (no Helper, no outfit window), take first_login_IDENTITY.png;
+    /// (2) close the Daily Reward the way its x does (the server then starts the main quest); (3) wait for the main quest's step 1 row on the tracker and its toast;
+    /// (4) open the Helper with the row's own action, let it draw, take helper_onboarding_IDENTITY.png with the tab, the hint and the blink;
+    /// (5) press Auto setup (the window's own code path, which sends mqHelper) and wait for the quest to leave step 1. A timeout does not stop the step: the flags stay
+    /// false and the run goes on, so a failed run still shows what the screen had. Time is in ms on the caller's clock; nothing here reads a clock.</summary>
     public sealed class LiveNewPlayerStep
     {
-        public const double ToastLimitMs = 30000, HelperLimitMs = 4000, SettleMs = 700;
-        public enum Phase { WaitToast, WaitHelper, Settle, Shoot, Done }
+        public const double DailyLimitMs = 30000, QuietMs = 5000, QuestLimitMs = 30000, ToastGraceMs = 3000, HelperLimitMs = 4000, SettleMs = 700, SpellsLimitMs = 20000, StepLimitMs = 10000;
+        public const string FirstLoginShot = "first_login", HelperShot = "helper_onboarding";
+        public enum Phase { WaitDaily, Quiet, ShootFirst, CloseDaily, WaitQuest, WaitHelper, Settle, ShootHelper, WaitSpells, WaitPress, WaitStep, Done }
 
-        public Phase State { get; private set; } = Phase.WaitToast;
+        public Phase State { get; private set; } = Phase.WaitDaily;
         public readonly LiveNewPlayerResult Result;
         readonly double start;
         double phaseAt, lastCall = -1;
+        HashSet<string> baseline;
+        bool watching = true;
 
         public LiveNewPlayerStep(LiveNewPlayerResult result, double nowMs)
         {
@@ -416,53 +471,136 @@ namespace Chaos.Core
             start = phaseAt = nowMs;
         }
 
+        /// <summary>The picture the step asks for now (the caller adds _IDENTITY.png): first_login or helper_onboarding.</summary>
+        public string ShotName => State == Phase.ShootFirst ? FirstLoginShot : HelperShot;
+
         void Go(Phase p, double now) { State = p; phaseAt = now; }
 
-        /// <summary>One call per frame. `toastNow`: a welcome toast (NEW_PLAYER) is on screen or in the queue this frame; `helperRequests`: ToastCenter.HelperRequests (how many openHelper toasts
-        /// came); `view`: the Helper window as it is. Returns Screenshot (the caller takes it and calls ShotTaken) and, at the end, Done.</summary>
-        public LiveNewPlayerAction Update(double now, bool toastNow, int helperRequests, LiveHelperView view)
+        /// <summary>One call per frame. Returns what the caller does now: CloseDaily (close the Daily Reward window the way its x does), Screenshot (take ShotName, then ShotTaken),
+        /// OpenHelper (run the quest row's action), PressAutoSetup (the window's Auto setup, then AutoSetupDone), Done at the end; Wait otherwise.</summary>
+        public LiveNewPlayerAction Update(double now, LiveNewPlayerView view)
         {
             var r = Result;
             if (State == Phase.Done) return LiveNewPlayerAction.Done;
+            view = view ?? new LiveNewPlayerView();
+            var helper = view.Helper ?? new LiveHelperView();
             // the gap since the last call is the length of the frame in between: a stall of seconds (main thread) is written down, with where it began
             if (lastCall >= 0 && now - lastCall > r.LongestFrameMs) { r.LongestFrameMs = now - lastCall; r.LongestFrameAtMs = lastCall - start; }
             lastCall = now;
-            if (State != Phase.Shoot)
+            Observe(now, view, helper);
+            switch (State)
             {
-                if (view.TakenMs >= 0 && r.HelperTakenMs < 0) r.HelperTakenMs = view.TakenMs - start;
-                if (toastNow && !r.ToastSeen) { r.ToastSeen = true; r.ToastMs = now - start; }
-                if (helperRequests > 0) r.HelperAsked = true;
-                if (view.Open && !r.HelperOpened) { r.HelperOpened = true; r.HelperMs = now - start; }
+                case Phase.WaitDaily:
+                    if (r.DailySeen) Go(Phase.Quiet, now);
+                    else if (now - start >= DailyLimitMs) Go(Phase.ShootFirst, now);   // no Daily Reward: the picture shows what there is, the quest may still start
+                    break;
+                case Phase.Quiet:
+                    if (now - phaseAt >= QuietMs) Go(Phase.ShootFirst, now);
+                    break;
+                case Phase.CloseDaily:
+                    Go(Phase.WaitQuest, now);
+                    if (view.DailyOpen) { r.DailyClosed = true; return LiveNewPlayerAction.CloseDaily; }
+                    break;
+                case Phase.WaitQuest:
+                    if (r.QuestRowSeen && (r.QuestToastSeen || now - start - r.QuestRowMs >= ToastGraceMs))
+                    {
+                        watching = false;   // from here the smoke itself opens windows
+                        r.RowClicked = true;
+                        Go(Phase.WaitHelper, now);
+                        return LiveNewPlayerAction.OpenHelper;
+                    }
+                    if (now - phaseAt >= QuestLimitMs) { watching = false; Go(Phase.ShootHelper, now); }
+                    break;
+                case Phase.WaitHelper:
+                    if (helper.Open) { r.HelperOpened = true; r.HelperMs = now - start; Go(Phase.Settle, now); }
+                    else if (now - phaseAt >= HelperLimitMs) Go(Phase.ShootHelper, now);
+                    break;
+                case Phase.Settle:
+                    if (now - phaseAt >= SettleMs) Go(Phase.ShootHelper, now);
+                    break;
+                case Phase.WaitSpells:
+                    if (view.SpellsLoaded) { Go(Phase.WaitPress, now); return LiveNewPlayerAction.PressAutoSetup; }
+                    if (now - phaseAt >= SpellsLimitMs) Go(Phase.Done, now);
+                    break;
+                case Phase.WaitStep:
+                    bool moved = QuestMoved(view);
+                    if (moved || now - phaseAt >= StepLimitMs)
+                    {
+                        r.StepDone = moved;
+                        if (moved) r.StepMs = now - start;
+                        r.QuestStepAfter = view.QuestStep; r.QuestKeyAfter = view.QuestKey ?? "";
+                        Go(Phase.Done, now);
+                    }
+                    break;
             }
             switch (State)
             {
-                case Phase.WaitToast:
-                    if (r.ToastSeen) Go(Phase.WaitHelper, now);
-                    else if (now - start >= ToastLimitMs) Go(Phase.Shoot, now);   // no toast: no Helper to wait for either, the screenshot shows what there is
-                    break;
-                case Phase.WaitHelper:
-                    if (r.HelperOpened) Go(Phase.Settle, now);
-                    else if (now - phaseAt >= HelperLimitMs) Go(Phase.Shoot, now);
-                    break;
-                case Phase.Settle:
-                    if (now - phaseAt >= SettleMs) Go(Phase.Shoot, now);
-                    break;
-            }
-            if (State == Phase.Shoot)
-            {
-                // what the screen shows at the moment of the shot
-                r.HelperOpened = r.HelperOpened && view.Open;
-                if (r.HelperOpened) { r.Tab = view.Tab; r.HintShown = view.HintDrawn && !string.IsNullOrEmpty(view.Hint); r.Hint = view.Hint ?? ""; r.BlinkActive = view.BlinkActive; }
-                return LiveNewPlayerAction.Screenshot;
+                case Phase.ShootFirst:
+                    return LiveNewPlayerAction.Screenshot;
+                case Phase.ShootHelper:
+                    // what the screen shows at the moment of the shot
+                    r.HelperOpened = r.HelperOpened && helper.Open;
+                    if (r.HelperOpened) { r.Tab = helper.Tab; r.HintShown = helper.HintDrawn && !string.IsNullOrEmpty(helper.Hint); r.Hint = helper.Hint ?? ""; r.BlinkActive = helper.BlinkActive; }
+                    return LiveNewPlayerAction.Screenshot;
+                case Phase.Done:
+                    return LiveNewPlayerAction.Done;
             }
             return LiveNewPlayerAction.Wait;
         }
 
-        /// <summary>The caller took the screenshot (or tried): the step ends.</summary>
+        /// <summary>Step 1 is behind: the row names another step, or the step index went past the one seen with the Helper step.</summary>
+        bool QuestMoved(LiveNewPlayerView view)
+        {
+            string key = view.QuestKey ?? "";
+            if (key.Length > 0 && key != LiveNewPlayerResult.HelperStepKey) return true;
+            return Result.QuestStepFirst >= 0 && view.QuestStep > Result.QuestStepFirst;
+        }
+
+        void Observe(double now, LiveNewPlayerView view, LiveHelperView helper)
+        {
+            var r = Result;
+            if (view.DailyOpen && !r.DailySeen) { r.DailySeen = true; r.DailyMs = now - start; }
+            if (view.QuestToast && !r.QuestToastSeen) { r.QuestToastSeen = true; r.QuestToastMs = now - start; }
+            string key = view.QuestKey ?? "";
+            if (key.Length > 0 && r.QuestKeyFirst.Length == 0) r.QuestKeyFirst = key;
+            if (key == LiveNewPlayerResult.HelperStepKey && !r.QuestRowSeen) { r.QuestRowSeen = true; r.QuestRowMs = now - start; r.QuestStepFirst = view.QuestStep; }
+            if (helper.TakenMs >= 0 && r.HelperTakenMs < 0) r.HelperTakenMs = helper.TakenMs - start;
+            if (!watching) return;
+            // until the smoke opens the Helper itself: what opens by itself
+            if (helper.Open) r.HelperBeforeQuest = true;
+            if (view.OutfitOpen) r.OutfitBeforeQuest = true;
+            var open = view.OpenWindows ?? new List<string>();
+            if (baseline == null) { baseline = new HashSet<string>(open); return; }
+            foreach (var name in open)
+            {
+                if (string.IsNullOrEmpty(name) || baseline.Contains(name) || LiveNewPlayerResult.AllowedWindows.Contains(name) || r.OthersOpened.Contains(name)) continue;
+                if (name == "HelperWindow" || name == "OutfitWindow" || name == "OutfitExtrasWindow") continue;   // their own failure lines
+                r.OthersOpened.Add(name);
+            }
+        }
+
+        /// <summary>The caller took the screenshot (or tried). After the first one the next Update closes the Daily Reward; after the Helper shot comes Auto setup.</summary>
         public void ShotTaken(string name)
         {
+            if (State == Phase.ShootFirst)
+            {
+                Result.FirstLoginShot = name ?? "";
+                State = Phase.CloseDaily; phaseAt = lastCall;
+                return;
+            }
+            if (State != Phase.ShootHelper) return;
             Result.Screenshot = name ?? "";
-            State = Phase.Done;
+            State = Result.HelperOpened ? Phase.WaitSpells : Phase.Done;
+            phaseAt = lastCall;
+        }
+
+        /// <summary>The caller pressed Auto setup: how many of the five slots it filled and the message the window shows.</summary>
+        public void AutoSetupDone(int slots, string message)
+        {
+            Result.AutoSetupPressed = true;
+            Result.AutoSetupSlots = slots;
+            Result.AutoSetupMessage = message ?? "";
+            if (State == Phase.WaitPress) { State = Phase.WaitStep; phaseAt = lastCall; }
         }
     }
 
