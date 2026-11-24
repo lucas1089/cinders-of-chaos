@@ -25453,9 +25453,25 @@ before, except the three examples with the opt-in fields: highland_hunt, hollowg
   them (23 pieces). 3085 walkable tiles on 3 floors, 50 monsters (7 spawn points on top), nothing out of reach, no QA
   error or warning, map tile audit and look audit clean. Seeds 74401-74420 all placed the three plateaus; 2 of them
   (74408, 74417) break the outline rule, with the tools before O745 too.
+- **Cliff pieces of our own (O746, pair 83).** `client/tools/sprites/gen_cliff_art.py` draws 42 cliff pieces by code
+  (client/MANIFEST.md "Cliff pieces (O746)"; install step `cliffart`, "Cliff pieces (pair 83)"). A compile told pair 83
+  or more (plan field `plateaus.pair`, or `compile_plan(plan, client_pair=83)`, the option wins) lays them; without it
+  the compile keeps the O744 bytes. Palette by the cliff family: `earth` (cave) takes the brown set, any other the grey
+  stone set. In the oblique view a floor up is drawn 32 px up and left, so a footprint tile shows rock when its
+  south-east neighbour is outside: south and east neighbour out gives the outer corner `outer_se`, south out a south
+  face (variants a / b by column), east out an east face (a / b by row), both in an inner corner (a / b). The face
+  ends spill onto the tile west of the first south face (`outer_sw`) and north of the first east face (`outer_ne`),
+  never onto a stairs tile. The piece lies on the cliff ground 919 / 101 of the floor below (`area_plan_plateau.cliff_face_pieces`).
+  On the upper floors the lip ring takes the art lip set (12 pieces in the border order) in place of the gravel; the
+  gravel stays at the cliff foot and at the foot of an upper tier. The lip pieces block; the stairs ground keeps no
+  piece. QA: "the cliff face at X lost its piece P". The compile's border check takes the art lip set as the cliff's.
+  highland_hunt at pair 83: 124 visible face tiles (30 / 48 / 46 per plateau), 147 face pieces with the ends, 237 lip
+  pieces; the walk and spawn file match the default compile; no QA error or warning, map tile audit (it knows the 42
+  ids as border pieces of order 1, `audit_map_plans.cliff_ids`) and look audit clean. A cave plateau on
+  deepgrudge_warrens takes the earth set with the same walk and QA lines.
 - **Not done.** Ramps on west and north facing edges (no stone stairs up east or south in the base items; the stock
-  ramps of those headings are other art, not checked on a render). A cliff face piece of our own (no art; the mountain
-  ground and its gravel edge stand in). A plateau over floor 2 or deeper of a plan. Plateaus that touch the zone's own
+  ramps of those headings are other art, not checked on a render). The cliff pieces of O746 are not in a built pair yet
+  (pair 83 waits for its build and the owner) and not checked on a render. A plateau over floor 2 or deeper of a plan. Plateaus that touch the zone's own
   rock (a plateau keeps off rock, so it never grows out of the area's edge). Not checked on a render (no client pair
   here).
 - **Tests.** `tools/area_plan_plateau_test.py` (CI step "Area planner"): the materials (stair brush, the gravel set by
@@ -33631,6 +33647,7 @@ README warned.
   | `relicsets` (the 65 pieces of the five relic sets, "Relic sets (pair 58)") | 58 | the whole step is skipped |
   | `templeart` (the 39 pieces of the temple tileset, "Temple tileset (pair 60)") | 60 | the whole step is skipped |
   | `decorflames` (the four animated decor flames, "Decor flames (pair 74)") | 74 | the whole step is skipped |
+  | `cliffart` (the 42 cliff pieces, "Cliff pieces (pair 83)") | 83 | the whole step is skipped |
   | `monsterrecolour` (35 monsters wear a hue shifted copy of their outfit, "Monster recolours (O531)") | 69 | the whole step is skipped: the monster files and the bounty pool keep the old looks |
 
   The Lua side needs no switch: the loot layers (`fist_weapons.lua`, `class_loot.lua`, `weapons800.lua`) add a row only when
@@ -37428,6 +37445,20 @@ The step writes the items.otb nodes and an items.xml block (markers, rewritten w
 waits for `chaosClientPair >= 74` (`client_pair.PAIR_DECOR`; `PAIR_ASSETS` was 73 until pair 74 went to windows-assets, f24a858a; it is 81 now). Below it a WARNING
 line and nothing written. Nothing on the server places, sells or drops these items: map makers and the map editor do. Test:
 `server/tools/install_decor_flames_test.py`.
+
+## Cliff pieces (pair 83) (`install_cliff_art.py`, step `cliffart`, O746)
+
+The 42 cliff pieces drawn by `client/tools/sprites/gen_cliff_art.py` (client/MANIFEST.md "Cliff pieces (O746)"), appended to
+pair 83 after the 44,563 items of pair 82: client ids 44564 to 44605, server ids 48564 to 48605 (client id + 4000). Rows from
+`client/tools/sprites/art_import/cliff_art.csv`: stone 48564-48584, earth 48585-48605; per palette nine face pieces (south face
+a / b, east face a / b, outer corner se / sw / ne, inner corner a / b) and the twelve lip pieces (n e s w cnw cne csw cse dnw dne
+dse dsw). All are border pieces: items.otb group 0, flag ONTOP, top order 1, not moveable or pickupable. items.xml names them
+`cliff stone south face a` and so on (block between marker comments, rewritten when the table changes). Same node rules and
+items.otb.bak as `decorflames`.
+
+Waits for `chaosClientPair >= 83` (`client_pair.PAIR_CLIFF`, the same pair as `PAIR_MISSILE_U16`; `PAIR_ASSETS` stays 82). Below
+it a WARN line and nothing written. Nothing places these items by itself: the area planner lays them in a compile told pair 83
+("Plateaus and cliffs (O744)"). Test: `server/tools/install_cliff_art_test.py`.
 
 ## PixelLab monsters (O640; `data/monster/monster_pixellab_looks.csv`, install step `monsterpixellablooks`, client pair 74)
 

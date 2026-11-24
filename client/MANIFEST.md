@@ -7799,6 +7799,31 @@ docs/CREDITS.md). The owner said yes to the O622 fit. Built into pair 74 (O647, 
 - **Previews** (never committed): `sheets OUT_DIR`, `preview OUT.mp4 [--dat D --spr S]` (the five at 1x and 3x on a stone floor, beside
   the pair 73 torch when a pair is given).
 
+## Cliff pieces (O746; `tools/sprites/gen_cliff_art.py`, `art_import/cliff_art.csv`; joins pair 83)
+
+A cliff set for the area planner's plateaus (server/README.md "Plateaus and cliffs (O744)"), drawn by code. No art file is read,
+no outside art, no service. Integer drawing only (an LCG, wobble and grain), so the bytes are the same on every machine.
+
+- **Pieces.** Two palettes of 21: `stone` (the blightfang greys, 18 colours) and `earth` (the bloodmoon browns). Each: a south
+  face in two variants that tile side by side, an east face in two, outer corners `outer_se`, `outer_sw`, `outer_ne`, an inner
+  corner `inner_se` in two, and the 12 lip pieces in the planner's border order (`n e s w cnw cne csw cse dnw dne dse dsw`,
+  gen_editor_brushes SLOTS). The south face has horizontal strata and joints, lit at the top; the east face is darker with
+  vertical strata; the outer corner joins them with a lit ridge, the inner one with a dark crease. The view has one concave
+  corner kind only (a floor up shifts north-west), so the set holds one inner corner, not four.
+- **Ids.** Client 44564-44605 after the 44,563 items of pair 82; server id + 4000. Dat flags clip and not moveable.
+- **Checks.** `check`: table rules, sums, alpha 0 / 255, only the palette's colours, every piece held to `style_check`
+  (the outline rule waived on full tiles), faces join at their seams, corners continue the faces, lip pieces join.
+  `quality OUT_DIR` runs `sprite_quality.py check --kind item` on each piece. Misses (the item bar is drawn from a 4x4 boss
+  reference): colours 35 of 42 (the bar asks 19 to 76 at 32 px; a theme palette holds 18), ramp_steps 21 (0 to 1.8, needs 4),
+  flat_tile_share 8 (the plain lip pieces, needs at most 0.5), warn outline_coverage 18 (full tiles have no rim), warn
+  pillow 5.
+- **Pair step.** `build DAT SPR OUT` takes pair 82 only (dat md5 ee8c32fc87be4372f4668b635148b9bf, 44,563 items) and appends
+  the 42 items by `import_art_things.py`; `live DAT SPR` reads them back pixel for pixel. Not run on the real pair here (not
+  on this machine); the test builds a small synthetic pair.
+- **Server.** Install step `cliffart` (`server/tools/install_cliff_art.py`) behind `client_pair.PAIR_CLIFF = 83`.
+- **Previews** (never committed): `sheets OUT_DIR` (all pieces at 1x and 4x), `preview OUT_DIR` (a stone and an earth plateau
+  laid by the planner's face rule, PNG and MP4).
+
 ## Quality bar (O625; `tools/sprites/sprite_quality.py`, `sprite_quality_bar.json`, `sprite_quality_test.py`; owner 2026-11-17)
 
 Owner (translated): picked outfit 939 of a donor pair (4x4, a big red demon head, 8 phases) and asked to "analyse it pixel by pixel,

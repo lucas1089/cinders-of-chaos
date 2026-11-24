@@ -93,6 +93,9 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
   decorflames  tools/install_decor_flames.py     the four animated decor flames (flame brazier, campfire, candle, cold spirit; O623; client pair 74,
                client ids 44560-44563, server ids 48560-48563) in items.otb / items.xml for the map editor (README "Decor flames
                (pair 74)"; waits for config.lua chaosClientPair >= 74, README "Client pair guard"; nothing is sold or dropped)
+  cliffart     tools/install_cliff_art.py        the 42 cliff pieces of our own drawn by code (rock faces and lip pieces, stone and earth;
+               O746; client pair 83, client ids 44564-44605, server ids 48564-48605) in items.otb / items.xml for the area planner
+               and the map editor (README "Plateaus and cliffs (O744)"; waits for config.lua chaosClientPair >= 83)
   themeitems   tools/install_theme_items.py      the themed set pieces and grounds of client pair things_custom24 in
                items.otb / items.xml (server ids 36660..36903; no stats, shops or loot; used since
                ChaosThemeArt.PAIR24 is on, 2026-10-13; README "Themed sets, auras and grounds")
@@ -952,6 +955,14 @@ def step_decorflames(server, data, ctx):
 
 
 STEPS.insert(STEPS.index('templeart') + 1, 'decorflames')  # right after the temple tileset (client ids 44560-44563 appended to pair 74)
+
+
+def step_cliffart(server, data, ctx):
+    # the client pair guard (config.lua chaosClientPair >= 83) is in the tool; its warning reaches the report
+    return tool_result_warn(run_tool([tool('install_cliff_art.py'), data], 'install_cliff_art.py'))
+
+
+STEPS.insert(STEPS.index('decorflames') + 1, 'cliffart')  # right after the decor flames (client ids 44564-44605 appended to pair 83)
 
 
 def step_ownerdecor(server, data, ctx):

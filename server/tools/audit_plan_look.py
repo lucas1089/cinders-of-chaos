@@ -113,13 +113,14 @@ def look_findings(plan, res, tables=None, groups=None, wall_ids=None):
     return out
 
 
-def audit_plan(path):
+def audit_plan(path, client_pair=None):
+    """client_pair: compile for that client pair (O746: 83 draws the plateaus with our cliff pieces)"""
     import area_import
     import area_plan_compile as PC
     plan = json.load(open(path, encoding='utf-8'))
     if area_import.is_import(plan):
         return None
-    res = PC.compile_plan(plan)
+    res = PC.compile_plan(plan, client_pair=client_pair)
     return plan['id'], look_findings(plan, res)
 
 

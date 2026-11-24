@@ -172,6 +172,9 @@ jobs:
           # animated decor flames from pixelfx (O623, joins pair 74): table, sums, manifest, strips held to the bar and to style_check (the raw render is never in git); the test fits a synthetic sheet and builds / checks a synthetic pair
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_decor_flames.py check
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_decor_flames_test.py
+          # cliff pieces drawn by code (O746, joins pair 83): table, sums, style_check; the test builds / checks a synthetic pair
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_cliff_art.py check
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_cliff_art_test.py
           # the 20 footprint effects of the footprint source (O649, joins pair 75): table, sums, ids file (the art is never in git); the test treats synthetic frames and builds / checks a synthetic pair
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_footprint_fx.py check
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_footprint_fx_test.py
@@ -1593,6 +1596,7 @@ jobs:
           python3 -I server/tools/install_relic_sets_test.py
           python3 -I server/tools/install_temple_art_test.py
           python3 -I server/tools/install_decor_flames_test.py
+          python3 -I server/tools/install_cliff_art_test.py
 
       - name: Base NPC script names (patch_base_npcs.py step 5, the letter case of the script file)
         run: python3 -I server/tools/patch_base_npcs_test.py
