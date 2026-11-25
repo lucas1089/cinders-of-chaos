@@ -32,6 +32,10 @@ DIRS = ('north', 'east', 'south', 'west')
 # wings (a pure profile hides the head behind the near wing and reads as a blob)
 HEADING = {'north': (0.0, -1.0), 'east': (0.866, -0.5), 'south': (0.0, 1.0), 'west': (-0.866, -0.5)}
 ELEV = math.radians(48)          # camera elevation
+# world units to pixels. The open wings span 33 units across and the turned moth 31 from antenna to tail: at 1.0 the union of all phases
+# with its outline was 35 x 33 px, so the 32 px cell cut the wing tips and the antennae (fill colour on the cell edge, no outline there;
+# seen in a client 2026-11-25, V9). 0.84 keeps every phase with its outline inside the cell, a clear pixel left on every side.
+SCALE = 0.84
 LIGHT = np.array([-0.55, -0.45, 0.70])
 LIGHT = LIGHT / np.linalg.norm(LIGHT)
 OUTLINE = (20, 16, 26)
@@ -125,8 +129,8 @@ def to_world(pts, heading):
 
 def project(w, elev=ELEV):
     """world points -> (screen x, screen y down, depth to the camera)"""
-    sx = w[:, 0]
-    sy = w[:, 1] * math.sin(elev) - w[:, 2] * math.cos(elev)
+    sx = w[:, 0] * SCALE
+    sy = (w[:, 1] * math.sin(elev) - w[:, 2] * math.cos(elev)) * SCALE
     dp = w[:, 1] * math.cos(elev) + w[:, 2] * math.sin(elev)
     return sx, sy, dp
 
@@ -270,10 +274,16 @@ def write_frames(out_dir, n=PHASES):
 
 def problems(fr):
     """the moth's rules: phases, every direction different from the others, each phase different from its neighbour but only a little
-    (no frame skips), the wings at rest at the top and the bottom of the stroke, a union that fits one tile"""
+    (no frame skips), the wings at rest at the top and the bottom of the stroke, a union that fits one tile: nothing on the cell's edge
+    rows and columns (a pixel there is a wing or antenna cut by the cell)"""
     out = []
     for d in DIRS:
         z = fr[d]
+        for i, a in enumerate(z):
+            op = a[..., 3] > 0
+            if op[0].any() or op[-1].any() or op[:, 0].any() or op[:, -1].any():
+                out.append('%s phase %d: a pixel on the edge of the %d px cell (the moth is cut)' % (d, i, CELL))
+                break
         if len(z) < 24:
             out.append('%s: %d phases, 24 or more wanted' % (d, len(z)))
         steps = []

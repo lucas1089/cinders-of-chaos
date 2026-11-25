@@ -2306,7 +2306,7 @@ jobs:
           /tmp/fxenv/bin/python -I chaos/client/tools/sprites/gen_wst_outfits.py live \
               "$RUNNER_TEMP/pair/Tibia.dat" "$RUNNER_TEMP/pair/Tibia.spr"
 
-      - name: Fun costumes, Dusk Moth and Rune Seal sit at their ids (gen_fun_costumes.py live, pair 72, O566 / O578)
+      - name: Fun costumes, Dusk Moth and Rune Seal sit at their ids (gen_fun_costumes.py live, pair 72, O566 / O578; the moth fitted to its cell in pair 87, V9)
         run: |
           /tmp/fxenv/bin/python -I chaos/client/tools/sprites/gen_fun_costumes.py live \
               "$RUNNER_TEMP/pair/Tibia.dat" "$RUNNER_TEMP/pair/Tibia.spr"

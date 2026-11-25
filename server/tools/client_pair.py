@@ -114,8 +114,8 @@ PAIR_RELOOK_MONSTERS = 86   # five hunt monsters that read wrong for their names
                     # Leaf Golem; our own PixelLab drawings, client/tools/sprites/gen_relook_monsters.py build on pair 85) and two stock looks
                     # (White Lion 1041, Hellhound 3280); data/monster/monster_relook_looks.csv, install step `monsterrelooklooks`.
 
-PAIR_ASSETS = 86
-PAIR_ASSETS_DAT_MD5 = '17ef372656f9089de8ede24b4aeffef6'
+PAIR_ASSETS = 87
+PAIR_ASSETS_DAT_MD5 = '8980aa6725278864dcb79945fe8b220d'
 
 
 def parse(text):

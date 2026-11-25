@@ -7,6 +7,8 @@
     python3 -I gen_fun_costumes.py sums [--check]                # art_import/fun_costumes.sums (a digest per outfit) from the sheets
     python3 -I gen_fun_costumes.py build DAT SPR OUT_DIR         # pair 71 in, pair 72 out (OUT_DIR must not exist; written beside, then renamed)
     python3 -I gen_fun_costumes.py live DAT SPR                  # the pair holds every outfit at its id, as the sums say (CI job "Live sprite pair")
+    python3 -I gen_fun_costumes.py relook DAT SPR OUT_DIR        # pair 86 in, pair 87 out: an outfit in its old form (OLD_SUMS, the cut Dusk Moth)
+                                                                 # rewritten in place from its sheet (V9)
 
 Twelve costumes, a new Dusk Moth look and a new Rune Seal ring are appended to pair 71 as 14 outfits, one per row of
 art_import/fun_costumes.csv: the row at line n is outfit 3511 + n.
@@ -59,6 +61,11 @@ MIN_AURA_PHASES = 8
 # the look each flags column copies from the input pair: the stock moth look (animateAlways)
 FLAG_LOOKS = {'moth': 213}
 OLD_LOOKS = {'dusk_moth': 213, 'rune_seal': 2186}
+# V9 (seen in a client 2026-11-25): the Dusk Moth of pairs 72 to 86 had its wing tips and antennae cut by its 32 px cell; gen_dusk_moth.py
+# draws it smaller (SCALE) and `relook` rewrites outfit 3523 in place on pair 86 -> pair 87. The digest of the cut form, taken by `live`
+# while client_pair.PAIR_ASSETS is older than PAIR_MOTH_FIT (the new pair is not on windows-assets yet: "pending").
+PAIR_MOTH_FIT = 87
+OLD_SUMS = {'3523': 'b7a0e76a1288b07d33232aa93359b6d6afbf97a65d78f3ea79b104e38ae3eccb'}
 
 
 def rows(path=TABLE):
@@ -559,6 +566,8 @@ def figure_problems(r, fr):
             out.append('%s: figure %dx%d outside 12..60 x 16..60' % (r['key'], w, h))
     if r['kind'] == 'pet' and (w > cell or h > cell):
         out.append('%s: %dx%d is bigger than one tile' % (r['key'], w, h))
+    if r['kind'] == 'pet' and (x0 == 0 or y0 == 0 or x1 == cell - 1 or y1 == cell - 1):
+        out.append('%s: a picture touches the edge of its %d px cell (a wing cut by the cell, V9)' % (r['key'], cell))
     if r['kind'] == 'aura':
         ratio = w / float(h)
         if not 0.9 <= ratio <= 1.1:
@@ -718,8 +727,53 @@ def build(dat, spr, out_dir, table=None, first=FIRST_NEW, expect_md5=None, log=p
     return [first + i for i in range(len(entries))]
 
 
-def live(dat, spr, table=None, sums=None, first=FIRST_NEW, log=print):
-    """the pair holds every outfit at its id, its digest the one of the sums file. Returns the problem lines."""
+def pair_assets():
+    """client_pair.PAIR_ASSETS (server/tools/client_pair.py), 0 when it cannot be read"""
+    sys.path.insert(0, os.path.join(HERE, '..', '..', '..', 'server', 'tools'))
+    try:
+        import client_pair
+        return int(client_pair.PAIR_ASSETS)
+    except (ImportError, AttributeError, ValueError):
+        return 0
+
+
+def relook(dat, spr, out_dir, table=None, sums=None, old=None, log=print):
+    """pair in -> pair out in OUT_DIR: every outfit of the table whose pictures are the old form of OLD_SUMS gets the pictures of its sheet,
+    in place (gen_pixellab_monsters.rewrite_outfits: new records appended, every other byte kept, its own flags kept); an outfit already
+    as the sums say is left; any other digest refuses the run. Returns the ids rewritten (none: nothing written)."""
+    sys.path.insert(0, HERE)
+    from datspr import Dat, Spr
+    from import_outfits import encode_flags
+    import gen_pixellab_monsters as PM
+    t = rows() if table is None else table
+    s = read_sums() if sums is None else sums
+    o = OLD_SUMS if old is None else old
+    d, sp = Dat(dat), Spr(spr)
+    changes = {}
+    for r in t:
+        nid = int(r['new'])
+        if nid > len(d.outfits):
+            raise SystemExit('refused: the pair has %d outfits, outfit %d (%s) is not in it' % (len(d.outfits), nid, r['key']))
+        dg = digest(d, sp, nid)
+        if dg == s.get(r['new']):
+            continue
+        if dg != o.get(r['new']):
+            raise SystemExit('refused: outfit %d (%s) is neither the old form nor the one of fun_costumes.sums: another pair' % (nid, r['key']))
+        specs = groups_of(r, read_sheet(r))
+        if spec_digest(specs) != s.get(r['new']):
+            raise SystemExit('refused: the sheet of %s is not the one of fun_costumes.sums' % r['key'])
+        fb = encode_flags(d.outfit(nid), d.extra)[0] if d.outfit(nid).flags else b''
+        changes[nid] = (fb, dict(d.outfit(nid).flags), specs)
+        log('%d (%s): rewritten from its sheet' % (nid, r['key']))
+    if not changes:
+        log('nothing to do: every outfit is as the sums say, nothing written')
+        return []
+    return PM.rewrite_outfits(dat, spr, out_dir, changes, log=log)
+
+
+def live(dat, spr, table=None, sums=None, first=FIRST_NEW, log=print, old=None, assets=None):
+    """the pair holds every outfit at its id, its digest the one of the sums file (or, while client_pair.PAIR_ASSETS is older than
+    PAIR_MOTH_FIT, the old form of OLD_SUMS: pending). Returns the problem lines."""
     sys.path.insert(0, HERE)
     from datspr import Dat, Spr
     t = rows() if table is None else table
@@ -728,9 +782,16 @@ def live(dat, spr, table=None, sums=None, first=FIRST_NEW, log=print):
     if len(d.outfits) < first + len(t) - 1:
         return ['the pair has %d outfits, the fun costumes end at %d' % (len(d.outfits), first + len(t) - 1)]
     out = []
+    o = OLD_SUMS if old is None else old
+    pending = (pair_assets() if assets is None else assets) < PAIR_MOTH_FIT
     for r in t:
-        if digest(d, sp, int(r['new'])) != s.get(r['new']):
-            out.append('outfit %s (%s): the pictures are not the ones of fun_costumes.sums' % (r['new'], r['key']))
+        dg = digest(d, sp, int(r['new']))
+        if dg == s.get(r['new']):
+            continue
+        if pending and dg == o.get(r['new']):
+            log('outfit %s (%s): the old form, pending (the fix comes with pair %d)' % (r['new'], r['key'], PAIR_MOTH_FIT))
+            continue
+        out.append('outfit %s (%s): the pictures are not the ones of fun_costumes.sums' % (r['new'], r['key']))
     log('live: %d outfits %d to %d checked, %d problems' % (len(t), first, first + len(t) - 1, len(out)))
     return out
 
@@ -796,6 +857,14 @@ def main(argv):
             return 1
         ids = build(args[0], args[1], args[2], expect_md5=DAT_71_MD5)
         print('built %d outfits %d to %d' % (len(ids), ids[0], ids[-1]))
+        return 0
+    if cmd == 'relook' and len(args) == 3:
+        p = problems()
+        if p:
+            print('\n'.join(p))
+            return 1
+        ids = relook(args[0], args[1], args[2])
+        print('rewrote %s' % (ids or 'nothing'))
         return 0
     if cmd == 'live' and len(args) == 2:
         p = live(args[0], args[1])

@@ -221,6 +221,38 @@ def main():
             assert G.live(*paths, table=table, sums={**good, '4': '0' * 64}, first=4, log=lambda *_: None)
             assert G.live(odat, ospr, table=table, sums=good, first=4, log=lambda *_: None)
             assert all(good[r['new']] == G.spec_digest(G.row_specs(r)) for r in table), 'the digest of the sheet is the digest of the pair'
+            # V9: a pet picture on the cell edge is a cut wing
+            cut = {k: a.copy() for k, a in pf.items()}
+            first = sorted(cut)[0]
+            cut[first][5, 0] = (200, 60, 200, 255)
+            assert any('edge of its 32 px cell' in x for x in G.figure_problems(pet, cut)), G.figure_problems(pet, cut)
+            assert not any('edge' in x for x in G.figure_problems(pet, pf))
+            # V9: relook rewrites the pet in its old form in place from a new sheet; the old form is pending in live until PAIR_MOTH_FIT
+            fixed = {k: a.copy() for k, a in pf.items()}
+            for a in fixed.values():
+                ys, xs = np.nonzero(a[..., 3])
+                a[ys[0], xs[0], :3] = (250, 250, 250)
+            G.write_sheet(pet, fixed)
+            new = {**good, '5': G.spec_digest(G.row_specs(pet))}
+            old = {'5': good['5']}
+            assert new['5'] != good['5']
+            out2 = os.path.join(tmp, 'out2')
+            assert G.relook(*paths, out2, table=table, sums=new, old=old, log=lambda *_: None) == [5]
+            p2 = (os.path.join(out2, 'Tibia.dat'), os.path.join(out2, 'Tibia.spr'))
+            nd2 = Dat(p2[0])
+            assert len(nd2.outfits) == 6 and nd2.outfit(5).flags == {'animateAlways': True}, nd2.outfit(5).flags
+            assert G.live(*p2, table=table, sums=new, first=4, log=lambda *_: None, old=old, assets=G.PAIR_MOTH_FIT) == []
+            assert G.live(*paths, table=table, sums=new, first=4, log=lambda *_: None, old=old, assets=G.PAIR_MOTH_FIT - 1) == []
+            assert G.live(*paths, table=table, sums=new, first=4, log=lambda *_: None, old=old, assets=G.PAIR_MOTH_FIT)
+            assert G.relook(*p2, os.path.join(tmp, 'out3'), table=table, sums=new, old=old, log=lambda *_: None) == []
+            assert not os.path.exists(os.path.join(tmp, 'out3'))
+            try:
+                G.relook(*paths, os.path.join(tmp, 'out4'), table=table, sums=new, old={}, log=lambda *_: None)
+            except SystemExit as e:
+                assert 'refused' in str(e), e
+            else:
+                raise AssertionError('relook did not refuse an unknown form')
+            G.write_sheet(pet, pf)
             # refusals: the output exists, the input has other outfits than the first id says, the input md5 is wrong
             for args, kw, text in (((odat, ospr, out), dict(table=table, first=4), 'exists'),
                                    ((odat, ospr, os.path.join(tmp, 'o2')), dict(table=table, first=9), 'wrong input pair'),

@@ -193,9 +193,18 @@ function GL.decide(row, s, filter, alt)
 end
 
 -- ---------------------------------------------------------------- text and colour
+-- small words stay lower case after the first word: "Orb of Binding", not "Orb Of Binding" (seen in a client 2026-11-25, V9)
+GL.SMALL_WORDS = { a = true, an = true, ['and'] = true, at = true, by = true, ['for'] = true, from = true, ['in'] = true,
+  of = true, on = true, ['or'] = true, the = true, to = true, with = true }
 function GL.titleCase(name)
   name = tostring(name or 'item')
-  return (name:gsub("(%a)([%w']*)", function(a, b) return a:upper() .. b end))
+  local first = true
+  return (name:gsub("(%a)([%w']*)", function(a, b)
+    local word = (a .. b):lower()
+    if not first and GL.SMALL_WORDS[word] then return word end
+    first = false
+    return a:upper() .. b
+  end))
 end
 
 -- seconds -> "1:42", "0:07", "1:02:03"
