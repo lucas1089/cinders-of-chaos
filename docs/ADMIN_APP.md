@@ -209,6 +209,34 @@ Pelo SSH: `chaos-ctl.sh engine-build status | start [--client-build N] | log [N]
 (token no stdin; `engine-build-token-set` é o nome de antes). Testes: `server/deploy/chaos_ctl_test.py` (`test_engine_build`, com um `curl` falso no lugar do GitHub),
 `android/.../EngineBuildInfoTest.java` e `desktop/src/engine.rs`.
 
+## Atualização automática (Painel, O767)
+
+Pedido do dono (2026-11-25): uma atualização automática por dia, no server save, em vez de várias à mão. Vem
+desligada. Precisa do APK novo do app (Config > Atualização do app) e do token do GitHub (Recompilar engine > Definir
+token do GitHub).
+
+- **Ligar**: Painel > Atualização automática > Ligar (confirma). Desligar no mesmo botão. Pelo SSH:
+  `chaos-ctl.sh auto-update on` / `off`.
+- **Horário do server save**: vazio usa o horário do jogo (`globalevents.xml`, padrão 06:00). Ou HH:MM + Salvar
+  horário (`auto-update time HH:MM`, `auto-update time game`).
+- **Como funciona**:
+  - 3 horas antes do save, o preparo pede ao GitHub as builds cujo código mudou: engine do servidor, client Android
+    (com número de client novo) e app admin. No máximo uma vez por dia. O jogo segue no ar.
+  - 45 minutos antes do save, a instalação começa numa cópia. O próprio save faz a única reinicialização.
+  - Depois: o par do client sobe só para o par do client publicado. O APK do Android do build ao vivo é publicado.
+  - CI vermelho: o dia é pulado e o Discord avisa. Nada novo: nada acontece.
+  - Falha: volta a versão anterior, o servidor fica no ar e o Discord avisa (DM do bot).
+  - A build de hoje não terminou a tempo: instala a release anterior e diz isso no estado.
+- **Ver estado**: ligada ou não, horários, próximo preparo e próximo save, o que o último preparo disparou e o que o
+  último save instalou (commit, engine, par, client, APK).
+- **Rodar preparo agora**, **Rodar no próximo save** e **Rodar agora (reinicia já)**: cada um com confirmação. O
+  último reinicia o jogo na hora. **Ver log**: o histórico.
+- O envio do par para `windows-assets` fica de fora: precisa do dono cada vez.
+
+Pelo SSH: `chaos-ctl.sh auto-update [status | on | off | time HH:MM|game | run-prep | run-save [--now] | log [N]]`.
+Detalhes: server/README.md "Automatic daily update (O767)". Testes: `chaos_ctl_test.py` (`test_auto_update`),
+`chaos_kit_update_test.py` (`test_at_save`), `chaos_units_test.py`, `android/.../AutoUpdateInfoTest.java`.
+
 ## Comandos frequentes (Ações rápidas)
 
 - **Taxa de XP** (`xp-rate show | set N | reset [restart]`): x1 a x100 sobre os estágios da release, com backup do
@@ -454,6 +482,7 @@ lugar no app (aba > card > botão). AR = Comandos > Ações rápidas.
 | `metrics`, `newplayer-funnel`, `survey`, `game-health`, `balance-report`, `feedback`, `feedback-close` | Painel > cards de métricas, Novos jogadores, Saúde do jogo, Relatório de equilíbrio, Bugs e sugestões |
 | `update-check`, `update-apply`, `update-status`, `update-rollback` | Painel > Atualizar servidor |
 | `engine-build`, `github-token-set`, `github-token-status` | Painel > Recompilar engine (> Definir token do GitHub) |
+| `auto-update status / on / off / time / run-prep / run-save [--now] / log` | Painel > Atualização automática (O767) |
 | `launch-check` | AR > Conferir lançamento |
 | `broadcast`, `kick`, `open`, `close` | AR > Aviso para todos / Expulsar / Login |
 | `spectate`, `cast`, `spectate-pair status / fetch / log` | AR > Assistir jogador |

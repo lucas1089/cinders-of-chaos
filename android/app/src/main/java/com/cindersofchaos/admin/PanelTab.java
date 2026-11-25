@@ -41,6 +41,7 @@ final class PanelTab {
     private final MainActivity.ResultCard result;
     private final UpdateCard update;
     private final EngineBuildCard engine;
+    private final AutoUpdateCard auto;
     private final MetricsCard metrics;
     private final FeedbackCard feedback;
     private final NewPlayerCard newPlayers;
@@ -195,6 +196,9 @@ final class PanelTab {
         engine = new EngineBuildCard(a); // O436
         page.addView(engine.card, ui.gap(12));
 
+        auto = new AutoUpdateCard(a); // O767
+        page.addView(auto.card, ui.gap(12));
+
         metrics = new MetricsCard(a);
         page.addView(metrics.card, ui.gap(12));
         page.addView(metrics.funnelCard, ui.gap(12)); // O258
@@ -257,6 +261,7 @@ final class PanelTab {
                 updateSeen = true;
                 update.shown();
                 engine.shown();
+                auto.shown();
             }
         });
     }

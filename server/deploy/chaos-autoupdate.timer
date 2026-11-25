@@ -1,0 +1,13 @@
+# Cinders of Chaos: runs chaos-autoupdate.service once a day, 45 minutes before the server save (O767). Installed and
+# enabled by chaos-ctl.sh auto-update on, which writes the OnCalendar line from the save time (auto-update time HH:MM,
+# else the serversave.lua time of data/globalevents/globalevents.xml). Off: auto-update off.
+# No Persistent=: a run missed while the machine was off would wait almost a day for the next save.
+
+[Unit]
+Description=Cinders of Chaos automatic daily update, before the server save
+
+[Timer]
+OnCalendar=*-*-* 05:15:00
+
+[Install]
+WantedBy=timers.target
