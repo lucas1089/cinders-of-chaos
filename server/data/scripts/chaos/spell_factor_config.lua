@@ -115,6 +115,27 @@ ChaosSpellFactorConfig = {
 		[23] = {{60, 1}, {100, 1}, {500, 0.8}, {1000, 1}},  -- Templar
 		[25] = {{60, 1}, {100, 1}, {500, 0.75}, {1000, 1}},  -- Sentinel
 	},
+	-- O764 (owner 2026-11-25: "O dano das magias de mago ta muito baixo no inicio. Talvez fosse legal aumentar um pouco o dano base
+	-- das magias e diminuir um pouco o scaling de magic level"; "Fazer como pedi"): the caster early gain. A spell hit of a listed
+	-- vocation (the Mystic and Necromancer lines) is multiplied by
+	--   1 + gain(level) x clamp((refML(level) + k) / (magic level + k), tilt[1], tilt[2])
+	-- gain: {level, share} rows, flat below the first row, straight in the logarithm of the level between rows, 0 above the last.
+	-- refML: the typical caster magic level of the level (server/tools/rotation_sim.py ANCHORS 'ml_caster', held equal by
+	-- tests/caster_early_test.lua). At the typical magic level a hit gains exactly `gain`; the gain is a share of the TYPICAL hit
+	-- that does not grow with the player's own magic level (k about the base / magic level ratio of a caster formula), so it is a
+	-- higher flat base and the magic level weighs less: a caster below the typical magic level gains more, one above it less, never
+	-- outside the tilt. The tilt bounds keep a hit growing with the magic level (O468 rule; the test checks every formula shape).
+	-- Same scope as the class factor above (F.factor): ORIGIN_SPELL damage, not healing, not a proc, not a minion. Heals unchanged.
+	-- +25% up to level 50, +7% at 100 (the cap: class_dps_model.py keeps every class inside +-25% of the median at 100 that way, the
+	-- Mystic's 5 targets at +24%; +12.5% at 100 put it at +30%), 0 at 200. Nothing changes from level 200 up.
+	-- server/README.md "Caster early damage (O764)".
+	early = {
+		vocations = {1, 5, 10, 20, 21, 22},
+		gain = {{50, 0.25}, {100, 0.07}, {200, 0}},
+		refML = {{1, 0}, {100, 60}, {300, 100}, {600, 120}, {1000, 140}},
+		k = 20,
+		tilt = {0.75, 1.25},
+	},
 }
 
 return ChaosSpellFactorConfig

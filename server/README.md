@@ -38902,3 +38902,58 @@ monster was 2000 (Pyre Stork, Pyrewing Tyrant), the hunts of 2150-2500 used 1700
   survival and descent pass.
 - **Open.** Pair 84 is not built (pair 83 is on windows-assets; building and pushing needs the owner). Then:
   `chaos-ctl.sh client-pair set 84` or the admin app, and the install.
+
+## Caster early damage (O764) (`spell_factor_config.lua` `early`, `spell_factor_core.lua`, `passivetree_effects.lua`, `tests/caster_early_test.lua`)
+
+Owner 2026-11-25 (pt-BR, translated): "Mage spell damage is too low early on. Maybe raise the spells' base damage a little and lower
+the magic level scaling a little." The models did not confirm it: before the change the Mystic was 89-97% of the base class median
+at levels 8-12 and above the median from 14 on, and class_dps_model.py had the casters at 84-116% on 1 target at 100. The owner
+read the numbers and chose "Fazer como pedi" (do it as asked), and accepted the Mystic sitting further above the median at 14-100.
+Computed, not measured; never run on a live server.
+
+**The rule.** One factor on every spell hit of the Mystic and Necromancer lines (vocations 1, 5, 10, 20, 21, 22):
+
+    1 + gain(level) x clamp((refML(level) + k) / (magic level + k), 0.75, 1.25)      k = 20
+
+* `gain`: +25% up to level 50, +7% at 100, 0 at 200. Straight in the logarithm of the level between the rows, 0 above 200.
+  Nothing changes from level 200 up.
+* `refML`: the typical caster magic level of the level. It is rotation_sim.py ANCHORS 'ml_caster'; the test holds the two equal.
+* The tilt. At the typical magic level a hit gains exactly `gain`. The gain is a share of the typical hit, so it does not grow with
+  the player's own magic level: that is the higher flat base. A caster below the typical magic level gains more, up to x1.25 of the
+  gain (a fresh level 8 Mystic with magic level 0 gets +30%). One above it gains less, down to x0.75. So the magic level weighs
+  less early. The bounds keep the O468 rule: `tests/caster_early_test.lua` checks that every caster formula of
+  `rotation_model.csv` still grows with the magic level at every level from 8 to 200.
+* The cap at 100. +12.5% at 100 (a straight fade from 50 to 200) put the Mystic's 5 targets at +30% of the median in
+  class_dps_model.py, outside the +-25% the owner set for this change. +7% keeps it at +24% (the Illusionist +24%).
+* Where: the `ChaosPassiveDealt` event, next to the class spell factor, and with the same scope (`ChaosSpellFactor.early`).
+  It applies to `ORIGIN_SPELL` damage, so the stock scripts are included (Kindling Spark, Arcane Ripple, Bewitching Hex, Pyre
+  Torrent, Tempest Fan), and so are runes and scripted damage over time. It does not apply to healing, the wand (`ORIGIN_WAND`),
+  conditions, procs or guarded hits (the Necromancer minions).
+* Never on a player target: PvP keeps its numbers. With the gain, pvp_model.py failed its burst limits at 100 (Illusionist 1.08
+  against 1.04, Necromancer 1.02 against 1.01). It now reads class damage with `early=False`.
+* Heals: unchanged. The owner asked about damage, and no test needed a change.
+* Not a spell script edit: every formula stays as it is, so the O468 inputs test, the spell data and the Codex need no change.
+  The client tooltips show no damage numbers, so they did not change.
+
+**Models.** class_dps_model.py multiplies a caster's class number by `1 + gain x spell share` (`early_factor`). The spell share
+is the part of the measured damage that is not the auto attack (the csv row of level 100). For the Necromancer line, the minions'
+half (minion_model.py) is taken off as well, because minions are guarded from the class factor. This applies in `dps()` at
+every level and in the check at 100; it is 1 from 200 up. So every balance model reads the same change, except two. pvp_model.py
+reads `dps(..., early=False)`. defence_curve.py derives the monster armour (`hitCurve`) from `shipped(early=False)`, so the armour
+is not sized on the gain and does not eat it; the committed curve is unchanged. Each model passes
+`--check` with and without `--today`.
+
+| Level | Mystic 1t / median, before -> after | Necromancer 1t / median | Mystic kill s (median hunt monster) |
+|---|---|---|---|
+| 8 | 97% -> 100% | 130% -> 140% | 3.1 -> 2.8 |
+| 20 | 162% -> 182% | 92% -> 100% | 4.2 -> 3.5 |
+| 50 | 123% -> 147% | 85% -> 100% | 10.2 -> 8.5 |
+| 75 | 200% -> 225% | 75% -> 82% | 8.0 -> 7.1 |
+| 100 (class_dps_model.py) | 84% -> 88% (5t 119% -> 124%) | 115% -> 116% | 11.9 -> 11.3 |
+| 200, 500, 1000, 2000 | unchanged | unchanged | unchanged |
+
+Levels 8-75 are the bottom-up model of the task notes: the rotation_sim.py best set plus the weapon_sim.py auto attack at the
+vocation's attack speed, times classDamage, base classes only. It has no passive tree and no minions. The table of record at
+100 and above is class_dps_model.py. The check of class_dps_model.py at 100 (upgrades on), before -> after: Mystic -16% / +19%
+-> -12% / +24%, Elementalist -14% / 0% -> -10% / +4%, Illusionist +7% / +19% -> +13% / +24%, Necromancer +15% / +19% ->
++16% / +20%, Lich +7% / +12% -> +9% / +12%, Bone Lord -3% / -5% -> -2% / -5%.

@@ -115,7 +115,7 @@ def armour_factor(path=DEFENCE):
 
 def class_hits(level, out=None, rows=None, now=None):
     """{class: (weapon hit, spell hit, class hit)} at one of the measured levels"""
-    out = out or M.shipped()[0]
+    out = out or M.shipped(early=False)[0]  # O764: without the caster early gain
     rows = rows or M.load_rows()
     now = now or M.intervals()[0]
     res = {}
@@ -131,7 +131,7 @@ def class_hits(level, out=None, rows=None, now=None):
 
 def ratios():
     """{measured level: median class hit / median dps (1 target)}"""
-    out, med = M.shipped()
+    out, med = M.shipped(early=False)  # O764: the armour is sized without the caster early gain
     return {lv: statistics.median(v[2] for v in class_hits(lv, out).values()) / med[lv][0] for lv in M.LEVELS}
 
 
@@ -151,7 +151,7 @@ def ratio_at(level, r=None):
 
 def curve(levels=LEVELS):
     r = ratios()
-    return [(lv, int(round(M.median_dps(lv)[0] * ratio_at(lv, r)))) for lv in levels]
+    return [(lv, int(round(M.median_dps(lv, early=False)[0] * ratio_at(lv, r)))) for lv in levels]
 
 
 # ---- the weapon hit ------------------------------------------------------------------------------------------------------
@@ -571,7 +571,7 @@ def main(argv):
                 print('%-12s %9.1f |                    %5.1f%% %5.1f%% %5.1f%% |         %5.1f%% %5.1f%% %5.1f%%' % ((c, m) + tuple(a) + tuple(b)))
         return 0
     r = ratios()
-    out, med = M.shipped()
+    out, med = M.shipped(early=False)
     print('level  median dps  median weapon hit  median spell hit  median class hit  hit / dps')
     for lv in M.LEVELS:
         h = class_hits(lv, out)

@@ -173,7 +173,8 @@ def inputs(levels, rnd=True):
     """everything the model reads, once: {'dps': {(class, level): damage per second, 1 target}, 'burst': ..., 'layers': ...}.
     rnd (O475): the class damage after the balance round (class_dps_model.dps); rnd=False is the damage before it"""
     with SU.pvp():  # O686 phase 3: rank and Forms at half, no awakening, no combos (pvp.rank / pvp.forms of spell_ranks_config.lua)
-        dps = {(c, lv): CD.dps(c, lv, rnd=rnd)[0] for c in NAMES for lv in levels}
+        # O764: the caster early gain is PvE only (spell_factor_core.lua F.early: never on a player target)
+        dps = {(c, lv): CD.dps(c, lv, rnd=rnd, early=False)[0] for c in NAMES for lv in levels}
     return {'dps': dps, 'burst': burst_factors(levels), 'layers': layers(levels)}
 
 
@@ -337,7 +338,7 @@ def fit_scale(level):
     move with the damage alone)"""
     # the scale is a number of the round of O475 as shipped: the spell upgrades have their own PvP rule (the half), never this table
     with SU.forced(False):
-        return CD.median_dps(level, rnd=False)[0] / CD.median_dps(level)[0]
+        return CD.median_dps(level, rnd=False)[0] / CD.median_dps(level, early=False)[0]
 
 
 def scale_problems(cfg):
@@ -435,7 +436,7 @@ def main(argv):
     if '--scale' in argv:
         print('level  median dps before  after  scale (fit)  seconds to kill the median class: before / after with the scale')
         for lv in (100, 200, 300, 500, 700, 850, 1000, 1500, 2000):
-            b, a = CD.median_dps(lv, rnd=False)[0], CD.median_dps(lv)[0]
+            b, a = CD.median_dps(lv, rnd=False)[0], CD.median_dps(lv, early=False)[0]
             f = fit_scale(lv)
             print('%5d  %17.0f %6.0f  %.3f  (table %.3f)' % (lv, b, a, f, damage_scale(lv, cfg)))
         return 0

@@ -83,8 +83,26 @@ for cls in M.KEY:
         o = M.shipped()[0][(cls, lv)]
         r1, r5 = M.round_factor(cls, lv)
         ok(abs(o['pre1'] - out[(cls, lv)]['1t']) < 1e-6 or True, 'pre-round numbers are kept')
-        ok(abs(o['1t'] - o['pre1'] * r1) < 1e-6 and abs(o['5t'] - o['pre5'] * r5) < 1e-6, '%s %d: the round factor is applied' % (cls, lv))
+        # O764: the caster early gain e1 / e5 on top (1 for every other class and from level 200 up)
+        ok(abs(o['1t'] - o['pre1'] * r1 * o['e1']) < 1e-6 and abs(o['5t'] - o['pre5'] * r5 * o['e5']) < 1e-6,
+           '%s %d: the round factor is applied' % (cls, lv))
         ok(0.5 < r1 < 3 and 0.5 < r5 < 3, '%s %d: the round factor is sane (%.2f, %.2f)' % (cls, lv, r1, r5))
+
+# O764: the caster early gain (spell_factor_config.lua early): the six casters only, the spell part only, nothing from 200 up
+for cls in M.KEY:
+    caster = R.CLASS_KIND[cls] == 'caster'
+    for lv in (8, 50, 100, 150):
+        e1, e5 = M.early_factor(cls, lv)
+        ok((e1 > 1 and e5 > 1) if caster else (e1 == 1 and e5 == 1), '%s %d: early gain only for a caster (%.3f, %.3f)' % (cls, lv, e1, e5))
+        ok(e1 <= 1 + M.early_gain(lv) + 1e-12, '%s %d: the gain reaches the spell part only' % (cls, lv))
+    for lv in (200, 500, 1000, 1500, 2000, 2500):
+        ok(M.early_factor(cls, lv) == (1.0, 1.0), '%s %d: no early gain from level 200 up' % (cls, lv))
+ok(abs(M.early_gain(8) - 0.25) < 1e-12 and abs(M.early_gain(100) - 0.07) < 1e-12 and M.early_gain(200) == 0, 'the gain curve')
+for lv in (500, 1000):
+    ok(all(M.shipped()[0][(c, lv)]['e1'] == 1 for c in M.KEY), 'level %d: the early gain is off' % lv)
+for lv in (20, 100):
+    a, b, e = M.dps('Mystic', lv), M.dps('Mystic', lv, early=False), M.early_factor('Mystic', lv)
+    ok(abs(a[0] - b[0] * e[0]) < 1e-6 and abs(a[1] - b[1] * e[1]) < 1e-6, 'level %d: early=False (PvP) leaves the gain out' % lv)
 ob, mb = M.shipped_before()
 ok(all(abs(ob[k]['1t'] - ob[k]['pre1']) < 1e-9 and ob[k]['r1'] == 1.0 for k in ob), 'shipped_before() carries no round factor')
 ok(M.problems(ob, mb) == [], 'the model before the round is inside the band too')
