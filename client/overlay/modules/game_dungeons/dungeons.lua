@@ -276,7 +276,12 @@ local function fillCard(card, entry, groupKey)
   local boss = card:getChildById('boss')
   if boss and entry.boss then boss:setOutfit(entry.boss) end
   card:getChildById('group'):setText(chipText(DungeonsView.groupTag(groupKey)))
-  card:getChildById('title'):setText(entry.title or '')
+  -- a long name ends in '..' inside the card instead of being cut at its edge (seen in a client 2026-11-25:
+  -- "Master of the Element"); the whole name is the tooltip
+  local title = card:getChildById('title')
+  local full = entry.title or ''
+  title:setText(DungeonsView.fit(full, card:getWidth() - 14, function(t) title:setText(t) return title:getTextSize().width end))
+  title:setTooltip(full)
   card:getChildById('level'):setText(DungeonsView.levelText(entry.level))
   card.dungeonId = entry.id
 end
@@ -813,9 +818,10 @@ function selectDungeon(dungeonId)
     for i = 1, #dungeon.challenges do
       local challenge = dungeon.challenges[i]
       local widget = g_ui.createWidget("ChallengePanel", currentUI.challengesPanel)
-      widget:setText(tr('%s (%s Points)', challenge.title, formatShortNumber(challenge.points)))
+      -- the server sends English names and lines; tr gives the pt-BR ones (seen in a client 2026-11-25)
+      widget:setText(tr('%s (%s Points)', tr(challenge.title or ''), formatShortNumber(challenge.points)))
       widget:getChildById("checkbox"):setChecked(challenge.completed)
-      widget:getChildById("description"):setText(challenge.desc)
+      widget:getChildById("description"):setText(tr(challenge.desc or ''))
     end
   end
 

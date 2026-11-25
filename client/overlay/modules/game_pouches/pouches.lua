@@ -381,6 +381,14 @@ local function lockFlag(item)
   return ok and tonumber(v) or 0
 end
 
+-- the name of a pouch item (bag panel page tooltips, O557), nil when the item is no store pouch
+function pouchTitle(item)
+  if not item or not item.getId then return nil end
+  local ok, id = pcall(function() return item:getId() end)
+  if not ok then return nil end
+  return V.pouchTitle(id, lockFlag(item), ids, titles)
+end
+
 local function hookMenu()
   local gi = modules.game_interface
   if not gi or not gi.addMenuHook then return end

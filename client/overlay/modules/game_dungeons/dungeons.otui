@@ -266,7 +266,10 @@ DifficultyButton < Panel
   image-source: /images/dungeons/card_frame
   image-border: 4
   color: #999999
-  text-offset: 0 -56
+  // the name above the icon: drawn from the top (the engine moves only the text's top-left corner by text-offset, so a
+  // centred name with offset -56 moved 28 px and sat on the icon; seen in a client 2026-11-25)
+  text-align: top
+  text-offset: 0 5
   font: verdana-11px-rounded
   phantom: false
   clipping: true
@@ -286,7 +289,7 @@ DifficultyButton < Panel
   $mobile:
     width: 148
     height: 96
-    text-offset: 0 -38
+    text-offset: 0 4
 
 DifficultyIcon < Panel
   anchors.top: parent.top

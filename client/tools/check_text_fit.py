@@ -171,6 +171,37 @@ def bag_panel(tr):
     return problems
 
 
+TRAINER_ROW = 244                  # trainerDps 260 wide, keepRow margin 8 each side
+TRAINER_TEXT_OFFSET = 22           # ChaosCheckBox text-offset x: the box picture, then the text
+
+
+def trainer_panel(tr):
+    """the Trainer DPS panel's two check boxes (O720, seen in a client 2026-11-25: "Manter aberto" was cut): each text fits
+    its box after the text offset, both boxes fit the row, English and pt-BR (stand-in font as in bag_panel)"""
+    problems = []
+    otui = open(os.path.join(CLIENT, 'overlay', 'modules', 'game_trainerdps', 'trainerdps.otui'), encoding='utf-8').read()
+    measure = load_font(BAG_FONT)
+    total = 0
+    for wid, key in (('keepBox', 'Keep open'), ('autoBox', 'Open by itself')):
+        m = re.search(r'id: %s\n(?:(?!\n\n).)*?\n\s+width: (\d+)' % wid, otui, re.S)
+        if not m:
+            problems.append('trainer panel: no width for %s' % wid)
+            continue
+        w = int(m.group(1))
+        mm = re.search(r'id: %s\n(?:(?!\n\n).)*?\n\s+margin-left: (\d+)' % wid, otui, re.S)
+        total += w + (int(mm.group(1)) if mm else 0)
+        for lang in ('en', 'pt-BR'):
+            text = key if lang == 'en' else tr.get(key)
+            if text is None:
+                problems.append('trainer panel: no pt-BR text for "%s"' % key)
+                continue
+            if measure(text) > w - TRAINER_TEXT_OFFSET:
+                problems.append('trainer panel: check box "%s" is %s px in %s, its text room is %s' % (text, measure(text), lang, w - TRAINER_TEXT_OFFSET))
+    if total > TRAINER_ROW:
+        problems.append('trainer panel: the check boxes take %d px, the row has %d' % (total, TRAINER_ROW))
+    return problems
+
+
 def check():
     problems = []
     patched = subentry_font_in_patches()
@@ -213,6 +244,7 @@ def check():
             problems.append('options menu entry "%s" is %d px in %s, the button has %d' % (text, w, SUBENTRY_FONT, room))
     problems += forge_tabs(tr)
     problems += bag_panel(tr)
+    problems += trainer_panel(tr)
     return problems, widest, room
 
 

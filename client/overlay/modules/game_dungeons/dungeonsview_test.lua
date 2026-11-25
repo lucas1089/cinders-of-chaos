@@ -190,5 +190,40 @@ eq(V.statusText(800, 600, 3), 'Needs level 800', 'the status names the missing l
 eq(V.statusText(800, 900, 3), '3 Players', 'else the queue')
 eq(V.statusText(800, 900, 0), 'Open', 'an open queue')
 
+-- a card name that does not fit ends in '..' (seen in a client 2026-11-25: "Master of the Element" cut at the edge)
+local w6 = function(t) return #t * 6 end
+eq(V.fit('Rootmaw', 142, w6), 'Rootmaw', 'a short name stays whole')
+eq(V.fit('Master of the Elements', 120, w6), 'Master of the Elem..', 'a long name ends in ..')
+eq(V.fit('Master of the Elements', 120, w6):len() * 6 <= 120, true, 'the cut name fits')
+eq(V.fit('Master of', 40, w6), 'Mast..', 'cut inside a word')
+
+-- the difficulty tile: the engine moves only the top-left corner of the text by text-offset, so a centred text with
+-- offset -56 moved 28 px and sat on the icon (seen in a client 2026-11-25); the name is drawn from the top
+local tile = otui:match('DifficultyButton < Panel\n(.-)\n%S')
+eq(tile and tile:find('text%-align: top') ~= nil, true, 'the tile name is aligned to the top')
+eq(tile and tile:find('text%-offset: 0 %-') == nil, true, 'no negative text offset on the tile')
+
+-- every pt-BR line of a tile fits its 108 px (Verdana 9 px, about 5.5 px a character: at most 19 characters)
+ChaosLocaleStrings = nil
+local okL = pcall(dofile, dir .. '../client_chaos_locale/pt_br.lua')
+local pt = okL and ChaosLocaleStrings and ChaosLocaleStrings['pt-BR'] or nil
+eq(pt ~= nil, true, 'pt_br.lua loads')
+if pt then
+  -- the template lines with the biggest number each can show (V.LEVELS: damage 600, XP and gold +400, loot +60)
+  local keys = {}
+  for _, k in ipairs(panels) do keys[#keys + 1] = { k, '' } end
+  for _, k in ipairs({ { 'Monster Health %d%%', '1300' }, { 'Boss Health %d%%', '1300' }, { 'Monster Damage %d%%', '600' },
+    { 'Bonus XP +%d%%', '400' }, { 'Gold Drop +%d%%', '400' }, { 'Loot Chance +%d%%', '60' } }) do keys[#keys + 1] = k end
+  for _, kv in ipairs(keys) do
+    local k = kv[1]
+    local v = pt[k]
+    eq(v ~= nil, true, 'pt-BR for ' .. k)
+    for line in tostring(v):gsub('%%d', kv[2]):gsub('%%%%', '%%'):gmatch('[^\n]+') do
+      local n = select(2, line:gsub('[^\128-\191]', ''))
+      eq(n <= 19, true, 'pt-BR tile line fits: ' .. line)
+    end
+  end
+end
+
 if fails > 0 then print(fails .. ' failure(s)'); os.exit(1) end
 print('dungeonsview tests passed')

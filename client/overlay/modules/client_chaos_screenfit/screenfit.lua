@@ -14,6 +14,20 @@ local mine = {}
 local installed = false
 local fitting = false     -- guard: our own move fires onGeometryChange again
 
+-- the class field a hook replaces can be a list of slots: connect() of another module (game_chaossound watches window
+-- visibility) on a field that held a function leaves a table, which the engine runs through signalcall. Calling it as a
+-- function threw, so every opening lost its fit and centring (seen in a client 2026-11-25: 300 errors a session). Each
+-- slot is called in order; true when one returns true (the mouse wheel took the event).
+local function callBase(f, ...)
+  if type(f) == 'function' then return f(...) end
+  if type(f) ~= 'table' then return nil end
+  local any = false
+  for _, g in ipairs(f) do
+    if type(g) == 'function' and g(...) then any = true end
+  end
+  return any
+end
+
 local function alive(w)
   return w ~= nil and not w:isDestroyed()
 end
@@ -108,7 +122,7 @@ end
 
 local function hook_onDragMove(self, mousePos, mouseMoved)
   self.chaosMoved = true
-  if not overflowing(self) then return base.onDragMove(self, mousePos, mouseMoved) end
+  if not overflowing(self) then return callBase(base.onDragMove, self, mousePos, mouseMoved) end
   if self.static or not self.movingReference then return end
   local pr = parentRect(self)
   local x = L.clamp(mousePos.x - self.movingReference.x, self:getWidth(), pr.x, pr.width)
@@ -117,7 +131,7 @@ local function hook_onDragMove(self, mousePos, mouseMoved)
 end
 
 local function hook_onMouseWheel(self, mousePos, direction)
-  if base.onMouseWheel and base.onMouseWheel(self, mousePos, direction) then return true end
+  if callBase(base.onMouseWheel, self, mousePos, direction) then return true end
   if self.static or not overflowing(self) then return false end
   local pr = parentRect(self)
   local r = self:getRect()
@@ -129,14 +143,14 @@ local function hook_onMouseWheel(self, mousePos, direction)
 end
 
 local function hook_onVisibilityChange(self, visible)
-  if base.onVisibilityChange then base.onVisibilityChange(self, visible) end
+  callBase(base.onVisibilityChange, self, visible)
   if visible then fitOpen(self) queueCentre(self) else self.chaosFitOpened = nil self.chaosCentreDone = nil end
 end
 
 -- a window made visible by g_ui.createWidget / displayUI announces no visibility change: its first layout that overflows
 -- does. Once per opening (chaosFitOpened), so a scroll by the player is not undone.
 local function hook_onGeometryChange(self, oldRect, newRect)
-  if base.onGeometryChange then base.onGeometryChange(self, oldRect, newRect) end
+  callBase(base.onGeometryChange, self, oldRect, newRect)
   if not fitting and not self.chaosFitOpened and overflowing(self) then fitOpen(self) end
   if not fitting and self:isVisible() then queueCentre(self) end
 end
