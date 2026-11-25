@@ -251,7 +251,7 @@ Game = {
 	createItem = function() return nil end,
 	getReturnMessage = function() return "" end
 }
-ChaosNotify = {send = function(p, title, text) toasts[#toasts + 1] = {p = p, title = title, text = text} return true end}
+ChaosNotify = {send = function(p, title, text, kind) toasts[#toasts + 1] = {p = p, title = title, text = text, kind = kind} return true end}
 local bars = {}
 ChaosTileBars = {set = function(id, def) bars[id] = def end, removePrefix = function(prefix)
 	for id in pairs(bars) do
@@ -274,6 +274,8 @@ do -- warnings to the players
 	IL.warn(run, 300, {a}, "Rift")
 	eq(lastMsg(a), "Rift: 5 minutes left. Everyone inside is sent out when the time runs out.", "5 minute warning")
 	eq(#toasts, 1, "and a toast")
+	-- seen in a client 2026-11-25: the toast came under ACHIEVEMENT UNLOCKED (the default kind); its own kind, header TIME LEFT
+	eq(toasts[1].kind, "timeleft", "the warning toast is of the kind timeleft")
 	IL.warn(run, 10, {a}, "Rift")
 	ok(lastMsg(a):find("10 seconds left", 1, true) ~= nil, "10 s warning")
 	eq(#toasts, 1, "no toast under a minute")
@@ -301,6 +303,7 @@ do -- busy, the line and freed
 	local told = IL.freed("rift", "the rifts")
 	eq(told, b, "the first in line outside every instance is told")
 	ok(lastMsg(b):find("A place in the rifts is free now", 1, true) ~= nil, "message")
+	eq(toasts[#toasts].kind, "yourturn", "the turn toast is of the kind yourturn (header YOUR TURN)")
 	eq(#IL.line("rift"), 0, "both are off the line")
 	Chaos.instances.zz_test = nil
 	IL.busy(a, "rift", "rifts", {}, {})

@@ -181,6 +181,18 @@ d3 = server(71, OURS, [('Bravo', 777)], BL, pool)
 b3 = snapshot(d3)
 rc, out = run(os.path.join(d3, 'data'), '--map', mp)
 check(rc == 1 and 'ERROR Bravo' in out and 'has look 777' in out and snapshot(d3) == b3, 'a look that is none of the old, donor and new ones stops the step, nothing written')
+# a later step moved a monster on (monsterrelooklooks: Werelion 3444 -> 3745): a second run counts it as done and leaves it
+# (seen 2026-11-25: the second install_all.py run stopped at this step), any other look still stops the step
+later = os.path.join(tempfile.mkdtemp(prefix='wstlooks_later_'), 'later.csv')
+open(later, 'w').write('monster,look,new_look\nBravo,200,3745\n')
+d7 = server(71, OURS, [('Bravo', 3745)], BL, pool)
+rc, out = run(os.path.join(d7, 'data'), '--map', mp, '--later', later)
+check(rc == 0 and 'ERROR' not in out and looks(os.path.join(d7, 'data', 'monster')).get('Bravo') == 3745,
+      'a look a later step gave is done and kept (%s)' % out.strip())
+d8 = server(71, OURS, [('Bravo', 3746)], BL, pool)
+rc, out = run(os.path.join(d8, 'data'), '--map', mp, '--later', later)
+check(rc == 1 and 'ERROR Bravo' in out, 'another look than the later step gave still stops the step')
+check(M.later_looks().get('Werelion') == 3745 and M.later_looks().get('Leaf Golem') == 3746, 'the shipped later map: the relook step')
 d4 = server(71, OURS, BX, [], pool)
 rc, out = run(os.path.join(d4, 'data'), '--map', mp)
 check(rc == 1 and 'ERROR Charlie: no monster file' in out, 'a missing monster file stops the step')

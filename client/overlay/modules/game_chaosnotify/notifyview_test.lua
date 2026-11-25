@@ -20,6 +20,8 @@ eq(V.typeOfAction('cursedchest'), 'CURSED_CHEST', 'cursedchest kind (the Cursed 
 eq(V.typeOfAction('weeklychest'), 'WEEKLY_CHEST', 'weeklychest kind (the Weekly Chest toasts, O261)')
 eq(V.typeOfAction('milestone'), 'MILESTONE', 'milestone kind (the level milestone toast, O378)')
 eq(V.typeOfAction('newcard'), 'NEW_CARD', 'newcard kind (the Deck of Cards toast, O570)')
+eq(V.typeOfAction('timeleft'), 'TIME_LEFT', 'timeleft kind (instance time warnings, not ACHIEVEMENT)')
+eq(V.typeOfAction('yourturn'), 'YOUR_TURN', 'yourturn kind (the waiting line)')
 eq(V.typeOfAction('partyInvite'), nil, 'not a message kind')
 -- every kind the server's ChaosNotify.send accepts has a toast type here
 local src = io.open(here .. '/../../../../server/data/scripts/chaos/notifications.lua')

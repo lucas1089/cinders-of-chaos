@@ -4851,6 +4851,9 @@ The tower has two clocks. A floor has `floorTimeLimit` (300 s, a boss floor x `b
 - **Start.** One line at entry, with a run limit only: "This run lasts at most 120 minutes."
 - **Pace.** 120 minutes is 7200 s (O507; 60 minutes before): 60 floors at the two minutes a floor that the config comment assumes, 120 floors at one a minute. A level 800 character reaches about floor 34 and a level 1000 character about 44 (`tools/tower_model.py`); a run was thrown out at floor 57 by the 60 minute limit while still winning. The model does not read the run limit.
 - Tests: `tests/infinitytower_run_test.lua` (state field, start line, the warnings in English, no limit), `tests/tower_clock_text_test.lua` (the sentences in both languages, the hook, the shared sentence unchanged), client `towerskip_test.lua`. The Unity tower panel is not changed and shows the floor time only.
+- **Seen in a client (2026-11-25, pair 87).** Clocks shifted by a test command: the panel showed run 0:59 with the toast
+  "Whole run: 1 minute left", then floor 0:58 with "Floor 1: 1 minute left". The two agree. The toast header said
+  ACHIEVEMENT UNLOCKED; it says TIME LEFT now ("Instance limits").
 
 ## Infinity Tower: leaving a run
 Owner bug 2026-11-02: "no way out of the tower, not by portal nor by command". Causes:
@@ -18341,7 +18344,10 @@ Archivist Maelis, the Material Brokers and the faction NPCs now place through `C
 offsets first, then every tile a player can walk to from the temple (closed doors count as walkable, never as a spot),
 nearest walking distance first, up to 14 tiles; never on or next to the temple tile, not in a one-tile corridor unless
 nothing else is left, and at least 4 tiles (Chebyshev) from every other NPC: beyond the talk radius (3). The order is
-fixed, so a restart gives the same spots. Start log 2026-10-16: still no Loot Buyer at Nightwrack. Its temple (floor 6)
+fixed, so a restart gives the same spots. Never on a tile that must stay clear: the temple portal gallery of
+the town, from its portal row to the last carpet row (`temple_portals_config.lua`, `ChaosNpcPlaceCore.keepClearRects`,
+spec field `keepClear`). Seen in a client 2026-11-25: the Keeper of the Pinnacle (`pinnacle_config.lua` offset 5, 6)
+stood on the gallery carpet at 32374, 32247 between the Guild Hall and the Raid portal; now it takes the next free tile. Start log 2026-10-16: still no Loot Buyer at Nightwrack. Its temple (floor 6)
 is a room of about 25 tiles left only by stairs; a base NPC and the Material Broker stand in it and no tile keeps 4 tiles
 from both. `item_prices_config.lua` `npc.place.depotFallback = true`: with no spot at the temple the same search runs
 around the town's nearest depot of the map markers (`data/chaos_poi.lua`, same floor first, at most 64 tiles away;
@@ -20851,6 +20857,9 @@ on parallel copies with a wait estimate, and a staff view. Each system keeps its
   ("Rift: 1 minute left. Everyone inside is sent out when the time runs out."), the marks of a minute or more also as a
   toast. Each mark once per run; a mark already behind when a run starts is skipped (a 3 minute trial gets no "5
   minutes left"). The HUDs that already count down (rift HUD, arena, battleground, dungeon window) keep doing so.
+  Toast kinds: `timeleft` (header TIME LEFT, hourglass) for the warnings, `yourturn` (YOUR TURN) for the waiting line
+  (`ChaosNotify.send`, client `game_chaosnotify`). Seen in a client 2026-11-25: both came as `achievement` and showed
+  ACHIEVEMENT UNLOCKED over "Whole run: 1 minute left". Tests: `tests/instance_limits_test.lua`, `tests/notify_test.lua`.
 - **The end** is each system's own failure rule (table below): nobody gets a reward for it, nothing is lost twice.
 - **Idle**: the systems that end a run at once when its last player is out keep doing so. The rift (a fallen player who
   may come back kept it open until the timer), the raid and the base boss rooms close an empty instance after a grace.
@@ -26528,6 +26537,10 @@ unique id, a destination or a house refuses the run. Our NPCs are gone from ther
   for the Descent and the raid.
 - **Where they lead** floats over each portal in orange, in the viewer's language (`cityportals_fx.lua` labels), and
   looking at one names it and says what it does.
+- **No NPC on the gallery.** The startup placement (`npc_place.lua`) skips its tiles ("Startup NPC placement").
+- **Seen in a client (2026-11-25, pair 87).** Both wings: portals, pillars, coal basins, red carpet, orange labels
+  ("Guild Hall", "Raid: Ashen Sepulchre", the west wing's). Event portals left their alcoves bare, as meant. One fault:
+  the Keeper of the Pinnacle on the carpet; fixed above.
 - Players come from the street to the south straight onto the carpet; the portals face it. Rendered from the map
   before and after (not in git); not seen in a client or on a live server.
 
@@ -37355,6 +37368,9 @@ Client side: client/MANIFEST.md "Pair 71" (77 outfits 3434-3510, `gen_wst_outfit
 - **Audits at pair 71.** `check_content.py` runs the shared look rule at 68, 69, 70 and 71, the idle rule at the committed state, 70 and 71 and the crowded rule at all three: a purchased look must move while it stands (`look_idle.csv` has a row per purchased look, 75 rows written from pair 71, all with an idle group; the walk list `idle_walk_looks.lua` did not change). It holds the map: new looks inside 3434-3510, never blank,
   at most 2 monsters on a look, the old look is the pool's (and the file's for ours), no monster in the recolour map, and a monster of the donor map has the same old look in both. `tests/hunt_teleports_test.lua` reads the map: no showcase cell repeats a look at pair 71 (cells that changed look: the plans of Quicksilver Wraith, Bonepicker, Azure Guard, Distorted Phantom and Nightfang Widow and base hunts with Talon Knight, Wyrm, Crab, Carrion Worm, Rustheap Golem, Ghoul, Usurper Warlock and the lost souls).
   `client/tools/gen_dungeon_banners.py` draws a monster of the map at its purchased look (no banner monster is in it: no banner changed).
+- **Second run.** A later step moves some of these monsters on (`monsterrelooklooks`, pair 86: Werelion 3745, Leaf
+  Golem 3746). Seen 2026-11-25: a second `install_all.py` run stopped here ("Werelion: ... has look 3745"). A look of
+  `monster_relook_looks.csv` now counts as done and stays (`--later CSV` names another map). Test: cases d7, d8.
 - **Tests.** `install_monster_wst_looks_test.py` (the map, the guard end to end, XML ours and base, Lua, pool, a monster that wears its donor look, idempotence, refusals), `audit_idle_looks_test.py`, `audit_shared_looks_test.py`, `client_pair_test.py`, `gen_wst_outfits_test.py` (CI). Not verified: in a running client.
 
 ## Effect owner marks (O567; `data/lib/chaos_fx_owner.lua`, `data/scripts/chaos/fxowner.lua`, `data/spells/chaos/_supports.lua`, opcode 164, client `game_effectopacity`, client base patch `0202`)

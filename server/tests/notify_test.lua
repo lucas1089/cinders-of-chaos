@@ -66,6 +66,11 @@ ok(okCall and #p.sent == 7, "pcall(ChaosNotify.send, p, title, text) as guild.lu
 ChaosNotify.send(p, "", "Your Chaos Pact ends in 3 days.", "pact")
 eq(p.sent[8].payload.action, "pact", "the Chaos Pact expiry warning is a kind of its own")
 eq(p.sent[8].payload.message, "Your Chaos Pact ends in 3 days.", "an empty title: the text alone")
+-- the instance warnings and the waiting line's turn (instance_limits.lua): kinds of their own, not ACHIEVEMENT UNLOCKED
+ChaosNotify.send(p, "Floor 57", "1 minute left", "timeleft")
+eq(p.sent[9].payload.action, "timeleft", "the instance time warning is a kind of its own")
+ChaosNotify.send(p, "Your turn", "A place in the rifts is free now.", "yourturn")
+eq(p.sent[10].payload.action, "yourturn", "the waiting line's turn is a kind of its own")
 
 print(string.format("notify_test: %d checks, %d failures", checks, fails))
 if fails > 0 then

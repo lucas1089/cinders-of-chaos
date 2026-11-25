@@ -89,10 +89,13 @@ end
 -- guildwar.lua (war toasts). "sale" (header ITEM SOLD) is a listing of the player that sold: market.lua and the Orb
 -- Exchange (orbexchange.lua), at once or at the next login. "cursedchest" (header CURSED CHEST): cursedchest.lua.
 -- "milestone" (header LEVEL MILESTONE): milestones.lua (O378). "newcard" (header NEW CARD): cards.lua, a card new to the
--- Deck of Cards (O570).
+-- Deck of Cards (O570). "timeleft" (header TIME LEFT) and "yourturn" (header YOUR TURN): instance_limits.lua, the
+-- warnings before an instance's time runs out and the waiting line's turn (seen in a client 2026-11-25: the Infinity
+-- Tower's "1 minute left" came under ACHIEVEMENT UNLOCKED, the default kind).
 local SEND_KINDS = {achievement = true, bounty = true, newplayer = true, bestiary = true, bosspoints = true,
 	ascension = true, market = true, sale = true, seasonpass = true, journey = true, invasion = true, pact = true,
-	cursedchest = true, weeklychest = true, milestone = true, newcard = true}
+	cursedchest = true, weeklychest = true, milestone = true, newcard = true,
+	timeleft = true, yourturn = true}
 
 function ChaosNotify.send(player, title, text, kind)
 	if not player then

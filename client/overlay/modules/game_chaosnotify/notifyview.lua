@@ -22,7 +22,11 @@ V.MESSAGE_TYPES = {
   cursedchest = 'CURSED_CHEST', -- a Cursed Chest rises, its hordes, its loot (server cursedchest.lua, O244)
   weeklychest = 'WEEKLY_CHEST', -- the Weekly Chest opens, the bonus roll (server weeklychest.lua, O261)
   milestone = 'MILESTONE', -- a level milestone every 100 levels from 800 (server milestones.lua, O378)
-  newcard = 'NEW_CARD' -- a card new to the Deck of Cards (server cards.lua, O570)
+  newcard = 'NEW_CARD', -- a card new to the Deck of Cards (server cards.lua, O570)
+  -- server instance_limits.lua: the warnings before an instance's time runs out (the Infinity Tower's two clocks, O484) and the
+  -- waiting line's turn; before 2026-11-25 they came as 'achievement' and showed ACHIEVEMENT UNLOCKED
+  timeleft = 'TIME_LEFT',
+  yourturn = 'YOUR_TURN'
 }
 
 function V.typeOfAction(action)
