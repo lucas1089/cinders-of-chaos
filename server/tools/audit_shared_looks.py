@@ -50,6 +50,7 @@ CREATURE = os.path.join(os.path.dirname(PURCHASED), 'monster_creature_looks.csv'
 SWAP = os.path.join(os.path.dirname(PURCHASED), 'monster_o619_looks.csv')
 PIXELLAB = os.path.join(os.path.dirname(PURCHASED), 'monster_pixellab_looks.csv')
 DRIVE = os.path.join(os.path.dirname(PURCHASED), 'monster_drive_looks.csv')
+RELOOK = os.path.join(os.path.dirname(PURCHASED), 'monster_relook_looks.csv')
 ALLOW = os.path.join(REPO, 'server', 'data', 'monster', 'shared_looks_allow.csv')
 POOL = os.path.join(REPO, 'server', 'data', 'scripts', 'chaos', 'bounty_pool.lua')
 COLOUR_DIST = 0.28
@@ -331,23 +332,37 @@ def load_drive(path=None):
     return out
 
 
-def look_at_pair(name, look, pair, recolour, donor=None, purchased=None, creature=None, swap=None, pixellab=None, drive=None):
+def load_relook(path=None):
+    """{monster name: (look, new_look)} of monster_relook_looks.csv (O768: Banshee, Werelion, Leaf Golem on outfits 3744-3746, White Lion
+    and Hellhound on stock looks): the same shape, from pair 86 on; `look` is the committed look"""
+    out = {}
+    path = RELOOK if path is None else path
+    if os.path.exists(path):
+        for r in csv.DictReader(open(path, newline='', encoding='utf-8')):
+            out[r['monster']] = (int(r['look']), int(r['new_look']))
+    return out
+
+
+def look_at_pair(name, look, pair, recolour, donor=None, purchased=None, creature=None, swap=None, pixellab=None, drive=None, relook=None):
     """the lookType of a monster at a client pair: its copy from pair 69 on, its donor look (O538) from pair 70 on, its purchased look
     (O540) from pair 71 on, its creature pack look (O605) from pair 73 on, its swapped look (O619) from pair 73 on, its PixelLab look
     (O640) from pair 74 on, the old look below
     (a file or a pool row written for the other state is read for this one too, so a server mid update gives the same answer). A
     monster in two maps goes through them in the order of their pairs (the swap map after the pack maps: it replaces a copy or a pack
-    look; its PixelLab look (O640) from pair 74 on, its Drive pack look (O726) from pair 81 on, last of all)."""
+    look; its PixelLab look (O640) from pair 74 on, its Drive pack look (O726) from pair 81 on, its O768 look from pair 86 on, last of
+    all)."""
     donor = load_donor() if donor is None else donor
     purchased = load_purchased() if purchased is None else purchased
     creature = load_creature() if creature is None else creature
     swap = load_swap() if swap is None else swap
     pixellab = load_pixellab() if pixellab is None else pixellab
     drive = load_drive() if drive is None else drive
+    relook = load_relook() if relook is None else relook
     chain = [(need, rows[name]) for rows, need in ((recolour, client_pair.PAIR_RECOLOUR), (donor, client_pair.PAIR_DONOR),
                                                    (purchased, client_pair.PAIR_PURCHASED), (creature, client_pair.PAIR_CREATURE),
                                                    (swap, client_pair.PAIR_SWAP), (pixellab, client_pair.PAIR_PIXELLAB),
-                                                   (drive, client_pair.PAIR_DRIVE_MONSTERS))
+                                                   (drive, client_pair.PAIR_DRIVE_MONSTERS),
+                                                   (relook, client_pair.PAIR_RELOOK_MONSTERS))
              if name in rows]
     if not chain or look not in {x for _n, (o, nl) in chain for x in (o, nl)}:
         return look

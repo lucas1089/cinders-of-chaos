@@ -224,13 +224,14 @@ def drop_walk_dir(state, d):
     raise ValueError('%s: no walk animation for %s' % (state, d))
 
 
-def read_drop(path):
+def read_drop(path, margin=0):
     """{'stand': {d: picture}, 'idle': {d: [4]}, 'walk': {d: [8]}, 'id': PixelLab character id or ''} of an unzipped PixelLab download
     (STATE/rotations/DIR.png, STATE/animations/walk*/DIR/frame_NNN.png; STATE is the folder that holds rotations/): hard alpha cut at
     128, every picture on one square canvas (the largest, centred: PixelLab grows a canvas around one middle), the walk without its
     standing reference frame_000 when it has 9, its colours pulled to the standing pictures (fun_costume_motion.lock_palette) and moved
     by one whole pixel shift onto the standing picture by the feet (align_to_standing); the idle a breath of DROP_IDLE pictures made
-    from the standing picture (fun_costume_motion.breath_cycle)."""
+    from the standing picture (fun_costume_motion.breath_cycle). margin: clear px round the canvas on every side (room for the move
+    onto the standing picture of a figure that fills its canvas, O768)."""
     import json
     from fun_costume_motion import find_state, lock_palette, breath_cycle
     st = find_state(path)
@@ -246,7 +247,7 @@ def read_drop(path):
                                                                                                   DROP_WALK + 1))
         walk[d] = [_load_hard(os.path.join(wd, n)) for n in names]
     every = list(stand.values()) + [x for v in walk.values() for x in v]
-    side = max(max(a.shape[0], a.shape[1]) for a in every)
+    side = max(max(a.shape[0], a.shape[1]) for a in every) + 2 * margin
     stand = {d: _on(a, side) for d, a in stand.items()}
     refs = list(stand.values())
     out = {'stand': stand, 'idle': {}, 'walk': {}, 'id': ''}

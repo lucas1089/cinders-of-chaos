@@ -85,6 +85,7 @@ CREATURE = _donor_looks(os.path.join(HERE, '..', 'data', 'monster', 'monster_cre
 SWAP = _donor_looks(os.path.join(HERE, '..', 'data', 'monster', 'monster_o619_looks.csv'))   # O619, client pair 73: the same shape
 PIXELLAB = _donor_looks(os.path.join(HERE, '..', 'data', 'monster', 'monster_pixellab_looks.csv'))   # O640, client pair 74: the same shape
 DRIVE = _donor_looks(os.path.join(HERE, '..', 'data', 'monster', 'monster_drive_looks.csv'))   # O726, client pair 81: the same shape
+RELOOK = _donor_looks(os.path.join(HERE, '..', 'data', 'monster', 'monster_relook_looks.csv'))   # O768, client pair 86: the same shape
 
 
 def committed_look(name, look):
@@ -110,7 +111,10 @@ def committed_look(name, look):
     if x and look == x[1]:
         return x[0]
     v = DRIVE.get(name)         # O726: from client pair 81 the step `monsterdrivelooks` writes the Drive pack look the same way
-    return v[0] if v and look == v[1] else look
+    if v and look == v[1]:
+        return v[0]
+    o = RELOOK.get(name)        # O768: from client pair 86 the step `monsterrelooklooks` writes its look the same way
+    return o[0] if o and look == o[1] else look
 
 
 def attr(tag, name):
