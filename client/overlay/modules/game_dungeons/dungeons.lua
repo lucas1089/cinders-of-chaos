@@ -119,6 +119,31 @@ function showSideTab(n)
   if b then b:setChecked(sideTab == 2) end
 end
 
+-- the kill counter's default spot (V11, 2026-11-25): bottom left of the map, or just above the floating chat and the
+-- hotbar when they cover that corner (DungeonsView.counterSpot). A spot the player chose (game_hudmove) stays.
+function placeKillCounter()
+  if not killCounter then return end
+  if ChaosHudMove and ChaosHudMove.isMoved and ChaosHudMove.isMoved(killCounter) then return end
+  local map = modules.game_interface.getMapPanel()
+  if not map then return end
+  local avoid = {}
+  for _, name in ipairs({ 'ChaosFloatChat', 'ChaosHotbar' }) do
+    local m = rawget(_G, name)
+    local ok, r = pcall(function() return m and m.getRect and m.getRect() end)
+    if ok and r then avoid[#avoid + 1] = r end
+  end
+  local spot = DungeonsView.counterSpot(map:getRect(), killCounter:getWidth(), killCounter:getHeight(), avoid)
+  killCounter:breakAnchors()
+  killCounter:addAnchor(AnchorBottom, 'parent', AnchorBottom)
+  killCounter:addAnchor(AnchorLeft, 'parent', AnchorLeft)
+  killCounter:setMarginBottom(spot.bottom)
+  killCounter:setMarginLeft(spot.left)
+end
+
+function onChatMoved()
+  if killCounter and killCounter:isVisible() then addEvent(placeKillCounter) end
+end
+
 function create()
   if window then return end
   window = g_ui.displayUI("dungeons")
@@ -133,10 +158,14 @@ function create()
 
   killCounter = g_ui.loadUI("killcounter", modules.game_interface.getMapPanel())
   killCounter:hide()
-  -- movable, spot saved per character, double-click back (game_hudmove)
+  -- movable, spot saved per character, double-click back (game_hudmove); its default spot keeps clear of the
+  -- floating chat and the hotbar (placeKillCounter)
   if ChaosHudMove then
-    ChaosHudMove.attach(killCounter, 'dungeonKillCounter', { otui = '/modules/game_dungeons/killcounter' })
+    ChaosHudMove.attach(killCounter, 'dungeonKillCounter', { otui = '/modules/game_dungeons/killcounter',
+      onDefault = function() placeKillCounter() end })
   end
+  local fc = rawget(_G, 'ChaosFloatChat')
+  if fc and fc.subscribe then fc.subscribe(onChatMoved) end
 
   challengeNotifi = g_ui.loadUI("challenge", modules.game_interface.getMapPanel())
   g_effects.fadeOut(challengeNotifi, 1)
@@ -178,6 +207,8 @@ function destroy()
   end
 
   if killCounter then
+    local fc = rawget(_G, 'ChaosFloatChat')
+    if fc and fc.unsubscribe then fc.unsubscribe(onChatMoved) end
     if ChaosHudMove then ChaosHudMove.detach(killCounter) end
     killCounter:destroy()
     killCounter = nil
@@ -1043,6 +1074,8 @@ function onDungeonStart(data)
   timeLeft = data.duration or 0
   if timeLeftEvent then removeEvent(timeLeftEvent) end
   timeLeftEvent = scheduleEvent(doTimeLeft, 100)
+  placeKillCounter()
+  addEvent(placeKillCounter) -- again after the layout pass: the objectives' wrapped height
 end
 
 function doTimeLeft()

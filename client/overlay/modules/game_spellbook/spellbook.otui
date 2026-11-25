@@ -65,13 +65,14 @@ SpellbookRow < UIWidget
     color: #d6c9ae
     phantom: true
 
+  // width 50: "Lv 1500" / "Nv 1500" in verdana-11px-antialised; at 40 "Lv 100" was cut to ".v 100" (seen in a client 2026-11-25)
   UILabel
     id: level
     anchors.right: parent.right
     anchors.top: name.bottom
     margin-right: 4
     margin-top: 2
-    width: 40
+    width: 50
     text-align: right
     font: verdana-11px-antialised
     color: #8c8070

@@ -318,3 +318,32 @@ end
 function V.statusText(level, playerLevel, players)
   return V.lockText(level, playerLevel) or V.queueShort(players)
 end
+
+-- the kill counter's default spot (V11, seen 2026-11-25: the floating chat covered the objectives and the health globe
+-- sat on its bar). `area` the map panel rect, `w` / `h` the counter's size, `avoid` the rects it must not cover (the
+-- floating chat, the hotbar with its globes). Bottom left when that is free; else the lowest place on the left edge
+-- just above a rect it would cover; else bottom left as before. Returns the margins of its bottom-left anchors
+-- {left, bottom} (pixels from the area's left and bottom edges).
+V.COUNTER_GAP = 4
+local function overlaps(a, b)
+  return a.x < b.x + b.width and b.x < a.x + a.width and a.y < b.y + b.height and b.y < a.y + a.height
+end
+function V.counterSpot(area, w, h, avoid)
+  local bottom = area.y + area.height
+  local tops = { bottom - h }
+  for _, r in ipairs(avoid or {}) do
+    if r and r.width and r.width > 0 and r.height > 0 then tops[#tops + 1] = r.y - V.COUNTER_GAP - h end
+  end
+  table.sort(tops, function(a, b) return a > b end)
+  for _, y in ipairs(tops) do
+    if y >= area.y and y + h <= bottom then
+      local spot = { x = area.x, y = y, width = w, height = h }
+      local free = true
+      for _, r in ipairs(avoid or {}) do
+        if r and r.width and overlaps(spot, r) then free = false; break end
+      end
+      if free then return { left = 0, bottom = bottom - (y + h) } end
+    end
+  end
+  return { left = 0, bottom = 0 }
+end
