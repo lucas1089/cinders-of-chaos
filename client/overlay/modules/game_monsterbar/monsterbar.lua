@@ -141,11 +141,16 @@ local function anchorOf(creature)
   return anchors and ok and type(outfit) == 'table' and anchors[outfit.type] or nil
 end
 
+local function lookOf(creature)
+  local ok, outfit = pcall(function() return creature:getOutfit() end)
+  return ok and type(outfit) == 'table' and outfit.type or nil
+end
+
 -- the draw size (needs base patch 0020, Creature:setDrawScale): bosses bigger, oversized ordinary monsters smaller (O351,
 -- MonsterBarMath.drawScale)
 local function scaleCreature(creature, tier, role)
   if creature and creature.setDrawScale and creature:isMonster() then
-    creature:setDrawScale(MonsterBarMath.drawScale(anchorOf(creature), tier, role))
+    creature:setDrawScale(MonsterBarMath.drawScale(anchorOf(creature), tier, role, lookOf(creature)))
   end
 end
 
@@ -382,6 +387,18 @@ local function onAppear(creature)
   end
 end
 
+-- a monster whose look changes is sized again for the new look: Malgrath is hidden (look 0) while its rise and its attacks
+-- play and keeps its own size when it shows again (MonsterBarMath.NATIVE_LOOKS)
+local function onOutfitChange(creature)
+  if not (creature and creature.isMonster and creature:isMonster()) then
+    return
+  end
+  local id = creature:getId()
+  if tierOf[id] or MonsterBarMath.isOversized(anchorOf(creature)) then
+    scaleCreature(creature, tierOf[id], roleOf[id])
+  end
+end
+
 local function onDisappear(creature)
   -- tier info stays cached (a monster that walks out of view and back keeps its label)
   if creature == current then
@@ -419,12 +436,14 @@ function init()
   connect(modules.game_interface.getMapPanel(), { onGeometryChange = schedulePlace })
   ProtocolGame.registerExtendedOpcode(OPCODE, onExtendedOpcode)
   connect(g_game, { onAttackingCreatureChange = onAttackingCreatureChange, onGameEnd = onGameEnd })
-  connect(Creature, { onHealthPercentChange = updateHealth, onAppear = onAppear, onDisappear = onDisappear })
+  connect(Creature, { onHealthPercentChange = updateHealth, onAppear = onAppear, onDisappear = onDisappear,
+    onOutfitChange = onOutfitChange })
 end
 
 function terminate()
   disconnect(g_game, { onAttackingCreatureChange = onAttackingCreatureChange, onGameEnd = onGameEnd })
-  disconnect(Creature, { onHealthPercentChange = updateHealth, onAppear = onAppear, onDisappear = onDisappear })
+  disconnect(Creature, { onHealthPercentChange = updateHealth, onAppear = onAppear, onDisappear = onDisappear,
+    onOutfitChange = onOutfitChange })
   ProtocolGame.unregisterExtendedOpcode(OPCODE)
   stopTrail()
   stopMech()

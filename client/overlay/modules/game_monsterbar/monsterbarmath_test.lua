@@ -101,6 +101,12 @@ eq(M.drawScale(nil, nil, nil), 1, 'no anchor: as drawn')
 eq(M.drawScale({ 1, 2 }, nil, nil), 1, 'junk anchor: as drawn')
 eq(M.drawScale({ 0, 10, -400, -300, 300, 9, 9, 0, 0 }, nil, nil), M.SCALE_MIN, 'never below the engine floor')
 eq(M.isOversized(jug), true, 'oversized'); eq(M.isOversized(small), false, 'not oversized')
+-- V5 (2026-11-25): Malgrath's attacks are effects at 1x that carry its body, so its look keeps its size as a boss too
+local malgrath = { 14, -3, -166, -74, 107, 7, 7, 0, 73 } -- look 3530, 7x7 (outfit_anchors.lua)
+eq(M.drawScale(malgrath, 'boss', nil, 3530), 1, 'Malgrath as drawn: its attack effects are 1x')
+eq(M.drawScale(malgrath, nil, nil, 3530), 1, 'Malgrath before the tier answer: as drawn, not shrunk')
+eq(M.drawScale(jug, 'boss', nil, 1423), M.BOSS_SCALE, 'another boss look stays 1.5x')
+eq(M.drawScale(nil, 'boss', nil, 0), M.BOSS_SCALE, 'a hidden boss (look 0) keeps the boss rule')
 
 print(string.format('monsterbar math: %d checks, %d failed', checks, fails))
 if fails > 0 then os.exit(1) end
