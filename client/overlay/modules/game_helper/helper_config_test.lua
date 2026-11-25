@@ -14,7 +14,7 @@ end
 local d = C.defaults()
 eq(#d.spells, 3, 'three heal rows')
 eq(#d.potions, 3, 'three potion rows')
-eq(#d.shooterProfiles.Default.spells, 5, 'five slots')
+eq(#d.shooterProfiles.Default.spells, 6, 'six slots')
 eq(d.autoTargetMode, 6, 'mode F by default')
 eq(d.helperAutomaticFunctionsEnabled, true, 'automatic functions on')
 
@@ -30,7 +30,7 @@ eq(c.magicShooterEnabled, false, 'bool fallback')
 eq(c.shooterProfiles.Mine.spells[1].percent, 0, 'slot percent clamped')
 eq(c.shooterProfiles.Mine.spells[1].creatures, 8, 'creatures clamped')
 eq(c.shooterProfiles.Mine.spells[1].forceCast, false, 'forceCast bool')
-eq(#c.shooterProfiles.Mine.spells, 5, 'slots padded')
+eq(#c.shooterProfiles.Mine.spells, 6, 'slots padded')
 eq(c.selectedShooterProfile, 'Mine', 'selected profile repaired')
 eq(c.unknownField.keep, 1, 'unknown fields round-trip')
 
@@ -51,12 +51,18 @@ eq(p.legacyRules ~= nil, true, 'the old rules stay aside')
 local again = C.sanitize(old)
 eq(again.shooterProfiles.Default.spells[1].id, 11, 'second pass keeps the slots')
 
--- more than five rules
+-- more than six rules
 local many = {}
 for i = 1, 8 do many[i] = { type = 'spell', spellId = 100 + i, enabled = true } end
 local slots, dropped = C.rulesToSlots(many)
-eq(#slots, 5, 'five slots')
-eq(dropped, 3, 'three rules dropped')
+eq(#slots, 6, 'six slots')
+eq(dropped, 2, 'two rules dropped')
+-- O186 (seen in a client 2026-11-25): Auto setup's 5 attack spells and the ultimate all fit, none is dropped
+local six = {}
+for i = 1, 6 do six[i] = { type = 'spell', spellId = 200 + i, enabled = true } end
+local s6, d6 = C.rulesToSlots(six)
+eq(s6[6].id, 206, 'the sixth rule keeps its slot')
+eq(d6, 0, 'no rule of a full rotation dropped')
 
 -- slots <-> rules
 local rules = C.slotsToRules({ { id = 7, percent = 30, creatures = 3, priority = 2 }, { id = 8, percent = 0, priority = 1 },

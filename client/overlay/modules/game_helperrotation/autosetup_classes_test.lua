@@ -10,7 +10,11 @@ dofile(dir .. 'autorotation_data.lua')
 dofile(dir .. 'autorotation.lua')
 dofile(dir .. '../game_chaosspells/spellfix.lua')
 dofile(dir .. '../game_chaosspells/spelldata.lua')
-local A, D = ChaosAutoRotation, ChaosAutoRotationData
+dofile(dir .. '../game_helper/helper_logic.lua')
+dofile(dir .. '../game_helper/helper_runes.lua')
+dofile(dir .. '../game_helper/helper_ally.lua')
+dofile(dir .. '../game_helper/helper_config.lua')
+local A, D, Cfg = ChaosAutoRotation, ChaosAutoRotationData, ChaosHelperCfg
 local fails, checks = 0, 0
 local function eq(a, b, what)
   checks = checks + 1
@@ -76,6 +80,11 @@ for name, id in pairs(CLASSES) do
       eq(sel.ultimate, D.classes[id].ultimate, name .. ': the ultimate of the class')
       eq(sel.ids[1], sel.ultimate, name .. ': the ultimate is the first rule')
       eq(sel.creatures[1], 1, name .. ': the ultimate needs one monster')
+      -- O186, seen in a client 2026-11-25: a Ninja of level 1300 got "Shooter: 6 attack spells" and the helper kept 5 (the
+      -- shooter had five slots, the sixth rule was dropped). Every rule of the rotation must reach a slot.
+      local slots, dropped = Cfg.rulesToSlots(A.rules(sel))
+      eq(dropped, 0, name .. ': no rule of the rotation dropped by the shooter slots')
+      eq(slots[#sel.ids].id, sel.ids[#sel.ids], name .. ': the last spell of the rotation has its slot')
       local seen = {}
       for _, sid in ipairs(sel.ids) do
         eq(seen[sid], nil, name .. ': ' .. sid .. ' twice')

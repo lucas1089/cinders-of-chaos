@@ -5828,6 +5828,13 @@ node `chaos_helper_autosetup`), so a later Auto setup replaces them without aski
 tables and functions are used.
 The words are read back with `ChaosSettings.list` (2026-11-02): `g_settings` gives the list back keyed `"1"`, `"2"`, so
 before that a relog lost them ("Lists in g_settings nodes"; test `helperconfig_test.lua`).
+Seen in a client (2026-11-25, O186): a Ninja of level 1300 can cast 11 attack spells; Auto setup said "Shooter: 6 attack
+spells" (5 and the ultimate Death Between Heartbeats) but the helper kept 5: the shooter had five slots
+(`ChaosHelperCfg.SHOOTER_SLOTS`) and `rulesToSlots` dropped the sixth rule (Shuriken Toss). **Fix**: six slots
+(`helper_config.lua`, the Combat panel's `slotRows` 216 px); `autosetup_classes_test.lua` checks that no rule of any
+class's rotation is dropped by the slots. After the fix the Ninja gets all 6 and an Elementalist of level 400 gets 5 of
+its 10 castable spells (no ultimate before 1200). The rotation stays 5 attack spells and the ultimate by design
+(`ChaosAutoRotation.MAX_SPELLS`, owner 2026-10-28); the other castable spells are not lost, they wait in the presets.
 
 ### Helper assembly check (`tools/ci/check_assembled.py`, 2026-10-24)
 `assemble_client.sh` ends with `check_assembled.py <out>`: no two modules of one name (the engine merges them and `/mods`, read last, overwrites `/modules`) and `game_helper` is only `modules/game_helper/game_helper.otmod`, the overlay's. A fresh assembly passes. An installed client updated over an old pack keeps the pack's `mods/game_helper` (the updater cannot hide pack files): install a full new package. Test: `check_assembled_test.py` (CI).
@@ -5941,6 +5948,11 @@ window exists (polled every second, like the Auto setup button), and any other h
   client does not know yet and cut nothing while the class id is 0. Lists are filtered at use time everywhere else
   (the pickers keep the saved id, `canCastFor` only gates the cast). Tests: `supportspells_test.lua` (a relog after a
   death), `supportspells_ui_test.lua` (empty table, then the full one), `autorotation_test.lua` (`classKeeps`).
+
+Seen in a client (2026-11-25, O357): a Beastmaster of level 597 after Auto setup has 7 rows (Vigil of Clarity, Soulward,
+Ward of the Mind, Wild Bond, Lightward, Tautstring, Banner Call); it dies, Ok on the death window logs it back in the
+temple, and the tab shows the same 7 rows ("Paused: protection zone"). No `[helper support]` line in the client log
+(nothing emptied the list, nothing had to be brought back).
 
 ### Helper settings survive death (`game_helperrotation/helpersave.lua`, base patch `0067`)
 Owner: the helper's settings reset when the character died. The helper unblocked its saves at the end of every UI
@@ -6152,7 +6164,7 @@ owner supplied the file). `assemble_client.sh` applies the base patches to `mods
   266 and 268 with their fixed roll plus a percent), `helper_cycle.lua` (the 50 ms tick without replay), and the four of "Runes, Auto sell, Follow and ally heals". `helper.lua` is
   the engine glue; `helper_test.lua` runs it against a mock engine.
 - **Window.** Six tabs, 640 px wide. Healing (3 heal rows, 3 potion rows, mana training, Auto Haste), Combat (presets,
-  five spell slots with mana percent, monster count, Force and Self, Magic shooter, Auto Target with modes A to H,
+  six spell slots (the 5 of Auto rotation and the class's ultimate, O186) with mana percent, monster count, Force and Self, Magic shooter, Auto Target with modes A to H,
   Priority targets, Only reachable), Runes (2 healing rune rows, 3 attack rune rows of the preset), Allies (party and
   friends heals, Follow), Support (the `game_helpersupport` panel in `supportHost`), Tools (auto eat, exercise training,
   Auto sell, Bot HUD and its sections). The master switch and the Auto setup button are in the top row. Spell icons take drops from the
@@ -6166,7 +6178,7 @@ owner supplied the file). `assemble_client.sh` applies the base patches to `mods
   attack drop once). A death drops the lock and the attack and saves. The helper switch (`botStatus`) pauses everything.
 - **Settings** are saved per character in `/characterdata/characters/<name>/helper.json` through `ChaosHelperSave`
   (read before write, checked write, `.bak`, save on death and logout). An old file loads: its shooter rules become
-  slots (at most five), its rune rules rune rows (at most three), its follow friend, party and Sio heals and Auto Sell
+  slots (at most six), its rune rules rune rows (at most three), its follow friend, party and Sio heals and Auto Sell
   Loot the new sections (see "Runes, Auto sell, Follow and ally heals"), unknown fields stay, and
   `helper.json.pre-newhelper.bak` is copied once first.
   Timed casts by words of the old Timers tab move once into the Support slots.
@@ -6176,7 +6188,8 @@ owner supplied the file). `assemble_client.sh` applies the base patches to `mods
   buttons, the tracker mini-window (`move()` gives nothing back), icon pickers for items (combo boxes instead), the
   cast-on-foot opcode. The old settings stay on disk. Runes, Auto sell, Follow and the party and friend heals came back
   on 2026-10-23, below.
-- Not seen in a client: the mock tests cover the loop, the widgets were not drawn.
+- Seen in a client (2026-11-25, O121, Ninja 1300, Elementalist 400, Beastmaster 597, pt-BR off, 1280x720): the window opens,
+  the six tabs switch, Auto setup fills Healing, Combat, Support and Tools, the helper runs and pauses in a protection zone.
 
 #### Runes, Auto sell, Follow and ally heals (`helper_runes.lua`, `helper_sell.lua`, `helper_follow.lua`, `helper_ally.lua`)
 Owner request 2026-10-23: "coloque o auto sell, runes, follow e cura de pt e amigos". Each has a pure file with a test; the
@@ -6261,9 +6274,11 @@ straight distance in the 7 x 5 window and kept the lock on it, even behind a wal
   (`chaosAutoTargetReachable`; "Só alcançáveis"). Off restores the old pick for that rule. The panel grew by two 22 px rows.
 - Tests: `autotarget_core_test.lua` (rules: unreachable skipped even when nearest, goblin / boss / special before a nearer
   normal monster, nearest, equal distance lowest health, the lock kept until a better class shows up),
-  `autotarget_engine_test.lua` (a mocked map: paths, sight, floors, budgets, options, tier questions). Not run in a client.
-  To check live: a monster behind a wall or across a river is not attacked; a Treasure Goblin pulls the character off a
-  nearer rat; a rare monster before a normal one; the two boxes are visible and the panel fits at 936 x 540.
+  `autotarget_engine_test.lua` (a mocked map: paths, sight, floors, budgets, options, tier questions).
+- Seen in a client (2026-11-25, O119, Ninja level 1300, shooter off, monsters of 30,000 health): an Orc walled in two
+  tiles away is never taken; the nearest reachable Orc is; a rare Orc Warrior five tiles away pulls the lock off a normal
+  Orc next to it; a boss (The Rotmother) five away pulls it off the rare one; a Treasure Goblin five away pulls it off the
+  boss. Both boxes show on the Combat tab and the window fits at 1280 x 720.
 
 ### Helper bot HUD (`game_helperhud`)
 `tools/assemble_client.sh` leaves the helper's cavebot file out, and the bot HUD lived there, so Tools > Bot HUD > "Show

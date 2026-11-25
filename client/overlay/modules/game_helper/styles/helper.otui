@@ -526,7 +526,7 @@ ChaosHelperWindow < ChaosMainWindow
         anchors.top: slotHeading.bottom
         anchors.left: parent.left
         anchors.right: parent.right
-        height: 180
+        height: 216
 
       ChaosSeparator
         id: targetSeparator
