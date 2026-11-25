@@ -8322,6 +8322,10 @@ Owner 2026-11-24: monsters above level 2000 for the six O759 hall hunts, art by 
 - **Outfits** 3734-3743, all 3x3, lean 0.00 (drawn at the angle, 11-23 px), idle 4 x 300 ms, walk 8 x 100 ms, the O585 / O640 standing point: rimehide, sorrowweeper, rimelancer, bogwake, penitent, hangman, behemoth, warden, matriarch, devourer. Pictures in `art_import/apex_monsters/<key>/` (layout of `drive_redraw`).
 - **Build order of pair 84**: pair 83 (windows-assets, dat md5 4169e2cf...) -> `gen_apex_monsters.py build P83/Tibia.dat P83/Tibia.spr OUT` (refuses another outfit count or dat md5) -> `gen_apex_monsters.py live OUT/Tibia.dat OUT/Tibia.spr`, then `check_pair` against pair 83, `quality`, `preview`. Then `PAIR_ASSETS` 84 and the live-pair job line.
 - **Quality**: `sprite_quality.py check --kind creature` on sheets of the placed frames fails on every look (palette size, outline hue, still frames of the breath idle, loop ratio), as the O726 / O729 looks do. The bar is not held for this art (O625).
+- **Seen in a client (2026-11-25, O763c).** Linux main client on pair 84 (dat md5 65bfa600...), local server of
+  `tools/ci/unity_live_check.sh --serve-only` with `UL_CLIENT_PAIR=assets` (records chaosClientPair 84 before the install).
+  Step `apexhunts`: 10 monster files moved, 145 pack blocks in the six hall hunts. A staff character visited each
+  monster by `/goto`. All ten wore 3734-3743, stood, walked and faced all four ways. No size, cut or tile offset problem seen.
 - **Server**: server/README.md "Hunt monsters above level 2000 (O763)".
 
 ## Pair 84 on windows-assets (O763; 2026-11-25, owner: "Artes aprovadas", then "Pode")

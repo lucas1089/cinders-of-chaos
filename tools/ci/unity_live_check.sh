@@ -20,6 +20,9 @@
 #   UL_RESUME=1     keep the finished stages of an earlier run in UL_WORK (local work on this script)
 #   UL_GUARD_KEY    64 hex digits: the guard key of tfs, instead of one made here (O676: the main client is built before the server starts and bakes the same
 #                   key in; the workflow makes it with openssl rand and masks it, no repository secret)
+#   UL_CLIENT_PAIR  N or `assets`: record chaosClientPair = N in the run's config.lua before install_all.py (client_pair.py set; `assets` = PAIR_ASSETS, the
+#                   pair of windows-assets), so the steps held by the client pair guard run, as in the Windows package (O763c: step apexhunts at pair 84).
+#                   Unset: no record, every guarded step skips (the stock behaviour of this script)
 #   UL_LOOT_TESTER=1  (--serve-only) the main character of each identity is a "Tester Xxx" (new_testers: level 1500, the helper's storage marker) and the TEST ONLY
 #                   tester helper is installed, so `!tester explode run` works for the client of .github/workflows/loot-video.yml (O676)
 #   UL_PINNACLE_PARTY=1  (--serve-only, one identity) the boss fight video of .github/workflows/boss-video.yml (O689): the main character of the identity is a
@@ -238,8 +241,18 @@ open(path, 'w', encoding='latin-1', newline='').write(text)
 PY
 }
 
+record_client_pair() {
+  local want=${UL_CLIENT_PAIR:-}
+  [ -n "$want" ] || return 0
+  [ "$want" = assets ] && want=$(python3 -I "$REPO/server/tools/client_pair.py" assets)
+  [[ "$want" =~ ^[0-9]+$ ]] || die "UL_CLIENT_PAIR must be a number or 'assets'"
+  python3 -I "$REPO/server/tools/client_pair.py" set "$SERVER" "$want" --force | sed 's/^/   /'
+  [ "${PIPESTATUS[0]}" = 0 ] || die "client_pair.py set $want failed"
+}
+
 install_chaos() {
   log "install_all.py of this checkout (steps, then the chaos_* tables on the database)"
+  record_client_pair
   CHAOS_DB_PASS="$DBPASS" python3 -I "$REPO/server/tools/install_all.py" "$SERVER" --quiet > "$WORK/install.log" 2>&1 \
     || { tail -n 60 "$WORK/install.log"; die "install_all.py failed (log above)"; }
   tail -n 4 "$WORK/install.log" | sed 's/^/   /'
