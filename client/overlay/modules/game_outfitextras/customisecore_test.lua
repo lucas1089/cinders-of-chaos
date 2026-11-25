@@ -430,5 +430,15 @@ do
   for _, c in ipairs(cases) do eq(type(pt[c[2]]), 'string', 'pt-BR for ' .. c[2]) end
 end
 
+-- the Float box (O762) is built with the window at init and asks modules.client_chaos_wingfit then: that module
+-- (autoload-priority 1000) must load first, so it is a dependency (seen in a client 2026-11-25: no Float box without it)
+do
+  local f = io.open(dir .. 'game_outfitextras.otmod', 'r')
+  local text = f and f:read('*a') or ''
+  if f then f:close() end
+  local deps = text:match('dependencies:%s*\n(.-)\n%s*%a[%w%-]*:') or ''
+  eq(deps:find('%- client_chaos_wingfit') ~= nil, true, 'game_outfitextras depends on client_chaos_wingfit (Float box)')
+end
+
 if fails > 0 then print(fails .. ' of ' .. checks .. ' checks FAILED'); os.exit(1) end
 print('customise tests OK (' .. checks .. ' checks)')
