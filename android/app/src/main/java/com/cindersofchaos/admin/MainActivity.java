@@ -65,6 +65,7 @@ public class MainActivity extends AppCompatActivity {
     CommandsTab commands;
     LogsTab logs;
     ConfigTab config;
+    AppUpdater updater;
 
     private long unlockedAt = 0;
     private boolean unlocking = false;
@@ -158,6 +159,7 @@ public class MainActivity extends AppCompatActivity {
         shell.addView(nav, Ui.matchWrap());
         setContentView(shell);
 
+        updater = new AppUpdater(this);
         panel = new PanelTab(this);
         commands = new CommandsTab(this);
         logs = new LogsTab(this);
@@ -249,6 +251,9 @@ public class MainActivity extends AppCompatActivity {
         main.removeCallbacks(logTick);
         main.postDelayed(panelTick, Math.max(5, store.refreshSec() > 0 ? store.refreshSec() : 30) * 1000L);
         main.postDelayed(logTick, 5000);
+        if (updater != null) {
+            updater.resumed();
+        }
     }
 
     @Override
@@ -285,6 +290,8 @@ public class MainActivity extends AppCompatActivity {
         unlocking = false;
         content.setVisibility(View.VISIBLE);
         showTab(current, false);
+        // the app's own update (O765): at most once a day, quiet unless a newer version is out
+        updater.checkAtStart();
     }
 
     @Override

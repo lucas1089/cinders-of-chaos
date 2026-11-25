@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- only the cache folder of shared command outputs (MainActivity.shareOutput) -->
+<!-- the cache folders of shared command outputs (MainActivity.shareOutput) and of the app's own update APK (AppUpdater, O765) -->
 <paths>
     <cache-path name="shared" path="shared/" />
+    <cache-path name="update" path="update/" />
 </paths>

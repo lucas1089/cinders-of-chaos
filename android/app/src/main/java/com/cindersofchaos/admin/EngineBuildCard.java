@@ -106,7 +106,17 @@ final class EngineBuildCard {
                 + "passo: docs/ADMIN_APP.md."));
         MaterialButton save = ui.secondary("Salvar token", R.drawable.ic_save);
         save.setOnClickListener(v -> saveToken());
-        tokenBox.addView(save, ui.gap(8));
+        // O765: github-token-status (read only): GitHub asked without the token (private?) and with it (code, Actions)
+        MaterialButton tokenState = ui.flat("Estado do token", R.drawable.ic_search);
+        tokenState.setOnClickListener(v -> {
+            if (!a.store.configured()) {
+                a.snack("Configure o servidor na aba Config.", false);
+                return;
+            }
+            result.running("Estado do token");
+            a.ctlAction("github-token-status", 60, f -> result.show("Estado do token", f));
+        });
+        tokenBox.addView(ui.evenRow(save, tokenState), ui.gap(8));
         tokenBox.setVisibility(View.GONE);
         b.addView(tokenBox, ui.gap(8));
         tokenToggle.setOnClickListener(v -> tokenBox.setVisibility(tokenBox.getVisibility() == View.VISIBLE ? View.GONE

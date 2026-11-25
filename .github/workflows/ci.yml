@@ -2036,6 +2036,10 @@ jobs:
           java -cp /tmp/appjava com.cindersofchaos.admin.BotMapInfoTest
           javac -d /tmp/appjava android/app/src/main/java/com/cindersofchaos/admin/HouseFixInfo.java android/app/src/test/java/com/cindersofchaos/admin/HouseFixInfoTest.java
           java -cp /tmp/appjava com.cindersofchaos.admin.HouseFixInfoTest
+          javac -d /tmp/appjava android/app/src/main/java/com/cindersofchaos/admin/SpawnDataInfo.java android/app/src/main/java/com/cindersofchaos/admin/StaffInfo.java android/app/src/test/java/com/cindersofchaos/admin/SpawnDataInfoTest.java
+          java -cp /tmp/appjava com.cindersofchaos.admin.SpawnDataInfoTest
+          javac -d /tmp/appjava android/app/src/main/java/com/cindersofchaos/admin/AppUpdateInfo.java android/app/src/main/java/com/cindersofchaos/admin/AppApkFetcher.java android/app/src/test/java/com/cindersofchaos/admin/AppUpdateInfoTest.java
+          java -cp /tmp/appjava com.cindersofchaos.admin.AppUpdateInfoTest
 
       - name: Kit server update (chaos_kit_update.sh with a fake repo, releases, systemctl and database; rates, rollback)
         run: |
