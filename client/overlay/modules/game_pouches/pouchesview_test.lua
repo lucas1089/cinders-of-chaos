@@ -18,6 +18,13 @@ eq(V.statusText(nil), '', 'no data yet')
 local ids = { loot = 3925, orbs = 3926 }
 eq(V.isLootPouch(3925, 1, ids), true, 'pouch: look and lock flag')
 eq(V.isLootPouch(3925, 0, ids), false, 'a stock bag of the same look')
+local titles = { loot = 'Loot Bag', orbs = 'Orbs Pouch', keys = 'Rift Key Pouch' }
+local ids2 = { loot = 3925, orbs = 3926, keys = 3927, gems = 0 }
+eq(V.pouchTitle(3927, 2, ids2, titles), 'Rift Key Pouch', 'a pouch is named by its kind')
+eq(V.pouchTitle(3925, 1, ids2, titles), 'Loot Bag', 'the Loot Bag')
+eq(V.pouchTitle(3927, 0, ids2, titles), nil, 'no lock flag: a stock bag of the same look')
+eq(V.pouchTitle(0, 1, ids2, titles), nil, 'a kind with no client id names nothing')
+eq(V.pouchTitle(3926, 1, ids2, nil), nil, 'no titles yet')
 eq(V.isLootPouch(3926, 1, ids), false, 'another pouch')
 eq(V.isLootPouch(3925, 1, {}), false, 'ids not known yet')
 -- the Rune Bag (O502): a fifth kind in the server's ids and titles; the Loot Bag menu entry ignores it, the window needs nothing else

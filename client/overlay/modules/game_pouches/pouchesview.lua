@@ -58,6 +58,21 @@ function V.isLootPouch(clientId, lockFlag, ids)
   return clientId == ids.loot and (tonumber(lockFlag) or 0) ~= 0
 end
 
+-- the name of a store pouch for the bag panel's page tooltip (O557, seen in a client 2026-11-25: the Loot Bag, the Rift
+-- Key Pouch and the Orbs Pouch read "Bag 1/2/3"; the client has no name for their items): the server's title of the kind
+-- whose client id the item has, only with the lock flag of a pouch (a stock bag of the same look is no pouch). nil else.
+function V.pouchTitle(clientId, lockFlag, ids, titles)
+  if type(ids) ~= 'table' or type(titles) ~= 'table' or (tonumber(lockFlag) or 0) == 0 then return nil end
+  local kinds = {}
+  for kind in pairs(ids) do kinds[#kinds + 1] = kind end
+  table.sort(kinds)
+  for _, kind in ipairs(kinds) do
+    local id = ids[kind]
+    if id and id ~= 0 and id == clientId and type(titles[kind]) == 'string' and titles[kind] ~= '' then return titles[kind] end
+  end
+  return nil
+end
+
 -- the rarity combo: the names in order from the server (Common .. Divine), else the built-in ones; the id of each is
 -- V.RARITY_IDS[i]
 V.RARITY_NAMES = { 'Common', 'Uncommon', 'Magic', 'Rare', 'Legendary', 'Divine' }

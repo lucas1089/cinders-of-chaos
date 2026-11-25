@@ -28,6 +28,7 @@ local M = {}
 local C = BagPanelCore
 
 local window
+local dockSaved = nil  -- the chrome setDocked hid: set while the side dock hosts the panel
 local selected = 'main'
 local bagMemo = {}      -- container id -> { fam = 'main' | 'purse', slot = index in that container, id = the bag's item id }
 local purseCid = nil    -- the container id the purse is open in
@@ -510,6 +511,12 @@ end
 -- "Bag N" by its place in its container
 local function itemNames(item)
   local names = {}
+  -- a store pouch has no client name: game_pouches names it from the server's titles (O557, seen in a client 2026-11-25)
+  local pm = modules.game_pouches
+  if item and pm and type(pm.pouchTitle) == 'function' then
+    local okP, title = pcall(pm.pouchTitle, item)
+    if okP and type(title) == 'string' then names[#names + 1] = title end
+  end
   if item then
     local ok, name = pcall(function() return item:getName() end)
     if ok then names[#names + 1] = name end
@@ -657,9 +664,9 @@ function M.draw()
       end
       room = parent:getHeight() - parent:getPaddingTop() - parent:getPaddingBottom() - used
     end
-    local h = C.fitHeight(window:getHeight(), need, room)
-    -- and the window is no taller than its content: no empty framed area under the buttons (O557)
-    if not h and window:getHeight() > need + 2 then h = need end
+    -- and the window is no taller than its content: no empty framed area under the buttons (O557); in the dock the
+    -- dock sizes it (C.panelHeight)
+    local h = C.panelHeight(window:getHeight(), need, room, dockSaved ~= nil)
     if h then window:setHeight(h) end
   end))
 end
@@ -1208,7 +1215,6 @@ function showWindow()
 end
 -- hosted in the dock (O732 follow-up, owner 2026-11-24): no title bar, no tab row of its own (the dock has both);
 -- given back, both return (BagPanelCore.dockChrome)
-local dockSaved = nil
 function setDocked(on)
   if not alive(window) then dockSaved = nil return end
   local parts = { window = window, row = child('tabRow'), contents = window:getChildById('contentsPanel') }

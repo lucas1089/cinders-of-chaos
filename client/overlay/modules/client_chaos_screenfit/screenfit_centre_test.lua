@@ -224,8 +224,10 @@ local function setup(w, h, isOnline)
   bar = setmetatable({ x = 346, y = 0, w = 588, h = BAR_H, visible = true, class = 'UIWidget', parent = root }, Widget)
 end
 
--- the real hooks
-UIWindow.onVisibilityChange = nil
+-- the real hooks. The class field holds a list of slots, as connect() of another module leaves it (game_chaossound watches
+-- window visibility): the hook must call each slot, not the table (seen in a client 2026-11-25: every opening threw)
+local slotCalls = { 0, 0 }
+UIWindow.onVisibilityChange = { function() slotCalls[1] = slotCalls[1] + 1 end, function() slotCalls[2] = slotCalls[2] + 1 end }
 setup(1280, 720, false)
 g_ui = { getRootWidget = function() return root end }
 g_game = { isOnline = function() return online end }
@@ -332,6 +334,8 @@ setup(960, 540, false)
 local phone = newWindow({ id = 'phoneWindow', width = 400, height = 300, anchors = {} })
 show(phone)
 eq(phone.x == 0 and phone.y == 0, true, 'a phone window is left to its $mobile rules')
+
+eq(slotCalls[1] > 0 and slotCalls[1] == slotCalls[2], true, 'each connected visibility slot of the class runs on every change')
 
 if fails > 0 then error(fails .. ' failure(s) of ' .. checks .. ' checks') end
 print('screenfit_centre_test: OK (' .. checks .. ' checks, ' .. #wins .. ' hub windows)')

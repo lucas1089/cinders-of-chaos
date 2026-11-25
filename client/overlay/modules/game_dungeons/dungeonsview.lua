@@ -53,6 +53,19 @@ function V.healthOf(health, d)
 end
 
 -- the text of difficulty d's panel; `health` is the dungeon's payload field (nil: the table's text)
+-- a name that fits maxW pixels: the whole text, else cut with '..' at the end (measure(text) -> its width in pixels)
+function V.fit(text, maxW, measure)
+  text = tostring(text or '')
+  if measure(text) <= maxW then return text end
+  local cut = text
+  while #cut > 1 do
+    cut = cut:sub(1, #cut - 1)
+    local try = cut:gsub('%s+$', '') .. '..'
+    if measure(try) <= maxW then return try end
+  end
+  return cut
+end
+
 function V.panelText(d, health)
   d = clampDifficulty(d)
   local m, b = V.healthOf(health, d)

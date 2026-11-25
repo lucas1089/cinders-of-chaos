@@ -561,6 +561,18 @@ function C.fitHeight(current, need, room)
   return nil
 end
 
+-- the panel window's height after a refresh: grown to its content within the room the side panel has left
+-- (C.fitHeight), else no taller than its content (O557); nil = leave it. Hosted in the side dock (O732, O755) the dock
+-- sizes it to the room under its tabs and the contents scroll: growing it there made it taller than the screen between
+-- two dock layouts, the scroll range went to 0 and the page buttons sat under the screen edge with the Loot Bag open
+-- (seen in a client 2026-11-25 at 1280 x 720).
+function C.panelHeight(current, need, room, docked)
+  if docked then return nil end
+  local h = C.fitHeight(current, need, room)
+  if not h and (int(current) or 0) > (int(need) or 0) + 2 then h = int(need) end
+  return h
+end
+
 -- the cell of a slot in a grid of `cols` columns: column, row (0-based)
 function C.cellOf(index, cols)
   cols = math.max(int(cols) or 1, 1)

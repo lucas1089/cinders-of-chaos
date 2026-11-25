@@ -169,6 +169,7 @@ function Widget:setOn(v) self.on = v end
 function Widget:isOn() return self.on == true end
 function Widget:setColor(c) self.color = c end
 function Widget:setWidth(w) self.width = w end
+function Widget:getWidth() return self.width or 156 end -- a DungeonCard is 156 wide (dungeons.otui)
 function Widget:setHeight(h) self.height = h end
 function Widget:setMarginTop() end
 function Widget:addAnchor() end
@@ -342,6 +343,10 @@ local function groupsOnRail()
   return table.concat(out, ' | ')
 end
 eq(groupsOnRail(), 'Levels 1-499=1,2 | Levels 500-999=3,4,5 | Levels 1000+=6,7,8,9 | Weekly=10', 'four groups in order, cards by level')
+-- the card name fits its card (fake text is 6 px a character, the name has the card width less 14 px) and the tooltip has it whole
+local card2 = find(window, 'dungeon2')
+eq(card2:getChildById('title').text, 'Master of the Elements', 'a name that fits stays whole')
+eq(card2:getChildById('title').tooltip, 'Master of the Elements', 'the card name is its tooltip')
 eq(rail.kids[1].width, 2 * (156 + 8), 'a group is as wide as its cards')
 eq(rail.kids[3].width, 4 * (156 + 8), 'a group of four')
 local chips = find(window, 'filters')

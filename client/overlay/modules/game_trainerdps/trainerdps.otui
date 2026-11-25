@@ -211,7 +211,9 @@ TrainerDpsPanel < UIWidget
       id: keepBox
       anchors.left: parent.left
       anchors.verticalCenter: parent.verticalCenter
-      width: 110
+      // 118: "Manter aberto" was cut at 110 (seen in a client 2026-11-25, O720); the text starts 22 px in (text-offset),
+      // both boxes fit the row of 244 px (check_text_fit.py trainer_panel)
+      width: 118
       !text: tr('Keep open')
       !tooltip: tr('Do not hide the panel when the session ends')
       @onCheckChange: modules.game_trainerdps.setKeep(self:isChecked())
@@ -220,7 +222,7 @@ TrainerDpsPanel < UIWidget
       id: autoBox
       anchors.left: keepBox.right
       anchors.verticalCenter: parent.verticalCenter
-      margin-left: 6
+      margin-left: 4
       width: 120
       !text: tr('Open by itself')
       !tooltip: tr('Open the panel when you hit a trainer')
