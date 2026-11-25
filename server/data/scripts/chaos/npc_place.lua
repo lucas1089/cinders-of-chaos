@@ -67,8 +67,19 @@ local function near(temple, radius)
 	return out
 end
 
+-- the temple portal gallery (temple_portals_config.lua) stays clear of NPCs: read once
+local portalsCfg
+local function keepClearRects(temple)
+	if portalsCfg == nil then
+		local ok, cfg = pcall(dofile, "data/scripts/chaos/temple_portals_config.lua")
+		portalsCfg = ok and type(cfg) == "table" and cfg or false
+	end
+	return portalsCfg and K.keepClearRects(portalsCfg, temple) or {}
+end
+
 function NP.spot(temple, offsets, name, opts)
 	opts = opts or {}
+	local clear = keepClearRects(temple)
 	local radius = opts.radius or K.DEFAULTS.radius
 	local spacing = opts.spacing or K.DEFAULTS.spacing
 	local cache = {}
@@ -95,6 +106,7 @@ function NP.spot(temple, offsets, name, opts)
 			local t = tileAt(x, y)
 			return t ~= nil and not t:getTopCreature()
 		end,
+		keepClear = function(x, y) return K.inRects(clear, temple.x + x, temple.y + y, temple.z) end,
 		offsets = offsets, others = others, radius = radius, spacing = spacing,
 		minFromTemple = opts.minFromTemple, minOpen = opts.minOpen
 	})

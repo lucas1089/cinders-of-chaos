@@ -11,6 +11,9 @@
 --   * not the temple tile itself and not next to it (`minFromTemple`), not in a corridor (a tile with fewer than
 --     `minOpen` walkable straight neighbours: an NPC there would block the way) unless nothing else is left;
 --   * the order is fixed (offsets, then distance, then row, then column), so a restart gives the same spot.
+--   * never on a tile that must stay clear (`keepClear`): the temple portal gallery of the main town, its portal row and
+--     its red carpet walk (temple_portals_config.lua, K.keepClearRects). Seen in a client 2026-11-25: the Keeper of the
+--     Pinnacle (pinnacle_config.lua offset 5, 6) stood on the gallery's carpet between the Guild Hall and the Raid portal.
 -- Start log 2026-10-16: still no Loot Buyer at Nightwrack. Its temple (floor 6) is a room of about 25 tiles whose
 -- only ways out are stairs; a base NPC and the Material Broker take it, and no tile keeps `spacing` from both. An NPC
 -- placed with opts.depotFallback then stands near the town's nearest depot (K.depotAnchors, data/chaos_poi.lua).
@@ -19,8 +22,13 @@
 --   spec = {walkable(dx, dy) -> bool       a player can stand there (ground, nothing blocking, no teleport / stairs)
 --           door(dx, dy) -> bool           a closed door (walkable for the flood fill, never a spot)
 --           free(dx, dy) -> bool           nobody stands there now (default: true)
+--           keepClear(dx, dy) -> bool      a tile no NPC may take (default: none)
 --           offsets = {{dx, dy}, ...}, others = {{dx, dy}, ...} (the other NPCs), radius, spacing, minFromTemple,
 --           minOpen}
+--   ChaosNpcPlaceCore.keepClearRects(portalsCfg, temple) -> {{x1, y1, x2, y2, z}, ...}   the tiles of the temple portal
+--           gallery of the town whose temple is `temple` (temple_portals_config.lua): both wings and the entrance between
+--           them, from the portal row to the last carpet row
+--   ChaosNpcPlaceCore.inRects(rects, x, y, z) -> bool
 --   ChaosNpcPlaceCore.depotAnchors(temple, marks, maxDist) -> {{x, y, z}, ...}   the depot marks of the map markers
 --           (data/chaos_poi.lua marks, k = "depot") within maxDist tiles (Chebyshev, default 64) and 2 floors of the
 --           temple: same floor first, then the nearer, then row, then column
@@ -116,6 +124,9 @@ function K.pick(spec)
 		if spec.free and not spec.free(x, y) then
 			return false
 		end
+		if spec.keepClear and spec.keepClear(x, y) then
+			return false
+		end
 		if cheb(x, y, 0, 0) < minFrom then
 			return false
 		end
@@ -134,6 +145,37 @@ function K.pick(spec)
 		end
 	end
 	return nil
+end
+
+function K.keepClearRects(portalsCfg, temple)
+	local out = {}
+	if type(portalsCfg) ~= "table" or portalsCfg.enabled == false or type(temple) ~= "table" then
+		return out
+	end
+	for _, t in ipairs(portalsCfg.towns or {}) do
+		local tp = t.temple
+		if tp and tp.x == temple.x and tp.y == temple.y and tp.z == temple.z and t.portalRow and #(t.wings or {}) > 0 then
+			local x1, x2, y2 = math.huge, -math.huge, t.portalRow
+			for _, w in ipairs(t.wings) do
+				x1 = math.min(x1, w.from, w.to)
+				x2 = math.max(x2, w.from, w.to)
+			end
+			for _, row in ipairs(t.aisle or {}) do
+				y2 = math.max(y2, row)
+			end
+			out[#out + 1] = {x1 = x1, y1 = t.portalRow, x2 = x2, y2 = y2, z = t.z or tp.z}
+		end
+	end
+	return out
+end
+
+function K.inRects(rects, x, y, z)
+	for _, r in ipairs(rects or {}) do
+		if x >= r.x1 and x <= r.x2 and y >= r.y1 and y <= r.y2 and (z == nil or r.z == nil or z == r.z) then
+			return true
+		end
+	end
+	return false
 end
 
 K.DEPOT_DISTANCE = 64

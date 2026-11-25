@@ -82,7 +82,7 @@ function IL.warn(run, left, players, label, limits)
 		end
 		p:sendTextMessage(msgWarn(), text)
 		if mark >= 60 and ChaosNotify and ChaosNotify.send then
-			ChaosNotify.send(p, title or name, body or leftText)
+			ChaosNotify.send(p, title or name, body or leftText, "timeleft") -- header TIME LEFT, not the default ACHIEVEMENT
 		end
 	end
 	return mark
@@ -146,7 +146,7 @@ function IL.freed(key, what)
 			local text = Chaos.t(p, "A place in %s is free now. Go ahead before someone else takes it.", Chaos.t(p, what or "the instance"))
 			p:sendTextMessage(MESSAGE_EVENT_ADVANCE, text)
 			if ChaosNotify and ChaosNotify.send then
-				ChaosNotify.send(p, Chaos.t(p, "Your turn"), text)
+				ChaosNotify.send(p, Chaos.t(p, "Your turn"), text, "yourturn")
 			end
 			return p
 		end

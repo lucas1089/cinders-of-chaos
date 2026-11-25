@@ -303,6 +303,47 @@ do
 	eq(K.templeStand, nil, "no temple stand lookup")
 end
 
+-- ---------------------------------------------------------------- the temple portal gallery stays clear (2026-11-25)
+-- Seen in a client: the Keeper of the Pinnacle (pinnacle_config.lua offsets, 5, 6 from Cinderhold's temple) stood on the
+-- gallery's red carpet between the Guild Hall and the Raid portal (32374, 32247).
+do
+	local portals = dofile("data/scripts/chaos/temple_portals_config.lua")
+	local temple = {x = 32369, y = 32241, z = 7}
+	local rects = K.keepClearRects(portals, temple)
+	eq(#rects, 1, "one gallery at Cinderhold's temple")
+	local r = rects[1]
+	eq(r.x1, 32356, "gallery west end"); eq(r.x2, 32382, "gallery east end")
+	eq(r.y1, 32245, "portal row"); eq(r.y2, 32248, "last carpet row")
+	check(K.inRects(rects, 32374, 32247, 7), "the Keeper's old spot is in the gallery")
+	check(K.inRects(rects, 32369, 32246, 7), "the entrance between the wings is kept clear too")
+	check(not K.inRects(rects, 32374, 32247, 6), "another floor is not")
+	check(not K.inRects(rects, 32369, 32244, 7) and not K.inRects(rects, 32383, 32247, 7), "outside the gallery")
+	eq(#K.keepClearRects(portals, {x = 1, y = 1, z = 7}), 0, "another town's temple has no gallery")
+	eq(#K.keepClearRects({enabled = false, towns = portals.towns}, temple), 0, "the gallery switched off")
+	eq(#K.keepClearRects(nil, temple), 0, "no config")
+	-- the pick: an open floor round the temple whose only free offset is in the gallery takes the next tile instead
+	local pin = dofile("data/scripts/chaos/pinnacle_config.lua").npc.offsets
+	local function open(dx, dy) return math.abs(dx) <= 12 and math.abs(dy) <= 8 end
+	local spec = {walkable = open, door = function() return false end, offsets = pin, others = {}, radius = 14,
+		keepClear = function(dx, dy) return K.inRects(rects, temple.x + dx, temple.y + dy, temple.z) end}
+	local dx, dy = K.pick(spec)
+	check(dx ~= nil and not K.inRects(rects, temple.x + dx, temple.y + dy, temple.z), "the picked spot is off the gallery")
+	-- every offset but the gallery one a wall (as on the base map): still never the gallery
+	local wall = {}
+	for _, o in ipairs(pin) do
+		if not (o[1] == 5 and o[2] == 6) then
+			wall[o[1] .. ":" .. o[2]] = true
+		end
+	end
+	spec.walkable = function(x, y) return open(x, y) and not wall[x .. ":" .. y] end
+	dx, dy = K.pick(spec)
+	check(dx ~= nil and not (dx == 5 and dy == 6), "the free gallery offset 5, 6 is not taken")
+	check(dx ~= nil and not K.inRects(rects, temple.x + dx, temple.y + dy, temple.z), "nor any gallery tile")
+	spec.keepClear = nil
+	dx, dy = K.pick(spec)
+	check(dx == 5 and dy == 6, "without the rule the gallery offset would win (the bug)")
+end
+
 if failures > 0 then
 	error(string.format("%d of %d checks failed", failures, checks))
 end

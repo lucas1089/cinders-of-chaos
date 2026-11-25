@@ -167,6 +167,25 @@ local NOTIFICATION_TYPES = {
         borderColor = "#6a4a1a",
         duration = 7000,
     },
+    -- an instance's time runs out soon (server data/scripts/chaos/instance_limits.lua): "Floor 57: 1 minute left",
+    -- "Infinity Tower: Whole run: 1 minute left" (O484), a rift, an arena, a boss room
+    TIME_LEFT = {
+        icon = "images/toast/pact.png",
+        title = "TIME LEFT",
+        titleColor = "#e07a4a",
+        backgroundColor = "#ccbebb",
+        borderColor = "#7a3a12",
+        duration = 8000,
+    },
+    -- the waiting line of an instance: a place is free now (server instance_limits.lua)
+    YOUR_TURN = {
+        icon = "images/toast/announce.png",
+        title = "YOUR TURN",
+        titleColor = "#e8c15a",
+        backgroundColor = "#ccbebb",
+        borderColor = "#6a4a1a",
+        duration = 9000,
+    },
     -- season pass (server data/scripts/chaos/seasonpass.lua): tier up, challenge done, premium and packs
     SEASON_PASS = {
         icon = "images/toast/season_pass.png",
@@ -1418,6 +1437,18 @@ function onExtendedOpcode(protocol, opcode, buffer)
         newcard = function(data)
             if data.message then
                 addNotification("NEW_CARD", data.message)
+            end
+        end,
+
+        -- instance time warnings and the waiting line (server data/scripts/chaos/instance_limits.lua)
+        timeleft = function(data)
+            if data.message then
+                addNotification("TIME_LEFT", data.message)
+            end
+        end,
+        yourturn = function(data)
+            if data.message then
+                addNotification("YOUR_TURN", data.message)
             end
         end,
 

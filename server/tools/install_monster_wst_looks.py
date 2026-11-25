@@ -19,6 +19,11 @@ after `monsterdonorlooks` and does, only when config.lua chaosClientPair is 71 o
     bounty board shows the outfit; gen_bounty_pool.py turns the new look back to the old one, so the committed pool stays the same.
 A monster with no file, or whose look is none of the old, the donor and the new one, stops the step (exit 1). Below pair 71 the step
 prints a WARNING line and changes nothing; a second run changes nothing. --dry-run writes nothing.
+
+A later step may move a monster of this map on (`monsterrelooklooks`, monster_relook_looks.csv, pair 86: Werelion 3444 -> 3745,
+Leaf Golem 3472 -> 3746, Hellhound). On a second run of install_all.py (every update of an installed server) this step meets that
+later look: it counts as done and stays (--later CSV names another later map). Seen 2026-11-25: the second run stopped here with
+"Werelion: ... has look 3745, the map knows 1049 and 3444".
 """
 import csv
 import os
@@ -34,6 +39,7 @@ import install_monster_recolour as R  # noqa: E402
 REPO = os.path.dirname(os.path.dirname(HERE))
 MAP = os.path.join(REPO, 'server', 'data', 'monster', 'monster_wst_looks.csv')
 DONOR_MAP = D.MAP
+LATER_MAP = os.path.join(REPO, 'server', 'data', 'monster', 'monster_relook_looks.csv')   # step `monsterrelooklooks` runs after this one
 POOL = R.POOL
 MONSTERS = os.path.join('monster')
 
@@ -46,6 +52,14 @@ def read_map(path=MAP):
 def donor_looks(path=DONOR_MAP):
     """{monster: donor look} of the donor map (the look a monster of both maps wears at pair 70)"""
     if not os.path.exists(path):
+        return {}
+    with open(path, newline='', encoding='utf-8') as f:
+        return {r['monster']: int(r['new_look']) for r in csv.DictReader(f)}
+
+
+def later_looks(path=LATER_MAP):
+    """{monster: the look a later step gives it} (empty when the map is missing)"""
+    if not path or not os.path.exists(path):
         return {}
     with open(path, newline='', encoding='utf-8') as f:
         return {r['monster']: int(r['new_look']) for r in csv.DictReader(f)}
@@ -102,6 +116,11 @@ def main(argv=None):
         i = args.index('--map')
         path = args[i + 1]
         del args[i:i + 2]
+    later_path = LATER_MAP
+    if '--later' in args:
+        i = args.index('--later')
+        later_path = args[i + 1]
+        del args[i:i + 2]
     args = [a for a in args if not a.startswith('--')]
     if len(args) != 1:
         print(__doc__)
@@ -113,6 +132,7 @@ def main(argv=None):
         return 0
     rows = read_map(path)
     donor = donor_looks()
+    later = later_looks(later_path)
     files = D.definitions(os.path.join(data_dir, MONSTERS), {r[0] for r in rows})
     bad, moved, done, writes = [], 0, 0, []
     for name, old, new in rows:
@@ -124,8 +144,10 @@ def main(argv=None):
             with open(p, encoding='utf-8', errors='surrogateescape', newline='') as f:
                 text = f.read()
             out, state = (retype_xml if kind == 'xml' else retype_lua)(text, olds, new)
-            if state == 'other':
-                m = (R.LOOK_TAG if kind == 'xml' else D.LUA_OUTFIT).search(text)
+            m = (R.LOOK_TAG if kind == 'xml' else D.LUA_OUTFIT).search(text)
+            if state == 'other' and m and name in later and int(m.group(2)) == later[name]:
+                done += 1   # a later step moved it on (a second run of install_all.py)
+            elif state == 'other':
                 bad.append('%s: %s has look %s, the map knows %d and %d' % (name, os.path.relpath(p, data_dir), m.group(2), old, new))
             elif state == 'moved':
                 moved += 1
