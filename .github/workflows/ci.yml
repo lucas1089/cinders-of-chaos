@@ -2396,6 +2396,11 @@ jobs:
           /tmp/fxenv/bin/python -I chaos/client/tools/sprites/gen_apex_monsters.py live \
               "$RUNNER_TEMP/pair/Tibia.dat" "$RUNNER_TEMP/pair/Tibia.spr"
 
+      - name: Monster looks that match the name sit at their ids (gen_relook_monsters.py live, pair 86, O768)
+        run: |
+          /tmp/fxenv/bin/python -I chaos/client/tools/sprites/gen_relook_monsters.py live \
+              "$RUNNER_TEMP/pair/Tibia.dat" "$RUNNER_TEMP/pair/Tibia.spr"
+
       - name: Decor flames sit at their ids (gen_decor_flames.py live, pair 74, O623)
         run: |
           /tmp/fxenv/bin/python -I chaos/client/tools/sprites/gen_decor_flames.py live \

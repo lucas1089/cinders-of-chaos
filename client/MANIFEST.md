@@ -8395,3 +8395,12 @@ Owner (pt-BR) 2026-11-25: "banshee, white lion, hellhound, werelion, leaf golem 
 - **Talath** is drawn 1.75x: see "Draw size" (`MonsterBarMath.LOOK_SCALE`).
 - **Server**: server/README.md "Monster looks that match the name (O768)".
 - **Preview** (never committed): a 54 s video of each monster before (pair 85 look) and after (pair 86 look), idle and a walk S E N W, and Talath at 1.5x and 1.75x beside a player outfit, rendered offline from pair 86.
+
+## Pair 86 (O768; 2026-11-25, built locally, not on windows-assets yet)
+- **What it holds**: pair 85 (windows-assets 3529436c, dat 83b070b2... / spr f8e85b19...) + the three O768 outfits 3744-3746 (Banshee, Werelion, Leaf Golem; "Monster looks that match the name (O768)" above). Nothing of pair 85 changed (append-only guard of the build: every old outfit, item, effect, missile and 3,000 sampled old sprites unchanged).
+- **Build**: `gen_relook_monsters.py build P85/Tibia.dat P85/Tibia.spr OUT` on a RAM disk (pair 85 joined from its shards, md5s checked), then `live`: 1,296 sprite slots, 144 frames, 1,032 sprite records appended (1,645,108 -> 1,646,140).
+- **Pair 86**: dat md5 17ef372656f9089de8ede24b4aeffef6 (15,229,034 bytes), spr md5 550fee6ba7587f8c1c9f7b3c8a155006 (1,789,075,759 bytes).
+- **Archive**: `tar --owner=0 --group=0 --numeric-owner --mtime='2026-11-25 00:00:00' -cf - Tibia.dat Tibia.spr | xz -9 -T1` (T1: the RAM of the build machine), `split -b 99614720 -d -a 2`: sha256 572065ddfd89fe4a2aff7be2599d47b3958b4fe093706f6f59c5ad35c0cd13cf. parts `things-1098.tar.xz.part00` 99,614,720 bytes 3d4ed6b01f1133d5dee885710a73b031ea4ea9e0b462bd7b0e9023eba436cfc9, `part01` 99,614,720 bytes 49b34dfe6ee47b0975e9c2a6f256e149cd2d0ef9ca81db397715026211fadaf5, `part02` 10,848,984 bytes 69bcccb80cadb49760f438dc68d44561e66030f0854afa2863f12be643509649. Read back to the two md5s.
+- **Held**: every step of the CI job "Live sprite pair" on it with `PAIR_ASSETS` 86 (37 steps), `gen_relook_monsters.py live` 0 problems.
+- **Tables regenerated from it**: `outfit_anchors.lua`, `info_lifts.lua` (and `InfoLiftData.cs`), `wing_centres.lua`, `head_centres.lua`, `foot_marks.lua`. `check_content.py` `PAIR_NAME` 'pair 86', `PAIR_OUTFITS` 3746.
+- **Owner steps**: the coordinator puts the three parts and `SHA256SUMS.parts` on windows-assets; then a client package with pair 86, admin app Comandos > "Par do cliente" > Gravar 86 (`chaos-ctl.sh client-pair set 86`), then Atualizar servidor: the step `monsterrelooklooks` moves the five monsters. Below 86 nothing changes.
