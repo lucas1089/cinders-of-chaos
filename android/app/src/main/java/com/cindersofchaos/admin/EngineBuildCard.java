@@ -108,6 +108,14 @@ final class EngineBuildCard {
         save.setOnClickListener(v -> saveToken());
         // O765: github-token-status (read only): GitHub asked without the token (private?) and with it (code, Actions)
         MaterialButton tokenState = ui.flat("Estado do token", R.drawable.ic_search);
+        tokenBox.addView(ui.evenRow(save, tokenState), ui.gap(8));
+        tokenBox.setVisibility(View.GONE);
+        b.addView(tokenBox, ui.gap(8));
+        tokenToggle.setOnClickListener(v -> tokenBox.setVisibility(tokenBox.getVisibility() == View.VISIBLE ? View.GONE
+                : View.VISIBLE));
+
+        result = a.new ResultCard();
+        // the listener reads the final field result, so it is set after the field (javac: not initialized before)
         tokenState.setOnClickListener(v -> {
             if (!a.store.configured()) {
                 a.snack("Configure o servidor na aba Config.", false);
@@ -116,13 +124,6 @@ final class EngineBuildCard {
             result.running("Estado do token");
             a.ctlAction("github-token-status", 60, f -> result.show("Estado do token", f));
         });
-        tokenBox.addView(ui.evenRow(save, tokenState), ui.gap(8));
-        tokenBox.setVisibility(View.GONE);
-        b.addView(tokenBox, ui.gap(8));
-        tokenToggle.setOnClickListener(v -> tokenBox.setVisibility(tokenBox.getVisibility() == View.VISIBLE ? View.GONE
-                : View.VISIBLE));
-
-        result = a.new ResultCard();
         b.addView(result.card, ui.gap(8));
     }
 
