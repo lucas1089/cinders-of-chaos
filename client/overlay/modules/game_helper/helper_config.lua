@@ -3,7 +3,7 @@
 -- read and written through ChaosHelperSave). Its shape:
 --   spells    3 healing rows { id, percent }            potions   3 rows { id, percent, priority }
 --   training  { { id, percent, enabled } }              haste     { { id, enabled, safecast } }
---   shooterProfiles[name] = { spells = 5 slots { id, percent, creatures, priority, forceCast, selfCast }, autoTargetMode }
+--   shooterProfiles[name] = { spells = 6 slots { id, percent, creatures, priority, forceCast, selfCast }, autoTargetMode }
 --   selectedShooterProfile, autoTargetMode (1..8 = A..H, default 6 = F), autoEatFood, magicShooterEnabled,
 --   autoTargetEnabled, helperAutomaticFunctionsEnabled, exercise { id, enabled }, botHud { enabled, size, show* }
 --   runeHeal  2 rows { id, percent }: healing runes on yourself (helper_runes.lua)
@@ -24,7 +24,7 @@ local C = ChaosHelperCfg
 C.VERSION = 1
 C.SPELL_ROWS = 3
 C.POTION_ROWS = 3
-C.SHOOTER_SLOTS = 5
+C.SHOOTER_SLOTS = 6          -- Auto rotation's 5 attack spells and the class's ultimate (autorotation.lua MAX_SPELLS, O186)
 C.RUNE_ROWS = 3              -- attack rune rows of a preset
 C.RUNE_HEAL_ROWS = 2         -- healing rune rows (on yourself)
 C.ALLY_NAMES = 5             -- the friends list
@@ -163,7 +163,7 @@ end
 
 -- ---------------------------------------------------------------- rules <-> slots (Auto rotation, Auto setup)
 -- The Auto rotation module (game_helperrotation) speaks in rules: { type = 'spell', spellId, creatures, manaPercent,
--- selfCast, forceOnTarget, ... } in priority order. The shooter has five slots.
+-- selfCast, forceOnTarget, ... } in priority order. The shooter has six slots: the 5 of Auto rotation and the ultimate.
 -- lookup(id) -> { name, words } (optional).
 function C.slotsToRules(slots, lookup)
   local out = {}
@@ -190,8 +190,8 @@ function C.slotsToRules(slots, lookup)
   return out
 end
 
--- rules -> the five slots (priority = the order). Returns the slots and how many rules did not fit (runes, disabled
--- rules and rules past the fifth are not carried).
+-- rules -> the six slots (priority = the order). Returns the slots and how many rules did not fit (runes, disabled
+-- rules and rules past the sixth are not carried).
 function C.rulesToSlots(rules)
   local slots, dropped = {}, 0
   for _, r in ipairs(rules or {}) do
