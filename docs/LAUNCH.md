@@ -122,6 +122,8 @@ server/README.md "Map master") replaces the base map first when the branch has o
    Atualizacoes > Recompilar engine) has GitHub Actions run `windows-package.yml` with every patch of `server/src-patches/`
    (shell fallback: `chaos-ctl.sh engine-build start`; the card follows the run, and its token is set once, docs/ADMIN_APP.md
    "Recompilar engine"). When it says the release is ready, Painel > Atualizar servidor installs the new engine.
+   Or let it run by itself: Painel > Atualização automática > Ligar builds what changed 3 hours before the daily save and
+   installs it at the save (O767; shell fallback: `chaos-ctl.sh auto-update on`; docs/ADMIN_APP.md "Atualização automática").
 2. Put the binary into the server folder as `/opt/chaos/server/tfs` (the path the service file uses).
 
 ## 2. Database

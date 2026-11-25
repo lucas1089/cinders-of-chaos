@@ -1,0 +1,32 @@
+# Cinders of Chaos: the builds of the automatic daily update (O767; server/README.md "Automatic daily update (O767)").
+# Started by chaos-autoupdate-prep.timer 3 hours before the server save: when the CI of the branch head is green,
+# `chaos-ctl.sh auto-update run-prep` starts in GitHub Actions the builds whose inputs changed since their newest
+# release (the Windows package with the engine, the Android game client with a new client number, the admin app), at
+# most once a day. The game keeps running; nothing is installed here (chaos-autoupdate.service does that at the save).
+# Installed by: chaos-ctl.sh auto-update on. Root: it reads the GitHub token of /etc/chaos (mode 600).
+
+[Unit]
+Description=Cinders of Chaos automatic daily update, the builds
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/opt/chaos/repo/server/deploy/chaos-ctl.sh auto-update run-prep --foreground
+TimeoutStartSec=20min
+Nice=10
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+ProtectKernelLogs=true
+ProtectClock=true
+ProtectHostname=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+LockPersonality=true
+SystemCallArchitectures=native
+LimitCORE=0

@@ -2013,7 +2013,7 @@ jobs:
       - name: Launch wipe tool (O438; table policy covers every CREATE TABLE, refusals, one transaction, checks; fake runner, no database)
         run: python3 -I server/deploy/launch_wipe_test.py
 
-      - name: Admin app pure Java (Discord card, webhook URL check and status text; Bugs e sugestões parsing; Servidor como usuário chaos card; Novos jogadores command lines; Saúde do jogo parsing; Pagamentos card checks and status text; fuso horário text (O439); Conferir lançamento summary and order (O440); plain JVM)
+      - name: Admin app pure Java (Discord card, webhook URL check and status text; Bugs e sugestões parsing; Servidor como usuário chaos card; Novos jogadores command lines; Saúde do jogo parsing; Pagamentos card checks and status text; fuso horário text (O439); Conferir lançamento summary and order (O440); Atualização automática status (O767); plain JVM)
         run: |
           mkdir -p /tmp/appjava
           javac -d /tmp/appjava android/app/src/main/java/com/cindersofchaos/admin/DiscordInfo.java android/app/src/test/java/com/cindersofchaos/admin/DiscordInfoTest.java
@@ -2038,6 +2038,8 @@ jobs:
           java -cp /tmp/appjava com.cindersofchaos.admin.BotMapInfoTest
           javac -d /tmp/appjava android/app/src/main/java/com/cindersofchaos/admin/HouseFixInfo.java android/app/src/test/java/com/cindersofchaos/admin/HouseFixInfoTest.java
           java -cp /tmp/appjava com.cindersofchaos.admin.HouseFixInfoTest
+          javac -d /tmp/appjava android/app/src/main/java/com/cindersofchaos/admin/AutoUpdateInfo.java android/app/src/test/java/com/cindersofchaos/admin/AutoUpdateInfoTest.java
+          java -cp /tmp/appjava com.cindersofchaos.admin.AutoUpdateInfoTest
           javac -d /tmp/appjava android/app/src/main/java/com/cindersofchaos/admin/SpawnDataInfo.java android/app/src/main/java/com/cindersofchaos/admin/StaffInfo.java android/app/src/test/java/com/cindersofchaos/admin/SpawnDataInfoTest.java
           java -cp /tmp/appjava com.cindersofchaos.admin.SpawnDataInfoTest
           javac -d /tmp/appjava android/app/src/main/java/com/cindersofchaos/admin/AppUpdateInfo.java android/app/src/main/java/com/cindersofchaos/admin/AppApkFetcher.java android/app/src/test/java/com/cindersofchaos/admin/AppUpdateInfoTest.java

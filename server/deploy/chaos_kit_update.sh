@@ -5,7 +5,7 @@
 # Run as root. The routine it automates: docs/LAUNCH.md "Updating the kit server (admin app)".
 #
 # usage: chaos_kit_update.sh check
-#        chaos_kit_update.sh apply [--no-client] [--no-downloads] [--no-site] [--no-map]
+#        chaos_kit_update.sh apply [--no-client] [--no-downloads] [--no-site] [--no-map] [--at-save] [--reinstall]
 #        chaos_kit_update.sh downloads [--force]
 #        chaos_kit_update.sh rollback
 #
@@ -66,6 +66,14 @@
 #                         (--no-site skips it); then, when the Discord bot unit is installed, chaos-ctl.sh
 #                         discord-bot install (the bot's code from the new checkout, restarted only when it changed)
 #           Steps 8-10 never undo the server update: a failure there ends with RESULT warn.
+#           --at-save (the automatic daily update, O767): the stop of step 6 (or of step 5 without staging) is the daily
+#           server save instead of systemctl stop. The kit's start-server.sh restarts the engine after the save; the
+#           file KIT/run/stop asks it not to, so the unit ends at the save (players got the save's own warnings).
+#           The script waits at most CHAOS_SAVE_WAIT seconds (default 5400) for that stop; no save by then: the stop
+#           file goes, nothing was changed (RESULT failed), the server keeps running. The stop file never outlives
+#           the script. A unit already stopped is not waited for.
+#           --reinstall: run the install (steps 4-7) even with no new code, engine or map: a client pair raised since
+#           the last install (chaos-ctl.sh client-pair set after the client update shipped) installs its guarded items.
 # downloads only step 9, on its own (no server restart, no code change): the newest release's Windows zip and Linux
 #           tar.gz into CHAOS_DL_DIR, the same checks, NAME.prev, NAME.sha256 and downloads.json. For the case where the
 #           signed client update was published (publish-update) but the site's download link still serves an older
@@ -85,6 +93,7 @@
 #   CHAOS_SITE_DIR /var/www/chaos      CHAOS_DL_DIR $SITE/dl            CHAOS_SITE_ENV /etc/chaos/site.env
 #   CHAOS_MAP_BRANCH windows-assets    CHAOS_MAP_BACKUP_DIR $KIT/map-backups
 #   CHAOS_SYSTEMD_DIR /etc/systemd/system (where the Discord bot unit is looked for)
+#   CHAOS_SAVE_WAIT 5400, CHAOS_SAVE_POLL 10 (--at-save: the longest wait for the server save and the poll, seconds)
 #   CHAOS_BACKUP_DIR (else the env file's, else /var/backups/chaos); publish_client_update.sh reads its own
 #   (CHAOS_UPDATE_KEY, ...). Exit: 0 ok, 1 failed, 2 rolled back, 3 ok with warnings.
 set -uo pipefail
@@ -116,6 +125,8 @@ WORKBASE=${CHAOS_WORK_DIR:-/var/tmp}
 BOOT_TIMEOUT=${CHAOS_BOOT_TIMEOUT:-900}
 SYSD=${CHAOS_SYSTEMD_DIR:-/etc/systemd/system}
 STAGING=${CHAOS_STAGING:-1}
+SAVE_WAIT=${CHAOS_SAVE_WAIT:-5400}
+SAVE_POLL=${CHAOS_SAVE_POLL:-10}
 CACHE_DIR=${CHAOS_CACHE_DIR:-$STATE_DIR/cache}
 SITE=${CHAOS_SITE_DIR:-/var/www/chaos}
 DL=${CHAOS_DL_DIR:-$SITE/dl}
@@ -135,6 +146,7 @@ die() { printf 'chaos_kit_update: %s\n' "$*" >&2; exit 1; }
 [[ $MAP_BRANCH =~ ^[A-Za-z0-9][A-Za-z0-9._/-]{0,99}$ ]] && [[ $MAP_BRANCH != *..* ]] || die "bad CHAOS_MAP_BRANCH"
 [[ $BOOT_TIMEOUT =~ ^[0-9]+$ ]] || die "CHAOS_BOOT_TIMEOUT must be a number of seconds"
 [[ $STAGING =~ ^[01]$ ]] || die "CHAOS_STAGING must be 0 or 1"
+[[ $SAVE_WAIT =~ ^[0-9]{1,6}$ ]] && [[ $SAVE_POLL =~ ^[0-9]{1,4}$ ]] || die "CHAOS_SAVE_WAIT / CHAOS_SAVE_POLL must be seconds"
 SERVER_REAL=$(readlink -f "$SERVER" 2>/dev/null || echo "$SERVER")
 STAGE="$SERVER_REAL.new"      # the staging copy of the server folder (same file system: the swap is a rename)
 OLD="$SERVER_REAL.old"        # the folder the swap replaced, kept for the rollback until the next update
@@ -497,6 +509,34 @@ wait_online() {
     waited=$((waited + 1))
   done
 }
+# --at-save (O767): the daily server save is the stop. KIT/run/stop asks start-server.sh not to start the engine again
+# after the save; the unit then ends by itself. Returns 1 (stop file removed, nothing stopped) when no save came within
+# SAVE_WAIT seconds or the request cannot be written.
+STOPREQ="$KIT/run/stop"
+STOPREQ_MINE=""
+drop_stopreq() { if [ -n "$STOPREQ_MINE" ]; then rm -f "$STOPREQ"; STOPREQ_MINE=""; fi; }
+wait_save() {
+  local waited=0
+  if ! active; then log "$UNIT is not running: no save to wait for"; return 0; fi
+  if ! { [ -d "$KIT/run" ] && : > "$STOPREQ"; }; then
+    log "FAIL: cannot write $STOPREQ (the kit's start-server.sh reads it)"
+    return 1
+  fi
+  STOPREQ_MINE=1
+  log "waiting for the daily server save to stop $UNIT (at most ${SAVE_WAIT}s); players get the save's own warnings"
+  while active; do
+    if [ "$waited" -ge "$SAVE_WAIT" ]; then
+      drop_stopreq
+      log "FAIL: no server save within ${SAVE_WAIT}s"
+      return 1
+    fi
+    sleep "$SAVE_POLL"
+    if [ "$SAVE_POLL" -gt 0 ]; then waited=$((waited + SAVE_POLL)); else waited=$((waited + 1)); fi
+  done
+  drop_stopreq
+  log "$UNIT stopped at the server save"
+  return 0
+}
 # the game database answers (the kit starts it inside the unit)
 wait_db() {
   local cnf i
@@ -771,11 +811,12 @@ lock() {
 
 # ------------------------------------------------------------------------------------------------ apply
 cmd_apply() {
-  local client=1 downloads=1 site=1 map=1 a
+  local client=1 downloads=1 site=1 map=1 atsave=0 reinstall=0 a
   for a in "$@"; do
     case $a in
       --no-client) client=0 ;; --no-downloads) downloads=0 ;; --no-site) site=0 ;; --no-map) map=0 ;;
-      *) die "apply [--no-client] [--no-downloads] [--no-site] [--no-map]" ;;
+      --at-save) atsave=1 ;; --reinstall) reinstall=1 ;;
+      *) die "apply [--no-client] [--no-downloads] [--no-site] [--no-map] [--at-save] [--reinstall]" ;;
     esac
   done
   lock
@@ -804,7 +845,7 @@ cmd_apply() {
     log "the checkout is at origin/$BRANCH, but that commit was never installed: it is new code"
   fi
   work=$(mktemp -d "$WORKBASE/chaos-kit-update.XXXXXX") || finish failed "no work folder in $WORKBASE" 1
-  trap 'rm -rf "$work"; rm -f "$CHAOS_KIT_COPY"' EXIT
+  trap 'rm -rf "$work"; rm -f "$CHAOS_KIT_COPY"; drop_stopreq' EXIT
   releases "$work/rel.json" || finish failed "cannot read the releases of $GHREPO: $RELEASES_WHY" 1
   LATEST=$(sed -n 's/^latest=//p' <<< "$REL")
   installed=$(state_get installed_release)
@@ -850,7 +891,10 @@ cmd_apply() {
     map_new=$MAP_STATE
   fi
 
-  if [ "$CODE_NEW" = no ] && [ -z "$engine_new" ] && [ -z "$map_new" ]; then
+  if [ "$reinstall" = 1 ] && [ "$CODE_NEW" = no ] && [ -z "$engine_new" ] && [ -z "$map_new" ]; then
+    log "--reinstall: nothing new, the install runs again (a raised client pair installs its items)"
+  fi
+  if [ "$CODE_NEW" = no ] && [ -z "$engine_new" ] && [ -z "$map_new" ] && [ "$reinstall" = 0 ]; then
     log "no new code, no new engine and no new map: the server is not restarted"
     changelog
     state_set "installed_release=$LATEST"
@@ -903,6 +947,10 @@ cmd_apply() {
       own_server "$STAGE"
       log "the staging copy is installed; the game is stopped only for the swap"
     else
+      if [ "$atsave" = 1 ] && ! wait_save; then
+        revert_checkout
+        finish failed "the server save did not stop the server within ${SAVE_WAIT}s: nothing installed, the server runs the previous version" 1
+      fi
       state_set "${record_state[@]}"
       log "stopping $UNIT (the game saves everyone; players are disconnected)"
       systemctl stop "$UNIT"
@@ -918,6 +966,9 @@ cmd_apply() {
     if [ "$ok" = 1 ]; then
       say "STEP 6/10 database"
       if [ -n "$STAGED" ]; then
+        if [ "$atsave" = 1 ]; then
+          wait_save || stage_abort "the server save did not stop the server within ${SAVE_WAIT}s"
+        fi
         [ -d "$OLD" ] && mv "$OLD" "$OLD.gone"
         log "stopping $UNIT (the game saves everyone; players are disconnected)"
         systemctl stop "$UNIT"

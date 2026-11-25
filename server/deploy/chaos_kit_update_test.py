@@ -16,7 +16,9 @@ rollback when the new engine does not come up; the manual rollback (engine, comm
 windows-assets branch with world/ packed by the real tools/map_master.py from a tiny synthetic map): check's map lines,
 the map replaced while the server is stopped and before install_all, the old map kept with a timestamp, the same
 version skipped without a restart, a damaged part refused before anything stops, --no-map, the map put back by the
-automatic and the manual rollback.
+automatic and the manual rollback. O767: apply --at-save installs on the copy, waits for the daily save to stop the server
+(the stop request file KIT/run/stop, no second restart), then swaps and starts; no save in time stops nothing; --reinstall
+runs the install with nothing new.
 
 usage: python3 -I server/deploy/chaos_kit_update_test.py
 """
@@ -113,7 +115,14 @@ online() {
 	fi
 }
 case "$1" in
-	is-active) if [ -e "$STUB/active/$2" ]; then echo active; else echo inactive; exit 3; fi ;;
+	is-active)
+		# O767 --at-save: with KIT/run/stop written, the STUB_SAVE_AT-th question is after the daily save (the kit's
+		# start-server.sh does not start the engine again: the unit ends)
+		if [ -n "${STUB_SAVE_AT:-}" ] && [ -e "$KIT/run/stop" ] && [ -e "$STUB/active/$2" ]; then
+			n=$(( $(cat "$STUB/savecount" 2>/dev/null || echo 0) + 1 )); echo "$n" > "$STUB/savecount"
+			if [ "$n" -ge "$STUB_SAVE_AT" ]; then rm -f "$STUB/active/$2" "$KIT/run/stop"; echo "save stop" >> "$STUB/calls"; fi
+		fi
+		if [ -e "$STUB/active/$2" ]; then echo active; else echo inactive; exit 3; fi ;;
 	stop) rm -f "$STUB/active/$2" ;;
 	start|restart) online "$2" ;;
 	show) echo "" ;;
@@ -949,11 +958,56 @@ def test_deployed():
         shutil.rmtree(w.root, ignore_errors=True)
 
 
+def test_at_save():
+    """O767: --at-save waits for the daily save to stop the unit (KIT/run/stop), --reinstall installs with nothing new"""
+    w = World()
+    try:
+        os.makedirs(os.path.join(w.kit, 'run'))
+        stopreq = os.path.join(w.kit, 'run', 'stop')
+        w.release(47, 'engine 47\n')
+        w.push('At save', {'server/tools/version.txt': 'v2\n'})
+        fast = {'CHAOS_SAVE_POLL': '0', 'CHAOS_SAVE_WAIT': '50'}
+        start_commit = w.git('-C', w.repo, 'rev-parse', 'HEAD')
+
+        # no save within the wait: nothing stopped, nothing changed, the stop request gone
+        rc = w.run('apply', '--no-client', '--no-downloads', '--no-site', '--at-save',
+                   extra=dict(fast, CHAOS_SAVE_WAIT='3'))
+        check(rc == 1 and 'RESULT failed' in w.out and 'server save did not stop' in w.out, 'at-save: no save, refused', w.out)
+        check(not any(c.startswith(('systemctl stop', 'systemctl restart', 'save stop')) for c in w.calls)
+              and os.path.exists(os.path.join(w.stub, 'active', 'chaos-server')), 'at-save: no save, the server keeps running',
+              '\n'.join(w.calls))
+        check(not os.path.exists(stopreq), 'at-save: no save, the stop request is removed')
+        check(not os.path.exists(w.server + '.new') and w.git('-C', w.repo, 'rev-parse', 'HEAD') == start_commit,
+              'at-save: no save, no copy left, checkout back')
+        check(read(os.path.join(w.server, 'tfs')) == 'engine 46\n', 'at-save: no save, the old engine stays')
+
+        # the save comes: the install on the copy first, then the save stops the unit, then the swap and the start
+        rc = w.run('apply', '--no-client', '--no-downloads', '--no-site', '--at-save', extra=dict(fast, STUB_SAVE_AT='3'))
+        check(rc == 0 and 'RESULT ok' in w.out and 'stopped at the server save' in w.out, 'at-save: applied at the save', w.out)
+        order = [w.pos('install --no-sql'), w.pos('save stop'), w.pos('systemctl start chaos-server'),
+                 w.pos('install --only sql'), w.pos('systemctl restart chaos-server')]
+        check(all(i >= 0 for i in order) and order == sorted(order), 'at-save: install, save stop, start, sql, restart %r' % order,
+              '\n'.join(w.calls))
+        check(read(os.path.join(w.server, 'tfs')) == 'engine 47\n' and not os.path.exists(stopreq),
+              'at-save: new engine, no stop request left')
+
+        # --reinstall: nothing new, the install runs all the same (a raised client pair)
+        rc = w.run('apply', '--no-client', '--no-downloads', '--no-site')
+        check(rc == 0 and not any(c.startswith('install') for c in w.calls), 'reinstall: without it nothing runs', w.out)
+        rc = w.run('apply', '--no-client', '--no-downloads', '--no-site', '--reinstall')
+        check(rc == 0 and '--reinstall' in w.out and any(c.startswith('install') and '--no-sql' in c for c in w.calls),
+              'reinstall: install_all runs with nothing new', w.out)
+        check(w.run('apply', '--bogus') == 1 and '--at-save' in w.out, 'apply: an unknown flag names the flags', w.out)
+    finally:
+        shutil.rmtree(w.root, ignore_errors=True)
+
+
 def main():
     test_rates_tool()
     test_flow()
     test_staging()
     test_deployed()
+    test_at_save()
     test_map()
     print('chaos_kit_update_test: %d failures' % len(FAILS))
     return 1 if FAILS else 0

@@ -136,6 +136,29 @@
 #   admin-desktop-asset-url TAG NAME
 #                               the short-lived signed https address of one cinders-admin file of that release (the app
 #                               downloads it with curl and checks the signature itself)
+#   auto-update [status | on | off | time HH:MM|game | run-prep | run-save [--now] | log [N]]
+#                               one automatic update a day at the server save (O767, the Linux kit; server/README.md
+#                               "Automatic daily update (O767)"). on installs chaos-autoupdate-prep.service / .timer and
+#                               chaos-autoupdate.service / .timer from the repo (times from the save time) and enables
+#                               them; off disables them (default off). time sets the save time the timers follow (game:
+#                               the serversave.lua time of globalevents.xml again). The prep (3 h before the save, at most
+#                               once a day, the CI of the branch head green): engine-build start (--new-client when the
+#                               client program or the Android inputs changed) when the Windows package inputs or the pair
+#                               changed since the newest winpkg-N release; android-client.yml (client_build = the new
+#                               number, publish_release, server_host = config.lua ip, site_url = CHAOS_SITE_URL) with a new
+#                               number; admin-app.yml when android/ changed since the newest adminapp-N. The save run (45
+#                               min before the save): when anything is new (code, engine release, map, client update,
+#                               downloads, a pair raised since the last install, an APK of the live build) and the CI of
+#                               the head is green, chaos_kit_update.sh apply --at-save (the daily save is the restart;
+#                               the newest finished release, the previous one when today's build is not done), then
+#                               client-pair set to the pair of the published client update when higher (its items at the
+#                               next save, --reinstall) and publish-apk of the APK whose build is the live client's. A
+#                               failure is rolled back by the kit update; the unit is started when it is down; the owner
+#                               gets a DM (Discord bot outbox). run-prep / run-save start a run in the background
+#                               (run-save waits for the next save; --now restarts at once, as update-apply); status:
+#                               key=value lines (installed, enabled, save_time, game_save_time, prep_at, save_run_at,
+#                               next_prep, next_save, running, prep_*, save_*, applied_*, client_pair, stop_request);
+#                               log: the run history. State: CHAOS_AUTOUPDATE_STATE /var/lib/chaos/autoupdate
 #   xp-rate [show | set N | reset] [restart]
 #                               the XP multiplier of config.lua (experienceStages = the release's stages x N, N 1..100);
 #                               set / reset keep a backup and apply at the next restart, or at once with "restart".
@@ -463,7 +486,7 @@ CHAOS_SPECTATE_LOG CHAOS_CAST_PORT CHAOS_SYSTEMD_DIR CHAOS_AREAS_STATE CHAOS_STA
 CHAOS_DISCORD_ENV CHAOS_DISCORD_LOG CHAOS_DISCORD_USER CHAOS_DISCORD_GROUP CHAOS_LOGROTATE_FILE \
 CHAOS_SERVER_USER_STATE CHAOS_SERVER_USER_LOG CHAOS_BOT_USER CHAOS_BOT_ENV CHAOS_BOT_DIR CHAOS_BOT_DATA CHAOS_BOT_LOG \
 CHAOS_BOT_PYTHON CHAOS_BALANCE_DIR CHAOS_PAY_ENV CHAOS_PAY_USER CHAOS_PAY_GROUP CHAOS_PAYWORKER_LOG \
-CHAOS_ENGINE_TOKEN_FILE CHAOS_GITHUB_TOKEN_FILE CHAOS_BOTLIVE_DIR CHAOS_BOTMAP_STATE "
+CHAOS_ENGINE_TOKEN_FILE CHAOS_GITHUB_TOKEN_FILE CHAOS_BOTLIVE_DIR CHAOS_BOTMAP_STATE CHAOS_AUTOUPDATE_STATE "
 declare -A CFG=()
 # KEY=VALUE, optional "" or '' around the value, # comments; a value is a path or a unit name (no spaces, no $ or `)
 read_conf() {
@@ -2558,6 +2581,570 @@ PY
           *) die "engine-build [status | start [--client-build N | --new-client] | log [N]]" ;;
         esac
         ;;
+    esac
+    ;;
+  auto-update)
+    # One automatic update a day at the server save (O767, server/README.md "Automatic daily update (O767)"). Two
+    # timers, off until the owner turns them on: chaos-autoupdate-prep.timer (3 h before the save: starts the builds
+    # whose inputs changed, at most once a day) and chaos-autoupdate.timer (45 min before the save: the kit update with
+    # --at-save, so the daily save is the one restart, then the client pair and the Android APK). Every GitHub call goes
+    # through chaos_github.sh (O530). Nothing of a run reaches a command line as text: commits, tags and numbers are
+    # checked before use.
+    need_gh
+    AUSTATE=$(setting CHAOS_AUTOUPDATE_STATE /var/lib/chaos/autoupdate)
+    AUST="$AUSTATE/state"
+    AULOG="$AUSTATE/log"
+    AUBRANCH=$(setting CHAOS_UPDATE_BRANCH main)
+    { [[ $AUBRANCH =~ ^[A-Za-z0-9][A-Za-z0-9._/-]{0,99}$ ]] && [[ $AUBRANCH != *..* ]]; } || die "bad CHAOS_UPDATE_BRANCH"
+    [[ $GH_REPO =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]] || die "CHAOS_RELEASE_REPO must be OWNER/REPO"
+    AUSITE=$(setting CHAOS_SITE_DIR /var/www/chaos)
+    # the lead times (minutes before the save): the prep covers the slowest Windows package of the last runs (75 min,
+    # a cold vcpkg cache) twice; the save run leaves the staging install (backup, download, install_all on a copy) time
+    # to finish before the save
+    AU_PREP_LEAD=180
+    AU_SAVE_LEAD=45
+    # paths whose change needs a new build: the Windows package (engine, client, launcher, the pair number), the
+    # Android game client, the admin app
+    AU_WIN_PATHS=(server/src-patches client launcher crates tools/windows tools/linux .github/workflows/windows-package.yml)
+    AU_APK_PATHS=(client/android client/base-patches client/overlay/src client/tools/chaos_hardening.cmake
+      .github/workflows/android-client.yml)
+    AU_ADMIN_PATHS=(android .github/workflows/admin-app.yml)
+    { mkdir -p "$AUSTATE" && chmod 0700 "$AUSTATE"; } || die "cannot create $AUSTATE"
+    au_get() { [ -f "$AUST" ] && sed -n "s/^$1=//p" "$AUST" | tail -n 1; return 0; }
+    # au_set KEY=VALUE...: one line each, values made of plain characters only
+    au_set() {
+      local tmp="$AUST.tmp" kv v
+      if [ -f "$AUST" ]; then cp "$AUST" "$tmp"; else : > "$tmp"; fi
+      for kv in "$@"; do
+        v=$(printf '%s' "${kv#*=}" | tr -d '\r\n' | tr -c 'A-Za-z0-9 ._:,;()/+=@#>-' '_' | cut -c1-300)
+        grep -v "^${kv%%=*}=" "$tmp" > "$tmp.2" || true
+        printf '%s=%s\n' "${kv%%=*}" "$v" >> "$tmp.2"
+        mv "$tmp.2" "$tmp"
+      done
+      mv "$tmp" "$AUST"
+    }
+    au_log() { printf '[%s] %s\n' "$(date '+%F %T')" "$*" >> "$AULOG"; }
+    # the owner hears about it in the Discord bot's DMs (the outbox of O398); no bot: the log and the status only
+    au_dm() {
+      local box="$BOTDATA/outbox" grp f
+      [ -d "$BOTDATA" ] && id "$BOTUSER" >/dev/null 2>&1 || return 0
+      grp=$(id -gn "$BOTUSER") || return 0
+      install -d -m 0750 -o "$BOTUSER" -g "$grp" "$box" 2>/dev/null || return 0
+      f=$(mktemp "$AUSTATE/dm.XXXXXX") || return 0
+      printf '**Atualização automática (O767)**\n%s\n' "$1" > "$f"
+      install -m 0640 -o "$BOTUSER" -g "$grp" "$f" "$box/autoupdate-$(date +%Y%m%d-%H%M%S)-$RANDOM.md" 2>/dev/null || true
+      rm -f "$f"
+    }
+    au_kv() { sed -n "s/^$1=//p" <<< "$2" | head -n 1; }
+    # the game's daily save: HH:MM of the serversave.lua line of globalevents.xml that is not commented out
+    au_game_time() {
+      local line
+      line=$(grep -F 'serversave.lua' "$SERVER/data/globalevents/globalevents.xml" 2>/dev/null | grep -vF '<!--' | head -n 1)
+      [[ $line =~ time=\"([0-9]{1,2}):([0-9]{2}) ]] || return 0
+      printf '%02d:%s' "$((10#${BASH_REMATCH[1]}))" "${BASH_REMATCH[2]}"
+    }
+    au_valid_time() { [[ ${1:-} =~ ^([01][0-9]|2[0-3]):[0-5][0-9]$ ]]; }
+    # the save time the timers follow: the one set with "time", else the game's, else 06:00
+    au_save_time() {
+      local t
+      t=$(au_get save_time)
+      au_valid_time "$t" || t=$(au_game_time)
+      au_valid_time "$t" || t=06:00
+      printf '%s' "$t"
+    }
+    au_minus() {  # HH:MM minus N minutes, over midnight
+      local h=$((10#${1%:*})) m=$((10#${1#*:})) n
+      n=$(( ((h * 60 + m - $2) % 1440 + 1440) % 1440 ))
+      printf '%02d:%02d' $((n / 60)) $((n % 60))
+    }
+    # seconds from now to the next HH:MM (local time)
+    au_until() {
+      local now tgt
+      now=$(date +%s)
+      tgt=$(date -d "today $1" +%s 2>/dev/null) || { echo 0; return 0; }
+      [ "$tgt" -gt "$now" ] || tgt=$((tgt + 86400))
+      echo $((tgt - now))
+    }
+    au_g() { chaos_gh_git -C "$REPO" -c safe.directory="$REPO" "$@"; }
+    au_git_ok() { command -v git >/dev/null 2>&1 && { [ -d "$REPO/.git" ] || [ -f "$REPO/.git" ]; }; }
+    # the PAIR_ASSETS of server/tools/client_pair.py at a commit (empty when unknown)
+    au_pair_at() {
+      au_g show "$1:server/tools/client_pair.py" 2>/dev/null | sed -n 's/^PAIR_ASSETS *= *\([0-9]\{1,3\}\).*/\1/p' | head -n 1
+    }
+    # does any of the paths differ between two commits? yes | no | unknown (a commit not in the checkout: fetched once)
+    au_changed() {
+      local a=$1 b=$2
+      shift 2
+      [[ $a =~ ^[0-9a-f]{40}$ ]] || { echo unknown; return 0; }
+      if ! au_g cat-file -e "$a^{commit}" 2>/dev/null; then
+        au_g fetch -q origin "$a" 2>/dev/null || true
+        au_g cat-file -e "$a^{commit}" 2>/dev/null || { echo unknown; return 0; }
+      fi
+      au_g diff --quiet "$a" "$b" -- "$@" 2>/dev/null
+      case $? in 0) echo no ;; 1) echo yes ;; *) echo unknown ;; esac
+    }
+    AUBODY=""
+    au_api() { chaos_gh_api "$1" "$2" "$AUBODY" "${3:-}"; }
+    # the CI of a commit on the branch (ci.yml, push): success | failure | pending | unknown
+    au_ci() {
+      local code
+      code=$(au_api GET "/repos/$GH_REPO/actions/workflows/ci.yml/runs?head_sha=$1&per_page=20")
+      [ "$code" = 200 ] || { echo unknown; return 0; }
+      python3 -I - "$AUBODY" <<'PY' 2>/dev/null || echo unknown
+import json, sys
+runs = [r for r in json.load(open(sys.argv[1], encoding='utf-8')).get('workflow_runs') or [] if isinstance(r.get('id'), int)]
+runs = [r for r in runs if r.get('event') in (None, 'push')]
+if not runs:
+    print('pending')
+    sys.exit(0)
+r = max(runs, key=lambda x: x['id'])
+if r.get('status') != 'completed':
+    print('pending')
+else:
+    print('success' if r.get('conclusion') == 'success' else 'failure')
+PY
+    }
+    # the releases: one line per release "KIND N SHA" (winpkg with the server package, android-N with the APK, adminapp-N
+    # with the admin APK; SHA "-" when the release names no commit), newest first
+    AUREL=""
+    au_releases() {
+      local code
+      AUREL=""
+      code=$(au_api GET "/repos/$GH_REPO/releases?per_page=100")
+      [ "$code" = 200 ] || return 1
+      AUREL=$(python3 -I - "$AUBODY" <<'PY'
+import json, re, sys
+data = json.load(open(sys.argv[1], encoding='utf-8'))
+out = []
+for r in data if isinstance(data, list) else []:
+    if r.get('draft'):
+        continue
+    tag = str(r.get('tag_name', ''))
+    names = {str(a.get('name')) for a in r.get('assets') or []}
+    sha = str(r.get('target_commitish') or '')
+    sha = sha if re.fullmatch(r'[0-9a-f]{40}', sha) else '-'
+    for kind, pat, need in (('winpkg', r'winpkg-([0-9]{1,6})', 'CindersOfChaos-Server-Linux.tar.gz'),
+                            ('android', r'android-([0-9]{1,5})', 'CindersOfChaos-Android.apk'),
+                            ('admin', r'adminapp-([0-9]{1,6})', 'CindersAdmin.apk')):
+        m = re.fullmatch(pat, tag)
+        if m and need in names:
+            out.append((kind, int(m.group(1)), sha))
+out.sort(key=lambda x: -x[1])
+for kind, n, sha in out:
+    print('%s %d %s' % (kind, n, sha))
+PY
+      ) || return 1
+      return 0
+    }
+    au_newest() { awk -v k="$1" '$1 == k { print $2, $3; exit }' <<< "$AUREL"; }
+    au_rel_sha() { awk -v k="$1" -v n="$2" '$1 == k && $2 == n { print $3; exit }' <<< "$AUREL"; }
+    # the live client update: "VERSION MIN_PACKAGE APK_VERSION_CODE" (0 when missing)
+    au_live() {
+      python3 -I - "$AUSITE/updates/live/manifest.json" <<'PY' 2>/dev/null || echo "0 0 0"
+import json, sys
+p = json.loads(json.load(open(sys.argv[1]))['payload'])
+apk = p.get('android_apk') or {}
+print(int(p.get('version') or 0), int(p.get('min_package') or 0), int(apk.get('version_code') or 0))
+PY
+    }
+    au_pair_now() { python3 -I "$REPO/server/tools/client_pair.py" show "$SERVER" 2>/dev/null | sed -n 's/^chaosClientPair=\([0-9]\{1,3\}\)$/\1/p'; }
+    # the address the phones connect to (config.lua ip) and the site; empty when not a public one
+    au_host() {
+      local ip
+      ip=$(sed -n 's/^[[:space:]]*ip[[:space:]]*=[[:space:]]*"\([A-Za-z0-9.-]\{1,100\}\)".*/\1/p' "$SERVER/config.lua" 2>/dev/null | head -n 1)
+      case $ip in ''|127.*|localhost|0.0.0.0) return 0 ;; esac
+      printf '%s' "$ip"
+    }
+    au_site_url() {
+      local s
+      s=$(sed -n 's/^CHAOS_SITE_URL=\([^ #]*\).*/\1/p' "$(setting CHAOS_SITE_ENV /etc/chaos/site.env)" 2>/dev/null | tail -n 1)
+      s=${s%$'\r'}
+      s=${s%/}
+      [[ $s =~ ^https://[A-Za-z0-9.-]+(:[0-9]{1,5})?(/[A-Za-z0-9._~/-]*)?$ ]] && printf '%s' "$s"
+      return 0
+    }
+    # dispatch WORKFLOW JSON: 204 or the refusal word
+    au_dispatch() {
+      local code
+      code=$(au_api POST "/repos/$GH_REPO/actions/workflows/$1/dispatches" "$2")
+      case $code in
+        204) echo ok ;;
+        401) echo token-refused ;;
+        403|404) echo no-access ;;
+        422) echo workflow-refused ;;
+        *) echo "dispatch-failed-$code" ;;
+      esac
+    }
+    au_units_installed() { [ -f "$SYSD/chaos-autoupdate.timer" ] && [ -f "$SYSD/chaos-autoupdate-prep.timer" ]; }
+    # the units from the repository with the real paths and the times of now; prints changed when a file was written
+    au_install_units() {
+      local st pt kind u txt changed=0
+      st=$(au_minus "$(au_save_time)" "$AU_SAVE_LEAD")
+      pt=$(au_minus "$(au_save_time)" "$AU_PREP_LEAD")
+      for u in chaos-autoupdate chaos-autoupdate-prep; do
+        for kind in service timer; do
+          [ -f "$REPO/server/deploy/$u.$kind" ] || die "missing $REPO/server/deploy/$u.$kind (update-apply first)"
+          txt=$(sed -e "s#/opt/chaos/repo#$REPO#g" "$REPO/server/deploy/$u.$kind")
+          if [ "$kind" = timer ]; then
+            local at=$pt
+            [ "$u" = chaos-autoupdate ] && at=$st
+            # shellcheck disable=SC2001 # a whole line of a multi-line text
+            txt=$(sed -e "s#^OnCalendar=.*#OnCalendar=*-*-* $at:00#" <<< "$txt")
+          fi
+          if [ "$txt" != "$(cat "$SYSD/$u.$kind" 2>/dev/null)" ]; then
+            printf '%s\n' "$txt" > "$SYSD/$u.$kind" || die "cannot write $SYSD/$u.$kind"
+            chmod 0644 "$SYSD/$u.$kind"
+            changed=1
+          fi
+        done
+      done
+      if [ "$changed" = 1 ]; then systemctl daemon-reload || die "daemon-reload failed"; echo changed; fi
+      return 0
+    }
+    au_lock() {
+      exec 7>"$AUSTATE/.lock"
+      flock -w "${1:-0}" 7 || die "autoupdate-running: an automatic update run is going on (auto-update log)"
+    }
+    # a run in the background for the app's Rodar agora: the same command with --foreground, its output in the log
+    au_background() {
+      : >> "$AULOG"
+      setsid "$SELF" auto-update "$@" --foreground >> "$AULOG" 2>&1 < /dev/null &
+      echo "started (auto-update $*); follow it with: chaos-ctl.sh auto-update log"
+    }
+
+    # ---- prep: the builds whose inputs changed, at most once a day
+    au_prep() {
+      local today head ci win wsha wn eng apk asha an adm dsha dn st cc lc newc=0 eout cb host site body r
+      today=$(date +%F)
+      au_set "prep_time=$(date '+%F %T')"
+      au_lock 0
+      if [ "$(au_get prep_day)" = "$today" ]; then
+        au_set "prep_result=skipped" "prep_text=already dispatched today: $(au_get prep_text)"
+        au_log "prep: builds were already started today; nothing more (at most once a day)"
+        return 0
+      fi
+      [ -n "$(chaos_gh_token)" ] || { au_set "prep_result=failed" "prep_text=token-missing: github-token-set first"
+        au_log "prep: token-missing: save the GitHub token first (github-token-set)"; return 1; }
+      au_git_ok || { au_set "prep_result=failed" "prep_text=no repository checkout at $REPO"; au_log "prep: no checkout at $REPO"; return 1; }
+      if ! au_g fetch -q origin "+refs/heads/$AUBRANCH:refs/remotes/origin/$AUBRANCH" 2>/dev/null; then
+        r=$(chaos_gh_git_why "$GH_REPO") || r=""
+        au_set "prep_result=failed" "prep_text=fetch-failed ${r:-}"
+        au_log "prep: git fetch of $AUBRANCH failed${r:+ ($r)}"
+        return 1
+      fi
+      head=$(au_g rev-parse "origin/$AUBRANCH") || return 1
+      ci=$(au_ci "$head")
+      au_log "prep: $AUBRANCH at ${head:0:7}, CI $ci"
+      if [ "$ci" != success ]; then
+        au_set "prep_result=skipped" "prep_text=ci-$ci on ${head:0:7}: no build started" "prep_commit=${head:0:7}"
+        au_log "prep: the CI of ${head:0:7} is $ci: no build is started (the next prep tries again)"
+        [ "$ci" = failure ] && au_dm "Preparo: o CI do commit ${head:0:7} está vermelho; nenhuma build foi disparada hoje."
+        return 0
+      fi
+      au_releases || { au_set "prep_result=failed" "prep_text=cannot read the releases"; au_log "prep: cannot read the releases of $GH_REPO"; return 1; }
+      # the Windows package: the engine, client and launcher inputs, or a pair on windows-assets newer than the release's
+      read -r wn wsha <<< "$(au_newest winpkg)"
+      win=yes
+      if [ -n "${wn:-}" ]; then
+        win=$(au_changed "$wsha" "$head" "${AU_WIN_PATHS[@]}")
+        local ph pr
+        ph=$(au_pair_at "$head")
+        pr=$(au_pair_at "$wsha")
+        if num "${ph:-}" && num "${pr:-}" && [ "$ph" -gt "$pr" ]; then win=yes; fi
+        [ "$win" != unknown ] || win=yes
+      fi
+      # the Android game client: only where an android-N release was ever made (the phones are set up)
+      read -r an asha <<< "$(au_newest android)"
+      apk=none
+      if [ -n "${an:-}" ]; then
+        apk=$(au_changed "$asha" "$head" "${AU_APK_PATHS[@]}")
+        [ "$apk" != unknown ] || apk=yes
+      fi
+      read -r dn dsha <<< "$(au_newest admin)"
+      adm=yes
+      if [ -n "${dn:-}" ]; then
+        adm=$(au_changed "$dsha" "$head" "${AU_ADMIN_PATHS[@]}")
+        [ "$adm" != unknown ] || adm=yes
+      fi
+      au_log "prep: changed since the newest releases: windows package ${win} (winpkg-${wn:-none}), android ${apk} (android-${an:-none}), admin app ${adm} (adminapp-${dn:-none})"
+      # the engine build's own view: a run going on, the client program changed since the live client
+      st=$("$SELF" engine-build status 2>&1) || true
+      cc=$(au_kv client_changed "$st")
+      lc=$(au_kv client_build "$st")
+      eng=current
+      case $(au_kv state "$st") in
+        queued|in_progress) eng="running (a build started earlier)"; win=no; [ "$apk" = none ] || apk=no ;;
+        *)
+          # a new client number: the client program changed, or a new APK is due (its version code is the client build)
+          if [ "$cc" = yes ] || [ "$apk" = yes ]; then newc=1; win=yes; fi ;;
+      esac
+      if [ "$win" = yes ]; then
+        if [ "$newc" = 1 ]; then eout=$("$SELF" engine-build start --new-client 2>&1); else eout=$("$SELF" engine-build start 2>&1); fi
+        r=$?
+        printf '%s\n' "$eout" | sed 's/^/  engine-build: /' >> "$AULOG"
+        if [ "$r" = 0 ]; then
+          cb=$(au_kv client_build "$eout")
+          eng="dispatched run $(au_kv run_id "$eout") client build ${cb:-?}$([ "$newc" = 1 ] && echo ' (new client number)')"
+        else
+          eng="refused: $(printf '%s' "$eout" | tail -n 1 | sed 's/^chaos-ctl: //' | cut -c1-160)"
+          newc=0
+        fi
+      fi
+      # the APK goes with a new client number only (its version code is published once)
+      local andr=current
+      if [ "$apk" = none ]; then
+        andr="none (no android-N release yet)"
+      elif [ "$newc" = 1 ] && num "${cb:-}"; then
+        host=$(au_host)
+        site=$(au_site_url)
+        if [ -z "$host" ] || [ -z "$site" ]; then
+          andr="skipped: no public ip in config.lua or no https CHAOS_SITE_URL in the site settings"
+        else
+          body=$(printf '{"ref":"%s","inputs":{"client_build":"%s","publish_release":"true","server_host":"%s","site_url":"%s"}}' \
+            "$AUBRANCH" "$cb" "$host" "$site")
+          r=$(au_dispatch android-client.yml "$body")
+          if [ "$r" = ok ]; then andr="dispatched android-$cb"; else andr="refused: $r"; fi
+        fi
+      elif [ "$apk" = yes ]; then
+        andr="waits for a new client number"
+      fi
+      local admr=current
+      if [ "$adm" = yes ]; then
+        r=$(au_dispatch admin-app.yml "$(printf '{"ref":"%s"}' "$AUBRANCH")")
+        if [ "$r" = ok ]; then admr=dispatched; else admr="refused: $r"; fi
+      fi
+      au_log "prep: engine $eng; android $andr; admin app $admr"
+      au_set "prep_commit=${head:0:7}" "prep_engine=$eng" "prep_android=$andr" "prep_admin=$admr"
+      case "$eng $andr $admr" in
+        *dispatched*)
+          au_set "prep_day=$today" "prep_result=dispatched" "prep_text=engine $eng; android $andr; admin $admr"
+          au_dm "Preparo (${head:0:7}): engine $eng; Android $andr; app admin $admr. A instalação vem no próximo server save." ;;
+        *refused*)
+          au_set "prep_day=$today" "prep_result=failed" "prep_text=engine $eng; android $andr; admin $admr"
+          au_dm "Preparo (${head:0:7}) com recusa: engine $eng; Android $andr; app admin $admr." ;;
+        *) au_set "prep_result=nothing" "prep_text=no build needed" ;;
+      esac
+      return 0
+    }
+
+    # ---- save: what is new goes in at the daily save (the kit update with --at-save), then the pair and the APK
+    au_save() {
+      local now=$1 ck head ci new=0 why="" pairnow pairinst reinstall=0 eb est kargs kr res txt live v m vc pr psha p an asha
+      au_set "save_time_run=$(date '+%F %T')"
+      [ -n "$KIT" ] || { au_set "save_result=failed" "save_text=kit-not-found: the automatic update is for the Linux kit"
+        au_log "save: kit-not-found (CHAOS_KIT_DIR)"; return 1; }
+      kup="$REPO/server/deploy/chaos_kit_update.sh"
+      [ -x "$kup" ] || { au_set "save_result=failed" "save_text=no $kup"; au_log "save: no $kup"; return 1; }
+      au_lock 900
+      if [ -f "$KSTATE/.lock" ] && ! flock -n "$KSTATE/.lock" true; then
+        au_set "save_result=skipped" "save_text=update-running: an update was already running"
+        au_log "save: an update or rollback is running: skipped"
+        return 0
+      fi
+      kenv=("CHAOS_REPO=$REPO" "CHAOS_KIT_DIR=$KIT" "CHAOS_SERVER_DIR=$SERVER" "CHAOS_ENV=$ENVFILE" "CHAOS_UNIT=$UNIT"
+        "CHAOS_LOG=$LOG" "CHAOS_MYSQL=$MYSQL" "CHAOS_KIT_STATE=$KSTATE" "CHAOS_WORK_DIR=$WORKDIR")
+      for k in CHAOS_UPDATE_BRANCH CHAOS_RELEASE_REPO CHAOS_BOOT_TIMEOUT CHAOS_SITE_DIR CHAOS_DL_DIR CHAOS_SITE_ENV \
+        CHAOS_MAP_BRANCH CHAOS_MAP_BACKUP_DIR CHAOS_STAGING CHAOS_CACHE_DIR CHAOS_SYSTEMD_DIR \
+        CHAOS_UPDATE_KEY CHAOS_UPDATE_PUBLIC CHAOS_UPDATE_REPO CHAOS_UPDATE_URL CHAOS_SAVE_POLL; do
+        v=$(setting "$k" "")
+        [ -z "$v" ] || kenv+=("$k=$v")
+      done
+      [ -z "$BACKUPDIR" ] || kenv+=("CHAOS_BACKUP_DIR=$BACKUPDIR")
+      ck=$(env "${kenv[@]}" "$kup" check 2>&1) || { au_set "save_result=failed" "save_text=check failed: $(tail -n 1 <<< "$ck" | cut -c1-160)"
+        au_log "save: the update check failed: $(tail -n 1 <<< "$ck")"; au_dm "Server save: a verificação da atualização falhou ($(tail -n 1 <<< "$ck" | cut -c1-160)). Nada mudou."; return 1; }
+      [ "$(au_kv update_available "$ck")" = yes ] && { new=1; why="$why code/engine/map"; }
+      [ "$(au_kv needs_client "$ck")" = yes ] && { new=1; why="$why client"; }
+      [ "$(au_kv needs_downloads "$ck")" = yes ] && { new=1; why="$why downloads"; }
+      # a pair raised after the last install: its guarded items need an install (--reinstall)
+      pairnow=$(au_pair_now)
+      pairinst=$(au_get pair_installed)
+      if num "${pairnow:-}" && ! num "${pairinst:-}"; then au_set "pair_installed=$pairnow"; pairinst=$pairnow; fi
+      if num "${pairnow:-}" && [ "$pairnow" -gt "$pairinst" ]; then new=1; reinstall=1; why="$why pair-$pairnow"; fi
+      # a newer APK whose build is the live client's
+      au_releases || AUREL=""
+      read -r v m vc <<< "$(au_live)"
+      read -r an asha <<< "$(au_newest android)"
+      if num "${an:-}" && [ "$an" -gt "${vc:-0}" ] && [ "$an" = "$m" ]; then new=1; why="$why apk"; fi
+      # the branch as GitHub has it now (the pair of a release commit and the CI of the head are read from it)
+      au_git_ok && { au_g fetch -q origin "+refs/heads/$AUBRANCH:refs/remotes/origin/$AUBRANCH" 2>/dev/null || true; }
+      head=$(au_g rev-parse "origin/$AUBRANCH" 2>/dev/null)
+      if [ "$new" = 0 ]; then
+        au_set "save_result=nothing" "save_text=nothing new (${head:0:7}, winpkg-$(au_kv installed_release "$ck"))"
+        au_log "save: nothing new"
+        return 0
+      fi
+      ci=unknown
+      [[ ${head:-} =~ ^[0-9a-f]{40}$ ]] && ci=$(au_ci "$head")
+      au_log "save: new:$why; $AUBRANCH at ${head:0:7}, CI $ci"
+      if [ "$ci" != success ]; then
+        au_set "save_result=skipped" "save_text=ci-$ci on ${head:0:7}: nothing installed"
+        au_log "save: the CI of ${head:0:7} is $ci: nothing is installed today"
+        au_dm "Server save: o CI do commit ${head:0:7} está $ci; a atualização de hoje foi pulada. O servidor segue na versão de antes."
+        return 0
+      fi
+      eb=""
+      if [ "$(au_get prep_day)" = "$(date +%F)" ] && [[ $(au_get prep_engine) == dispatched* ]]; then
+        est=$("$SELF" engine-build status 2>&1) || true
+        case $(au_kv state "$est") in
+          success) ;;
+          *) eb="the engine build of today is $(au_kv state "$est"): going on with winpkg-$(au_kv latest_release "$ck")" ;;
+        esac
+        [ -z "$eb" ] || au_log "save: $eb"
+      fi
+      kargs=()
+      [ "$now" = 1 ] || kargs+=(--at-save)
+      [ "$reinstall" = 0 ] || kargs+=(--reinstall)
+      local wait
+      wait=$(( $(au_until "$(au_save_time)") + 1800 ))
+      mkdir -p "$(dirname "$ULOG")"
+      : > "$ULOG"
+      au_log "save: chaos_kit_update.sh apply ${kargs[*]} (output: update-log)"
+      env "${kenv[@]}" "CHAOS_SAVE_WAIT=$wait" "$kup" apply "${kargs[@]}" >> "$ULOG" 2>&1 < /dev/null
+      kr=$?
+      # a stop request must never outlive the run, and the server must never stay down
+      rm -f "$KIT/run/stop"
+      if ! systemctl is-active --quiet "$UNIT"; then
+        au_log "save: $UNIT was not running after the update: starting it"
+        systemctl start "$UNIT" || true
+      fi
+      res=$(sed -n 's/^status=//p' "$KSTATE/state" 2>/dev/null | tail -n 1)
+      txt=$(sed -n 's/^result=//p' "$KSTATE/state" 2>/dev/null | tail -n 1)
+      case $kr:$res in
+        0:ok|3:warn) ;;
+        *)
+          au_set "save_result=${res:-failed}" "save_text=${txt:-the kit update ended with exit $kr}"
+          au_log "save: the update ended ${res:-failed} (exit $kr): $txt"
+          au_dm "Server save: a atualização terminou como ${res:-failed}: ${txt:-saída $kr}. O servidor está no ar na versão de antes (update-log tem os detalhes)."
+          return 1 ;;
+      esac
+      [ "$reinstall" = 1 ] && au_set "pair_installed=$pairnow"
+      # the pair of the published client: raised only when that client carries it (never a pair no shipped client has)
+      read -r v m vc <<< "$(au_live)"
+      psha=$(au_rel_sha winpkg "$v")
+      p=""
+      [[ ${psha:-} =~ ^[0-9a-f]{40}$ ]] && p=$(au_pair_at "$psha")
+      pr=$(au_pair_now)
+      local pairtxt="pair ${pr:-?}"
+      if num "${p:-}" && num "${pr:-}" && [ "$p" -gt "$pr" ]; then
+        if python3 -I "$REPO/server/tools/client_pair.py" set "$SERVER" "$p" >> "$AULOG" 2>&1; then
+          pairtxt="pair $pr -> $p (its items install at the next save)"
+          au_log "save: client pair $pr -> $p: the published client update $v carries it"
+        else
+          pairtxt="pair $pr (raising to $p failed)"
+        fi
+      fi
+      # the APK of the live client build (its version code is the build)
+      local apktxt=""
+      read -r an asha <<< "$(au_newest android)"
+      if num "${an:-}" && [ "$an" -gt "${vc:-0}" ] && [ "$an" = "$m" ]; then
+        pub="$REPO/server/deploy/publish_client_update.sh"
+        penv=()
+        for k in CHAOS_SITE_DIR CHAOS_UPDATE_KEY CHAOS_UPDATE_PUBLIC CHAOS_UPDATE_REPO CHAOS_UPDATE_URL CHAOS_WORK_DIR; do
+          v=$(setting "$k" "")
+          [ -z "$v" ] || penv+=("$k=$v")
+        done
+        if env "${penv[@]}" "$pub" --apk "android-$an" >> "$PLOG" 2>&1 < /dev/null; then
+          apktxt="; apk android-$an published"
+        else
+          apktxt="; apk android-$an NOT published (publish-log)"
+        fi
+        au_log "save: publish-apk android-$an:${apktxt#*android-"$an"}"
+      fi
+      read -r v m vc <<< "$(au_live)"
+      local ir dc
+      ir=$(sed -n 's/^installed_release=//p' "$KSTATE/state" 2>/dev/null | tail -n 1)
+      dc=$(sed -n 's/^deployed_commit=//p' "$KSTATE/state" 2>/dev/null | tail -n 1)
+      au_set "save_result=$res" "save_text=${txt}${eb:+; $eb}" "applied_commit=${dc:0:7}" "applied_release=winpkg-${ir:-?}" \
+        "applied_pair=$pairtxt" "applied_client=$v" "applied_apk=$vc" "applied_time=$(date '+%F %T')"
+      au_log "save: done ($res): commit ${dc:0:7}, winpkg-${ir:-?}, $pairtxt, client $v, apk $vc$apktxt"
+      au_dm "Server save: atualizado ($res). Commit ${dc:0:7}, engine winpkg-${ir:-?}, $pairtxt, client $v, APK $vc${eb:+. $eb}."
+      return 0
+    }
+
+    AUBODY=$(mktemp) || die "mktemp failed"
+    trap 'rm -f "$AUBODY"' EXIT
+    sub=${1:-status}
+    [ $# -eq 0 ] || shift
+    case $sub in
+      status)
+        [ $# -eq 0 ] || die "auto-update status"
+        if au_units_installed; then echo "installed=yes"; else echo "installed=no"; fi
+        aen=$(systemctl is-enabled chaos-autoupdate.timer 2>/dev/null | head -n 1)
+        if [ "$aen" = enabled ]; then echo "enabled=yes"; else echo "enabled=no"; fi
+        echo "save_time=$(au_save_time)"
+        gt=$(au_game_time)
+        echo "game_save_time=${gt:-unknown}"
+        if au_valid_time "$(au_get save_time)"; then echo "save_time_source=set"; else echo "save_time_source=game"; fi
+        echo "prep_at=$(au_minus "$(au_save_time)" "$AU_PREP_LEAD")"
+        echo "save_run_at=$(au_minus "$(au_save_time)" "$AU_SAVE_LEAD")"
+        if [ "$aen" = enabled ]; then
+          echo "next_prep=$(systemctl show chaos-autoupdate-prep.timer -p NextElapseUSecRealtime --value 2>/dev/null | head -n 1)"
+          echo "next_save=$(systemctl show chaos-autoupdate.timer -p NextElapseUSecRealtime --value 2>/dev/null | head -n 1)"
+        fi
+        if [ -f "$AUSTATE/.lock" ] && ! flock -n "$AUSTATE/.lock" true; then echo "running=yes"; else echo "running=no"; fi
+        for k in prep_time prep_result prep_text prep_commit prep_engine prep_android prep_admin save_time_run save_result \
+          save_text applied_time applied_commit applied_release applied_pair applied_client applied_apk; do
+          echo "$k=$(au_get "$k")"
+        done
+        echo "client_pair=$(au_pair_now)"
+        if [ -n "$KIT" ] && [ -e "$KIT/run/stop" ]; then echo "stop_request=yes"; else echo "stop_request=no"; fi
+        ;;
+      on)
+        [ $# -eq 0 ] || die "auto-update on"
+        [ -n "$KIT" ] || die "kit-not-found: the automatic update is for the Linux kit (set CHAOS_KIT_DIR in $CONF)"
+        [ -d "$REPO/server/deploy" ] || die "no repository checkout at $REPO (update-apply first)"
+        au_install_units >/dev/null
+        systemctl enable --now chaos-autoupdate-prep.timer chaos-autoupdate.timer >/dev/null 2>&1 \
+          || die "could not enable the chaos-autoupdate timers"
+        au_log "on: prep at $(au_minus "$(au_save_time)" "$AU_PREP_LEAD"), save run at $(au_minus "$(au_save_time)" "$AU_SAVE_LEAD") (server save $(au_save_time))" >/dev/null
+        echo "auto-update: on (builds at $(au_minus "$(au_save_time)" "$AU_PREP_LEAD"), the update at the server save $(au_save_time))"
+        ;;
+      off)
+        [ $# -eq 0 ] || die "auto-update off"
+        systemctl disable --now chaos-autoupdate-prep.timer chaos-autoupdate.timer >/dev/null 2>&1 \
+          || die "could not disable the chaos-autoupdate timers"
+        au_log "off" >/dev/null
+        echo "auto-update: off (update-apply and engine-build stay by hand)"
+        ;;
+      time)
+        [ $# -eq 1 ] || die "auto-update time HH:MM | game"
+        if [ "$1" = game ]; then
+          au_set "save_time="
+        else
+          au_valid_time "$1" || die "auto-update time HH:MM (00:00 to 23:59) | game"
+          au_set "save_time=$1"
+        fi
+        if au_units_installed; then au_install_units >/dev/null; fi
+        echo "save_time=$(au_save_time)"
+        gt=$(au_game_time)
+        if [ -n "$gt" ] && [ "$gt" != "$(au_save_time)" ]; then
+          echo "note: the game's server save is at $gt (globalevents.xml): the update waits for a save that comes at $(au_save_time) only if the game saves then"
+        fi
+        ;;
+      run-prep)
+        fg=0
+        case $#:${1:-} in 0:) ;; 1:--foreground) fg=1 ;; *) die "auto-update run-prep" ;; esac
+        if [ "$fg" = 0 ]; then au_background run-prep; exit 0; fi
+        au_prep
+        exit $?
+        ;;
+      run-save)
+        fg=0 anow=0
+        for a in "$@"; do
+          case $a in --foreground) fg=1 ;; --now) anow=1 ;; *) die "auto-update run-save [--now]" ;; esac
+        done
+        if [ "$fg" = 0 ]; then
+          if [ "$anow" = 1 ]; then au_background run-save --now; else au_background run-save; fi
+          exit 0
+        fi
+        au_save "$anow"
+        exit $?
+        ;;
+      log)
+        [ $# -le 1 ] || die "auto-update log [N]"
+        show_log "$AULOG" "$(lines_arg "${1:-60}")" auto-update "the automatic update never ran"
+        ;;
+      *) die "auto-update [status | on | off | time HH:MM|game | run-prep | run-save [--now] | log [N]]" ;;
     esac
     ;;
   xp-rate)

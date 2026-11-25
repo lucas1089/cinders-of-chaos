@@ -106,11 +106,12 @@ PAIR_APEX_MONSTERS = 84   # the ten hunt monsters of levels 2100-2500 (O763, cli
                     # (step `apexhunts`, data/monster/apex_hunt_swaps.csv) from this pair. On windows-assets 7de16763 (2026-11-25, owner approved).
 
 PAIR_DISSOLVE_TAIL = 85   # pair 84 with the 3-phase Bayer dissolve tail cut from the pack effects (O766, client/tools/sprites/fix_dissolve_tail.py
-                    # build): the checker grid and dotted rests the O733 / O523 mesh rules left at the end of a one-shot. Client art only, no server
-                    # gate. Built locally 2026-11-25, not on windows-assets (owner step).
+                    # build): the checker grid and dotted rests the O733 / O523 mesh rules left at the end of a one-shot; the same build moves
+                    # effect 758 stun_stars over the head (pair_fixes/effect_centre.csv, row of pair 85). Client art only, no server gate.
+                    # On windows-assets 3529436c (2026-11-25, owner approved "Pode enviar").
 
-PAIR_ASSETS = 84
-PAIR_ASSETS_DAT_MD5 = '65bfa6006c9e17c053229f5aaf236895'
+PAIR_ASSETS = 85
+PAIR_ASSETS_DAT_MD5 = '83b070b2b22d57336470aa0911488fde'
 
 
 def parse(text):

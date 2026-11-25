@@ -67,6 +67,16 @@ tool: five count queries (only SELECT COUNT), the payments facts of pay-status, 
 exit 1 on a FAIL, a table or the database missing fails its own line and nothing crashes, no key, password or token in any
 output, nothing changed on disk, arguments refused before anything runs.
 
+Automatic daily update (auto-update, O767): a fake GitHub API (CI runs, releases, the three workflow dispatches), a real
+git origin with client_pair.py at three pairs, fakes for chaos_kit_update.sh, publish_client_update.sh and systemctl;
+status and the save time (default, the game's, set, over midnight), on / off writing the timers; the prep: CI pending or
+red starts nothing, nothing changed starts nothing, an engine patch starts one Windows build, at most once a day, a
+running build is left alone, the admin app for its own paths, a changed client program gives a new client number for the
+Windows build and the Android APK (address and site), no public address no APK; the save: nothing new, red CI skipped
+with a DM, the kit update with --at-save and a wait past the save, the previous release noted when today's build is not
+done, the pair raised only to the published client's pair, --reinstall for it at the next save, publish-apk of the live
+build, --now, a rolled-back update with the server started again and a DM, the log, no token anywhere.
+
 usage: python3 -I server/deploy/chaos_ctl_test.py
 """
 import json
@@ -692,6 +702,7 @@ def main():
     test_launch_check()
     test_house_fix()
     test_spawn_data()
+    test_auto_update()
     print('chaos_ctl_test: %d failures' % failures)
     return 1 if failures else 0
 
@@ -4344,6 +4355,445 @@ with open(sys.argv[2], 'w') as f:
     f.write(os.environ.get(key, 'new ' + name) + '\n')
 print(sys.argv[2] + ': written')
 """
+
+
+def test_auto_update():
+    """auto-update (O767): on / off / time, the prep (builds once a day, only for changed inputs, CI green), the save run
+    (nothing new, red CI, the kit update at the save, the previous release when today's build is not done, the rollback,
+    the client pair only from the published client, --reinstall for a raised pair, the APK of the live build)"""
+    import getpass
+    repo_root = os.path.dirname(os.path.dirname(HERE))
+    token = 'github_pat_11ABCDEFG0aBcDeFgHiJkL_mNoPqRsTuVwXyZ0123456789aBcDeFgHiJkLmNoPqRsTuVwXyZ01234'
+    # curl: a fake api.github.com (the CI runs, the releases, the windows package runs and dispatches, the other two
+    # dispatches)
+    curl = '''#!/usr/bin/env python3
+import json, os, re, sys
+stub = os.environ['STUB']
+args = sys.argv[1:]
+cfg = sys.stdin.read() if '-K' in args else ''
+out = args[args.index('-o') + 1] if '-o' in args else None
+data = args[args.index('-d') + 1] if '-d' in args else None
+url = re.search(r'url = "([^"]+)"', cfg).group(1)
+open(os.path.join(stub, 'calls'), 'a').write('curl ' + url + '\\n')
+def read(name, default=''):
+    p = os.path.join(stub, name)
+    return open(p).read() if os.path.exists(p) else default
+def answer(code, body=''):
+    if out:
+        open(out, 'w').write(body)
+    sys.stdout.write(str(code))
+    sys.exit(0)
+m = re.search(r'/actions/workflows/([a-z-]+\\.yml)/dispatches$', url)
+if m and data is not None:
+    open(os.path.join(stub, 'dispatch.json'), 'a').write(json.dumps({'wf': m.group(1), 'body': json.loads(data)}) + '\\n')
+    if m.group(1) == 'windows-package.yml':
+        runs = json.loads(read('runs.json', '{"workflow_runs": []}'))['workflow_runs']
+        n = max([r['id'] for r in runs] + [100]) + 1
+        runs.append({'id': n, 'run_number': n, 'status': 'queued', 'conclusion': None, 'created_at': '2026-11-25T03:00:00Z',
+                     'updated_at': '2026-11-25T03:00:00Z', 'head_sha': 'a1b2c3d', 'html_url': 'https://github.com/o/r/actions/runs/%d' % n})
+        open(os.path.join(stub, 'runs.json'), 'w').write(json.dumps({'workflow_runs': runs}))
+    answer(204)
+if '/actions/workflows/ci.yml/runs?' in url:
+    answer(200, read('ci.json', '{"workflow_runs": []}'))
+if '/actions/workflows/windows-package.yml/runs?' in url:
+    answer(200, read('runs.json', '{"workflow_runs": []}'))
+if re.search(r'/actions/runs/\\d+/jobs', url):
+    answer(200, '{"jobs": []}')
+if '/releases?' in url:
+    answer(200, read('releases.json', '[]'))
+answer(404)
+'''
+    systemctl = '''#!/usr/bin/env bash
+echo "systemctl $*" >> "$STUB/calls"
+args=()
+for a in "$@"; do case "$a" in --quiet|--value|--now) ;; *) args+=("$a") ;; esac; done
+set -- "${args[@]}"
+case "$1" in
+  is-active) if [ -e "$STUB/active" ]; then echo active; else echo inactive; exit 3; fi ;;
+  is-enabled) if [ -e "$STUB/enabled" ]; then echo enabled; else echo disabled; exit 1; fi ;;
+  enable) touch "$STUB/enabled" ;;
+  disable) rm -f "$STUB/enabled" ;;
+  start) touch "$STUB/active" ;;
+  show) case "$*" in *NextElapse*) echo "Wed 2026-11-26 05:15:00 -03" ;; *LoadState*) echo loaded ;; *) echo "" ;; esac ;;
+esac
+exit 0
+'''
+    # the kit update: check prints $STUB/kitcheck; apply records its arguments, plays the published client update and
+    # ends with $STUB/kitresult (ok, warn, rolled-back, failed)
+    kitupd = '''#!/usr/bin/env bash
+echo "kit $* SAVE_WAIT=${CHAOS_SAVE_WAIT:-}" >> "$STUB/calls"
+case "$1" in
+  check) cat "$STUB/kitcheck"; exit 0 ;;
+  apply)
+    res=$(cat "$STUB/kitresult" 2>/dev/null || echo ok)
+    st="$CHAOS_KIT_STATE/state"
+    mkdir -p "$CHAOS_KIT_STATE"
+    grep -v -E '^(status|result)=' "$st" > "$st.2" 2>/dev/null || true
+    printf 'status=%s\\nresult=the result %s\\n' "$res" "$res" >> "$st.2"
+    mv "$st.2" "$st"
+    [ -f "$STUB/publish.json" ] && cp "$STUB/publish.json" "$CHAOS_SITE_DIR/updates/live/manifest.json"
+    [ -e "$STUB/down-after" ] && rm -f "$STUB/active"
+    case $res in ok) exit 0 ;; warn) exit 3 ;; rolled-back) exit 2 ;; *) exit 1 ;; esac ;;
+esac
+'''
+    publish = '#!/usr/bin/env bash\necho "publish $*" >> "$STUB/calls"\n'
+    git_env = dict(os.environ, GIT_AUTHOR_NAME='t', GIT_AUTHOR_EMAIL='t@example.org', GIT_COMMITTER_NAME='t',
+                   GIT_COMMITTER_EMAIL='t@example.org', GIT_CONFIG_GLOBAL='/dev/null', GIT_CONFIG_SYSTEM='/dev/null')
+    pair_src = open(os.path.join(repo_root, 'server', 'tools', 'client_pair.py'), encoding='utf-8').read()
+
+    def git(cwd, *a):
+        r = subprocess.run(['git', '-C', cwd] + list(a), env=git_env, capture_output=True, text=True)
+        assert r.returncode == 0, (a, r.stderr)
+        return r.stdout.strip()
+
+    with tempfile.TemporaryDirectory() as tmp:
+        stub = os.path.join(tmp, 'stub')
+        os.makedirs(stub)
+        for name, body in (('curl', curl), ('systemctl', systemctl)):
+            with open(os.path.join(stub, name), 'w') as f:
+                f.write(body)
+            os.chmod(os.path.join(stub, name), 0o755)
+        origin = os.path.join(tmp, 'origin.git')
+        work = os.path.join(tmp, 'work')
+        repo = os.path.join(tmp, 'repo')
+        subprocess.run(['git', 'init', '-q', '--bare', '-b', 'main', origin], env=git_env, check=True)
+        subprocess.run(['git', 'init', '-q', '-b', 'main', work], env=git_env, check=True)
+        git(work, 'remote', 'add', 'origin', origin)
+
+        def commit(files, msg, pair=None):
+            for path, text in files.items():
+                p = os.path.join(work, path)
+                os.makedirs(os.path.dirname(p), exist_ok=True)
+                with open(p, 'w') as f:
+                    f.write(text)
+            if pair is not None:
+                p = os.path.join(work, 'server', 'tools', 'client_pair.py')
+                os.makedirs(os.path.dirname(p), exist_ok=True)
+                with open(p, 'w') as f:
+                    f.write(re.sub(r'(?m)^PAIR_ASSETS = \d+', 'PAIR_ASSETS = %d' % pair, pair_src))
+            git(work, 'add', '-A')
+            git(work, 'commit', '-q', '-m', msg)
+            git(work, 'push', '-q', 'origin', 'main')
+            return git(work, 'rev-parse', 'HEAD')
+
+        base = commit({'client/base-patches/0001-a.patch': 'a\n', 'server/src-patches/0001-a.patch': 'a\n',
+                       'client/android/build.gradle': 'a\n', 'android/app.txt': 'a\n', 'server/data/x.lua': 'a\n'},
+                      'one', pair=80)
+        subprocess.run(['git', 'clone', '-q', origin, repo], env=git_env, check=True)
+        deploy = os.path.join(repo, 'server', 'deploy')
+        os.makedirs(deploy)
+        for n in ('chaos-autoupdate.service', 'chaos-autoupdate.timer', 'chaos-autoupdate-prep.service',
+                  'chaos-autoupdate-prep.timer'):
+            shutil.copy(os.path.join(HERE, n), deploy)
+        for n, body in (('chaos_kit_update.sh', kitupd), ('publish_client_update.sh', publish)):
+            with open(os.path.join(deploy, n), 'w') as f:
+                f.write(body)
+            os.chmod(os.path.join(deploy, n), 0o755)
+        kit = os.path.join(tmp, 'kit')
+        server = os.path.join(kit, 'server')
+        os.makedirs(os.path.join(kit, 'run'))
+        os.makedirs(os.path.join(server, 'data', 'globalevents'))
+        cfg = os.path.join(server, 'config.lua')
+        with open(cfg, 'w') as f:
+            f.write('ip = "play.example.org"\nclientGuardBuilds = "30"\nchaosClientPair = 80\n')
+        with open(os.path.join(kit, 'start-server.sh'), 'w') as f:
+            f.write('#!/bin/sh\n')
+        os.chmod(os.path.join(kit, 'start-server.sh'), 0o755)
+        kstate = os.path.join(tmp, 'kit-state')
+        os.makedirs(kstate)
+        with open(os.path.join(kstate, 'state'), 'w') as f:
+            f.write('installed_release=130\ndeployed_commit=%s\n' % base)
+        site = os.path.join(tmp, 'site')
+        os.makedirs(os.path.join(site, 'updates', 'live'))
+        siteenv = os.path.join(tmp, 'site.env')
+        with open(siteenv, 'w') as f:
+            f.write('CHAOS_SITE_URL=https://www.example.org/\n')
+        sysd = os.path.join(tmp, 'systemd')
+        os.makedirs(sysd)
+        botdata = os.path.join(tmp, 'bot')
+        os.makedirs(botdata)
+        tfile = os.path.join(tmp, 'github.token')
+        with open(tfile, 'w') as f:
+            f.write(token + '\n')
+        os.chmod(tfile, 0o600)
+        austate = os.path.join(tmp, 'au')
+        open(os.path.join(stub, 'active'), 'w').close()
+
+        def manifest(version, min_package, apk=0, path=None):
+            payload = {'version': version, 'min_package': min_package}
+            if apk:
+                payload['android_apk'] = {'version_code': apk}
+            with open(path or os.path.join(site, 'updates', 'live', 'manifest.json'), 'w') as f:
+                json.dump({'payload': json.dumps(payload)}, f)
+
+        def put(name, text):
+            with open(os.path.join(stub, name), 'w') as f:
+                f.write(text)
+
+        def drop(*names):
+            for n in names:
+                if os.path.exists(os.path.join(stub, n)):
+                    os.remove(os.path.join(stub, n))
+
+        def releases(*rows):
+            data = []
+            for kind, n, sha in rows:
+                tag, asset = {'winpkg': ('winpkg-%d', 'CindersOfChaos-Server-Linux.tar.gz'),
+                              'android': ('android-%d', 'CindersOfChaos-Android.apk'),
+                              'admin': ('adminapp-%d', 'CindersAdmin.apk')}[kind]
+                data.append({'tag_name': tag % n, 'draft': False, 'target_commitish': sha,
+                             'assets': [{'name': asset}]})
+            put('releases.json', json.dumps(data))
+
+        def ci(state):
+            runs = [] if state is None else [{'id': 5, 'event': 'push', 'status': 'completed' if state != 'pending' else 'in_progress',
+                                              'conclusion': state if state != 'pending' else None}]
+            put('ci.json', json.dumps({'workflow_runs': runs}))
+
+        def kitcheck(**kv):
+            d = {'update_available': 'no', 'needs_client': 'no', 'needs_downloads': 'no', 'installed_release': '130',
+                 'latest_release': '130'}
+            d.update(kv)
+            put('kitcheck', ''.join('%s=%s\n' % x for x in d.items()))
+
+        def dispatches():
+            p = os.path.join(stub, 'dispatch.json')
+            return [json.loads(x) for x in open(p).read().splitlines()] if os.path.exists(p) else []
+
+        def calls():
+            p = os.path.join(stub, 'calls')
+            return open(p).read() if os.path.exists(p) else ''
+
+        def reset():
+            drop('calls')
+
+        def dms():
+            box = os.path.join(botdata, 'outbox')
+            return sorted(os.listdir(box)) if os.path.isdir(box) else []
+
+        def state(**kv):
+            p = os.path.join(austate, 'state')
+            lines = [l for l in open(p).read().splitlines() if l.split('=', 1)[0] not in kv] if os.path.exists(p) else []
+            lines += ['%s=%s' % x for x in kv.items()]
+            with open(p, 'w') as f:
+                f.write('\n'.join(lines) + '\n')
+
+        env = dict(os.environ, PATH=stub + ':' + os.environ['PATH'], STUB=stub, CHAOS_CTL_NO_SUDO='1',
+                   CHAOS_KIT_DIR=kit, CHAOS_SERVER_DIR=server, CHAOS_ENV=os.path.join(kit, 'chaos.env'),
+                   CHAOS_REPO=repo, CHAOS_CTL_CONF=os.path.join(tmp, 'none.conf'), CHAOS_KIT_STATE=kstate,
+                   CHAOS_PID_FILE=os.path.join(tmp, 'no.pid'), CHAOS_LOG=os.path.join(tmp, 'no.log'),
+                   CHAOS_SITE_DIR=site, CHAOS_SITE_ENV=siteenv, CHAOS_GITHUB_TOKEN_FILE=tfile, CHAOS_EB_WAIT='0',
+                   CHAOS_SYSTEMD_DIR=sysd, CHAOS_AUTOUPDATE_STATE=austate, CHAOS_BOT_DATA=botdata,
+                   CHAOS_BOT_USER=getpass.getuser(), CHAOS_UPDATE_LOG=os.path.join(tmp, 'update.log'),
+                   CHAOS_PUBLISH_LOG=os.path.join(tmp, 'publish.log'), CHAOS_RELEASE_REPO='o/r',
+                   GIT_CONFIG_GLOBAL='/dev/null', GIT_CONFIG_SYSTEM='/dev/null')
+        for k in ('SUDO_USER', 'CHAOS_UNIT', 'CHAOS_ROOT', 'CHAOS_DB_SOCKET', 'CHAOS_BACKUP_DIR', 'CHAOS_UPDATE_BRANCH',
+                  'CHAOS_ENGINE_TOKEN_FILE'):
+            env.pop(k, None)
+
+        def run(*args):
+            return subprocess.run(['bash', SCRIPT, 'auto-update'] + list(args), env=env, capture_output=True, text=True,
+                                  timeout=120)
+
+        def kv(r):
+            d = {}
+            for line in r.stdout.splitlines():
+                if '=' in line:
+                    k, v = line.split('=', 1)
+                    d.setdefault(k, v)
+            return d
+
+        def st():
+            return kv(run('status'))
+
+        # ---- status, time, on, off
+        s = st()
+        check(s.get('installed') == 'no' and s.get('enabled') == 'no' and s.get('save_time') == '06:00'
+              and s.get('prep_at') == '03:00' and s.get('save_run_at') == '05:15' and s.get('game_save_time') == 'unknown',
+              'auto-update status: off, default 06:00: %s' % s)
+        with open(os.path.join(server, 'data', 'globalevents', 'globalevents.xml'), 'w') as f:
+            f.write('<globalevents>\n\t<!-- <globalevent name="x" time="01:00:00" script="serversave.lua" /> -->\n'
+                    '\t<globalevent name="Server Save" time="08:00:00" script="serversave.lua" />\n</globalevents>\n')
+        s = st()
+        check(s.get('save_time') == '08:00' and s.get('save_time_source') == 'game' and s.get('prep_at') == '05:00'
+              and s.get('save_run_at') == '07:15', 'auto-update status: the game save time 08:00: %s' % s)
+        for bad in ('25:00', '8:00', '08:00;id', ''):
+            check(run('time', bad).returncode != 0, 'auto-update time refuses %r' % bad)
+        r = run('time', '01:30')
+        s = st()
+        check(r.returncode == 0 and 'note:' in r.stdout and s.get('save_time') == '01:30' and s.get('save_time_source') == 'set'
+              and s.get('prep_at') == '22:30' and s.get('save_run_at') == '00:45', 'auto-update time 01:30, over midnight: %s' % s)
+        check(run('time', 'game').returncode == 0 and st().get('save_time') == '08:00', 'auto-update time game')
+        r = run('on')
+        timer = open(os.path.join(sysd, 'chaos-autoupdate.timer')).read() if os.path.exists(os.path.join(sysd, 'chaos-autoupdate.timer')) else ''
+        ptimer = open(os.path.join(sysd, 'chaos-autoupdate-prep.timer')).read() if os.path.exists(os.path.join(sysd, 'chaos-autoupdate-prep.timer')) else ''
+        svc = open(os.path.join(sysd, 'chaos-autoupdate.service')).read() if os.path.exists(os.path.join(sysd, 'chaos-autoupdate.service')) else ''
+        check(r.returncode == 0 and 'OnCalendar=*-*-* 07:15:00' in timer and 'OnCalendar=*-*-* 05:00:00' in ptimer
+              and repo + '/server/deploy/chaos-ctl.sh auto-update run-save --foreground' in svc,
+              'auto-update on: units with the times and the real path: ' + r.stdout + r.stderr)
+        check('enable --now chaos-autoupdate-prep.timer chaos-autoupdate.timer' in calls() and st().get('enabled') == 'yes',
+              'auto-update on: both timers enabled')
+        run('time', '09:00')
+        check('OnCalendar=*-*-* 08:15:00' in open(os.path.join(sysd, 'chaos-autoupdate.timer')).read(),
+              'auto-update time rewrites an installed timer')
+        run('time', 'game')
+        r = run('off')
+        check(r.returncode == 0 and 'disable --now chaos-autoupdate-prep.timer chaos-autoupdate.timer' in calls()
+              and st().get('enabled') == 'no', 'auto-update off')
+        for bad in (('bogus',), ('on', 'x'), ('run-save', '--yes'), ('run-prep', 'x'), ('log', 'x')):
+            check(run(*bad).returncode != 0, 'auto-update refuses %r' % (bad,))
+        reset()
+
+        # ---- prep
+        manifest(130, 30)
+        releases(('winpkg', 130, base), ('android', 30, base), ('admin', 50, base))
+        ci('pending')
+        r = run('run-prep', '--foreground')
+        check(r.returncode == 0 and not dispatches() and st().get('prep_result') == 'skipped'
+              and 'ci-pending' in st().get('prep_text', ''), 'prep: CI pending, nothing started: ' + r.stdout + r.stderr)
+        ci('failure')
+        r = run('run-prep', '--foreground')
+        check(not dispatches() and 'ci-failure' in st().get('prep_text', '') and len(dms()) == 1, 'prep: CI red, nothing started, a DM')
+        ci('success')
+        r = run('run-prep', '--foreground')
+        s = st()
+        check(r.returncode == 0 and not dispatches() and s.get('prep_result') == 'nothing', 'prep: nothing changed: %s' % s)
+        # a server patch: the Windows package with the same client number; android and admin app stay
+        head = commit({'server/src-patches/0002-b.patch': 'b\n'}, 'engine patch')
+        r = run('run-prep', '--foreground')
+        d = dispatches()
+        s = st()
+        check(r.returncode == 0 and len(d) == 1 and d[0]['wf'] == 'windows-package.yml'
+              and d[0]['body']['inputs']['client_build'] == '30', 'prep: engine patch, one Windows build, client 30: %s %s' % (d, s))
+        check(s.get('prep_result') == 'dispatched' and s.get('prep_engine', '').startswith('dispatched')
+              and s.get('prep_android') == 'current' and s.get('prep_admin') == 'current', 'prep: status lines: %s' % s)
+        r = run('run-prep', '--foreground')
+        check(len(dispatches()) == 1 and 'already dispatched today' in st().get('prep_text', ''), 'prep: at most once a day')
+        # the next day, the build still running: nothing new is started
+        state(prep_day='2000-01-01')
+        commit({'android/app2.txt': 'b\n'}, 'admin app')
+        r = run('run-prep', '--foreground')
+        d = dispatches()
+        check(len(d) == 2 and d[1]['wf'] == 'admin-app.yml' and d[1]['body'] == {'ref': 'main'}
+              and 'running' in st().get('prep_engine', ''), 'prep: a running Windows build is left alone, the admin app goes: %s' % d)
+        # the build done: the client program changed: a new client number for the Windows build and the APK
+        put('runs.json', json.dumps({'workflow_runs': [{'id': 300, 'run_number': 131, 'status': 'completed', 'conclusion': 'success',
+                                                        'created_at': '2026-11-25T03:00:00Z', 'updated_at': '2026-11-25T04:00:00Z',
+                                                        'head_sha': 'a1b2c3d', 'html_url': 'https://github.com/o/r/actions/runs/300'}]}))
+        releases(('winpkg', 131, head), ('android', 30, base), ('admin', 51, git(work, 'rev-parse', 'HEAD')))
+        state(prep_day='2000-01-01')
+        commit({'client/base-patches/0002-b.patch': 'b\n'}, 'client patch')
+        r = run('run-prep', '--foreground')
+        d = dispatches()[2:]
+        check(len(d) == 2 and d[0]['wf'] == 'windows-package.yml' and d[0]['body']['inputs']['client_build'] == '31'
+              and d[1]['wf'] == 'android-client.yml'
+              and d[1]['body']['inputs'] == {'client_build': '31', 'publish_release': 'true', 'server_host': 'play.example.org',
+                                             'site_url': 'https://www.example.org'},
+              'prep: client changed: Windows build and APK with client 31: %s %s' % (d, r.stdout + r.stderr))
+        check('31' in open(cfg).read().split('clientGuardBuilds')[1].splitlines()[0], 'prep: build 31 joins clientGuardBuilds')
+        check(st().get('prep_android') == 'dispatched android-31', 'prep: android status line: %s' % st())
+        # no public address: the APK is not started
+        with open(os.path.join(stub, 'runs.json')) as f:
+            runs = json.load(f)
+        for x in runs['workflow_runs']:
+            x['status'], x['conclusion'] = 'completed', 'success'
+        put('runs.json', json.dumps(runs))
+        manifest(131, 31)
+        releases(('winpkg', 132, git(work, 'rev-parse', 'HEAD')), ('android', 31, base), ('admin', 51, git(work, 'rev-parse', 'HEAD')))
+        state(prep_day='2000-01-01')
+        with open(cfg, 'w') as f:
+            f.write('ip = "127.0.0.1"\nclientGuardBuilds = "30, 31"\nchaosClientPair = 80\n')
+        commit({'client/android/build.gradle': 'b\n'}, 'apk change')
+        n = len(dispatches())
+        r = run('run-prep', '--foreground')
+        d = dispatches()[n:]
+        check([x['wf'] for x in d] == ['windows-package.yml'] and 'no public ip' in st().get('prep_android', ''),
+              'prep: no public address: no APK build: %s %s' % (d, st()))
+
+        # ---- save
+        reset()
+        drop('dispatch.json')
+        with open(cfg, 'w') as f:
+            f.write('ip = "play.example.org"\nclientGuardBuilds = "30, 31"\nchaosClientPair = 80\n')
+        head = git(work, 'rev-parse', 'HEAD')
+        manifest(132, 31, apk=31)
+        releases(('winpkg', 132, head), ('android', 31, base))
+        kitcheck()
+        r = run('run-save', '--foreground')
+        s = st()
+        check(r.returncode == 0 and s.get('save_result') == 'nothing' and 'kit apply' not in calls(),
+              'save: nothing new, nothing runs: %s %s' % (s, r.stderr))
+        n = len(dms())
+        kitcheck(update_available='yes')
+        ci('failure')
+        r = run('run-save', '--foreground')
+        check(st().get('save_result') == 'skipped' and 'ci-failure' in st().get('save_text', '') and 'kit apply' not in calls()
+              and len(dms()) == n + 1, 'save: red CI: skipped, nothing installed, a DM: %s' % st())
+        ci('success')
+        # applied at the save; the published client is release 133 of pair 82: the pair follows it
+        pair_head = commit({'server/data/y.lua': 'y\n'}, 'pair 82', pair=82)
+        releases(('winpkg', 133, pair_head), ('winpkg', 132, head), ('android', 31, base))
+        manifest(133, 31, apk=31, path=os.path.join(stub, 'publish.json'))
+        state(prep_day=time.strftime('%Y-%m-%d'), prep_engine='dispatched run 302')
+        put('runs.json', json.dumps({'workflow_runs': [{'id': 302, 'run_number': 134, 'status': 'in_progress', 'conclusion': None,
+                                                        'created_at': '2026-11-25T03:00:00Z', 'updated_at': '2026-11-25T03:30:00Z',
+                                                        'head_sha': 'a1b2c3d', 'html_url': 'https://github.com/o/r/actions/runs/302'}]}))
+        kitcheck(update_available='yes', latest_release='133')
+        reset()
+        r = run('run-save', '--foreground')
+        s = st()
+        kitline = [l for l in calls().splitlines() if l.startswith('kit apply')]
+        check(r.returncode == 0 and len(kitline) == 1 and '--at-save' in kitline[0] and '--reinstall' not in kitline[0]
+              and s.get('save_result') == 'ok', 'save: the kit update at the save: %s %s' % (kitline, s))
+        wait = int(kitline[0].split('SAVE_WAIT=')[1]) if kitline else 0
+        check(1800 < wait <= 86400 + 1800, 'save: the wait reaches past the next save: %d' % wait)
+        check('going on with winpkg-133' in s.get('save_text', ''), 'save: today\'s build not done: the previous release: %s' % s)
+        check('chaosClientPair = 82' in open(cfg).read() and '80 -> 82' in s.get('applied_pair', ''),
+              'save: the pair of the published client: %s' % s)
+        check(s.get('applied_client') == '133' and s.get('applied_release') == 'winpkg-130', 'save: applied lines: %s' % s)
+        # the next save: the raised pair installs (--reinstall); the newest release's higher pair is not the published one
+        pair_new = commit({'server/data/z.lua': 'z\n'}, 'pair 90', pair=90)
+        releases(('winpkg', 134, pair_new), ('winpkg', 133, pair_head), ('android', 31, base))
+        drop('publish.json')
+        kitcheck()
+        reset()
+        r = run('run-save', '--foreground')
+        kitline = [l for l in calls().splitlines() if l.startswith('kit apply')]
+        check(len(kitline) == 1 and '--reinstall' in kitline[0], 'save: a raised pair: --reinstall: %s' % kitline)
+        check('chaosClientPair = 82' in open(cfg).read(), 'save: never a pair the published client does not carry')
+        reset()
+        r = run('run-save', '--foreground')
+        check(st().get('save_result') == 'nothing', 'save: the pair installed: nothing new after')
+        # an APK of the live build: published after the update
+        releases(('winpkg', 134, pair_new), ('winpkg', 133, pair_head), ('android', 32, base), ('android', 31, base))
+        manifest(133, 32, apk=31)
+        reset()
+        r = run('run-save', '--foreground', '--now')
+        kitline = [l for l in calls().splitlines() if l.startswith('kit apply')]
+        check(len(kitline) == 1 and '--at-save' not in kitline[0], 'save --now: no wait for the save: %s' % kitline)
+        check('publish --apk android-32' in calls() and st().get('applied_apk') == '31', 'save: publish-apk of the live build: ' + calls())
+        # a failed update: rolled back, the unit started when it is down, a DM
+        n = len(dms())
+        kitcheck(update_available='yes')
+        put('kitresult', 'rolled-back')
+        open(os.path.join(stub, 'down-after'), 'w').close()
+        open(os.path.join(kit, 'run', 'stop'), 'w').close()
+        reset()
+        r = run('run-save', '--foreground')
+        s = st()
+        check(r.returncode == 1 and s.get('save_result') == 'rolled-back' and len(dms()) == n + 1,
+              'save: rolled back: status and a DM: %s' % s)
+        check('systemctl start' in calls() and not os.path.exists(os.path.join(kit, 'run', 'stop')),
+              'save: the unit started again, no stop request left: ' + calls())
+        drop('kitresult', 'down-after')
+        # the history, a run in the background, no token anywhere
+        r = run('log', '200')
+        check('save: done (ok)' in r.stdout and 'prep: engine' in r.stdout, 'auto-update log: ' + r.stdout[-300:])
+        r = run('run-prep')
+        check(r.returncode == 0 and 'started' in r.stdout, 'run-prep starts in the background')
+        time.sleep(1)
+        everything = run('log', '500').stdout + json.dumps(st()) + ''.join(open(os.path.join(botdata, 'outbox', x)).read() for x in dms())
+        check(token not in everything and token not in calls(), 'auto-update: the token never shows')
 
 
 def test_spawn_data():

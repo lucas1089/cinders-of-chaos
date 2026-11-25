@@ -20,6 +20,12 @@ end phase stays, so the effect still ends empty. Nothing is drawn, no pixel or c
   check  every listed thing is in its `after` form, or in its `before` form while client_pair.PAIR_ASSETS is older than PAIR
          ("pending").
 fix_pack_fx.forms and fixed_ids take a thing in its cut form as fixed, so the live checks of the import tools pass on pair 85.
+
+Centre rows (owner 2026-11-25, "Sobre a cabeça"). After the cut, the rows of pair_fixes/effect_centre.csv with pair == PAIR move
+an effect's art inside its canvas (recentre_effects.plan: whole pixels, nothing cut off, `of` is the centre after the cut). Effect
+758 stun_stars: the O734 centre row put the wheel of stars on the target's feet; the pair 85 row sets it over the head of a 1x1
+creature (body middle x, head top y). The moved pictures are new sprite records after the pair's last id; the digest `after` of
+the sums is the cut and moved form.
 Deterministic: the same pair and table give the same bytes.
 """
 import argparse
@@ -33,6 +39,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import anim_fixes as AF  # noqa: E402
 import import_donor_things as idt  # noqa: E402
+import recentre_effects as RC  # noqa: E402
 
 PAIR = 85
 TABLE = os.path.join(HERE, 'pair_fixes', 'dissolve_tail.csv')
@@ -42,6 +49,11 @@ SUMS = os.path.join(HERE, 'pair_fixes', 'dissolve_tail.sums')
 def fpf():
     import fix_pack_fx
     return fix_pack_fx
+
+
+def centre_rows(centre=RC.SPEC):
+    """the rows of pair_fixes/effect_centre.csv due in PAIR: built here, after the cut"""
+    return [r for r in RC.read_spec(centre) if r['pair'] == PAIR]
 
 
 # ------------------------------------------------------------------------------------------------ scan
@@ -77,7 +89,7 @@ def write_table(rows, path=TABLE):
 
 
 # ------------------------------------------------------------------------------------------------ build
-def build(dat_path, spr_path, out_dir=None, dry_run=False, write=False, table=TABLE, sums_path=SUMS, log=print):
+def build(dat_path, spr_path, out_dir=None, dry_run=False, write=False, table=TABLE, sums_path=SUMS, centre=RC.SPEC, log=print):
     """-> {(kind, id): (before, after)}"""
     F = fpf()
     if out_dir and os.path.abspath(os.path.dirname(dat_path)) == os.path.abspath(out_dir):
@@ -85,9 +97,10 @@ def build(dat_path, spr_path, out_dir=None, dry_run=False, write=False, table=TA
     rows = AF.read_spec(table)
     if any(r['op'] != 'undissolve' for r in rows):
         raise SystemExit('%s: only undissolve rows' % table)
+    crow = centre_rows(centre)
     d, spr, things = F.load(dat_path, spr_path)
     store = AF.Store(spr)
-    keys = sorted({(r['kind'], r['id']) for r in rows})
+    keys = sorted({(r['kind'], r['id']) for r in rows} | {('effect', r['id']) for r in crow})
     before = {}
     for kind, i in keys:
         t = F.thing_of(things, kind, i)
@@ -99,15 +112,26 @@ def build(dat_path, spr_path, out_dir=None, dry_run=False, write=False, table=TA
         log('every thing of the table is cut already: nothing to do')
         return {k: sums[k] for k in keys}
     edited = AF.apply_rows(rows, things, store, log)
+    if store.recs:
+        raise SystemExit('the cut added %d sprite records' % len(store.recs))
+    cut = sum(int(AF.args_of(r['args'])['of']) - edited[(r['kind'], r['id'])].groups[0]['phases'] for r in rows)
+    log('dissolve tail: %d things cut, %d phases removed, no sprite record added' % (len(rows), cut))
+    if crow:
+        eff = {i: ts for (k, i), ts in edited.items() if k == 'effect'}
+        eff, lines = RC.plan(things, store, crow, eff)
+        for i, ts in eff.items():
+            edited[('effect', i)] = ts
+        for ln in lines:
+            log('  ' + ln)
+        log('centre: %d rows of pair %d, %d sprite records appended' % (len(crow), PAIR, len(store.recs)))
     for (kind, i), ts in edited.items():
         t = ts.orig
         if idt.entry_bytes(t.cat, t.flags, t.groups) != d[t.raw[0]:t.raw[1]]:
             raise SystemExit('%s %d: its entry does not round-trip; refusing' % (kind, i))
-    if store.recs:
-        raise SystemExit('the cut added %d sprite records' % len(store.recs))
-    got = {k: (before[k], F.digest(store, edited[k].groups)) for k in keys}
-    cut = sum(int(AF.args_of(r['args'])['of']) - edited[(r['kind'], r['id'])].groups[0]['phases'] for r in rows)
-    log('dissolve tail: %d things cut, %d phases removed, no sprite record added' % (len(edited), cut))
+    got = {k: (before[k], F.digest(store, edited[k].groups) if k in edited else before[k]) for k in keys}
+    same = [k for k, (b, a) in got.items() if b == a]
+    if same:
+        raise SystemExit('%d things of the tables do not change: %s' % (len(same), same[:5]))
     if write:
         F.write_sums(got, sums_path)
         with open(sums_path, encoding='utf-8') as f:
@@ -125,7 +149,8 @@ def build(dat_path, spr_path, out_dir=None, dry_run=False, write=False, table=TA
         return got
     os.makedirs(out_dir, exist_ok=True)
     st = os.statvfs(out_dir)
-    if st.f_bavail * st.f_frsize < os.path.getsize(spr_path) + len(d) + (64 << 20):
+    extra = 4 * len(store.recs) + sum(len(r) for r in store.recs)
+    if st.f_bavail * st.f_frsize < os.path.getsize(spr_path) + extra + len(d) + (64 << 20):
         raise SystemExit('not enough disk space for the output pair')
     out = bytearray(d[:things['item'][0].raw[0]])
     for cat in AF.CATS:
@@ -135,13 +160,20 @@ def build(dat_path, spr_path, out_dir=None, dry_run=False, write=False, table=TA
     nd, ns = os.path.join(out_dir, 'Tibia.dat'), os.path.join(out_dir, 'Tibia.spr')
     with open(nd, 'wb') as f:
         f.write(out)
-    shutil.copyfile(spr_path, ns)
-    log('wrote %s (%s bytes, md5 %s), %s (a copy of the input spr)' % (nd, f'{len(out):,}', hashlib.md5(out).hexdigest(), ns))
-    verify(d, bytes(out), things, edited, store, ns, got, log)
+    if store.recs:
+        idt.write_spr(ns, spr.signature, spr.m, spr.count, store.recs)
+        log('wrote %s (%s bytes, md5 %s), %s (%s bytes; %d sprite records appended, %d to %d)' % (
+            nd, f'{len(out):,}', hashlib.md5(out).hexdigest(), ns, f'{os.path.getsize(ns):,}', len(store.recs), spr.count + 1,
+            spr.count + len(store.recs)))
+    else:
+        shutil.copyfile(spr_path, ns)
+        log('wrote %s (%s bytes, md5 %s), %s (a copy of the input spr)' % (nd, f'{len(out):,}', hashlib.md5(out).hexdigest(), ns))
+    verify(d, bytes(out), things, edited, store, ns, got, log, spr=spr, tail={(r['kind'], r['id']) for r in rows},
+           moved={('effect', r['id']) for r in crow})
     return got
 
 
-def verify(d, out, things, edited, store, spr_path, got, log):
+def verify(d, out, things, edited, store, spr_path, got, log, spr=None, tail=None, moved=frozenset()):
     F = fpf()
     nt = idt.parse_dat(out, idt.OUR_KINDS)
     same = 0
@@ -157,13 +189,29 @@ def verify(d, out, things, edited, store, spr_path, got, log):
             gn, go = tn.groups[0], to.groups[0]
             assert list(gn['sprites']) == ts.groups[0]['sprites'] and gn['anim'] == ts.groups[0]['anim'], (cat, to.id)
             assert all(gn[k] == go[k] for k in ('w', 'h', 'layers', 'px', 'py', 'pz')), (cat, to.id)
-            assert gn['phases'] == go['phases'] - 3, (cat, to.id, 'three phases cut')
-            assert set(gn['sprites']) <= set(go['sprites']), (cat, to.id, 'a sprite that was not in the thing')
-    nstore = AF.Store(F.Spr(spr_path))
+            if tail is None or (cat, to.id) in tail:
+                assert gn['phases'] == go['phases'] - 3, (cat, to.id, 'three phases cut')
+            if (cat, to.id) not in moved:
+                assert set(gn['sprites']) <= set(go['sprites']), (cat, to.id, 'a sprite that was not in the thing')
+    ms = F.Spr(spr_path)
+    if store.recs:                                    # the centre rows: new records decode, the old ones stay byte for byte
+        assert ms.count == spr.count + len(store.recs) and ms.signature == spr.signature
+        for sid, pix in store.pix.items():
+            g2 = ms.sprite(sid)
+            assert g2 is not None and (g2 == pix).all(), ('new sprite differs', sid)
+        import random
+        random.seed(1)
+        for sid in random.sample(range(1, spr.count + 1), min(20000, spr.count)) + [1, spr.count]:
+            x, y = int(spr.offs[sid - 1]), int(ms.offs[sid - 1])
+            assert (x == 0) == (y == 0), ('slot emptiness changed', sid)
+            if x:
+                n = 5 + int.from_bytes(spr.m[x + 3:x + 5], 'little')
+                assert spr.m[x:x + n] == ms.m[y:y + n], ('old record changed', sid)
+    nstore = AF.Store(ms)
     for (kind, i), (_b, a) in got.items():
         assert F.digest(nstore, AF.TS(F.thing_of(nt, kind, i)).groups) == a, ('digest after', kind, i)
-    log('verified: %d entries byte-identical, %d cut by three phases, their sprites a subset of their own, every thing at its '
-        '`after` digest' % (same, len(edited)))
+    log('verified: %d entries byte-identical, %d changed (cut by three phases, a moved thing on new records, the others on a '
+        'subset of their own sprites), every thing at its `after` digest' % (same, len(edited)))
 
 
 # ------------------------------------------------------------------------------------------------ check

@@ -1,0 +1,12 @@
+# Cinders of Chaos: runs chaos-autoupdate-prep.service once a day, 3 hours before the server save (O767): the slowest
+# Windows package of the recent runs took 75 minutes (a cold vcpkg cache), the usual one 25 to 60. Installed and
+# enabled by chaos-ctl.sh auto-update on, which writes the OnCalendar line from the save time. Off: auto-update off.
+
+[Unit]
+Description=Cinders of Chaos automatic daily update, the builds, 3 hours before the server save
+
+[Timer]
+OnCalendar=*-*-* 03:00:00
+
+[Install]
+WantedBy=timers.target

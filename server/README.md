@@ -5378,6 +5378,61 @@ map or spawn change. O765 (owner 2026-11-25: every VPS step gets a button) wraps
 - **Tests**: `deploy/chaos_ctl_test.py` `test_spawn_data` (stub generators); the app's reading: `SpawnDataInfoTest`
   (ci.yml).
 
+### Automatic daily update (O767) (`chaos-ctl.sh auto-update`)
+
+Owner 2026-11-25: one daily automatic update at the server save, not several by hand. Off by default.
+
+- **Turn on.** Admin app: tab Painel > card Atualização automática > button Ligar (confirm). Desktop app: Atualizações >
+  Atualização automática > Ligar. Shell fallback: `chaos-ctl.sh auto-update on`. Off: the same card, Desligar
+  (`auto-update off`). The buttons need a new admin app release (Config > Atualização do app).
+- **Commands.** `auto-update [status | on | off | time HH:MM|game | run-prep [--foreground] | run-save [--now]
+  [--foreground] | log [N]]`. Without `--foreground` a run starts in the background and writes to the log.
+- **Units.** `chaos-autoupdate-prep.timer` / `.service` (the builds) and `chaos-autoupdate.timer` / `.service` (the
+  install). `on` copies them from the checkout with the real repository path and writes the `OnCalendar` lines from the
+  save time. `time` rewrites them. No `Persistent=`: a missed run waits for the next day.
+- **Save time.** The one set with `time HH:MM`, else the `serversave.lua` line of `data/globalevents/globalevents.xml`,
+  else 06:00. `time game` goes back to the game's. A set time that differs from the game's prints a note: the install
+  waits for the real save.
+- **Lead times.** Prep 180 minutes before the save. The last 13 successful `windows-package.yml` runs took 25 to 60
+  minutes, 75 at most (a cold vcpkg cache); 180 is twice that plus room for the Android build. The save run starts
+  45 minutes before the save: the staging install (backup, download, `install_all.py` on a copy) ends while the game runs.
+- **Prep** (`run-prep`). At most once a day (`prep_day`). Needs the GitHub token (O530) and a checkout. Fetches the
+  branch (`CHAOS_UPDATE_BRANCH`, main). The CI of the head (`ci.yml` runs by `head_sha`) must be success; pending skips,
+  failure skips with a DM. Then, against the newest release of each kind:
+  - Windows package (`winpkg-N`): a change under `server/src-patches client launcher crates tools/windows tools/linux
+    .github/workflows/windows-package.yml`, or a higher `PAIR_ASSETS` in `client_pair.py` than at the release commit.
+    Started with `engine-build start`; `--new-client` when the client program changed (`engine-build status`
+    `client_changed=yes`) or a new APK is due. A run still queued or in progress starts nothing.
+  - Android game client (`android-N`): only once an `android-N` release exists. A change under `client/android
+    client/base-patches client/overlay/src client/tools/chaos_hardening.cmake .github/workflows/android-client.yml`.
+    Dispatched only with a new client number (its version code is the client build), with `server_host` = the public
+    `ip` of `config.lua` and `site_url` = the https `CHAOS_SITE_URL` of the site settings; without both it is skipped.
+  - Admin app (`adminapp-N`): a change under `android .github/workflows/admin-app.yml`. The app updates itself from the
+    newest release (O765).
+  - A pair push to `windows-assets` stays out: it needs the owner each time.
+- **Save run** (`run-save`). Reads `chaos_kit_update.sh check`. New: a code / engine / map update, a client or
+  downloads update, a client pair raised since the last install, or an `android-N` APK whose N is the live client build
+  and newer than the published APK. Nothing new: done, no DM. CI of the head not success: skipped with a DM.
+  - The kit update runs `apply --at-save`: the install goes on the copy while the game runs, then the run writes
+    `KIT/run/stop` and waits for the daily save. `start-server.sh` exits instead of restarting when that file exists, so
+    the save is the only restart. The swap, start, SQL, checks and rollback are the kit's (O440 update-apply). No save
+    within the wait (until the save plus 30 minutes): nothing is stopped, the result is failed.
+  - The kit takes the newest finished `winpkg-N`. A Windows build started by today's prep and not done: the run goes on
+    with the release before and says so in the status and the DM.
+  - After the run the stop file is removed and the unit started if it is down. Rolled back or failed: status line, DM.
+  - Client pair: raised only to the `PAIR_ASSETS` of the release whose client is published live
+    (`client_pair.py set`), never to a pair no shipped client has. Its guarded items install at the next save
+    (`apply --reinstall`).
+  - APK: `publish_client_update.sh --apk android-N` for the APK of the live client build.
+  - `--now` installs without waiting for the save (restarts now).
+- **Status.** `installed`, `enabled`, `save_time`, `game_save_time`, `save_time_source`, `prep_at`, `save_run_at`,
+  `next_prep`, `next_save`, `running`, `prep_*` (result, text, commit, engine, android, admin), `save_*`, `applied_*`
+  (commit, release, pair, client, APK), `client_pair`, `stop_request`. State: `/var/lib/chaos/autoupdate`
+  (`CHAOS_AUTOUPDATE_STATE`), log there. DMs go through the Discord bot's outbox (O398).
+- **Tests.** `deploy/chaos_ctl_test.py` `test_auto_update` (fake GitHub API, a real git origin with `client_pair.py` at
+  three pairs, fake kit update, publisher and systemctl), `deploy/chaos_kit_update_test.py` `test_at_save`,
+  `deploy/chaos_units_test.py`, `android/.../AutoUpdateInfoTest.java`. Not run on a live server yet.
+
 ## Test kit (`admin/testkit.lua`)
 `/testkit [kind][, player]` (admins only) equips a strong set for the class (uniques where they fit), a backpack of supplies (potions, runes, crystal coins, Orbs of Upheaval and Fate), raises the level to 500 and the main skills, and resets health and mana to the vocation's values. Relog afterwards so the stock rarity script applies the item bonuses.
 Kinds (`ChaosTestKit.kindByVocation`, picked from the vocation when none is given): `mage` (Mystic, Elementalist, Illusionist with the rod; magic level 110), `knight` (Warrior, Juggernaut; melee 120, shielding 110), `berserker` (the knight set with Executioner's Reckoning, two-handed, no shield), `paladin` (Ranger, Deadeye; crossbow, distance 125, a Legendary Haloed Quiver rolled at the kit's item level), `beastmaster` (Doomtide Longbow and a Legendary Mercurial Quiver), `thief` (Thief, Samurai: Soulreaper and the paladin's armour, sword 120, distance 110, magic level 30, 100 assassin stars), `ninja` (the same plus Bloodmoon Edge in the shield hand; without `src-patches/0002` it goes to the backpack), `monk` (Monk line: no weapon, fist 120, club 110, the paladin's armour), `necromancer` (Necromancer line: the mage set with the wand) and `templar` (Templar line: the knight set, sword and club 120, shielding 110, magic level 25).

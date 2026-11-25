@@ -1,0 +1,20 @@
+# Cinders of Chaos: the automatic daily update at the server save (O767; server/README.md "Automatic daily update
+# (O767)"). Started by chaos-autoupdate.timer 45 minutes before the save: when anything is new and the CI of the branch
+# head is green, `chaos-ctl.sh auto-update run-save` installs it on a copy of the server folder while the game runs,
+# waits for the daily save to stop the server (no second restart), swaps, starts, checks (rollback on failure), then
+# raises the client pair of the shipped client and publishes the Android APK of the live build.
+# Installed by: chaos-ctl.sh auto-update on (the admin app: Painel > Atualização automática > Ligar), which puts the
+# real repository path in. Root: the update replaces the server folder, systemd units and the site.
+# No sandbox lines: the kit update writes /etc/systemd/system (the Discord bot unit), /opt, /var/www and the database.
+
+[Unit]
+Description=Cinders of Chaos automatic daily update (at the server save)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/opt/chaos/repo/server/deploy/chaos-ctl.sh auto-update run-save --foreground
+# the staging install (up to 30 min) plus the wait for the save (45 min) plus the restart checks (15 min), with room
+TimeoutStartSec=4h
+LimitCORE=0

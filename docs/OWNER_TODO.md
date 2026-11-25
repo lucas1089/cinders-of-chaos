@@ -8,6 +8,10 @@ Never put keys, passwords or tokens in the repo. They go in the server's env fil
 Item 6 of 2026-10-14 ("Decida tudo sobre o item 6"): the developers decided every pure game or design question below;
 each is under "Decided" with its reason. Left here: what needs the owner's own answer or a real-world action.
 
+- [ ] **Automatic daily update (O767), off until you turn it on.** Install the new admin app first (Config > Atualização do
+  app), then tap Painel > Atualização automática > Ligar. The builds start 3 hours before the server save, the install
+  goes in at the save (one restart), red CI skips the day, a failure rolls back and the Discord bot tells you. Shell
+  fallback: `chaos-ctl.sh auto-update on`. Pushing a new sprite pair to `windows-assets` stays yours.
 - [ ] **Bot detection policy (O722, docs/BOT_DETECTION.md part 5).** The code only reports (nothing bans or kicks). Decided 2026-11-22: no cavebot allowed, any external tool forbidden (`rumo.policy` = "forbidden"). Still open: which known tools the Windows scan should look for (`tools.list`, hashes made by staff); the monitoring notice for the website rules (a draft is in the doc, not published); and, after real players and a test account with a cavebot have run, whether the thresholds hold. The server needs a rebuild with src-patch 0093 and the client with base patch 0207 before the reaction and tool signals exist.
 - [ ] **Launch date: on hold (owner, 2026-11-10).** "Leave the launch of the game open for now. We will solve everything we
   need first. Then we review the launch." Nothing in the game, the website or the promo material starts on, or names, a

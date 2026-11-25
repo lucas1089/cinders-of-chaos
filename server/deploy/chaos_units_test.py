@@ -7,6 +7,8 @@ reason is in the unit), and that the root ExecStopPost on a file of the reposito
 run here on a throwaway tree (clean tree runs the script; a file or directory writable by group or others, owned by the
 service user or group, or a missing user is refused). Runs systemd-analyze verify when it is installed.
 
+The automatic daily update (O767): its two services and timers (commands, timeout, default times, no catch-up).
+
 usage: python3 -I server/deploy/chaos_units_test.py
 """
 import glob
@@ -70,6 +72,24 @@ check(len(fam) == 1 and set(fam[0].split('=', 1)[1].split()) == {'AF_INET', 'AF_
       'chaos-server.service address families: %r' % fam)
 check(not any(l.startswith('UMask=') for l in srv), 'UMask would hide files the website and chaos-ctl read')
 check(not any(l.startswith('ReadWritePaths=') for l in srv), 'ReadWritePaths without ProtectSystem=strict')
+
+# O767: the automatic daily update. The services run chaos-ctl.sh auto-update in the foreground; the timers (times
+# written by auto-update on from the save time; the files hold the default save 06:00) never catch up a missed run
+au = {n: lines(os.path.join(HERE, n)) for n in ('chaos-autoupdate.service', 'chaos-autoupdate.timer',
+                                                 'chaos-autoupdate-prep.service', 'chaos-autoupdate-prep.timer')}
+check('ExecStart=/opt/chaos/repo/server/deploy/chaos-ctl.sh auto-update run-save --foreground' in au['chaos-autoupdate.service'],
+      'chaos-autoupdate.service runs auto-update run-save --foreground')
+check('ExecStart=/opt/chaos/repo/server/deploy/chaos-ctl.sh auto-update run-prep --foreground'
+      in au['chaos-autoupdate-prep.service'], 'chaos-autoupdate-prep.service runs auto-update run-prep --foreground')
+check('Type=oneshot' in au['chaos-autoupdate.service'] and 'TimeoutStartSec=4h' in au['chaos-autoupdate.service'],
+      'chaos-autoupdate.service: oneshot, 4 h for the install, the wait for the save and the checks')
+check('ProtectSystem=full' not in au['chaos-autoupdate.service'],
+      'chaos-autoupdate.service: the kit update writes /etc/systemd/system (no ProtectSystem)')
+check('OnCalendar=*-*-* 05:15:00' in au['chaos-autoupdate.timer'], 'chaos-autoupdate.timer: 45 min before 06:00')
+check('OnCalendar=*-*-* 03:00:00' in au['chaos-autoupdate-prep.timer'], 'chaos-autoupdate-prep.timer: 3 h before 06:00')
+for n in ('chaos-autoupdate.timer', 'chaos-autoupdate-prep.timer'):
+    check(not any(l.startswith('Persistent=') for l in au[n]) and 'WantedBy=timers.target' in au[n],
+          n + ': no catch-up of a missed run, wanted by timers.target')
 
 # the guard of the root ExecStopPost
 stop = [l for l in srv if l.startswith('ExecStopPost=')]
