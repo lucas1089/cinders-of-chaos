@@ -314,6 +314,10 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                3561-3588, data/monster/
                monster_drive_looks.csv); the installed files and the installed bounty pool get the new look; waits for config.lua
                chaosClientPair >= 81, README "Client pair guard" and "Drive characters as hunt monsters (O726)"; after monsterpixellablooks
+  monsterrelooklooks tools/install_monster_relook_looks.py  Banshee, Werelion and Leaf Golem wear our PixelLab outfits 3744-3746, White
+               Lion the stock look 1041, Hellhound the stock look 3280 (O768; client pair 86, data/monster/monster_relook_looks.csv);
+               the installed files and the installed bounty pool get the new look; waits for config.lua chaosClientPair >= 86, README
+               "Client pair guard" and "Monster looks that match the name (O768)"; after monsterdrivelooks
   gnometeleports tools/patch_gnome_teleports.py  the gnome city and warzone teleports of the base server open to every character
   annihilatorsolo tools/patch_annihilator_solo.py  the Annihilator lever lets one to four players in (demons scale with the team)
   astrodoor    tools/patch_astro_door.py           the Astro tower door (action id 13690) lets everybody through; its hall is a hunt spawn
@@ -1418,6 +1422,15 @@ def step_monsterdrivelooks(server, data, ctx):
 
 
 STEPS.insert(STEPS.index('monsterpixellablooks') + 1, 'monsterdrivelooks')  # the Drive pack monsters (pair 81) go over every earlier look
+
+
+def step_monsterrelooklooks(server, data, ctx):
+    # the client pair guard (config.lua chaosClientPair >= 86) is in the tool; its warning reaches the report
+    args = [tool('install_monster_relook_looks.py'), data] + (['--dry-run'] if ctx['dry'] else [])
+    return tool_result_warn(run_tool(args, 'install_monster_relook_looks.py'))
+
+
+STEPS.insert(STEPS.index('monsterdrivelooks') + 1, 'monsterrelooklooks')  # O768 (pair 86) goes over every earlier look
 
 
 def step_monsterresists(server, data, ctx):

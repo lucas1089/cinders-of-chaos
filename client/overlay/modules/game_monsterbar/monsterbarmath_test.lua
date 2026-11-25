@@ -107,6 +107,12 @@ eq(M.drawScale(malgrath, 'boss', nil, 3530), 1, 'Malgrath as drawn: its attack e
 eq(M.drawScale(malgrath, nil, nil, 3530), 1, 'Malgrath before the tier answer: as drawn, not shrunk')
 eq(M.drawScale(jug, 'boss', nil, 1423), M.BOSS_SCALE, 'another boss look stays 1.5x')
 eq(M.drawScale(nil, 'boss', nil, 0), M.BOSS_SCALE, 'a hidden boss (look 0) keeps the boss rule')
+-- O768 (owner 2026-11-25 "talath pode ser maior"): Talath (look 3529, 5x5) at 1.75, before and after the tier answer
+local talath = { 15, -2, -122, -55, 52, 5, 5, 0, 64 }
+eq(M.drawScale(talath, 'boss', nil, 3529), 1.75, 'Talath 1.75x as a boss')
+eq(M.drawScale(talath, nil, nil, 3529), 1.75, 'Talath before the tier answer: 1.75x, not shrunk')
+eq(M.drawScale(talath, 'boss', nil, 3528), M.BOSS_SCALE, 'another 5x5 boss look stays 1.5x')
+eq(M.LOOK_SCALE[3529] > M.BOSS_SCALE and M.NATIVE_LOOKS[3529] == nil, true, 'Talath is bigger than a boss and not native')
 
 print(string.format('monsterbar math: %d checks, %d failed', checks, fails))
 if fails > 0 then os.exit(1) end

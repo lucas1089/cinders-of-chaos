@@ -156,6 +156,8 @@ def write_idle(dat, pool=POOL, path=IDLE, allow_path=ALLOW):
     looks |= {new for _old, new in S.load_swap().values()}          # and the swapped looks of pair 73 (O619)
     looks |= {new for _old, new in S.load_pixellab().values()}      # and the PixelLab looks of pair 74 (O640)
     looks |= {new for _old, new in S.load_drive().values()}         # and the Drive pack looks of pair 81 (O726)
+    looks |= {new for _old, new in S.load_relook().values()}        # and the O768 looks of pair 86
+    looks |= {new for _old, new in S.load_drive(os.path.join(os.path.dirname(S.DRIVE), 'monster_apex_looks.csv')).values()}  # O763, pair 84
     walk = {}
     facts = dat_facts(dat, looks, walk)
     with open(path, 'w', newline='', encoding='utf-8') as f:
@@ -289,7 +291,7 @@ def donor_rows(rows, pair, donor=None, purchased=None):
     (over its donor look: Bonepicker, Wan Sentry), from pair 73 a monster of the creature pack map (O605, monster_creature_looks.csv)
     its new look, from pair 73 a monster of the swap map (O619, monster_o619_looks.csv) its new look, from pair 74 a monster of the PixelLab
     map (O640, monster_pixellab_looks.csv) its new look, from pair 81 a monster of the Drive pack map (O726, monster_drive_looks.csv)
-    its new look; names is the set of those monsters
+    its new look, from pair 86 a monster of the O768 map (monster_relook_looks.csv) its new look; names is the set of those monsters
     (their rows of the allow lists are for the old look)."""
     import client_pair
     donor = S.load_donor() if donor is None else donor
@@ -302,10 +304,12 @@ def donor_rows(rows, pair, donor=None, purchased=None):
     swap = S.load_swap()
     pixellab = S.load_pixellab()
     drive = S.load_drive()
+    relook = S.load_relook()
     for r in rows:
         chain = [m[r['name']] for m, need in ((donor, client_pair.PAIR_DONOR), (purchased, client_pair.PAIR_PURCHASED),
                                               (creature, client_pair.PAIR_CREATURE), (swap, client_pair.PAIR_SWAP),
-                                              (pixellab, client_pair.PAIR_PIXELLAB), (drive, client_pair.PAIR_DRIVE_MONSTERS))
+                                              (pixellab, client_pair.PAIR_PIXELLAB), (drive, client_pair.PAIR_DRIVE_MONSTERS),
+                                              (relook, client_pair.PAIR_RELOOK_MONSTERS))
                  if r['name'] in m and pair >= need]
         if chain and r['look'] in {x for d in chain for x in d} | {d[0] for d in chain}:
             r = dict(r, look=chain[-1][1])
