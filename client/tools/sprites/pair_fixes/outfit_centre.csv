@@ -2543,7 +2543,7 @@ look,kind,size,action,old_dx,old_dy,new_dx,new_dy,shift_x,shift_y,before_x,befor
 3277,monster,2x2,report,0,0,0,0,0,0,13.5,26.5,13.5,26.5,12,2,monster look: reported apart
 3278,monster,4x4,report,8,8,8,8,0,0,-40.5,-13.5,-40.5,-13.5,10,9,monster look: reported apart
 3279,other,2x2,report,0,0,0,0,0,0,11,27,11,27,10,5,not a player look
-3280,other,2x2,report,0,0,0,0,0,0,11,27,11,27,10,5,not a player look
+3280,monster,2x2,report,0,0,0,0,0,0,11,27,11,27,10,5,monster look: reported apart
 3281,other,2x2,report,0,0,0,0,0,0,11,27,11,27,10,5,not a player look
 3282,other,2x2,report,8,8,8,8,0,0,15,19.5,15,19.5,5,5,not a player look
 3283,other,2x2,report,8,8,8,8,0,0,16.5,19,16.5,19,3,4,not a player look
