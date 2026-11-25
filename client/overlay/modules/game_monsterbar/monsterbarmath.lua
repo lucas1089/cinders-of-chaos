@@ -18,6 +18,10 @@ M.BOSS_SCALE = 1.5
 M.BODY_MAX_H = 68
 M.BODY_MAX_W = 96
 M.SCALE_MIN = 0.5
+-- Looks drawn at their own size whatever the tier (seen in a client 2026-11-25, V5): Malgrath (outfit 3530, O637) plays its
+-- attacks as effects that carry its body at the outfit's own pixel grid (client/tools/sprites/gen_malgrath_boss.py), and an
+-- effect is never scaled; at BOSS_SCALE the standing boss was 1.5x its attacks, so it shrank at every attack and grew back.
+M.NATIVE_LOOKS = { [3530] = true }
 
 function M.bodySize(anchor)
   if type(anchor) ~= 'table' or type(anchor[2]) ~= 'number' or type(anchor[3]) ~= 'number'
@@ -27,8 +31,11 @@ function M.bodySize(anchor)
   return anchor[5] - anchor[4], anchor[2] - anchor[3]
 end
 
--- tier: the server's tier ('boss', ...) or nil while unknown; role: 'omen' | 'guardian' | nil
-function M.drawScale(anchor, tier, role)
+-- tier: the server's tier ('boss', ...) or nil while unknown; role: 'omen' | 'guardian' | nil; look: the outfit id (optional)
+function M.drawScale(anchor, tier, role, look)
+  if look and M.NATIVE_LOOKS[look] then
+    return 1
+  end
   if tier == 'boss' or role == 'omen' then
     return M.BOSS_SCALE
   end
