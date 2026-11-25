@@ -144,7 +144,10 @@ def test_committed_table(c):
     t.expect(all(max(abs(r['to'][0]), abs(r['to'][1])) <= 4 for r in old), 'the centre after is inside the 4 px of gen_area_fx.CENTRE_TOL')
     new = [r for r in rows if r['pair'] == 82]
     t.expect(len(new) == 25 and len({r['id'] for r in new}) == 25, 'O734: 25 rows of pair 82, one per effect')
-    t.expect(all(r['pair'] in (80, 82) for r in rows), 'rows of pair 80 and 82 only')
+    late = [r for r in rows if r['pair'] == 85]
+    t.expect([r['id'] for r in late] == [758], 'O766: one row of pair 85, 758 stun_stars over the head (fix_dissolve_tail.py builds it)')
+    t.expect(all(r['pair'] in (80, 82, 85) for r in rows), 'rows of pair 80, 82 and 85 only')
+    t.expect(set(RE.BUILT_BY) == {r['pair'] for r in rows if r['pair'] > RE.PAIR_STANDALONE}, 'every later pair names its tool')
 
 
 def test_pending(c):

@@ -20,8 +20,9 @@ Verification (always): the dat of every thing outside the table is byte-identica
 spr keeps every old record byte for byte and every new sprite decodes to the pixels asked for, the new centre is `to`.
 Deterministic: the same pair and table give the same bytes.
 
-O734: column `pair`, the pair a row is due in (80 for O725b; 82 for the rows of O734). Rows of a pair after PAIR_STANDALONE are
-applied by fix_pack_fx.py, after its dissolve step, so their `of` is the centre there; `build` here skips them. `check` holds
+O734: column `pair`, the pair a row is due in (80 for O725b; 82 for the rows of O734; 85 for effect 758 stun_stars over the
+head, O766). Rows of a pair after PAIR_STANDALONE are built by another tool (BUILT_BY): pair 82 by fix_pack_fx.py after its
+dissolve step, pair 85 by fix_dissolve_tail.py after its cut, so their `of` is the centre there; `build` here skips them. `check` holds
 a row from its pair on: before (client_pair.PAIR_ASSETS older) it is "pending" and its centre is not held; a thing that
 fix_pack_fx.py lists and that stands in its fixed form passes (a later step of that tool may move its centre a little).
 """
@@ -39,7 +40,8 @@ from datspr import Spr  # noqa: E402
 
 SPEC = os.path.join(HERE, 'pair_fixes', 'effect_centre.csv')
 TOL = 0.05
-PAIR_STANDALONE = 80     # rows of this pair or older are built here; later ones by fix_pack_fx.py (O734)
+PAIR_STANDALONE = 80     # rows of this pair or older are built here; later ones by the tool of BUILT_BY
+BUILT_BY = {82: 'fix_pack_fx.py', 85: 'fix_dissolve_tail.py'}
 
 
 def pair_of(text):
@@ -150,7 +152,7 @@ def build(dat_path, spr_path, out_dir, spec=SPEC, log=print):
     later = [r for r in rows if r['pair'] > PAIR_STANDALONE]
     rows = [r for r in rows if r['pair'] <= PAIR_STANDALONE]
     for r in later:
-        log('effect %d: a row of pair %d, built by fix_pack_fx.py: skipped here' % (r['id'], r['pair']))
+        log('effect %d: a row of pair %d, built by %s: skipped here' % (r['id'], r['pair'], BUILT_BY.get(r['pair'], 'another tool')))
     edited, lines = plan(things, store, rows)
     for ln in lines:
         log(ln)
