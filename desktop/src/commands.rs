@@ -395,6 +395,9 @@ pub static ACTIONS: &[Action] = &[
     act(Game, "Mapa", "Novo endereço das áreas", "areas-publish --rotate").ask().t(120),
     act(Game, "Mapa", "Ver correções de casas", "house-fix").t(600).h("Só lê o mapa (O758): as correções de flags das casas que o corretor faria e o que fica para uma pessoa. O servidor continua ligado."),
     act(Game, "Mapa", "Corrigir casas", "house-fix --write").ask().live(Live::Restarts).t(900).h("Para o servidor, guarda uma cópia datada do mapa, corrige as flags das casas (só os tiles planejados mudam) e liga o servidor de novo (O758)."),
+    act(Game, "Mapa", "Publicar áreas com imagens", "areas-publish --pictures").ask().t(600).h("Também uma imagem de cada área: precisa de numpy, Pillow e dos sprites na VPS (O765)."),
+    act(Game, "Mapa", "Ver dados de spawn", "spawn-data").t(300).h("Só compara (O765): o quadro de caçadas (bounty) e o bestiário refeitos do mapa carregado contra os instalados. Nada é gravado."),
+    act(Game, "Mapa", "Gravar dados de spawn", "spawn-data --write").ask().live(Live::Restart).t(600).h("Grava o quadro de caçadas, o bestiário e os marcadores do mapa feitos do mapa carregado (O765). Vale no próximo reinício; Atualizar servidor volta à cópia do repositório."),
     // ---- Painel do jogo
     // the card with the choice and the button is drawn by the window (reload-file ACTOR NAME)
     act(GamePanel, "Recarregar um arquivo", "Listar tabelas de configuração", "reload-files").t(30).h("Recarregar uma delas: Painel do jogo > Recarregar um arquivo."),

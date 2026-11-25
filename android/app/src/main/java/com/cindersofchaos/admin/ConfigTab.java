@@ -150,6 +150,21 @@ final class ConfigTab {
         fb.addView(forget, ui.gap(12));
         page.addView(fp, ui.gap(12));
 
+        // ---- the app's own update (O765, AppUpdater): the newest adminapp-N release of GitHub
+        MaterialCardView upd = ui.titledCard("Atualização do app");
+        LinearLayout ub = Ui.body(upd);
+        ub.addView(ui.text("Instalada: " + a.updater.installed()));
+        TextView updState = ui.hint("O app procura sozinho uma vez por dia e pergunta antes de baixar.");
+        a.updater.status = updState;
+        ub.addView(updState, ui.gap(4));
+        MaterialButton updCheck = ui.primary("Procurar atualização", R.drawable.ic_refresh);
+        updCheck.setOnClickListener(v -> a.updater.check(true));
+        ub.addView(updCheck, ui.gap(8));
+        ub.addView(ui.hint("Baixa do GitHub (repositório público, sem senha nem token), confere o tamanho e o SHA-256 e "
+                + "abre o instalador do Android. Na primeira vez o Android pede para permitir instalar apps desta fonte. "
+                + "A chave SSH e as configurações ficam."), ui.gap(8));
+        page.addView(upd, ui.gap(12));
+
         // ---- help
         MaterialCardView help = ui.titledCard("Primeira vez");
         LinearLayout hb = Ui.body(help);

@@ -307,6 +307,12 @@ Pelo SSH: `chaos-ctl.sh engine-build status | start [--client-build N] | log [N]
 - **Site e update do client** (`site-install`, `site-log`, `publish-update TAG`, `publish-apk TAG`, `publish-unity TAG`, `publish-log`). "Publicar client Unity" (`publish-unity unity-N`, O433 fase 16; campo "Release do client Unity (beta)") assina o client Unity, do zip anexado a mão a uma release (artefato do workflow Unity prototype), como `updates/unity` do site: o launcher passa a oferecer "Cliente Unity (beta)"; o update do client principal não muda. "Publicar app Android" (`publish-apk android-N`, O313) publica o APK do celular, da release do workflow Android client, como atualização do app: os celulares oferecem a troca ao abrir; "Tirar o app do update" remove a oferta. "Trocar os downloads do site" (`update-downloads`, O165) põe o pacote completo mais novo (Windows e Linux) na pasta `dl/` do site sem reiniciar o servidor; "Log da atualização" mostra o andamento. `publish-update` publica só a atualização assinada, não os pacotes.
 - **Mapas pedidos** (`areas-publish [--pictures] [--rotate]`, O192; Comandos > card "Mapas pedidos"). "Publicar áreas" monta, a partir das áreas pendentes e aprovadas da pasta `server/tools/areaplan/inbox/` do repositório na VPS (traga com Painel > Atualizar servidor depois de unir na main), os arquivos do editor de mapas em `dl/areas-TOKEN/` do site e mostra a linha `url=`; copie-a (botão de copiar do resultado) e rode `fetch-areas.bat` no Windows. "Novo endereço" (`--rotate`) cria outro TOKEN e apaga a pasta antiga. O site não tem login para arquivos estáticos: o TOKEN (32 dígitos hexa, `/var/lib/chaos/areas/token`) é a proteção. Não reinicia nem altera o mapa do jogo. docs/MAP_GUIDE.md "Map inbox".
 - **Casas do mapa** (`house-fix [--write]`, O758; Comandos > Ações rápidas > card "Casas do mapa"). "Ver correções de casas" roda o corretor de casas (`server/tools/fix_houses.py`, O742) só lendo o mapa: quantos tiles de casa teriam a flag de zona corrigida (PZ_ADD, PVP_CLEAR) e o que fica para uma pessoa (casa sem porta, tamanho, andares). O servidor continua ligado. "Corrigir casas" pede confirmação, para o servidor (salva todos), copia o mapa para `<mapa>.otbm.house-fix-AAAAmmdd-HHMMSS`, grava só os tiles planejados (map_write_guard.py recusa qualquer outra diferença e o mapa fica como estava), devolve dono e permissão do arquivo e liga o servidor de novo, também depois de uma recusa. O resultado diz quantos tiles mudaram e o nome da cópia. No app do PC: Ajustes do jogo > Mapa. server/README.md "House fixer (O742)".
+- **Dados de spawn** (`spawn-data [--write]`, O765; Comandos > Ações rápidas > card "Dados de spawn"). O passo que a documentação pedia na VPS depois de colocar áreas no mapa ou mudar spawns (`gen_bounty_pool.py`, `gen_bestiary_spawns.py`, `gen_poi.py`). "Ver dados de spawn" refaz o quadro de caçadas (bounty) e o bestiário a partir do mapa carregado numa pasta temporária e compara com os instalados: nada é gravado. "Gravar dados de spawn" pede confirmação, troca os arquivos que mudaram em `data/scripts/chaos` (o antigo fica como `ARQUIVO.before-spawn-data`) e refaz os marcadores do mapa (`data/chaos_poi.lua`). O servidor continua ligado; vale no próximo reinício (Painel > Reiniciar em...). Atualizar servidor copia de volta a cópia do repositório: o resultado avisa quando ela está atrasada (rode de novo depois de cada atualização até o repositório receber os arquivos novos). No app do PC: Ajustes do jogo > Mapa. server/README.md "Spawn data from the loaded map (O765)".
+- **Recarregar uma tabela** (`reload-files`, `reload-file NOME [CONFIG]`, O312 / O765; Comandos > Ações rápidas > card "Recarregar uma tabela"). "Listar" mostra as tabelas `*_config.lua` do servidor; toque numa para preencher o campo. "Recarregar" pede confirmação e lê de novo só aquela tabela no jogo, sem /reload e sem reiniciar, como o personagem admin da aba Config (grupo 6). No app do PC: Painel do jogo > Recarregar um arquivo.
+- **Direitos de staff e classes** (`gm-set NOME GRUPO`, `vocations`, O765; Comandos > Ações rápidas > card "Contas" > "Direitos de staff" e "Classes (ids)"). Campos Personagem e Grupo (1 jogador, 2 tutor, 3 tutor sênior, 4 GM, 5 CM, 6 god); confirmação; o personagem precisa estar offline e o grupo vale no próximo login. Serve também quando ainda não existe personagem admin. "Classes (ids)" lista id=classe.
+- **Desfazer servidor como chaos** (`server-user rollback`, O765; Comandos > Ações rápidas > card "Servidor como usuário chaos" > "Desfazer (unidade antiga)"). Põe de volta a unidade guardada pelo último Corrigir; não reinicia.
+- **Publicar áreas com imagens** (`areas-publish --pictures`, O765; Comandos > Ações rápidas > card "Mapas pedidos" > "Publicar com imagens"). Também uma imagem de cada área; precisa de numpy, Pillow e dos sprites na VPS (card "Assistir jogador" > Baixar sprites).
+- **Estado do token do GitHub** (`github-token-status`, O765; Painel > card "Recompilar engine" > "Definir token do GitHub" > "Estado do token"). Só leitura: o repositório é privado? o token alcança o código e o Actions?
 - **Logs de GM** (aba Logs, GM; `gm-logs [N] [NOME]`).
 - **Métricas dos jogadores** (aba Painel, card "Métricas dos jogadores", botão "Atualizar métricas"; `metrics [--json]`, O253). Só
   leitura. Mostra por faixa de nível quantos personagens pararam de jogar (sem login há 14 dias ou mais), as 10 áreas e os 10
@@ -351,9 +357,29 @@ Pelo SSH: `chaos-ctl.sh engine-build status | start [--client-build N] | log [N]
   2,3 GB de disco temporário. Sem o app, na VPS: `sudo /opt/chaos/repo/server/deploy/chaos-ctl.sh spectate-pair fetch`.
   A VPS precisa de `python3-numpy` e `python3-pil` (`sudo apt-get install python3-numpy python3-pil`).
 
+## Atualização do app (O765)
+
+Pedido do dono (2026-11-25): "coloque um auto update no app do celular". Config > card "Atualização do app" >
+"Procurar atualização"; além disso o app procura sozinho uma vez por dia, depois do bloqueio de tela.
+
+- Lê a lista de releases do GitHub (repositório público, sem token, sem conta, sem dado do servidor; só um
+  User-Agent). Vale a release `adminapp-N` de maior N (prerelease conta, rascunho não) que tenha `CindersAdmin.apk` e
+  `CindersAdmin.apk.sha256`. N é o versionCode que o workflow Admin app grava; a versão aparece como 2.N.
+- Se N for maior que a versão instalada, o app pergunta. "Baixar e instalar" baixa o APK para o cache do app,
+  continua de onde parou se a conexão cair, confere o tamanho e o SHA-256 e abre o instalador do Android.
+- Na primeira vez o Android pede "Permitir desta fonte": o app abre a tela certa, e a instalação continua quando você
+  volta.
+- A chave SSH e as configurações ficam só se o APK novo tiver a mesma assinatura (os secrets `ANDROID_KEYSTORE_B64`,
+  `ANDROID_KEYSTORE_PASS`, `ANDROID_KEY_ALIAS`, seção abaixo). Sem eles o Android recusa a troca.
+- A primeira instalação de um app com este botão ainda é manual (o app antigo, até adminapp-139, não sabe se
+  atualizar). Daí em diante ele se atualiza sozinho.
+- Releases antigas sem o `.sha256` são ignoradas. Código: `AppUpdater.java` (tela), `AppUpdateInfo.java` (escolha da
+  release, versão, SHA-256) e `AppApkFetcher.java` (download), testados por `AppUpdateInfoTest` (ci.yml).
+
 ## Instalar o app
 
-1. No GitHub: Actions, **Admin app**, Run workflow. No fim, a Release `adminapp-N` tem o `CindersAdmin.apk`.
+1. No GitHub: Actions, **Admin app**, Run workflow. No fim, a Release `adminapp-N` tem o `CindersAdmin.apk` e o
+   `CindersAdmin.apk.sha256` (a atualização do app confere).
 2. Baixe o APK no celular, permita instalar desta fonte e instale.
 3. **Assinatura estável (faça uma vez):** sem ela cada APK novo tem outra assinatura e você precisa desinstalar o app
    antes de instalar o novo (a chave SSH some junto). Crie a chave de assinatura num computador:
@@ -408,10 +434,52 @@ Windows podem ter cada um a sua chave. Rodar de novo com a mesma chave não dupl
 `panel NOME ACAO JSON`, `reload-files`, `reload-file NOME [CONFIG]` (uma tabela `*_config.lua` no jogo sem /reload, grupo 6), `update TAG now|at-save` e `rollback now|at-save` (layout padrão; no kit, `rollback now` é
 `update-rollback`), `update-check`, `update-apply [--no-client] [--no-downloads] [--no-site] [--no-map]`, `update-status`,
 `update-rollback`, `update-log`, `engine-build [status | start [--client-build N] | log [N]]` (recompila o engine no GitHub, O436), `github-token-set` (o token do repositório privado no stdin, O530; `engine-build-token-set` é o mesmo) e `github-token-status`, `admin-desktop-releases` e `admin-desktop-asset-url TAG NOME` (o auto-atualizar do app do PC pergunta à VPS), `publish-update TAG` (atualização do cliente, docs/LAUNCH.md "Publishing a client
-update"), `publish-log`, `site-install`, `site-log`, `areas-publish [--pictures] [--rotate]`, `house-fix [--write]`, `xp-rate`, `client-pair [show | set N]`, `beta-mode [status | on | off] [restart]`, `clientservices-impl [status | rust | python]`, `health`, `cleanup [--yes]`, `account-create NOME`,
+update"), `publish-log`, `site-install`, `site-log`, `areas-publish [--pictures] [--rotate]`, `house-fix [--write]`, `spawn-data [--write]`, `xp-rate`, `client-pair [show | set N]`, `beta-mode [status | on | off] [restart]`, `clientservices-impl [status | rust | python]`, `health`, `cleanup [--yes]`, `account-create NOME`,
 `account-password NOME`, `discord-set CANAL` (URL no stdin) | `discord-enable` | `discord-disable` | `discord-test [CANAL|all]` | `discord-status`, `discord-bot status | install | set NOME | start | stop | restart | logs [N] | patchnotes`, `pay-status`, `pay-set NOME` (valor no stdin), `pay-test`, `pay-enable`, `pay-disable`, `newplayer-funnel`, `survey`, `game-health [--days N] [--kv | --json] [--pt]`, `balance-report [--days N | --season ID|current] [--pt] [--json] [--save] [--dm] | last | auto | timer on|off|status`, `install-admin`, `spectate NOME`, `spectate-pair [status | fetch | log [N]]`. Todos com argumentos conferidos (números, nomes, tags de release), nada de
 shell livre. Rode `chaos-ctl.sh help`. Aviso, expulsar, abrir, fechar e salvar passam pelo arquivo `remote.cmd`
 (`server/README.md`, "Remote admin commands"): o servidor do jogo precisa estar com os scripts novos.
+
+## Onde fica cada comando (O765)
+
+Pedido do dono (2026-11-25): "Eu não tenho essa opção das casas no app de admin. Veja quais funções estão faltando e
+adicione". O botão das casas já estava no código (O758), mas o app instalado era o adminapp-139 (2026-11-08): tudo
+depois dessa data só aparece com o APK novo (Atualização do app, acima). Cada comando de `chaos-ctl.sh` e o seu
+lugar no app (aba > card > botão). AR = Comandos > Ações rápidas.
+
+| Comando | Onde no app |
+|---|---|
+| `status`, `players` | Painel (atualiza sozinho) |
+| `start`, `stop`, `save`, `restart [S]`, `backup` | Painel > Ações |
+| `logs`, `errors [clear]`, `gm-logs`, `update-log`, `publish-log`, `site-log` | Logs |
+| `metrics`, `newplayer-funnel`, `survey`, `game-health`, `balance-report`, `feedback`, `feedback-close` | Painel > cards de métricas, Novos jogadores, Saúde do jogo, Relatório de equilíbrio, Bugs e sugestões |
+| `update-check`, `update-apply`, `update-status`, `update-rollback` | Painel > Atualizar servidor |
+| `engine-build`, `github-token-set`, `github-token-status` | Painel > Recompilar engine (> Definir token do GitHub) |
+| `launch-check` | AR > Conferir lançamento |
+| `broadcast`, `kick`, `open`, `close` | AR > Aviso para todos / Expulsar / Login |
+| `spectate`, `cast`, `spectate-pair status / fetch / log` | AR > Assistir jogador |
+| `update TAG`, `rollback` | AR > Versão do servidor |
+| `xp-rate`, `client-pair`, `beta-mode`, `clientservices-impl` | AR > Taxa de XP / Par do cliente / Modo beta / Serviços da tela de login |
+| `account-create`, `account-password`, `gm-set`, `vocations` | AR > Contas |
+| `discord-*`, `discord-bot *` | AR > Discord / Bot do Discord |
+| `pay-*` | AR > Pagamentos (doações) |
+| `health`, `cleanup`, `backups`, `timezone [set]` | AR > Saúde e espaço |
+| `server-user status / fix / log / rollback` | AR > Servidor como usuário chaos |
+| `vps info / upgrade / upgrade-log / reboot / reboot-cancel` | AR > VPS |
+| `services`, `service`, `service-log` | AR > Serviços |
+| `testers *`, `journey *`, `botmap-build`, `botmap-status`, `botcheck-top` | AR > Testers / Bots de jornada / Mapa dos bots / Detecção de bots |
+| `site-install`, `publish-update`, `publish-apk`, `publish-unity`, `update-downloads` | AR > Site e update do client |
+| `areas-publish [--pictures] [--rotate]` | AR > Mapas pedidos |
+| `house-fix [--write]` | AR > Casas do mapa |
+| `spawn-data [--write]` | AR > Dados de spawn |
+| `reload-files`, `reload-file` | AR > Recarregar uma tabela (também Comandos > Painel do jogo) |
+| `catalog`, `panel` | Comandos > Painel do jogo |
+| `install-admin` | Config > Chave SSH deste celular > Copiar comando de instalação (o comando roda na VPS) |
+
+Sem botão de propósito: `spectate-pair fetch-now` (o mesmo download em primeiro plano; o botão usa `fetch`),
+`engine-build-token-set` (nome antigo de `github-token-set`), `admin-desktop-releases` e `admin-desktop-asset-url`
+(o auto-atualizar do app do PC), `server-user-impl` (interno), `balance-report auto` (o timer roda),
+`clientservices-impl` sem argumento é o mesmo que status. O app do PC (desktop/) tem os mesmos comandos
+(`tools/ci/check_desktop_commands.py`).
 
 ## Limites conhecidos
 

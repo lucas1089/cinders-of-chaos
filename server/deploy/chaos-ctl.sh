@@ -197,6 +197,15 @@
 #                               house_fix=dry-run|written|nothing|refused, map=, backup= (--write), server=started|start-failed
 #                               (--write); then the fixer's own lines. Exit 1 when the fixer refused (the map is unchanged) or
 #                               the server did not start again
+#   spawn-data [--write]        the spawn data of the map that is really loaded (O765, server/README.md "Spawn data from the
+#                               loaded map (O765)"): the bounty pool (server/tools/gen_bounty_pool.py) and the bestiary spawns
+#                               (gen_bestiary_spawns.py) of the repo, made from SERVER/data; then the map markers (gen_poi.py).
+#                               The step the docs ask after a map or spawn change. No flag: the dry run (made in a temp
+#                               folder, compared with the installed copies, nothing written). --write: the installed copies
+#                               of data/scripts/chaos replaced (the old one kept as FILE.before-spawn-data), gen_poi.py run.
+#                               key=value lines: bounty_pool / bestiary_spawns =same|changed|new, NAME_repo_copy=same|differs
+#                               (update-apply copies the repo copy back), NAME_lines, poi= (--write), spawn_data=dry-run|
+#                               nothing|written|failed, restart_needed=yes|no (--write; the scripts read them at a start)
 #   launch-check [--json] [--max-players N] [--launch "YYYY-MM-DD HH:MM"]
 #                               the launch list against the INSTALLED server (O440, server/README.md "Launch check (O440)"),
 #                               read-only: one line per check, OK, WARN or FAIL, a name and one sentence, then a summary line;
@@ -2930,6 +2939,105 @@ PY
     printf '%s\n' "$hout"
     if [ "$hsrv" != started ] && [ "$hrc" -eq 0 ]; then hrc=1; fi
     exit "$hrc"
+    ;;
+  spawn-data)
+    # O765 (owner 2026-11-25: the VPS steps of the docs get a button): the spawn data generated from the map that is really
+    # loaded, the step server/README.md and docs/MAP_GUIDE.md "Content plans" ask after a map or spawn change: the bounty
+    # pool (gen_bounty_pool.py), the bestiary spawns (gen_bestiary_spawns.py), then the map markers (gen_poi.py, which reads
+    # both). No flag: the dry run (both made in a temp folder and compared, nothing written). --write: the installed copies
+    # of SERVER/data/scripts/chaos are replaced (the old one kept as FILE.before-spawn-data, owner and mode kept), then
+    # gen_poi.py rewrites data/chaos_poi.lua. The scripts read them at a start: restart_needed=yes when one changed. The
+    # files step of update-apply / install_all.py copies the repo's bounty_pool.lua and bestiary_spawns.lua back:
+    # NAME_repo_copy=differs says the repo copy is behind (run this again after an update until the repo has the new files).
+    swrite=0
+    for a in "$@"; do
+      case $a in
+        --write) swrite=1 ;;
+        *) die "spawn-data [--write]" ;;
+      esac
+    done
+    [ -d "$REPO" ] || die "no repo $REPO (CHAOS_REPO)"
+    for t in gen_bounty_pool.py gen_bestiary_spawns.py gen_poi.py; do
+      [ -f "$REPO/server/tools/$t" ] || die "no $REPO/server/tools/$t (CHAOS_REPO): update the server's repo first (update-apply)"
+    done
+    command -v python3 >/dev/null 2>&1 || die "python3-not-found"
+    sdir="$SERVER/data/scripts/chaos"
+    [ -d "$sdir" ] || die "no $sdir (CHAOS_SERVER_DIR; run install_all.py)"
+    stmp=$(mktemp -d) || die "spawn-data: no temp folder"
+    trap 'rm -rf "$stmp"' EXIT
+    src=0
+    sout=""
+    for f in bounty_pool bestiary_spawns; do
+      o=$(python3 -I "$REPO/server/tools/gen_$f.py" "$SERVER/data" "$stmp/$f.lua" 2>&1) || src=$?
+      sout+="$o"$'\n'
+      [ "$src" -eq 0 ] || break
+    done
+    if [ "$src" -ne 0 ]; then
+      echo "spawn_data=failed"
+      printf '%s' "$sout"
+      exit 1
+    fi
+    schanged=0
+    for f in bounty_pool bestiary_spawns; do
+      if [ ! -f "$sdir/$f.lua" ]; then
+        s=new
+        schanged=1
+      elif cmp -s "$stmp/$f.lua" "$sdir/$f.lua"; then
+        s=same
+      else
+        s=changed
+        schanged=1
+      fi
+      if cmp -s "$stmp/$f.lua" "$REPO/server/data/scripts/chaos/$f.lua"; then r=same; else r=differs; fi
+      echo "$f=$s"
+      echo "${f}_repo_copy=$r"
+      echo "${f}_lines=$(wc -l < "$stmp/$f.lua")"
+    done
+    if [ "$swrite" -eq 0 ]; then
+      if [ "$schanged" -eq 1 ]; then echo "spawn_data=dry-run"; else echo "spawn_data=nothing"; fi
+      printf '%s' "$sout"
+      exit 0
+    fi
+    for f in bounty_pool bestiary_spawns; do
+      t="$sdir/$f.lua"
+      if cmp -s "$stmp/$f.lua" "$t" 2>/dev/null; then continue; fi
+      if [ -f "$t" ]; then
+        cp -p "$t" "$t.before-spawn-data" || die "spawn-data: cannot keep $t.before-spawn-data; nothing more written"
+      fi
+      cp --remove-destination "$stmp/$f.lua" "$t" || die "spawn-data: cannot write $t"
+      if [ -f "$t.before-spawn-data" ]; then
+        chown --reference="$t.before-spawn-data" "$t" 2>/dev/null || true
+        chmod --reference="$t.before-spawn-data" "$t" 2>/dev/null || true
+      fi
+    done
+    ppoi="$SERVER/data/chaos_poi.lua"
+    if [ -f "$ppoi" ]; then cp -p "$ppoi" "$stmp/poi.before"; fi
+    prc=0
+    pout=$(python3 -I "$REPO/server/tools/gen_poi.py" "$SERVER" 2>&1) || prc=$?
+    if [ "$prc" -ne 0 ]; then
+      pstate=failed
+    elif [ -f "$stmp/poi.before" ] && cmp -s "$stmp/poi.before" "$ppoi"; then
+      pstate=same
+    else
+      pstate=changed
+      schanged=1
+    fi
+    if [ -f "$stmp/poi.before" ] && [ -f "$ppoi" ]; then
+      chown --reference="$stmp/poi.before" "$ppoi" 2>/dev/null || true
+      chmod --reference="$stmp/poi.before" "$ppoi" 2>/dev/null || true
+    fi
+    echo "poi=$pstate"
+    if [ "$schanged" -eq 1 ]; then
+      echo "spawn_data=written"
+      echo "restart_needed=yes"
+    else
+      echo "spawn_data=nothing"
+      echo "restart_needed=no"
+    fi
+    printf '%s' "$sout"
+    printf '%s\n' "$pout"
+    [ "$prc" -eq 0 ] || exit 1
+    exit 0
     ;;
   launch-check)
     # read-only (O440): launch_check.py reads the installed server, the env file, the backup folder and the checkout. The counts

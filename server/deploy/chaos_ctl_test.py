@@ -691,6 +691,7 @@ def main():
     test_timezone()
     test_launch_check()
     test_house_fix()
+    test_spawn_data()
     print('chaos_ctl_test: %d failures' % failures)
     return 1 if failures else 0
 
@@ -4318,6 +4319,137 @@ def test_house_fix():
         os.unlink(tool)
         r = run('house-fix')
         check(r.returncode != 0 and 'fix_houses.py' in r.stderr, 'house-fix: a missing tool is named: ' + r.stderr)
+
+
+SPAWN_GEN = r"""#!/usr/bin/env python3
+# stub of server/tools/gen_bounty_pool.py / gen_bestiary_spawns.py / gen_poi.py: records its arguments, writes like the real one
+import os
+import sys
+stub = os.environ['STUB']
+name = os.path.basename(sys.argv[0])
+with open(os.path.join(stub, 'calls'), 'a') as f:
+    f.write(name + ' ' + ' '.join(sys.argv[1:]) + '\n')
+if os.environ.get('STUB_SD_FAIL') == name:
+    print(name + ': mapName not found, pass --spawn')
+    sys.exit(1)
+if name == 'gen_poi.py':
+    chaos = os.path.join(sys.argv[1], 'data', 'scripts', 'chaos')
+    pool = open(os.path.join(chaos, 'bounty_pool.lua')).read()
+    with open(os.path.join(sys.argv[1], 'data', 'chaos_poi.lua'), 'w') as f:
+        f.write('return {marks = "' + pool.strip() + '"}\n')
+    print('chaos_poi.lua: 12 marks')
+    sys.exit(0)
+key = 'STUB_POOL' if name == 'gen_bounty_pool.py' else 'STUB_BEST'
+with open(sys.argv[2], 'w') as f:
+    f.write(os.environ.get(key, 'new ' + name) + '\n')
+print(sys.argv[2] + ': written')
+"""
+
+
+def test_spawn_data():
+    """chaos-ctl.sh spawn-data [--write] (O765): the bounty pool, the bestiary spawns and the map markers of the loaded map as a
+    button, with stub generators. The dry run writes nothing; --write replaces the changed copies (old one kept, mode kept),
+    runs gen_poi.py after both, restart_needed; a failed generator writes nothing; refusals."""
+    with tempfile.TemporaryDirectory() as tmp:
+        stub = os.path.join(tmp, 'stub')
+        repo = os.path.join(tmp, 'repo')
+        server = os.path.join(tmp, 'server')
+        chaos = os.path.join(server, 'data', 'scripts', 'chaos')
+        rchaos = os.path.join(repo, 'server', 'data', 'scripts', 'chaos')
+        tools = os.path.join(repo, 'server', 'tools')
+        for d in (stub, tools, chaos, rchaos):
+            os.makedirs(d)
+        for n in ('gen_bounty_pool.py', 'gen_bestiary_spawns.py', 'gen_poi.py'):
+            with open(os.path.join(tools, n), 'w') as f:
+                f.write(SPAWN_GEN)
+        pool = os.path.join(chaos, 'bounty_pool.lua')
+        best = os.path.join(chaos, 'bestiary_spawns.lua')
+        poi = os.path.join(server, 'data', 'chaos_poi.lua')
+        for p, t in ((pool, 'old pool\n'), (best, 'same best\n'), (os.path.join(rchaos, 'bounty_pool.lua'), 'old pool\n'),
+                     (os.path.join(rchaos, 'bestiary_spawns.lua'), 'same best\n'), (poi, 'return {marks = "old pool"}\n')):
+            with open(p, 'w') as f:
+                f.write(t)
+        os.chmod(pool, 0o640)
+        env = dict(os.environ, PATH=stub + ':' + os.environ['PATH'], STUB=stub, CHAOS_CTL_NO_SUDO='1',
+                   CHAOS_SERVER_DIR=server, CHAOS_ENV=os.path.join(tmp, 'none.env'), CHAOS_REPO=repo,
+                   CHAOS_CTL_CONF=os.path.join(tmp, 'none.conf'), CHAOS_PID_FILE=os.path.join(tmp, 'no.pid'),
+                   CHAOS_LOG=os.path.join(tmp, 'no.log'), STUB_POOL='new pool', STUB_BEST='same best')
+        for k in ('SUDO_USER', 'CHAOS_UNIT', 'CHAOS_ROOT', 'CHAOS_KIT_DIR', 'STUB_SD_FAIL'):
+            env.pop(k, None)
+
+        def run(*args, extra=None):
+            return subprocess.run(['bash', SCRIPT] + list(args), env=dict(env, **(extra or {})), capture_output=True,
+                                  text=True, timeout=60)
+
+        def calls():
+            c = os.path.join(stub, 'calls')
+            return open(c).read() if os.path.exists(c) else ''
+
+        def reset():
+            c = os.path.join(stub, 'calls')
+            if os.path.exists(c):
+                os.unlink(c)
+
+        def kv(r):
+            return dict(line.split('=', 1) for line in r.stdout.splitlines() if '=' in line and ' ' not in line.split('=', 1)[0])
+
+        def read(p):
+            return open(p).read()
+
+        # the dry run: both made into a temp folder from SERVER/data, compared, nothing written, no gen_poi
+        r = run('spawn-data')
+        k = kv(r)
+        check(r.returncode == 0 and k.get('spawn_data') == 'dry-run' and k.get('bounty_pool') == 'changed'
+              and k.get('bestiary_spawns') == 'same' and k.get('bounty_pool_repo_copy') == 'differs'
+              and k.get('bestiary_spawns_repo_copy') == 'same' and k.get('bounty_pool_lines') == '1',
+              'spawn-data: the dry run compares: ' + r.stdout + r.stderr)
+        c = calls()
+        check('gen_bounty_pool.py %s/data ' % server in c and 'gen_bestiary_spawns.py %s/data ' % server in c
+              and 'gen_poi.py' not in c and chaos not in c,
+              'spawn-data: the dry run reads SERVER/data, writes into a temp folder, never runs gen_poi: ' + c)
+        check(read(pool) == 'old pool\n' and read(poi) == 'return {marks = "old pool"}\n'
+              and not os.path.exists(pool + '.before-spawn-data'), 'spawn-data: the dry run writes nothing')
+        reset()
+        r = run('spawn-data', extra={'STUB_POOL': 'old pool'})
+        check(r.returncode == 0 and kv(r).get('spawn_data') == 'nothing', 'spawn-data: nothing changed: ' + r.stdout)
+        reset()
+
+        # --write: the changed file replaced (old one kept, mode kept), the same one untouched, gen_poi after both
+        mtime = os.stat(best).st_mtime_ns
+        r = run('spawn-data', '--write')
+        k = kv(r)
+        check(r.returncode == 0 and k.get('spawn_data') == 'written' and k.get('restart_needed') == 'yes'
+              and k.get('poi') == 'changed', 'spawn-data --write: written: ' + r.stdout + r.stderr)
+        check(read(pool) == 'new pool\n' and read(pool + '.before-spawn-data') == 'old pool\n'
+              and (os.stat(pool).st_mode & 0o777) == 0o640, 'spawn-data --write: the pool replaced, the old one kept, mode kept')
+        check(os.stat(best).st_mtime_ns == mtime and not os.path.exists(best + '.before-spawn-data'),
+              'spawn-data --write: an unchanged file is not touched')
+        check(read(poi) == 'return {marks = "new pool"}\n', 'spawn-data --write: gen_poi.py reads the new pool')
+        lines = calls().splitlines()
+        check(len(lines) == 3 and lines[2] == 'gen_poi.py ' + server, 'spawn-data --write: gen_poi.py SERVER last: %r' % lines)
+        reset()
+        r = run('spawn-data', '--write')
+        k = kv(r)
+        check(r.returncode == 0 and k.get('spawn_data') == 'nothing' and k.get('restart_needed') == 'no' and k.get('poi') == 'same',
+              'spawn-data --write: a second run changes nothing: ' + r.stdout)
+        reset()
+
+        # a failed generator: nothing written, exit 1
+        r = run('spawn-data', '--write', extra={'STUB_POOL': 'newer pool', 'STUB_SD_FAIL': 'gen_bestiary_spawns.py'})
+        check(r.returncode == 1 and kv(r).get('spawn_data') == 'failed' and read(pool) == 'new pool\n'
+              and 'gen_poi.py' not in calls(), 'spawn-data --write: a failed generator writes nothing: ' + r.stdout)
+        reset()
+        r = run('spawn-data', '--write', extra={'STUB_POOL': 'newer pool', 'STUB_SD_FAIL': 'gen_poi.py'})
+        check(r.returncode == 1 and kv(r).get('poi') == 'failed', 'spawn-data --write: a failed gen_poi is exit 1: ' + r.stdout)
+        reset()
+
+        # refusals: bad arguments, a missing tool
+        for bad in (('spawn-data', 'x'), ('spawn-data', '--write', '--yes'), ('spawn-data', '$(id)')):
+            check(run(*bad).returncode != 0, 'spawn-data refuses %r' % (bad,))
+        check(calls() == '', 'spawn-data: a refused call runs nothing')
+        os.unlink(os.path.join(tools, 'gen_poi.py'))
+        r = run('spawn-data')
+        check(r.returncode != 0 and 'gen_poi.py' in r.stderr and calls() == '', 'spawn-data: a missing tool is named: ' + r.stderr)
 
 
 if __name__ == '__main__':

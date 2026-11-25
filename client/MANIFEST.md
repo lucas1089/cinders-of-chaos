@@ -8261,6 +8261,13 @@ files, anchor tile, frames, lift, price, twin aura) and `pack_wear.sums` (one sh
   and `drawn_wings/art_by_row.csv`. `gen_wst_wear_test.py`: the cut, a synthetic pack and a synthetic pair (build, refusals,
   live). Not run: style_check / sprite_quality on the pieces (purchased art, not held to our drawn bar).
 - **Preview** (never committed): `preview OUT_DIR --src DIR` writes `wear_preview.mp4`, the set on four class sheets with the lift.
+- **Seen in a client (2026-11-25).** Pair 84, own character facing N E S W, standing and walking: drawn wings 937,
+  1180, 2140, 2457 (O583), 3555-3560 (O581), Plasma Fly 3589 and pack wings 2390, 2398, 2387 on the torso, no baked
+  ground blob (O495, O508; the ellipse under the feet is the soft shadow of 0126, also with no wings); heads 3590,
+  3615, 3640 and capes 3656, 3690, 3720 by `setCreatureWear` (0210), and one head, cape and pack wing together. Nothing
+  off. Live pair checks on pair 84: `gen_wing_centres.py --check`, `clean_wing_shadows.py check-clean`,
+  `gen_wst_wear.py live` (218 of 218), `gen_drawn_wings.py live-new` (6 of 6) pass; `gen_drawn_wings.py live` (no flags) says
+  44 of 121: it still expects drawn art on the 73 looks pair 83 gave the pack art and the painted rows (not a client fault).
 
 ### Pair 83 build order
 
@@ -8301,6 +8308,13 @@ Modules `game_outfitextras`, `game_unlocks`, `client_chaos_wingfit`. No new opco
   client in `g_settings` key `chaosWingLevitation`, default on (`isLevitation`, `setLevitation`).
 - **Wings and speed.** No speed rule reads wings. The float of base patch 0209 moved the body while walking, so the
   walk looked slower. Base patch 0211 holds the lift while walking (client/BASE.md "0211").
+- **Seen in a client (2026-11-25).** Local server, pair 84, Linux client with base patches 0193-0211. The Float box
+  was missing: `game_outfitextras` (priority 988) builds its window at init and asked `modules.client_chaos_wingfit`
+  (priority 1000) before it loaded. Fix: `client_chaos_wingfit` is a dependency in `game_outfitextras.otmod`
+  (`customisecore_test.lua` holds it). After the fix the box shows; Float off keeps the body on the ground, on lifts it
+  2-5 px and the lift holds while walking. Walk pace, same character (level 100, speed 517), four runs of 16 steps:
+  no wings, pack wings Float on, pack wings Float off, drawn wings: client step 180 ms each (median 182-185 ms between
+  own steps), server median 200-201 ms at a 10 ms poll, 2.89-2.90 tiles/s over the walks. Wings do not slow the walk.
 - Tests: `customisecore_test.lua`, `unlocks_core_test.lua`, `wingfit_core_test.lua` (Float off: 0 lifts) in the client
   loop; `chaospiece_test.cpp`, `chaospiecewalk_test.cpp`; server `tests/wardrobe_test.lua`, `tests/cosmetics_test.lua`.
 
@@ -8322,6 +8336,10 @@ Owner 2026-11-24: monsters above level 2000 for the six O759 hall hunts, art by 
 - **Outfits** 3734-3743, all 3x3, lean 0.00 (drawn at the angle, 11-23 px), idle 4 x 300 ms, walk 8 x 100 ms, the O585 / O640 standing point: rimehide, sorrowweeper, rimelancer, bogwake, penitent, hangman, behemoth, warden, matriarch, devourer. Pictures in `art_import/apex_monsters/<key>/` (layout of `drive_redraw`).
 - **Build order of pair 84**: pair 83 (windows-assets, dat md5 4169e2cf...) -> `gen_apex_monsters.py build P83/Tibia.dat P83/Tibia.spr OUT` (refuses another outfit count or dat md5) -> `gen_apex_monsters.py live OUT/Tibia.dat OUT/Tibia.spr`, then `check_pair` against pair 83, `quality`, `preview`. Then `PAIR_ASSETS` 84 and the live-pair job line.
 - **Quality**: `sprite_quality.py check --kind creature` on sheets of the placed frames fails on every look (palette size, outline hue, still frames of the breath idle, loop ratio), as the O726 / O729 looks do. The bar is not held for this art (O625).
+- **Seen in a client (2026-11-25, O763c).** Linux main client on pair 84 (dat md5 65bfa600...), local server of
+  `tools/ci/unity_live_check.sh --serve-only` with `UL_CLIENT_PAIR=assets` (records chaosClientPair 84 before the install).
+  Step `apexhunts`: 10 monster files moved, 145 pack blocks in the six hall hunts. A staff character visited each
+  monster by `/goto`. All ten wore 3734-3743, stood, walked and faced all four ways. No size, cut or tile offset problem seen.
 - **Server**: server/README.md "Hunt monsters above level 2000 (O763)".
 
 ## Pair 84 on windows-assets (O763; 2026-11-25, owner: "Artes aprovadas", then "Pode")

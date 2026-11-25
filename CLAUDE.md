@@ -328,3 +328,7 @@ Client: `client/tools/assemble_client.sh <base-client-dir> <out>` applies `base-
 - A player spell that deals damage or heals reads the character level and the magic level; a spell of a weapon line also reads the weapon skill (a magic level share, `spell_scaling_config.lua`). `server/tests/spell_inputs_test.lua` casts every spell of `spells_chaos.xml` and fails when one ignores an input (O468).
 - When telling the owner to run a VPS step, say first if the admin app (`android/`) can do it, and where (tab > card > button).
   Give the shell command only as a fallback. Any `chaos-ctl.sh` command the owner runs often should get a button there.
+  - Docs that name an owner VPS step write the app path first, the shell line after (O765).
+  - A new `chaos-ctl.sh` command gets its button in the same change and a row in docs/ADMIN_APP.md "Onde fica cada comando (O765)".
+  - A raw `server/tools` script the owner must run on the VPS gets a `chaos-ctl.sh` command first (test in chaos_ctl_test.py).
+  - A button added after the owner's installed APK needs a new release: say so (Config > Atualização do app updates it, O765).

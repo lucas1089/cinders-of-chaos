@@ -5357,6 +5357,27 @@ Plans the fixes of the audit that need no judgement and lists the rest for a hum
 - **Admin app button (O758, owner 2026-11-24 "Corretor de casas: pode fazer").** Android admin app: Comandos > Ações rápidas > card "Casas do mapa", buttons "Ver correções de casas" (the dry run) and "Corrigir casas" (the write, behind a confirm dialog). Desktop admin app: Ajustes do jogo > Mapa, the same two actions. Both run `chaos-ctl.sh house-fix [--write]`. No flag: `fix_houses.py SERVER_DIR --dry-run` of the server's repo (`CHAOS_REPO`) prints the plan, nothing is written and the server keeps running. `--write`: `systemctl stop` (the engine saves), a copy of the world map as `<map>.otbm.house-fix-YYYYmmdd-HHMMSS` (the map of `config.lua` `mapName`, else the one `.otbm` of `data/world`), `fix_houses.py --write` (through `map_write_guard.py`), the new map gets the owner and mode of the copy, `systemctl start` whatever the fixer said, then `house_fix=written|nothing|refused`, `map=`, `backup=`, `server=started|start-failed` and the fixer's lines. Refuses a missing repo or tool, a folder with no world map and any other argument; exit 1 on a refusal of the fixer (the map unchanged) or a failed start. Fallback over ssh: `chaos-ctl.sh house-fix`, then `chaos-ctl.sh house-fix --write`. Tests: `deploy/chaos_ctl_test.py` `test_house_fix` (a stub fixer and systemctl: no stop in the dry run, stop / copy / fixer / start in order, the copy holds the old map, a refusal and a failed start, the refusals), `android/.../HouseFixInfoTest.java` (the result in Portuguese; javac line in ci.yml). Not run on the live map yet.
 - **Tests.** `tools/fix_houses_test.py`: six synthetic houses (clean, `PZ_ADD`, `PVP_CLEAR` on a tile whose position byte needs escaping and on an inline ground tile, both, `NO_DOOR`, a known flag fault). Plan 5 tiles (2 `PZ_ADD`, 3 `PVP_CLEAR`), 1 for a human, 1 known left. Dry run writes nothing. A guard refusal when a far item changes, and one when a tile is not the bytes meant. `--out` and `--write` give the same bytes, the audit then has only the human and known findings, a second run plans nothing. In CI (`checks` job).
 
+### Spawn data from the loaded map (O765) (`chaos-ctl.sh spawn-data`)
+
+The docs asked the owner to rerun `gen_bounty_pool.py`, `gen_bestiary_spawns.py` and `gen_poi.py` on the server after a
+map or spawn change. O765 (owner 2026-11-25: every VPS step gets a button) wraps the three.
+
+- **Button.** Admin app: Comandos > Ações rápidas > card "Dados de spawn" > "Ver dados de spawn" / "Gravar dados de
+  spawn" (docs/ADMIN_APP.md). Desktop app: Ajustes do jogo > Mapa. Shell fallback: `chaos-ctl.sh spawn-data [--write]`.
+- **Dry run** (no flag): the repo's `gen_bounty_pool.py` and `gen_bestiary_spawns.py` read SERVER/data (config.lua
+  mapName, the spawn file, the monster files) and write into a temp folder. Each is compared with the installed copy
+  in `data/scripts/chaos` and with the repo copy. Nothing written, the server keeps running.
+- **--write**: a changed file replaces the installed copy (the old one kept as `FILE.before-spawn-data`, owner and mode
+  kept). Then `gen_poi.py SERVER` rewrites `data/chaos_poi.lua` from the new pool and spawns. A failed generator writes
+  nothing (exit 1). The scripts read the files at a start: `restart_needed=yes`.
+- **Output**: `bounty_pool` / `bestiary_spawns` =same|changed|new, `NAME_repo_copy=same|differs`, `NAME_lines`, `poi=`
+  (--write), `spawn_data=dry-run|nothing|written|failed`, `restart_needed=yes|no`, then the generators' lines.
+- **Limit**: the `files` step of `install_all.py` (every update-apply) copies the repo's `bounty_pool.lua` and
+  `bestiary_spawns.lua` back. `NAME_repo_copy=differs` says the repo copy is behind: rerun after an update until the
+  generated files are committed. The `poi` install step regenerates the markers on every install.
+- **Tests**: `deploy/chaos_ctl_test.py` `test_spawn_data` (stub generators); the app's reading: `SpawnDataInfoTest`
+  (ci.yml).
+
 ## Test kit (`admin/testkit.lua`)
 `/testkit [kind][, player]` (admins only) equips a strong set for the class (uniques where they fit), a backpack of supplies (potions, runes, crystal coins, Orbs of Upheaval and Fate), raises the level to 500 and the main skills, and resets health and mana to the vocation's values. Relog afterwards so the stock rarity script applies the item bonuses.
 Kinds (`ChaosTestKit.kindByVocation`, picked from the vocation when none is given): `mage` (Mystic, Elementalist, Illusionist with the rod; magic level 110), `knight` (Warrior, Juggernaut; melee 120, shielding 110), `berserker` (the knight set with Executioner's Reckoning, two-handed, no shield), `paladin` (Ranger, Deadeye; crossbow, distance 125, a Legendary Haloed Quiver rolled at the kit's item level), `beastmaster` (Doomtide Longbow and a Legendary Mercurial Quiver), `thief` (Thief, Samurai: Soulreaper and the paladin's armour, sword 120, distance 110, magic level 30, 100 assassin stars), `ninja` (the same plus Bloodmoon Edge in the shield hand; without `src-patches/0002` it goes to the backpack), `monk` (Monk line: no weapon, fist 120, club 110, the paladin's armour), `necromancer` (Necromancer line: the mage set with the wand) and `templar` (Templar line: the knight set, sword and club 120, shielding 110, magic level 25).
@@ -23886,7 +23907,8 @@ each time a level group enters or leaves the window).
 grows by one module a side, z 5 gets its wings, the hall is ordered again and the places file, signs and display spawns
 follow. Dry run first on the live map (`install_all.py --only contentareas --dry-run`): it names a z 5 tile in the way.
 Then a server restart (spawns, config). Afterwards rerun `gen_bounty_pool.py`, `gen_bestiary_spawns.py` and `gen_poi.py`
-on the server (docs/MAP_GUIDE.md "Content plans") so the bounty board knows the O336 monsters. No client update, no
+on the server (admin app: Comandos > Ações rápidas > Dados de spawn > Gravar dados de spawn, O765; shell:
+`chaos-ctl.sh spawn-data --write`; docs/MAP_GUIDE.md "Content plans") so the bounty board knows the O336 monsters. No client update, no
 engine rebuild. Not run on the live map, not played: the planner's validate, compile and QA of the nine plans and the
 synthetic install test pass.
 
@@ -38902,3 +38924,58 @@ monster was 2000 (Pyre Stork, Pyrewing Tyrant), the hunts of 2150-2500 used 1700
   survival and descent pass.
 - **Open.** Pair 84 is not built (pair 83 is on windows-assets; building and pushing needs the owner). Then:
   `chaos-ctl.sh client-pair set 84` or the admin app, and the install.
+
+## Caster early damage (O764) (`spell_factor_config.lua` `early`, `spell_factor_core.lua`, `passivetree_effects.lua`, `tests/caster_early_test.lua`)
+
+Owner 2026-11-25 (pt-BR, translated): "Mage spell damage is too low early on. Maybe raise the spells' base damage a little and lower
+the magic level scaling a little." The models did not confirm it: before the change the Mystic was 89-97% of the base class median
+at levels 8-12 and above the median from 14 on, and class_dps_model.py had the casters at 84-116% on 1 target at 100. The owner
+read the numbers and chose "Fazer como pedi" (do it as asked), and accepted the Mystic sitting further above the median at 14-100.
+Computed, not measured; never run on a live server.
+
+**The rule.** One factor on every spell hit of the Mystic and Necromancer lines (vocations 1, 5, 10, 20, 21, 22):
+
+    1 + gain(level) x clamp((refML(level) + k) / (magic level + k), 0.75, 1.25)      k = 20
+
+* `gain`: +25% up to level 50, +7% at 100, 0 at 200. Straight in the logarithm of the level between the rows, 0 above 200.
+  Nothing changes from level 200 up.
+* `refML`: the typical caster magic level of the level. It is rotation_sim.py ANCHORS 'ml_caster'; the test holds the two equal.
+* The tilt. At the typical magic level a hit gains exactly `gain`. The gain is a share of the typical hit, so it does not grow with
+  the player's own magic level: that is the higher flat base. A caster below the typical magic level gains more, up to x1.25 of the
+  gain (a fresh level 8 Mystic with magic level 0 gets +30%). One above it gains less, down to x0.75. So the magic level weighs
+  less early. The bounds keep the O468 rule: `tests/caster_early_test.lua` checks that every caster formula of
+  `rotation_model.csv` still grows with the magic level at every level from 8 to 200.
+* The cap at 100. +12.5% at 100 (a straight fade from 50 to 200) put the Mystic's 5 targets at +30% of the median in
+  class_dps_model.py, outside the +-25% the owner set for this change. +7% keeps it at +24% (the Illusionist +24%).
+* Where: the `ChaosPassiveDealt` event, next to the class spell factor, and with the same scope (`ChaosSpellFactor.early`).
+  It applies to `ORIGIN_SPELL` damage, so the stock scripts are included (Kindling Spark, Arcane Ripple, Bewitching Hex, Pyre
+  Torrent, Tempest Fan), and so are runes and scripted damage over time. It does not apply to healing, the wand (`ORIGIN_WAND`),
+  conditions, procs or guarded hits (the Necromancer minions).
+* Never on a player target: PvP keeps its numbers. With the gain, pvp_model.py failed its burst limits at 100 (Illusionist 1.08
+  against 1.04, Necromancer 1.02 against 1.01). It now reads class damage with `early=False`.
+* Heals: unchanged. The owner asked about damage, and no test needed a change.
+* Not a spell script edit: every formula stays as it is, so the O468 inputs test, the spell data and the Codex need no change.
+  The client tooltips show no damage numbers, so they did not change.
+
+**Models.** class_dps_model.py multiplies a caster's class number by `1 + gain x spell share` (`early_factor`). The spell share
+is the part of the measured damage that is not the auto attack (the csv row of level 100). For the Necromancer line, the minions'
+half (minion_model.py) is taken off as well, because minions are guarded from the class factor. This applies in `dps()` at
+every level and in the check at 100; it is 1 from 200 up. So every balance model reads the same change, except two. pvp_model.py
+reads `dps(..., early=False)`. defence_curve.py derives the monster armour (`hitCurve`) from `shipped(early=False)`, so the armour
+is not sized on the gain and does not eat it; the committed curve is unchanged. Each model passes
+`--check` with and without `--today`.
+
+| Level | Mystic 1t / median, before -> after | Necromancer 1t / median | Mystic kill s (median hunt monster) |
+|---|---|---|---|
+| 8 | 97% -> 100% | 130% -> 140% | 3.1 -> 2.8 |
+| 20 | 162% -> 182% | 92% -> 100% | 4.2 -> 3.5 |
+| 50 | 123% -> 147% | 85% -> 100% | 10.2 -> 8.5 |
+| 75 | 200% -> 225% | 75% -> 82% | 8.0 -> 7.1 |
+| 100 (class_dps_model.py) | 84% -> 88% (5t 119% -> 124%) | 115% -> 116% | 11.9 -> 11.3 |
+| 200, 500, 1000, 2000 | unchanged | unchanged | unchanged |
+
+Levels 8-75 are the bottom-up model of the task notes: the rotation_sim.py best set plus the weapon_sim.py auto attack at the
+vocation's attack speed, times classDamage, base classes only. It has no passive tree and no minions. The table of record at
+100 and above is class_dps_model.py. The check of class_dps_model.py at 100 (upgrades on), before -> after: Mystic -16% / +19%
+-> -12% / +24%, Elementalist -14% / 0% -> -10% / +4%, Illusionist +7% / +19% -> +13% / +24%, Necromancer +15% / +19% ->
++16% / +20%, Lich +7% / +12% -> +9% / +12%, Bone Lord -3% / -5% -> -2% / -5%.

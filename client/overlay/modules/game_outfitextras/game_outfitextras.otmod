@@ -7,6 +7,7 @@ Module
   dependencies:
     - client_chaos_theme
     - game_lookpreview
+    - client_chaos_wingfit
   autoload: true
   autoload-priority: 988
   @onLoad: init()

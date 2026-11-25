@@ -41,6 +41,7 @@ the numbers AFTER it: the round's four steps (weapon growth, dots, gear, pool; t
 any level. `rnd=False`, `shipped_before()` and `--round-before` are the model before. The measured numbers and the class factors are not touched.
 """
 import csv
+import functools
 import math
 import os
 import re
@@ -98,7 +99,7 @@ def intervals():
     return now, {v: old.get(v, default) for v in now}
 
 
-def model(rows=None, damage=None, interval=None, extra=None, rnd=True):
+def model(rows=None, damage=None, interval=None, extra=None, rnd=True, early=True):
     """{(class, level): {'1t': dps, '5t': dps, ...}} and {level: (median 1t, median 5t)}. rnd (O475): the numbers after the balance round
     (round_factor() at the measured level; 'pre1' and 'pre5' keep the model before it); rnd=False is the model before the round"""
     rows = rows or load_rows()
@@ -120,7 +121,9 @@ def model(rows=None, damage=None, interval=None, extra=None, rnd=True):
                 r1, r5 = round_factor(cls, lv)
                 # O686 phase 3: the spell upgrades on (`--upgrades`): the class's spell share x the typical power gain (spell_upgrade_model.py)
                 u1, u5 = SU.gain(cls, lv, 1), SU.gain(cls, lv, 5)
-                out[(cls, lv)].update({'1t': one * r1 * u1, '5t': five * r5 * u5, 'r1': r1, 'r5': r5, 'u1': u1, 'u5': u5})
+                e1, e5 = early_factor(cls, lv, rows) if early else (1.0, 1.0)
+                out[(cls, lv)].update({'1t': one * r1 * u1 * e1, '5t': five * r5 * u5 * e5, 'r1': r1, 'r5': r5, 'u1': u1, 'u5': u5,
+                                       'e1': e1, 'e5': e5})
         med[lv] = (statistics.median(out[(c, lv)]['1t'] for c in KEY), statistics.median(out[(c, lv)]['5t'] for c in KEY))
     return out, med
 
@@ -136,6 +139,62 @@ def problems(out=None, med=None):
                 if abs(d) > BAND[lv]:
                     bad.append('%s level %d, %s: %+.0f%% of the median (band +-%.0f%%)' % (cls, lv, name, d * 100, BAND[lv] * 100))
     return bad
+
+
+# ---- O764: the caster early gain ------------------------------------------------------------------------------------------
+# spell_factor_config.lua `early` (spell_factor_core.lua F.earlyFor): a spell hit of the Mystic and Necromancer lines x 1 + gain(level)
+# at the typical magic level (the tilt is 1 there), 0 from level 200 up. On the class number it reaches the spell part only: the share
+# of the measured damage that is no auto attack (the level 100 row of the csv, the only measured level below 200), less the minions'
+# share for the Necromancer line (minion hits are guarded from the class factor; minion_model.py has them at about half of the
+# damage: EARLY_MINION_SHARE). Healing: never.
+SPELL_FACTOR = os.path.join(REPO, 'server', 'data', 'scripts', 'chaos', 'spell_factor_config.lua')
+EARLY_MINION_SHARE = {'Necromancer': 0.5, 'Lich': 0.5, 'Bone Lord': 0.5}
+EARLY_LEVEL_ROW = 100
+
+
+@functools.lru_cache(maxsize=None)
+def early_config(path=SPELL_FACTOR):
+    """(vocation ids, [(level, gain), ...]) of spell_factor_config.lua `early` (empty when absent)"""
+    text = open(path, encoding='utf-8').read()
+    m = re.search(r'\n\tearly = \{(.*?)\n\t\}', text, re.S)
+    if not m:
+        return set(), []
+    body = m.group(1)
+    vocs = {int(v) for v in re.findall(r'\d+', re.search(r'vocations = \{([^}]*)\}', body).group(1))}
+    gain = [(float(a), float(b)) for a, b in re.findall(r'\{(\d+),\s*([0-9.]+)\}', re.search(r'gain = \{(.*?)\},\n', body, re.S).group(1))]
+    return vocs, gain
+
+
+def early_gain(level, cfg=None):
+    """the gain share of a level (spell_factor_core.lua F.earlyGain): flat below the first row, straight in log level between rows,
+    0 above the last"""
+    pts = (cfg or early_config())[1]
+    if not pts or level <= 0:
+        return 0.0
+    if level <= pts[0][0]:
+        return pts[0][1]
+    for (x0, y0), (x1, y1) in zip(pts, pts[1:]):
+        if level <= x1:
+            return y0 + (y1 - y0) * math.log(level / x0) / math.log(x1 / x0)
+    return 0.0
+
+
+@functools.lru_cache(maxsize=None)
+def _early_rows():
+    return load_rows()
+
+
+def early_factor(cls, level, rows=None, cfg=None):
+    """(1 target, 5 targets) factor of the caster early gain on the class number of `cls` at `level` (1, 1 for every other class)"""
+    cfg = cfg or early_config()
+    if R.VOC[cls] not in cfg[0]:
+        return 1.0, 1.0
+    g = early_gain(level, cfg)
+    if g <= 0:
+        return 1.0, 1.0
+    row = (rows or _early_rows())[(cls, EARLY_LEVEL_ROW)]
+    minion = EARLY_MINION_SHARE.get(cls, 0.0)
+    return tuple(1 + g * max(0.0, 1 - row[k] - minion) for k in ('auto_share_1t', 'auto_share_5t'))
 
 
 # ---- O475: the balance round (O470 to O474) as named steps ----------------------------------------------------------------
@@ -372,11 +431,12 @@ GROWTH_ABOVE_1000 = 0.00093   # damage growth per level above 1000, a share of t
 _CACHE = {}
 
 
-def shipped():
-    """(model, medians) of the committed state after the round (O475), computed once"""
-    key = ('model',) + SU.mode_key()
+def shipped(early=True):
+    """(model, medians) of the committed state after the round (O475), computed once. early=False (O764): without the caster early
+    gain (the monster armour of defence_curve.py is sized on the class damage without it, so the gain is not eaten by armour)"""
+    key = ('model', early) + SU.mode_key()
     if key not in _CACHE:
-        _CACHE[key] = model()
+        _CACHE[key] = model(early=early)
     return _CACHE[key]
 
 
@@ -401,7 +461,7 @@ def _anchor_value(points, level):
     raise AssertionError('level above the last anchor is handled first')
 
 
-def dps(cls, level, out=None, rnd=True):
+def dps(cls, level, out=None, rnd=True, early=True):
     """(1 target, 5 targets) damage per second of a class at any level: the model's numbers before the round at 100, 500 and 1000,
     in between and outside as described in the header, times the round's factor of the level (O475, round_factor(); rnd=False
     leaves it out). At 100, 500 and 1000 it is the number of shipped(). No pack cleave and no boss uptime: those are the models' own"""
@@ -412,13 +472,14 @@ def dps(cls, level, out=None, rnd=True):
     if not rnd or level <= 0:
         return base
     r = round_factor(cls, level)
-    return (base[0] * r[0] * SU.gain(cls, level, 1), base[1] * r[1] * SU.gain(cls, level, 5))
+    e1, e5 = early_factor(cls, level) if early else (1.0, 1.0)  # O764: early=False for PvP (the gain is PvE only)
+    return (base[0] * r[0] * SU.gain(cls, level, 1) * e1, base[1] * r[1] * SU.gain(cls, level, 5) * e5)
 
 
-def median_dps(level, out=None, rnd=True):
+def median_dps(level, out=None, rnd=True, early=True):
     """(median 1 target, median 5 targets) of the 21 classes at any level (the median of dps(), so the same line the
     classes follow; at 100, 500 and 1000 it is the table's median)"""
-    return tuple(statistics.median(dps(c, level, out, rnd)[i] for c in KEY) for i in (0, 1))
+    return tuple(statistics.median(dps(c, level, out, rnd, early)[i] for c in KEY) for i in (0, 1))
 
 
 def table(out, med):

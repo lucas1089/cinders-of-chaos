@@ -806,7 +806,8 @@ python3 -I server/tools/area_planner.py install OUT SERVER_DIR      # the chest 
 - The monsters of the 650-1300 plans spawned nowhere before. Check their art in the client first
   (server/data/monster/CUSTOM_MONSTERS.md).
 - After placing, rerun `gen_bounty_pool.py`, `gen_bestiary_spawns.py` and `gen_poi.py`, so the bounty board, the
-  bestiary and the map markers know the new spawns, and `content_audit.py` to see the bands again.
+  bestiary and the map markers know the new spawns (admin app: Comandos > Ações rápidas > Dados de spawn > Gravar dados
+  de spawn, O765; shell: `chaos-ctl.sh spawn-data --write`), and `content_audit.py` to see the bands again.
 
 ### Hunt annexes (O337)
 Five rare base hunts (Emerald Mage, Scaledrake, deathrattle, Blackblade, fangclaw) were too small for the hunt audit and have no room beside them, so each has a planned cave of its own: `server/tools/areaplan/annexes/<id>.json`, x 14336-17663, y 15400-16383 (the annex row below the first content block and the hall-fill block; `schema.json` allows it), floor 9, a fixed area (no hall teleport). Its way in is a portal in the base hunt (`tools/hunt_annexes.json`, `patch_hunt_annexes.py`), its way out the plan's exit portal. Same rules as every plan: asymmetric lobes, the hunt's monsters and band, 3.3-4.3 monsters per 100. A new annex: a plan in the folder, a row in the JSON, `python3 -I server/tools/hunt_annexes_test.py`. server/README.md "Hunt annexes (O337)".

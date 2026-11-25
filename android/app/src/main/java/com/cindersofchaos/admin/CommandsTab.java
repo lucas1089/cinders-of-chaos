@@ -241,6 +241,8 @@ final class CommandsTab {
         buildSiteClient();
         buildMapInbox();
         buildHouseFix();
+        buildSpawnData();
+        buildReloadFile();
     }
 
     // XP rate: config.lua experienceStages = the release's stages x N (chaos-ctl.sh xp-rate)
@@ -444,6 +446,36 @@ final class CommandsTab {
         b.addView(ui.evenRow(create, change), ui.gap(8));
         b.addView(ui.hint("Chaos Coins e grupo (GM): Painel do jogo > Store > Give Chaos Coins e Players > Set group."),
                 ui.gap(8));
+        // O765: chaos-ctl.sh gm-set NAME GROUP (the character offline; also when no admin character exists yet)
+        TextInputLayout gmName = ui.field("Personagem", "Precisa estar offline.", "", InputType.TYPE_CLASS_TEXT
+                | InputType.TYPE_TEXT_FLAG_CAP_WORDS | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
+        TextInputLayout gmGroup = ui.field("Grupo", "1 jogador, 2 tutor, 3 tutor sênior, 4 GM, 5 CM, 6 god.", "",
+                InputType.TYPE_CLASS_NUMBER);
+        b.addView(ui.evenRow(gmName, gmGroup), ui.gap(8));
+        MaterialButton gm = ui.secondary("Direitos de staff", R.drawable.ic_key);
+        gm.setOnClickListener(v -> {
+            String n = Ui.value(gmName);
+            int g = UpdateInfo.num(Ui.value(gmGroup));
+            if (!StaffInfo.validName(n)) {
+                gmName.setError("Nome de personagem (3 a 29 letras).");
+                return;
+            }
+            gmName.setError(null);
+            String cmd = StaffInfo.gmSet(n, g);
+            if (cmd == null) {
+                gmGroup.setError("De 1 a 6.");
+                return;
+            }
+            gmGroup.setError(null);
+            a.confirm("Grupo " + g + " (" + StaffInfo.group(g) + ") para " + n + "?", "Muda o grupo do personagem e o tipo "
+                    + "da conta dele para " + g + ". Ele precisa estar offline; vale no próximo login. 1 tira os direitos.",
+                    "Gravar", g >= 4, () -> ctl("Direitos de " + n, cmd, 60, null));
+        });
+        MaterialButton voc = ui.flat("Classes (ids)", 0);
+        voc.setOnClickListener(v -> ctl("Classes", "vocations", 30, null));
+        b.addView(ui.evenRow(gm, voc), ui.gap(8));
+        b.addView(ui.hint("Direitos de staff serve também quando ainda não existe personagem admin (o Painel do jogo "
+                + "precisa de um)."), ui.gap(4));
         quick.addView(c, ui.gap(12));
     }
 
@@ -1421,6 +1453,12 @@ final class CommandsTab {
                 + "Acompanhe com Log do reinício e Ver.", "Corrigir e reiniciar", true,
                 () -> serverUserFix("server-user fix --restart 300", now)));
         b.addView(ui.evenRow(fix, fixRestart), ui.gap(4));
+        // O765: chaos-ctl.sh server-user rollback (the newest kept unit back, daemon-reload, no restart)
+        MaterialButton undo = ui.flat("Desfazer (unidade antiga)", 0);
+        undo.setOnClickListener(v -> a.confirm("Voltar a unidade antiga?", "Põe de volta a unidade guardada pelo último "
+                + "Corrigir (o jogo volta a rodar como antes, root) e recarrega o systemd. Não reinicia: vale no próximo "
+                + "reinício.", "Desfazer", true, () -> ctl("Desfazer servidor como chaos", "server-user rollback", 60, null)));
+        b.addView(undo, ui.gap(4));
         quick.addView(c, ui.gap(12));
     }
 
@@ -1561,6 +1599,12 @@ final class CommandsTab {
                 + "antigo. Depois disso o fetch-areas.bat precisa do endereço novo.", "Trocar", false,
                 () -> ctl("Novo endereço das áreas", "areas-publish --rotate", 120, null)));
         b.addView(ui.evenRow(pub, rot));
+        // O765: areas-publish --pictures (the previews too: numpy, Pillow and the sprite pair on the VPS)
+        MaterialButton pics = ui.flat("Publicar com imagens", 0);
+        pics.setOnClickListener(v -> a.confirm("Publicar as áreas com imagens?", "O mesmo que Publicar áreas, mais uma imagem "
+                + "de cada área. Precisa de numpy, Pillow e dos sprites na VPS (Comandos > Assistir jogador > Baixar sprites). Leva mais "
+                + "tempo.", "Publicar", false, () -> ctl("Publicar áreas com imagens", "areas-publish --pictures", 600, null)));
+        b.addView(pics, ui.gap(4));
         b.addView(ui.hint("Fluxo: peça a área no chat, o Claude gera e manda para o repositório; depois de unir na main e "
                 + "atualizar o servidor (Painel > Atualizar servidor), toque em Publicar áreas, copie a linha url= "
                 + "(toque em copiar no resultado) e rode fetch-areas.bat no Windows. O endereço é secreto: quem o tem "
@@ -1601,6 +1645,81 @@ final class CommandsTab {
             result.show(what, shown);
             a.snack(what + ": " + (f.ok ? "feito" : f.title), f.ok);
         });
+    }
+
+    // O765: the spawn data of the loaded map (chaos-ctl.sh spawn-data): the bounty pool, the bestiary spawns and the map
+    // markers made again after a map or spawn change; the dry run compares, Gravar writes (the scripts read them at a start)
+    private void buildSpawnData() {
+        MaterialCardView c = ui.titledCard("Dados de spawn");
+        LinearLayout b = Ui.body(c);
+        MaterialButton dry = ui.secondary("Ver dados de spawn", 0);
+        dry.setOnClickListener(v -> spawnData("Ver dados de spawn", SpawnDataInfo.DRY_RUN, 300));
+        MaterialButton write = ui.primary("Gravar dados de spawn", 0);
+        write.setOnClickListener(v -> a.confirm("Gravar os dados de spawn?", "Refaz o quadro de caçadas (bounty), o "
+                + "bestiário e os marcadores do mapa a partir do mapa carregado. O servidor continua ligado; vale no próximo "
+                + "reinício. A cópia antiga fica ao lado (.before-spawn-data).", "Gravar", false,
+                () -> spawnData("Gravar dados de spawn", SpawnDataInfo.WRITE, 600)));
+        b.addView(ui.evenRow(dry, write));
+        b.addView(ui.hint("Depois de colocar áreas novas no mapa ou mudar spawns (a documentação pede gen_bounty_pool.py, "
+                + "gen_bestiary_spawns.py e gen_poi.py na VPS): este botão faz os três. Atualizar servidor põe de volta a "
+                + "cópia do repositório: o resultado avisa quando ela está atrasada."), ui.gap(8));
+        quick.addView(c, ui.gap(12));
+    }
+
+    private void spawnData(String what, String args, int timeout) {
+        if (!a.store.configured()) {
+            a.snack("Configure o servidor na aba Config.", false);
+            return;
+        }
+        result.running(what);
+        a.ctlAction(args, timeout, f -> {
+            String s = SpawnDataInfo.summary(f.raw);
+            Friendly shown = s == null ? f : new Friendly(f.ok, f.ok ? what + ": feito" : what + ": não foi", s, f.raw);
+            result.show(what, shown);
+            a.snack(what + ": " + (f.ok ? "feito" : f.title), f.ok);
+        });
+    }
+
+    // O765: reload ONE config table into the running game (chaos-ctl.sh reload-files / reload-file ACTOR CONFIG, the panel
+    // action server.reload_file as the admin character of Config)
+    private void buildReloadFile() {
+        MaterialCardView c = ui.titledCard("Recarregar uma tabela");
+        LinearLayout b = Ui.body(c);
+        TextInputLayout name = ui.field("Tabela", "Ex.: pace_config. Toque em Listar para ver os nomes.", "",
+                InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
+        b.addView(name);
+        MaterialButton list = ui.secondary("Listar", R.drawable.ic_search);
+        list.setOnClickListener(v -> a.ctlAction("reload-files", 30, f -> {
+            java.util.List<String> names = StaffInfo.configs(f.raw);
+            if (!f.ok || names.isEmpty()) {
+                result.show("Tabelas", f);
+                return;
+            }
+            String[] items = names.toArray(new String[0]);
+            new com.google.android.material.dialog.MaterialAlertDialogBuilder(a).setTitle("Tabelas de configuração")
+                    .setItems(items, (d, i) -> Ui.setValue(name, items[i])).setNegativeButton("Cancelar", null).show();
+        }));
+        MaterialButton go = ui.primary("Recarregar", R.drawable.ic_refresh);
+        go.setOnClickListener(v -> {
+            String n = Ui.value(name).trim();
+            String cmd = StaffInfo.reloadFile(a.store.actor(), n);
+            if (n.isEmpty() || cmd == null) {
+                if (!StaffInfo.validName(a.store.actor())) {
+                    a.snack("Defina o personagem admin na aba Config.", false);
+                } else {
+                    name.setError("Um nome como pace_config.");
+                }
+                return;
+            }
+            name.setError(null);
+            a.confirm("Recarregar " + n + "?", "Lê de novo só esta tabela no jogo, sem /reload e sem reiniciar. Roda como o "
+                    + "personagem admin da aba Config (grupo 6).", "Recarregar", false,
+                    () -> ctl("Recarregar " + n, cmd, 40, null));
+        });
+        b.addView(ui.evenRow(list, go), ui.gap(8));
+        b.addView(ui.hint("Para mudar um número de config sem reiniciar o servidor. Um arquivo de script (não _config) "
+                + "precisa de reinício."), ui.gap(8));
+        quick.addView(c, ui.gap(12));
     }
 
     private void update(TextInputLayout tag, String mode) {

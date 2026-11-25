@@ -478,7 +478,7 @@ end
 if not ChaosSpellFactorConfig then
 	dofile("data/scripts/chaos/spell_factor_config.lua")
 end
-if not ChaosSpellFactor or not ChaosSpellFactor.factor then
+if not ChaosSpellFactor or not ChaosSpellFactor.factor or not ChaosSpellFactor.early then
 	dofile("data/scripts/chaos/spell_factor_core.lua")
 end
 ChaosSpellExtraState = ChaosSpellExtraState or {} -- O430: { [attacker id] = { t, first } } of F.additionalTarget
@@ -529,6 +529,11 @@ function dealt.onHealthChange(creature, attacker, primaryDamage, primaryType, se
 		local level = attacker.getLevel and attacker:getLevel() or nil
 		local f1 = ChaosSpellFactor.factor(vocId, origin, primaryType, ORIGIN_SPELL, COMBAT_HEALING, procActive, nil, level)
 		local f2 = ChaosSpellFactor.factor(vocId, origin, secondaryType, ORIGIN_SPELL, COMBAT_HEALING, procActive, nil, level)
+		-- O764: the caster early gain (spell_factor_core.lua F.early; 1 from level 200 and for every other class)
+		local ml = attacker.getMagicLevel and attacker:getMagicLevel() or 0
+		local vsPlayer = creature and creature.isPlayer and creature:isPlayer() or false
+		f1 = f1 * ChaosSpellFactor.early(vocId, origin, primaryType, ORIGIN_SPELL, COMBAT_HEALING, procActive, nil, level, ml, vsPlayer)
+		f2 = f2 * ChaosSpellFactor.early(vocId, origin, secondaryType, ORIGIN_SPELL, COMBAT_HEALING, procActive, nil, level, ml, vsPlayer)
 		-- O430: the extra target factor (spell_factor_core.lua F.extra): a spell's hits on the other targets of one cast
 		local x1 = ChaosSpellFactor.extra(vocId, origin, primaryType, ORIGIN_SPELL, COMBAT_HEALING, procActive, nil, level)
 		local x2 = ChaosSpellFactor.extra(vocId, origin, secondaryType, ORIGIN_SPELL, COMBAT_HEALING, procActive, nil, level)

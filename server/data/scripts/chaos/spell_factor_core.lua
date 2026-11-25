@@ -103,6 +103,91 @@ function F.factor(vocId, origin, combatType, spellOrigin, healingType, procActiv
 	return F.forVocation(vocId, cfg, level)
 end
 
+-- O764: the caster early gain (spell_factor_config.lua `early`). The gain share of a level: flat below the first row, straight in
+-- the logarithm of the level between rows, 0 above the last row
+function F.earlyGain(level, cfg)
+	cfg = cfg or ChaosSpellFactorConfig
+	local e = cfg and cfg.early
+	local pts = e and e.gain
+	level = tonumber(level)
+	if not pts or #pts == 0 or not level or level <= 0 then
+		return 0
+	end
+	if level <= pts[1][1] then
+		return pts[1][2]
+	end
+	for i = 2, #pts do
+		local a, b = pts[i - 1], pts[i]
+		if level <= b[1] then
+			return a[2] + (b[2] - a[2]) * math.log(level / a[1]) / math.log(b[1] / a[1])
+		end
+	end
+	return 0
+end
+
+-- the typical caster magic level of a level (`early.refML`: linear between the rows, flat outside)
+function F.earlyRefML(level, cfg)
+	cfg = cfg or ChaosSpellFactorConfig
+	local pts = cfg and cfg.early and cfg.early.refML
+	level = tonumber(level) or 0
+	if not pts or #pts == 0 then
+		return 0
+	end
+	if level <= pts[1][1] then
+		return pts[1][2]
+	end
+	for i = 2, #pts do
+		local a, b = pts[i - 1], pts[i]
+		if level <= b[1] then
+			return a[2] + (b[2] - a[2]) * (level - a[1]) / (b[1] - a[1])
+		end
+	end
+	return pts[#pts][2]
+end
+
+-- the early factor of vocation `vocId` at `level` and `magicLevel` (1 for a vocation that is not listed, without a config, from
+-- the level where the gain is 0): 1 + gain x clamp((refML + k) / (ML + k), tilt)
+function F.earlyFor(vocId, level, magicLevel, cfg)
+	cfg = cfg or ChaosSpellFactorConfig
+	local e = cfg and cfg.early
+	if not e or not e.vocations then
+		return 1
+	end
+	local id, listed = tonumber(vocId), false
+	for _, v in ipairs(e.vocations) do
+		if v == id then
+			listed = true
+			break
+		end
+	end
+	local g = listed and F.earlyGain(level, cfg) or 0
+	if g <= 0 then
+		return 1
+	end
+	local k = e.k or 20
+	local ml = math.max(0, tonumber(magicLevel) or 0)
+	local r = (F.earlyRefML(level, cfg) + k) / (ml + k)
+	local lo, hi = e.tilt and e.tilt[1] or 1, e.tilt and e.tilt[2] or 1
+	if r < lo then
+		r = lo
+	elseif r > hi then
+		r = hi
+	end
+	return 1 + g * r
+end
+
+-- the early factor of one damage value: the scope of F.factor (ORIGIN_SPELL damage, not healing, not a proc, not guarded) and
+-- never on a player target (`vsPlayer`): the gain is for the early hunts, PvP keeps its tuned numbers (pvp_model.py)
+function F.early(vocId, origin, combatType, spellOrigin, healingType, procActive, cfg, level, magicLevel, vsPlayer)
+	if procActive or F.depth > 0 or vsPlayer then
+		return 1
+	end
+	if spellOrigin == nil or origin ~= spellOrigin or not combatType or combatType == 0 or combatType == healingType then
+		return 1
+	end
+	return F.earlyFor(vocId, level, magicLevel, cfg)
+end
+
 -- run fn(...) with the factor off (an ORIGIN_SPELL hit that is not the class's spell damage); returns pcall's results
 function F.guard(fn, ...)
 	F.depth = F.depth + 1
