@@ -303,6 +303,14 @@ if __name__ == '__main__':
     row_sums = {r.wings: reports[r.wings][0] for r in rows}
     quiet = lambda *a: None  # noqa: E731
     check(len(fm.check_pair(dat_p, spr_p, rows, row_sums, log=quiet)) == 2, 'the old pair does not hold the drawn wings')
+    # O747: a row whose look took purchased pack art (pair 83) is skipped by live; the others are still held
+    said = []
+    check(len(fm.check_pair(dat_p, spr_p, rows, row_sums, log=said.append, pack={2})) == 1, 'live skips a pack art row only')
+    check(any('1 rows skipped: purchased pack art' in s for s in said), 'live counts the skipped pack art rows')
+    check(fm.check_pair(dat_p, spr_p, rows, row_sums, log=quiet, pack={2, 3}) == [], 'live with every row pack art holds nothing')
+    pack_looks = fm.pack_art_looks()
+    check(len(pack_looks) == 73 and pack_looks <= {sp.look for sp in fm.load()},
+          'art_by_row.csv names 73 pack art looks, all rows of the table: %d' % len(pack_looks))
     out_dir = os.path.join(case.dir, 'out')
     done = fm.apply(dat_p, spr_p, out_dir, rows, log=quiet)
     check(done == [2, 3], 'apply redraws the looks of the rows: %s' % done)

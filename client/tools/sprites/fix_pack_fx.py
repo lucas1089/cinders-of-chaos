@@ -114,11 +114,19 @@ def load(dat_path, spr_path):
 _FORMS = {}
 
 
-def forms(dat_path, spr_path, sums=None):
-    """{(kind, id): 'after' | 'before' | None} of every thing of the sums file in this pair (cached per path and size)"""
+def tail_sums():
+    """fix_dissolve_tail.py's sums (O766): {(kind, id): (before, after)}, the tail cut after this tool's fixes"""
+    import fix_dissolve_tail
+    return read_sums(fix_dissolve_tail.SUMS)
+
+
+def forms(dat_path, spr_path, sums=None, raw=False):
+    """{(kind, id): 'after' | 'before' | None} of every thing of the sums file in this pair (cached per path and size). A thing
+    whose fixed form later lost its dissolve tail (fix_dissolve_tail.py, O766) counts as 'after' unless `raw`."""
     sums = read_sums() if sums is None else sums
+    tails = {} if raw else tail_sums()
     key = (os.path.abspath(dat_path), os.path.getsize(dat_path), os.path.abspath(spr_path), os.path.getsize(spr_path),
-           tuple(sorted(sums.items())))
+           tuple(sorted(sums.items())), tuple(sorted(tails.items())))
     if key in _FORMS:
         return _FORMS[key]
     d, spr, things = load(dat_path, spr_path)
@@ -127,14 +135,18 @@ def forms(dat_path, spr_path, sums=None):
     for (kind, i), (b, a) in sums.items():
         t = thing_of(things, kind, i)
         got = digest(store, AF.TS(t).groups) if t is not None else None
-        out[(kind, i)] = 'after' if got == a else 'before' if got == b else None
+        tb, ta = tails.get((kind, i), (None, None))
+        out[(kind, i)] = 'after' if got == a or (got == ta and tb == a) else 'before' if got == b else None
     _FORMS[key] = out
     return out
 
 
 def fixed_ids(dat_path, spr_path):
-    """{(kind, id)} of the things this pair holds in their fixed (`after`) form"""
-    return {k for k, v in forms(dat_path, spr_path).items() if v == 'after'}
+    """{(kind, id)} of the things this pair holds in their fixed (`after`) form, with the things whose dissolve tail
+    fix_dissolve_tail.py cut (O766): the live checks of the import tools take that form as theirs"""
+    import fix_dissolve_tail
+    out = {k for k, v in forms(dat_path, spr_path).items() if v == 'after'}
+    return out | {k for k, v in fix_dissolve_tail.forms(dat_path, spr_path).items() if v == 'after'}
 
 
 # ------------------------------------------------------------------------------------------------ build

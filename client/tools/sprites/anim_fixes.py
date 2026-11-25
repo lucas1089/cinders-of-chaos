@@ -36,6 +36,8 @@ per row (rows of one thing are applied in table order, each on the result of the
   demesh      (O734) remove, in every frame, the checker and lattice pixels of clean_pack_dither.mesh_mask (the pair 66 rule
               for a glow cut by a Bayer dither: a pixel with no opaque 4-neighbour inside a checker or lattice of its colour).
               Must remove `expect=n` pixels.
+  undissolve  (O766) cut the 3-phase Bayer dissolve tail of a pack import (dissolve_tail: the signature on the last three
+              phases with art) with its time; blank end phases stay. Must give `keep=A-B,C` out of `of=N` phases.
   pulse       a one-frame look gets an idle of `n` phases (`ms` each): a slow brightness pulse, never darker than the
               still (factor 1 + amp * (1 - cos) / 2); the animateAlways attribute is set.
   displacement  `x,y` sets dat attribute 25 (the sprites and groups are untouched).
@@ -486,6 +488,88 @@ def op_demesh(store, ts, a):
     ts.log.append(('0', 'demesh', 'mesh rule of clean_pack_dither.py', '%d pixels removed' % n))
 
 
+# O766: the dissolve tail. The pack imports cut a looping effect to a one-shot whose last 3 phases dissolve by a 4x4 Bayer
+# order (gen_pack27_fx.dissolve, keep 3/4, 2/4, 1/4 of the art). The mesh rules (clean_pack_dither.py, demesh) only take the
+# lone dots of a checker or lattice, so the first stage stays whole (a grid of holes over the art) and the others leave
+# dotted rests: in the client the effect ends in a flicker of mesh. The tail by its signature, on the last three phases with
+# art (blank end phases after them stay): stage A holds TAIL_A_SHARE of the phase before it, with holes (a clear pixel whose
+# four sides are art) at least TAIL_HOLES of its art and lone pixels (no art on a side) at most TAIL_A_LONE of it; stages B
+# and C are lone pixels for at least TAIL_LONE of their art. At least two solid phases come before A.
+TAIL_A_SHARE = (0.6, 0.85)
+TAIL_HOLES = 0.05
+TAIL_A_LONE = 0.15
+TAIL_LONE = 0.9
+
+
+def phase_metrics(store, g):
+    """[(art, holes, lone)] per phase, summed over every frame of the phase"""
+    out = []
+    for p in range(g['phases']):
+        art = holes = lone = 0
+        for k in phase_keys(g, p):
+            on = frame(store, g, *k)[..., 3] > 0
+            q = np.pad(on, 1, constant_values=False)
+            k4 = (q[:-2, 1:-1].astype(np.int8) + q[2:, 1:-1] + q[1:-1, :-2] + q[1:-1, 2:])
+            art += int(on.sum())
+            holes += int(((~on) & (k4 == 4)).sum())
+            lone += int((on & (k4 == 0)).sum())
+        out.append((art, holes, lone))
+    return out
+
+
+def dissolve_tail(metrics):
+    """(first, end): phases first..end-1 are the Bayer dissolve tail, or None"""
+    end = len(metrics)
+    while end > 0 and metrics[end - 1][0] == 0:
+        end -= 1
+    first = end - 3
+    if first < 2:
+        return None
+    (pa, _h, _l), (a, holes, lone) = metrics[first - 1], metrics[first]
+    if not (pa > 0 and TAIL_A_SHARE[0] * pa <= a <= TAIL_A_SHARE[1] * pa):
+        return None
+    if holes < TAIL_HOLES * a or lone > TAIL_A_LONE * a:
+        return None
+    if any(m[0] == 0 or m[2] < TAIL_LONE * m[0] for m in metrics[first + 1:end]):
+        return None
+    return first, end
+
+
+def undissolve_plan(store, g):
+    """the phases kept when the tail is cut (the blank end phases stay), or None when there is no tail"""
+    tail = dissolve_tail(phase_metrics(store, g))
+    if tail is None:
+        return None
+    first, end = tail
+    return list(range(first)) + list(range(end, g['phases']))
+
+
+def keep_text(keep):
+    """[0, 1, 2, 5] -> '0-2,5'"""
+    parts, i = [], 0
+    while i < len(keep):
+        j = i
+        while j + 1 < len(keep) and keep[j + 1] == keep[j] + 1:
+            j += 1
+        parts.append(str(keep[i]) if i == j else '%d-%d' % (keep[i], keep[j]))
+        i = j + 1
+    return ','.join(parts)
+
+
+def op_undissolve(store, ts, a):
+    need(a, 'of', 'keep')
+    g = ts.groups[0]
+    if len(ts.groups) != 1 or g['phases'] != int(a['of']):
+        raise SystemExit('%s%d: %d phases, the row wants %s' % (ts.cat, ts.id, g['phases'], a['of']))
+    keep = undissolve_plan(store, g)
+    if keep is None:
+        raise SystemExit('%s%d: no dissolve tail' % (ts.cat, ts.id))
+    if keep_text(keep) != a['keep']:
+        raise SystemExit('%s%d: the tail rule keeps %s, the row says %s' % (ts.cat, ts.id, keep_text(keep), a['keep']))
+    set_phases(ts, g, keep)
+    ts.log.append(('0', 'undissolve', 'tail of %d phases' % (int(a['of']) - len(keep)), 'cut with its time'))
+
+
 def op_clear_color(store, ts, a):
     need(a, 'frame', 'rgb', 'expect')
     g = ts.groups[int(a.get('group', 0))]
@@ -544,7 +628,8 @@ def set_displacement(ts, xy):
 
 OPS = {'trim': op_trim, 'dedupe': op_dedupe, 'lift': op_lift,
        'clear_px': op_clear_px, 'clear_color': op_clear_color,
-       'merge': op_merge, 'clear_strays': op_clear_strays, 'drop_faint': op_drop_faint, 'demesh': op_demesh}
+       'merge': op_merge, 'clear_strays': op_clear_strays, 'drop_faint': op_drop_faint, 'demesh': op_demesh,
+       'undissolve': op_undissolve}
 EXTRA_OPS = {'pulse': op_pulse}
 
 

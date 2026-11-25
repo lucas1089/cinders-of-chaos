@@ -48,6 +48,8 @@ with this kit. Their commands, handed over from here:
                                gen_painted_sides.py (drawn_wings/painted_sides, O724); north / south stay as the pair has them;
                                --sides-only: only those ten looks change, every other look byte for byte (pair 79 -> 80)
   live DAT SPR [--new] [--keep-painted [--painted-sides] [--base DAT SPR]]   a built pair holds them (kept rows: equal to --base, else skipped)
+                               the 73 rows that took purchased pack art in pair 83 (O747, drawn_wings/art_by_row.csv `pack`)
+                               are skipped: gen_wst_wear.py live holds them. Pair 83 on: live DAT SPR --keep-painted
   new-table [--check]          the six wings of this file as wings looks 3555-3560 of pair 78 (O581 phase 2): drawn_wings/new_looks.csv, .sums,
                                wing_anchors.lua and the server's ids file (gen_drawn_wings_new.py)
   build-new DAT SPR OUT_DIR    pair 77 (and no other) -> pair 78: the six looks appended, nothing else changes
