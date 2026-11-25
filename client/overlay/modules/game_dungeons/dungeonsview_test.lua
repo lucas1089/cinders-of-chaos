@@ -225,5 +225,29 @@ if pt then
   end
 end
 
+-- the kill counter's spot (V11, 2026-11-25): the floating chat and the hotbar globes covered it at bottom left
+do
+  local area = { x = 0, y = 0, width = 1100, height = 720 }
+  local chat = { x = 10, y = 455, width = 375, height = 142 }
+  local bar = { x = 180, y = 610, width = 740, height = 110 }
+  local s = V.counterSpot(area, 305, 170, {})
+  eq(s.left, 0, 'nothing in the way: left')
+  eq(s.bottom, 0, 'nothing in the way: bottom left')
+  s = V.counterSpot(area, 305, 170, { chat, bar })
+  eq(s.bottom, 720 - (455 - V.COUNTER_GAP), 'above the chat')
+  local top = 720 - s.bottom - 170
+  eq(top + 170 <= chat.y, true, 'clear of the chat')
+  eq(top >= 0, true, 'inside the map')
+  s = V.counterSpot(area, 305, 170, { bar })
+  eq(s.bottom, 720 - (610 - V.COUNTER_GAP), 'above the hotbar alone')
+  s = V.counterSpot(area, 305, 170, { { x = 400, y = 500, width = 100, height = 100 } })
+  eq(s.bottom, 0, 'a rect to the right leaves bottom left')
+  -- no room above: bottom left as before
+  s = V.counterSpot({ x = 0, y = 0, width = 800, height = 300 }, 305, 200, { { x = 0, y = 100, width = 300, height = 200 } })
+  eq(s.bottom, 0, 'no room: the old spot')
+  s = V.counterSpot(area, 305, 170, { chat, false })
+  eq(s.bottom, 720 - (455 - V.COUNTER_GAP), 'a missing rect is skipped')
+end
+
 if fails > 0 then print(fails .. ' failure(s)'); os.exit(1) end
 print('dungeonsview tests passed')

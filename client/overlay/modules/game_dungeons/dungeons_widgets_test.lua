@@ -172,7 +172,16 @@ function Widget:setWidth(w) self.width = w end
 function Widget:getWidth() return self.width or 156 end -- a DungeonCard is 156 wide (dungeons.otui)
 function Widget:setHeight(h) self.height = h end
 function Widget:setMarginTop() end
-function Widget:addAnchor() end
+function Widget:addAnchor(edge, target, to)
+  self.anchors = self.anchors or {}
+  self.anchors[#self.anchors + 1] = { edge, target, to }
+end
+function Widget:breakAnchors() self.anchors = {} end
+function Widget:setMarginBottom(m) self.marginBottom = m end
+function Widget:setMarginLeft(m) self.marginLeft = m end
+function Widget:getHeight() return self.height or 20 end
+-- the map panel of a 1280 x 720 screen less the right column (game_interface)
+function Widget:getRect() return self.rect or { x = 0, y = 0, width = 1100, height = 720 } end
 function Widget:setImageSource(s) self.image = s end
 function Widget:setOutfit(o) self.outfit = o end
 function Widget:setItemId(i) self.itemId = i end
@@ -240,6 +249,7 @@ LocalPlayer = {}
 ProtocolGame = { registerExtendedOpcode = function() end, unregisterExtendedOpcode = function() end }
 function scheduleEvent(fn, ms) pending[#pending + 1] = { fn = fn, ms = ms } return #pending end
 function removeEvent(id) if pending[id] then pending[id].dead = true end end
+function addEvent(fn) return scheduleEvent(fn, 0) end
 local function flush(limit)
   local ran = 0
   while ran < (limit or 50) do
@@ -524,6 +534,26 @@ opcode('start', { boss = 'Ossivane', left = 120, duration = 900000, need = 85, o
 local counter = getKillCounter()
 eq(counter.visible, true, 'the counter shows')
 eq(counter:getChildById('mainObjective').text, 'Kill 85% of the monsters to unlock Ossivane', 'the main objective')
+-- no chat, no hotbar: bottom left of the map
+eq(counter.marginBottom, 0, 'the counter sits at the bottom')
+eq(counter.marginLeft, 0, 'and at the left')
+-- V11 (2026-11-25): the floating chat covered the objectives and the health globe sat on the bar; the counter now
+-- stands just above them, unless the player moved it (game_hudmove)
+ChaosFloatChat = { getRect = function() return { x = 10, y = 455, width = 375, height = 142 } end }
+ChaosHotbar = { getRect = function() return { x = 180, y = 610, width = 740, height = 110 } end }
+opcode('start', { boss = 'Ossivane', left = 120, duration = 900000, need = 85 })
+flush()
+eq(counter.marginBottom, 720 - (455 - DungeonsView.COUNTER_GAP), 'the counter stands above the chat')
+eq(720 - counter.marginBottom <= 455, true, 'its bottom is above the chat')
+local anchored = {}
+for _, a in ipairs(counter.anchors or {}) do anchored[#anchored + 1] = tostring(a[1]) .. '>' .. tostring(a[3]) end
+eq(#anchored, 2, 'two anchors')
+ChaosHudMove = { isMoved = function() return true end }
+counter.marginBottom = 7
+placeKillCounter()
+eq(counter.marginBottom, 7, 'a spot the player chose stays')
+ChaosHudMove, ChaosFloatChat, ChaosHotbar = nil, nil, nil
+opcode('start', { boss = 'Ossivane', left = 120, duration = 900000, need = 85, objectives = { 'No deaths', 'Fast' } })
 opcode('killed', { percent = 40, left = 70 })
 eq(counter:getChildById('label').text, '40%', 'percent')
 opcode('killed', { percent = 90, left = 12, unlocked = true })

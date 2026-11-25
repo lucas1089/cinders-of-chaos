@@ -7127,6 +7127,8 @@ The store's infinite food (Convenience, "Everfull Ration", 100 coins, decided 20
 
 ## Potions (`potions.lua`, `potions_core.lua`, `potions_config.lua`, `data/lib/chaos_potions.lua`, `tools/install_potions.py`)
 
+Seen in a client (2026-11-25): an Everfull drink at 10% health raised health and mana; the potion stayed (no charges since O273).
+
 Owner request 2026-10-16: "Remove the potion flasks and make the first pots infinite."
 
 - **Uninstalled Everfull tiers are hidden (2026-10-29).** An Everfull item exists only after the `potions` step of
@@ -8211,6 +8213,8 @@ the fallback cost, target checks, the client cannot complete). Tested in game (2
 spell, death, cancel, target out of range at the end, the Town Portal channel on the same bar.
 
 ## Spellbook (`spellbook.lua`)
+
+Seen in a client (2026-11-25): Learned + Attack lists a Ninja's attack spells.
 Character > Spellbook in the client menu opens the client window `game_spellbook` on extended opcode 219 (`ChaosOpcodes.spellbook`). The list is read from the running server's own files, so renamed stock spells, the Chaos spells and anything added later show up without a client update:
 - `data/spells/spells.xml`: every `<instant>`, `<rune>` and `<conjure>` (name, words, level, magic level, mana, soul, cooldown, group, premium, range, vocations, rune item id). Monster spells (words starting with `#`) and house spells (`house/` scripts) are skipped.
 - `data/spells/scripts/<script>` is read as text, never run: element (`COMBAT_PARAM_TYPE`, `doAreaCombat`/`doTargetCombat`/`damageTarget` arguments), kind (damage, heal, buff, summon, conjure, utility), area (the largest `createCombatArea(...)`: an `AREA_*` table of the spell library, an inline table literal, which is loaded only when it holds nothing but digits, commas and braces, or a local table of the same script), scaling (magic level, skill x weapon attack, distance skill x weapon attack). Chaos spells use the first comment line of their script (`-- <Name>: <description>`); stock spells get a generated one ("Single-target fire damage.", "Fire damage in front of you (wave).", "Heals you and cures paralysis.", "Conjures 4 x 'searing orb rune'.").
@@ -12151,6 +12155,8 @@ fee, once per player, false rumours; `rumours_run.lua` with a mocked player; the
 live server: his spot by the temple, a spawn in a real hunt.
 
 ## The Apothecary (`apothecary.lua`, `apothecary_config.lua`, `data/npc/Veyra the Apothecary.xml`, `data/npc/scripts/veyra_the_apothecary.lua`, `tools/install_apothecary.py`)
+
+Seen in a client (2026-11-25): a Ninja says trade to Veyra and her shop opens with 27 items.
 
 Owner 2026-10-23: "no hub de npcs, nao tem nenhum que venda pots ou coisas do tipo. coloque por favor" (no NPC in the hub
 sells potions or the like). The base shop NPCs were cleared from the stalls ("Hub NPC booths"), and the progression and
@@ -30269,6 +30275,8 @@ countdowns and tooltip, a refresh of the same kind by a kill (48 s back to 58 s,
 weakest, +25% experience (145 to 181) and +25% speed (2228 to 2785) measured. Not run live: the PvP-place fade, ward, gold.
 
 ## Ground pickups and globes (O243) (`pickups.lua`, `pickups_core.lua`, `pickups_config.lua`, `globes.lua`, `globes_core.lua`, `globes_config.lua`, `tools/install_pickups.py`)
+
+Seen in a client (2026-11-25): six kills at 10% health dropped a health and a mana globe; walking on them took them.
 
 Two things lie on the ground for a short time and are taken by walking onto them: the health and mana globes of a kill
 and the ember of an Ember Blessing proc. Both use one framework. Server only: no client part, no client build, no opcode,
