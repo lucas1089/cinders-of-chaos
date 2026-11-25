@@ -191,6 +191,18 @@ cx, cy = TL.centre(80, 80)
 eq(cx, 8, '80 px tiles: 8 px right'); eq(cy, 8, 'and down')
 cx, cy = TL.centre(32, 32)
 eq(cx, -16, 'small tiles: back')
+-- HD Sprite Upscaling (spriteSize 64): the engine adds 64 px, not 32 (seen in a client 2026-11-25, V8)
+cx, cy = TL.centre(64, 64, 64)
+eq(cx, -32, 'HD, 64 px tiles: half a tile back'); eq(cy, -32, 'and up')
+cx = TL.centre(128, 128, 64)
+eq(cx, 0, 'HD, 128 px tiles: no correction')
+for _, spr in ipairs({ 32, 64 }) do
+  for _, t in ipairs({ 32, 48, 64, 96, 128 }) do
+    local x = TL.centre(t, t, spr)
+    eq(x + spr, t / 2, 'the widget centre is the tile centre at ' .. t .. ' px, sprite ' .. spr)
+  end
+end
+eq(TL.centre(64, 64, 0), 0, 'no sprite size: 32')
 eq(TL.barLift(64, 1), 32 + TL.BAR.h / 2 + 4, 'lowest bar just over the tile')
 eq(TL.barWidth(20), TL.BAR.w, 'short text: the usual width')
 eq(TL.barWidth(80), 92, 'long text: wider')

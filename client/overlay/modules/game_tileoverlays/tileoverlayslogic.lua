@@ -228,10 +228,13 @@ function TL.fillWidth(progress, inner)
   return min(inner, max(0, floor(progress * inner + 0.5)))
 end
 
--- The engine centres a tile widget on (tile corner + 32 px), which is the tile's centre only at 64 px tiles: the margins
--- that put a widget's centre on the centre of a tile of tw x th px (the zoomed size on screen)
-function TL.centre(tw, th)
-  return floor((tw or 64) / 2 - 32 + 0.5), floor((th or 64) / 2 - 32 + 0.5)
+-- The engine centres a tile widget on (tile corner + spriteSize px), spriteSize 32, or 64 with HD Sprite Upscaling (seen in a
+-- client 2026-11-25, V8): the margins that put a widget's centre on the centre of a tile of tw x th px (the zoomed size on
+-- screen); spr = g_sprites.spriteSize() (default 32)
+function TL.centre(tw, th, spr)
+  spr = tonumber(spr) or 32
+  if spr <= 0 then spr = 32 end
+  return floor((tw or 64) / 2 - spr + 0.5), floor((th or 64) / 2 - spr + 0.5)
 end
 
 -- a bar's width: at least BAR.w, wide enough for its text (the countdown's digits measured as the widest ones)

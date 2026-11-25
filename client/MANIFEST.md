@@ -308,6 +308,17 @@ Owner 2026-11-19 (pt-BR): "Faça uma animação legal no Loot Explosion, por fav
 
 ## Loot beams (O569, `game_lootbeams`, art `client/tools/gen_lootbeam_art.py`)
 
+**Seen in a client (2026-11-25, V8): placement fixed.** The beams of real drops sat half a tile up and left of the item (HD Sprite
+Upscaling off). Base patch 0041 `drawWidgetOverTile` puts a tile widget's centre at the tile's top left + `g_sprites.spriteSize()` +
+its margins, read in the engine source. spriteSize is 32, or 64 with HD Sprite Upscaling (`hdmodeBox`). O569 took 32 always (right
+with HD off, half a tile right and down with HD on: the owner's screenshot of O716); O716 took -32 always (right with HD on only).
+Now the margins are `tw / 2 - spriteSize`: `LB.box(tw, th, height, spr)`, and the same rule in `game_lootburst` `LBL.margins` and
+`game_tileoverlays` `TL.centre`; each module reads `g_sprites.spriteSize()` (32 when missing). `LB.DEST` is removed.
+`lootbeams_engine_test.lua` runs the real module at 5 zooms and both sprite sizes (fails with `LB_SPR=32`); `lootbeams_test.lua`,
+`lootburst_test.lua`, `tileoverlayslogic_test.lua` hold both sizes. Seen after the fix: beams on the item with HD off and on, zoomed in
+and out. Only Legendary, Divine, set and unique beam; the pair 65 strips 4090-4101 play crisp and close their loop.
+
+
 **Only Legendary, Divine, set and unique beam (O677, owner 2026-11-19: "deixe so de lendario, divino, set e unique").** The groups white, blue and orb are gone (`LB.GROUPS`: orange,
 divine, set, unique; Common, Uncommon, Magic, Rare and orbs never beam, whatever the loot filter or an old setting says; the setting "Beams for orbs" is removed). A set piece
 (`st = 1` in the server's beam rows and the ground rows) is group **set**, colour `#c8e04a` (green gold; the client has no other set colour), height 1.15, between divine and unique
@@ -364,6 +375,10 @@ at the base (the pair 65 effect, 64 x 128 art of the purchased pack). Roadmap id
   other modules rely on, and how the beam reads over light, walls and creatures (it is drawn over them like the other tile overlay widgets).
 
 ## Floor telegraphs (O549)
+
+**Seen in a client (2026-11-25, V8):** circle, cone, line, cross and ring marks and The Rotmother's Creeping Bile draw a flat
+translucent orange fill with the outline of the whole area, on the tiles the hit lands on, with HD off.
+
 
 Owner request 2026-11-13, with a picture: "faça os ataques dos bosses marcarem o chão assim". Module `game_telegraph` (Lua only, no engine patch of its own, no option, no text), files `telegraph.lua` (the engine side), `telegraph_logic.lua` (the rules, tested by `telegraph_test.lua`). Server side: server/README.md "Floor telegraphs (O549)".
 - **Look.** Every tile of the attack's area gets a translucent fill that heats up as the hit nears (`TelegraphLogic.look`: fades in over 150 ms; alpha 32% to 46% and colour `#ff7a1e` to `#e8180c` with the heat, heat = progress ^ 1.6 so it stays orange for most of the wait; a throb of up to 6% whose beat quickens as the hit nears, about 700 ms 2 s out and 220 ms at 0.2 s; a flare to 62% in the last 0.4 s; at the hit a burst: 80%, white hot `#ffb45a`, fading out in 180 ms, before the server's clear at 300 ms; owner 2026-11-13: "mais vermelho quanto mais perto de estourar") and the outline of the whole area a bright line (`#ff8c28` to `#ff2a14` with the heat, full alpha, 2 screen pixels, crisp) on the sides that border an unmarked tile only: the edges between two marked tiles have no line, two overlapping or touching marks are one area (the mask of each tile comes from the union of all marks on the floor, `edgeMask`). A ring draws the line round its hole too. Colour keys `orange` (a boss attack), `red`, `green`, `violet` (the Veilstorm strike of a rift), `blue`. The mark is gone at the hit (the client counts the `ms` it was told), at the server's `floorclear` (the hit was cancelled, the fight ended, the player walked away) and at a safety expiry (1.5 s past its own length).
@@ -4425,6 +4440,13 @@ native 64 x 128 and the owner said "Pode fazer" (go ahead). Pair 65 draws the sa
   in a real client (draw order: the beam is added one tile south-east, so it is drawn over a creature on the tiles next to the item, as the level-up effect is).
 - Checked offline only. Not seen in a client.
 ### Pair 66: pair 65 with the dither mesh taken out of 644 pack effects and missiles, and the blue nova, effect 4702 (`clean_pack_dither.py`, `gen_pair66_fx.py`; built 2026-11-12; O523)
+
+**Seen in a client (2026-11-25, V8):** Rime Bloom, Falling Pyre, Frozen Crypt, Doomtide, 4702, 798 and 836 close up: no import mesh,
+colours right. Some pack effects keep the pack's own period-4 stipple fill (708 `nova_frost` most visible, also 745, 2573, 2913, 3901,
+2479, 2115): drawn that way, not our Bayer mesh (`clean_pack_dither.py` finds 0). Left for the owner. `clean_pack_dither.py stats` on
+pair 86 flags 549 things, 526 of them the O735 effects 5442+: scattered debris dots and rain streaks of drawn art, not a mesh (seen
+on 5966); below 4743 only missiles 5 and 37 (the O526 trail sparks) and effects 456, 480 (19 pixels each).
+
 Owner 2026-11-12 (translated): "I want our effects to look high quality." Shown the pilot (`SP/o521/pilot/compare.png`) the owner approved: 1 apply the 3 pilot effects, 2 fix the dither in the import of all pack effects.
 - **Why many pack 36 ids are empty (asked first; nothing "fixed").** Pair 36 imported 3,247 effect ids (855-4101). Pair 51 (`prune_pair.py`, owner 2026-10-27: "retire what we do not use") blanked every effect no script, spell or catalog name uses: 2,929 effects in `pair51_removed.csv`, 2,900 of them in 855-4101 (one 1x1 frame, sprite 0; 347 ids keep art). On purpose; they stay empty. The frame counts of `art_import/pack36_replace.csv` are the import's, not the pair's: pair 61 trimmed near empty frames (`pair_fixes/anim_fixes.csv`, `pair61_changes.csv`): E12 10 to 7 frames, E44 11 to 9.
 - **The cause of the "generated" look.** Every pack import (`gen_pack27_fx.clean_alpha`, used by gen_pack27 / 29 / 36 / 41 and `half` of gen_pack29_vfx; `gen_pack_fx.clean_alpha` its own copy) cut the soft glow of a frame (alpha 1..254) to 0 / 255 with a 4x4 Bayer threshold. A halo of alpha 0.5 became every second pixel: a checker mesh around the art (E12, E44, the green disc of E743 and E3900, the dust of 631, 2433). The 32 px sheets of the tile-grid packs went through the same cut (E12 is `spark_burst`, not halved). Looked at, not guessed: `SP/o523/dither_sheet.png`.
@@ -4447,6 +4469,10 @@ Owner 2026-11-12 (translated): "I want our effects to look high quality." Shown 
 - **Switch on:** the client package with pair 66 (`tools/client_pair.py` `PAIR_ASSETS` and the dat md5 are NOT changed here: the pair was not on windows-assets then; it is inside pair 73 (windows-assets f2ac2676, O621) and every later pair). A client on pair 65 still draws the mesh and has no effect 4702 (Eclipse of Ruin draws no nova there; damage the same). CI job `live-pair`: after the publish add `python3 -I client/tools/sprites/clean_pack_dither.py check-clean DAT SPR` (no effect or missile with 12 or more mesh pixels).
 - Not seen in a client. Unity reads the same pair and is frozen: it shows the clean effects.
 ### Pair 67: pair 66 with 6 projectiles redrawn 3 x 3 with a particle trail (`gen_missile_fx.py`; built 2026-11-12; O526 step 2)
+
+**Seen in a client (2026-11-25, V8):** the six projectiles (222, 221, 5, 37, 161, 144) fly with their particle trail both ways, no
+stray pixels. The Forked Storm bolt 4707 (O532) lands on the target tile.
+
 Owner 2026-11-12 (translated): after three preview videos (A alive, B alive + particle trail, C comet) he chose **B**, and "Fix the engine too." Our client drew every missile at phase 0 only (base patch 0147), so no
 missile animated in game. Step 2 is two parts: base patch `0194` (the engine animates missiles, see `BASE.md`) and this pair.
 - **What changed.** Missiles **222, 221, 5, 37, 161, 144** go from their art (1 x 1 or 2 x 2 or 3 x 3, 1 or 8 phases) to a **3 x 3 tile group of 8 phases of 50 ms**, the 3 x 3 direction patterns as every

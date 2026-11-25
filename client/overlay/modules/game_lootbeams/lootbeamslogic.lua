@@ -116,15 +116,15 @@ function LB.frame(age, rich)
   return a.burst + math.floor((age - LB.ART_MS) / a.loopMs) % a.loop
 end
 
--- size and margins of the widget of a beam over a tile of tw x th px on the screen. The engine puts the widget's centre at
--- `dest` + 32 px (base patch 0041, drawWidgetOverTile) + its margins, and `dest` is the CENTRE of the tile, not its top left
--- (O715: the margins tw / 2 - 32 of O569 assumed the corner and put the ring and the column half a tile right and down of the
--- item in a live client, owner screenshot 2026-11-22), so the margins that centre it are -32 at every zoom. The picture's foot
--- must sit footDrop px (of a 32 px tile) below the tile's centre: the widget's centre is higher than that by
--- footY - h / 2 - footDrop (frame px, scaled). LB.DEST = 'corner' brings the O569 rule back. Returns width, height,
--- marginLeft, marginTop (integers).
-LB.DEST = 'centre'
-function LB.box(tw, th, heightKey)
+-- size and margins of the widget of a beam over a tile of tw x th px on the screen. The engine (base patch 0041,
+-- drawWidgetOverTile) puts the widget's centre at `dest` + spriteSize + its margins, with `dest` the tile's TOP LEFT on the
+-- screen and spriteSize the sprite manager's size: 32, or 64 with HD Sprite Upscaling (g_sprites.setScaleFactor(2)). So the
+-- margins that centre it are tw / 2 - spriteSize. Seen in a client 2026-11-25 (V8): O569 took 32 always and O716 took -32 always;
+-- each was right in one mode only (O716 read the owner's screenshot with HD on: the O569 beam half a tile right and down; V8 saw
+-- the O716 beam half a tile left and up with HD off). The picture's foot must sit footDrop px (of a 32 px tile) below the tile's
+-- centre: the widget's centre is higher than that by footY - h / 2 - footDrop (frame px, scaled). spr = g_sprites.spriteSize()
+-- (default 32). Returns width, height, marginLeft, marginTop (integers).
+function LB.box(tw, th, heightKey, spr)
   local a = LB.ART
   tw, th = tonumber(tw) or 64, tonumber(th) or 64
   if tw <= 0 then tw = 64 end
@@ -133,9 +133,9 @@ function LB.box(tw, th, heightKey)
   local sx, sy = tw / a.tile * f, th / a.tile * f
   local lift = (a.footY - a.h / 2 - a.footDrop) * sy
   local function rnd(v) return math.floor(v + 0.5) end
-  local cx, cy = 0, 0 -- where `dest` is, from the tile's centre
-  if LB.DEST == 'corner' then cx, cy = tw / 2, th / 2 end
-  return rnd(a.w * sx), rnd(a.h * sy), rnd(cx - 32), rnd(cy - 32 - lift)
+  spr = tonumber(spr) or 32
+  if spr <= 0 then spr = 32 end
+  return rnd(a.w * sx), rnd(a.h * sy), rnd(tw / 2 - spr), rnd(th / 2 - spr - lift)
 end
 
 -- the keys of the `cap` beams that animate: the same order as the choice of the beams on screen (best group first, then the

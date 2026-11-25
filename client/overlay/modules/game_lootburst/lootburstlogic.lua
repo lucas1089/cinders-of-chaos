@@ -240,10 +240,13 @@ function LBL.size(kind, scale, tw, th)
 end
 
 -- the margins that put the CENTRE of a widget on its tile's centre moved by (ox, oy) tiles. The engine centres a tile widget on its
--- tile's top left + 32 px (base patch 0041), so the margins that centre it are tile / 2 - 32 (as game_lootbeams LB.box does)
-function LBL.margins(tw, th, ox, oy)
+-- tile's top left + spriteSize px (base patch 0041), so the margins that centre it are tile / 2 - spr (as game_lootbeams LB.box
+-- does); spr = g_sprites.spriteSize(): 32, or 64 with HD Sprite Upscaling (default 32; seen in a client 2026-11-25, V8)
+function LBL.margins(tw, th, ox, oy, spr)
   tw, th = tonumber(tw) or 64, tonumber(th) or 64
-  return math.floor(tw / 2 - 32 + (ox or 0) * tw + 0.5), math.floor(th / 2 - 32 + (oy or 0) * th + 0.5)
+  spr = tonumber(spr) or 32
+  if spr <= 0 then spr = 32 end
+  return math.floor(tw / 2 - spr + (ox or 0) * tw + 0.5), math.floor(th / 2 - spr + (oy or 0) * th + 0.5)
 end
 
 -- widgets of a burst on one tile: the engine keeps 16 and drops the oldest, so a burst stops adding the extras (trail glows) at MAX_PER_TILE

@@ -66,9 +66,17 @@ local function tileSize()
   return w, h
 end
 
+-- the sprite manager's size: 32, or 64 with HD Sprite Upscaling; the engine adds it to a tile widget's place (V8, 2026-11-25)
+local function spriteSize()
+  local ok, s = pcall(function() return g_sprites.spriteSize() end)
+  s = ok and tonumber(s) or nil
+  if not s or s <= 0 then return 32 end
+  return s
+end
+
 -- a widget's place over its tile: centred on the tile, lifted by `lift` px
 local function place(e, lift, tw, th)
-  local cx, cy = TL.centre(tw, th)
+  local cx, cy = TL.centre(tw, th, spriteSize())
   local key = cx .. ',' .. (cy - lift)
   if e.place ~= key then
     e.place = key

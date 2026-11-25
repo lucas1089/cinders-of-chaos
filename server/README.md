@@ -3745,6 +3745,13 @@ at level 300 (`rotation_sim.py --mana`, which only checks up to level 300 and wi
   heals every second and costs no mana. Support runes are keyed by spell id and wrap a spell's `onCastSpell`; a keystone
   has neither, so it cannot take runes without a new socket kind (storage, window, client). Not done. The mana the
   report mentions is the Juggernaut's other spells (and mana-on-hit gear), which the regeneration above now pays.
+- **Pyre Oath self burn after the defence layer (seen in a client 2026-11-25, V8).** The burn was capped at health + shield - 1
+  before the player defence layer (O464). Fire resistance has a level penalty there: a level 600 character takes a fire hit x1.6.
+  So a holder low on health died of their own burn (a burn of 1000 cost 1600 health). `A.pyreBurn(maxHealth, health, shield, taken)`
+  now divides the room by `taken` when it is over 1; `archetypes.lua` passes `1 - ChaosPlayerDefence.resistOfElement(player, "fire")
+  / 100` (1 without the layer). A resistance above 0 keeps the old cap. `tests/archetypes_test.lua` sweeps health 2-400 and factors
+  1.2-3. Seen: a level 600 Elementalist at 3000 health with two monsters in the aura held at 2 health for 8 s. Also seen: the ring
+  and the burn, no engine fire blast (801-806) on any hit.
 - **Pyre Oath on the client (O518).** Owner 2026-11-12 (translated): "the Juggernaut's Righteous Fire style skill: make an aura around the
   character and change the fire damage to something better." Visual only: the damage, the self burn, the regeneration, the 1 s tick, the
   2 sqm reach and the resistances are unchanged. Before: every second `fire_ring` (`CONST_ME_FIREAREA`) on the holder and
