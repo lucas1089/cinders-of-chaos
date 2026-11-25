@@ -1961,8 +1961,21 @@ def apply(dat_path, spr_path, out_dir, specs=None, log=print, extra=(), keep=(),
     return sorted(entries)
 
 
-def check_pair(dat_path, spr_path, specs=None, sums=None, log=print, keep=(), base=None, sides=()):
+ART_BY_ROW = os.path.join(HERE, 'drawn_wings', 'art_by_row.csv')
+
+
+def pack_art_looks(path=ART_BY_ROW):
+    """looks of the rows whose art is purchased pack art since pair 83 (O747: `art` pack in drawn_wings/art_by_row.csv,
+    written by gen_wst_wear.py, whose live holds them); live here skips them"""
+    if not os.path.exists(path):
+        return set()
+    with open(path, newline='', encoding='utf-8') as f:
+        return {int(r['look']) for r in csv.DictReader(f) if r.get('art') == 'pack'}
+
+
+def check_pair(dat_path, spr_path, specs=None, sums=None, log=print, keep=(), base=None, sides=(), pack=()):
     """a built pair holds the drawn wings: every row's look has the shape and the pictures of designs.sums.
+    `pack`: looks redrawn with purchased pack art (O747, pair 83 on): skipped and counted, never held here.
     `keep`: wings ids of the rows kept as they were (`--keep-painted`): not held to designs.sums; with `base` = (dat, spr)
     of the input pair their entry bytes and sprites must equal the base's, else they are only named as skipped.
     `sides` (`--painted-sides`, O724): kept rows whose east and west are the side strips of gen_painted_sides.py and
@@ -1973,9 +1986,12 @@ def check_pair(dat_path, spr_path, specs=None, sums=None, log=print, keep=(), ba
         sums = read_sums()
         if SRC_DIR:                                       # a pair built with --src holds the painted rows (O594)
             sums.update(read_sums(SHEET_SUMS))
+    pack = set(pack)
+    skipped = [sp for sp in specs if sp.look in pack]
+    specs = [sp for sp in specs if sp.look not in pack]
     dat, spr = Dat(dat_path), Spr(spr_path)
     bad = []
-    keep = set(keep)
+    keep = set(keep) & {sp.wings for sp in specs}
     bdat, bspr = (Dat(base[0]), Spr(base[1])) if base and keep else (None, None)
     sides = set(sides) & keep
     for sp in specs:
@@ -2014,6 +2030,9 @@ def check_pair(dat_path, spr_path, specs=None, sums=None, log=print, keep=(), ba
     log('%d of %d wings looks hold the drawn pictures%s' % (n - len([b for b in bad if 'kept' not in b]), n,
         '' if not keep else '; %d kept painted rows %s%s' % (len(keep), 'equal to the base pair' if bdat else 'skipped',
                                                              '' if not sides else ', %d with the PixelLab side views' % len(sides))))
+    if skipped:
+        log('%d rows skipped: purchased pack art since pair 83 (O747, drawn_wings/art_by_row.csv; gen_wst_wear.py live holds them)'
+            % len(skipped))
     return bad
 
 
@@ -2589,7 +2608,7 @@ def main(argv):
               extra=new_rows() if with_new else (), keep=keep, sides=sides)
         return 0
     if cmd == 'live':
-        bad = check_pair(args[0], args[1], keep=keep, base=base, sides=sides)
+        bad = check_pair(args[0], args[1], keep=keep, base=base, sides=sides, pack=pack_art_looks())
         if with_new:
             import gen_drawn_wings_new as new
             bad += new.live(args[0], args[1])

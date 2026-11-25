@@ -105,6 +105,10 @@ PAIR_APEX_MONSTERS = 84   # the ten hunt monsters of levels 2100-2500 (O763, cli
                     # 3734-3743, our own PixelLab drawings; the monsters spawn in the six O759 hall hunts only through install_apex_hunts.py
                     # (step `apexhunts`, data/monster/apex_hunt_swaps.csv) from this pair. On windows-assets 7de16763 (2026-11-25, owner approved).
 
+PAIR_DISSOLVE_TAIL = 85   # pair 84 with the 3-phase Bayer dissolve tail cut from the pack effects (O766, client/tools/sprites/fix_dissolve_tail.py
+                    # build): the checker grid and dotted rests the O733 / O523 mesh rules left at the end of a one-shot. Client art only, no server
+                    # gate. Built locally 2026-11-25, not on windows-assets (owner step).
+
 PAIR_ASSETS = 84
 PAIR_ASSETS_DAT_MD5 = '65bfa6006c9e17c053229f5aaf236895'
 
