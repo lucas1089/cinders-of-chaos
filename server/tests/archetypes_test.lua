@@ -71,6 +71,21 @@ eq(A.pyreBurn(6000, 5000, 0), 150, "burn 2.5%")
 eq(A.pyreBurn(6000, 100, 0), 99, "never lethal")
 eq(A.pyreBurn(6000, 1, 0), 0, "at 1 health no burn")
 eq(A.pyreBurn(6000, 50, 60), 109, "the shield counts")
+-- O548 seen in a client (V8, 2026-11-25): a negative fire resistance makes the hit bigger after the cap; the cap is on the hit
+eq(A.pyreBurn(6000, 5000, 0, 1.6), 150, "a big pool: the full burn whatever the factor")
+eq(A.pyreBurn(6000, 100, 0, 1.6), 61, "never lethal after a 1.6 x factor (61 x 1.6 = 97.6)")
+eq(math.ceil(A.pyreBurn(6000, 100, 0, 1.6) * 1.6) < 100, true, "the hit after the factor leaves health")
+eq(A.pyreBurn(6000, 100, 0, 0.5), 99, "a resistance above 0 keeps the old cap")
+eq(A.pyreBurn(6000, 100, 0, nil), 99, "no factor: the old cap")
+eq(A.pyreBurn(6000, 1, 0, 2), 0, "at 1 health no burn with a factor")
+for h = 2, 400 do
+	for _, f in ipairs({1.2, 1.6, 2.0, 3.0}) do
+		local b = A.pyreBurn(200000, h, 0, f)
+		if math.ceil(b * f) >= h then
+			eq(b, "lethal", ("health %d factor %.1f: burn %d"):format(h, f, b))
+		end
+	end
+end
 eq(A.pyreRegen(6000), 120, "regen 2%")
 check(A.pyreActive(false, true, false) and A.pyreActive(false, false, true), "active in a fight or near an enemy")
 check(not A.pyreActive(true, true, true) and not A.pyreActive(false, false, false), "not in pz, not idle")

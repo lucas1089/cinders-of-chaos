@@ -260,6 +260,13 @@ ml, mt = L.margins(64, 64, 1, -1)
 eq(ml == 64 and mt == -64, true, 'one tile right and one up')
 ml, mt = L.margins(48, 40, 0.5, 0.25)
 eq(ml == -8 + 24 and mt == -12 + 10, true, 'half a tile right, a quarter down on a 48 x 40 tile')
+-- HD Sprite Upscaling: the engine adds spriteSize 64, not 32 (seen in a client 2026-11-25, V8)
+ml, mt = L.margins(64, 64, 0, 0, 64)
+eq(ml == -32 and mt == -32, true, 'HD, a 64 px tile: tile / 2 - 64 centres a widget')
+ml, mt = L.margins(128, 128, 0, 0, 64)
+eq(ml == 0 and mt == 0, true, 'HD, a 128 px tile: no margin')
+ml = L.margins(64, 64, 0, 0, 0)
+eq(ml, 0, 'no sprite size: 32')
 local counts = {}
 eq(L.canAdd(counts, 'a', true), true, 'an empty tile takes anything')
 counts.a = L.MAX_PER_TILE

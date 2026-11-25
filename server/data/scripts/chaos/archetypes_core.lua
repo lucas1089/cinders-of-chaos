@@ -196,11 +196,19 @@ function A.pyreAura(maxHealth, unique)
 	return math.floor((maxHealth or 0) * p.auraShare * (1 + (unique and p.uniqueAura or 0)))
 end
 
--- the self burn of a tick: never lethal (health + shield - 1 at most)
-function A.pyreBurn(maxHealth, health, shield)
+-- the self burn of a tick: never lethal. `taken` (optional, default 1) is what the player's defence layer makes of a fire hit
+-- (1 - fire resistance / 100: the level penalty of player_defence_config.lua takes the resistance below 0, so a level 600
+-- character takes 1.6 x; seen in a client 2026-11-25, V8: the cap of health - 1 was put on the hit BEFORE that factor and a
+-- Pyre Oath holder low on health died of their own burn). The hit after the factor stays at health + shield - 1 at most.
+function A.pyreBurn(maxHealth, health, shield, taken)
 	local p = cfg().arPyreOath
 	local burn = math.floor((maxHealth or 0) * p.selfBurn)
-	return math.max(0, math.min(burn, (health or 0) + (shield or 0) - 1))
+	local room = (health or 0) + (shield or 0) - 1
+	taken = tonumber(taken) or 1
+	if taken > 1 then
+		room = math.floor(room / taken)
+	end
+	return math.max(0, math.min(burn, room))
 end
 
 function A.pyreRegen(maxHealth)

@@ -174,11 +174,20 @@ local function tileSize()
   return w, h
 end
 
+-- the sprite manager's size: 32, or 64 with HD Sprite Upscaling; the engine adds it to a tile widget's place (LB.box)
+local function spriteSize()
+  local ok, s = pcall(function() return g_sprites.spriteSize() end)
+  s = ok and tonumber(s) or nil
+  if not s or s <= 0 then return 32 end
+  return s
+end
+
 local function fitWidget(e, tw, th)
-  local fit = table.concat({ math.floor(tw + 0.5), math.floor(th + 0.5), settings.height }, ',')
+  local spr = spriteSize()
+  local fit = table.concat({ math.floor(tw + 0.5), math.floor(th + 0.5), settings.height, spr }, ',')
   if e.fit == fit then return end
   e.fit = fit
-  local width, height, ml, mt = LB.box(tw, th, settings.height)
+  local width, height, ml, mt = LB.box(tw, th, settings.height, spr)
   e.w:resize(width, height)
   e.w:setMarginLeft(ml)
   e.w:setMarginTop(mt)

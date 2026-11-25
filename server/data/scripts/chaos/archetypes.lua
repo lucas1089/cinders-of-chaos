@@ -1504,6 +1504,20 @@ local function sendBurn(player, pos, struck)
 	end
 end
 
+-- what the player defence layer makes of a fire hit on this player (1 - fire resistance / 100; 1 without the layer)
+local function fireTaken(player)
+	local PD = rawget(_G, "ChaosPlayerDefence")
+	if not (PD and PD.resistOfElement) then
+		return 1
+	end
+	local ok, pct = pcall(PD.resistOfElement, player, "fire")
+	pct = ok and tonumber(pct) or nil
+	if not pct then
+		return 1
+	end
+	return 1 - pct / 100
+end
+
 local function pyreTick(player)
 	local p = cfg().arPyreOath
 	local pos = player:getPosition()
@@ -1518,7 +1532,7 @@ local function pyreTick(player)
 	if regen > 0 and Chaos and Chaos.heal then
 		Chaos.heal(player, regen)
 	end
-	local burn = A.pyreBurn(maxHealth, player:getHealth(), shield)
+	local burn = A.pyreBurn(maxHealth, player:getHealth(), shield, fireTaken(player))
 	local aura = A.pyreAura(maxHealth, hasUnique(player:getId(), "pyreMantle"))
 	local struck = {}
 	-- O548: the engine's fire hit effect (src-patch 0045, the pair 29 blast) is off while the tick deals its damage: the client draws the burn

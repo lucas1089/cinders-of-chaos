@@ -125,6 +125,14 @@ local function imageWidget(kind, tint)
   return w
 end
 
+-- the sprite manager's size: 32, or 64 with HD Sprite Upscaling; the engine adds it to a tile widget's place (V8, 2026-11-25)
+local function spriteSize()
+  local ok, s = pcall(function() return g_sprites.spriteSize() end)
+  s = ok and tonumber(s) or nil
+  if not s or s <= 0 then return 32 end
+  return s
+end
+
 -- places a widget: its picture `kind` at `scale`, its centre at (ox, oy) tiles from the centre of its tile (the size is kept so
 -- a widget that did not change size is not resized)
 local function place(e, tw, th, scale, ox, oy)
@@ -133,7 +141,7 @@ local function place(e, tw, th, scale, ox, oy)
     e.sw, e.sh = width, height
     e.w:resize(width, height)
   end
-  local ml, mt = LBL.margins(tw, th, ox, oy)
+  local ml, mt = LBL.margins(tw, th, ox, oy, spriteSize())
   if e.ml ~= ml then e.ml = ml e.w:setMarginLeft(ml) end
   if e.mt ~= mt then e.mt = mt e.w:setMarginTop(mt) end
 end
@@ -208,7 +216,7 @@ local function placeItem(run, tw, th, pose)
     e.sw, e.sh = width, height
     e.w:resize(width, height)
   end
-  local ml, mt = LBL.margins(tw, th, pose.x, pose.y)
+  local ml, mt = LBL.margins(tw, th, pose.x, pose.y, spriteSize())
   if e.ml ~= ml then e.ml = ml e.w:setMarginLeft(ml) end
   if e.mt ~= mt then e.mt = mt e.w:setMarginTop(mt) end
   if not e.tile or not e.tile:hasOverlayWidget(e.w) then attach(e) end
