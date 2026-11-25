@@ -110,6 +110,10 @@ PAIR_DISSOLVE_TAIL = 85   # pair 84 with the 3-phase Bayer dissolve tail cut fro
                     # effect 758 stun_stars over the head (pair_fixes/effect_centre.csv, row of pair 85). Client art only, no server gate.
                     # On windows-assets 3529436c (2026-11-25, owner approved "Pode enviar").
 
+PAIR_RELOOK_MONSTERS = 86   # five hunt monsters that read wrong for their names (O768, owner 2026-11-25): outfits 3744-3746 (Banshee, Werelion,
+                    # Leaf Golem; our own PixelLab drawings, client/tools/sprites/gen_relook_monsters.py build on pair 85) and two stock looks
+                    # (White Lion 1041, Hellhound 3280); data/monster/monster_relook_looks.csv, install step `monsterrelooklooks`.
+
 PAIR_ASSETS = 85
 PAIR_ASSETS_DAT_MD5 = '83b070b2b22d57336470aa0911488fde'
 

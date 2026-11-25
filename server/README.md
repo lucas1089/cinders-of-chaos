@@ -38980,6 +38980,41 @@ monster was 2000 (Pyre Stork, Pyrewing Tyrant), the hunts of 2150-2500 used 1700
 - **Open.** Pair 84 is not built (pair 83 is on windows-assets; building and pushing needs the owner). Then:
   `chaos-ctl.sh client-pair set 84` or the admin app, and the install.
 
+## Monster looks that match the name (O768) (`data/monster/monster_relook_looks.csv`, install step `monsterrelooklooks`, client pair 86)
+
+Owner 2026-11-25 (pt-BR): "banshee, white lion, hellhound, werelion, leaf golem ficaram ruins ou não condizentes com o nome.
+talath pode ser maior". Options were shown in a video (V5b); the owner's picks:
+
+| monster | committed look | look today | from pair 86 | what |
+|---|---|---|---|---|
+| Banshee | 2687 | 3408 (donor, pair 70) | 3744 | our PixelLab ghost |
+| Werelion | 1049 | 3444 (purchased, pair 71) | 3745 | our PixelLab lion-headed beast-man |
+| Leaf Golem | 567 | 3472 (purchased, pair 71) | 3746 | our PixelLab bark and leaf golem |
+| White Lion | 1041 | 3414 (donor, pair 70) | 1041 | the stock look |
+| Hellhound | 3183 | 3441 (purchased, pair 71) | 3280 | a stock look |
+
+- **Art.** Outfits 3744-3746 of client pair 86 (`client/tools/sprites/gen_relook_monsters.py`, client/MANIFEST.md
+  "Monster looks that match the name (O768)"): PixelLab drawings from our words only, 3x3, idle 4, walk 8.
+- **Map.** `data/monster/monster_relook_looks.csv` (monster, look, new_look; written by `gen_relook_monsters.py looks`): the old
+  look is the committed bounty pool's (all five are base server monsters); White Lion's old and new look are both 1041 (it leaves
+  the donor look 3414). Werelioness (3446) and Wilting Leaf Golem (3473) keep theirs.
+- **Step `monsterrelooklooks`** (`tools/install_monster_relook_looks.py`, right after `monsterdrivelooks`: the last look step,
+  since a step after it would meet a look it does not know). Guard `client_pair.PAIR_RELOOK_MONSTERS` = 86: below it a
+  WARNING and nothing written. At 86: the `<look type>` of the XML file or the `lookType` of the Lua file under `data/monster`,
+  and the row of the installed bounty pool, move from the old look or an earlier pair's look (recolour, donor, purchased,
+  creature, swap, PixelLab, Drive maps) to the new one; colour fields stay. Idempotent; another look or a missing file stops it.
+- **Audits.** `audit_shared_looks.look_at_pair` and `audit_idle_looks.donor_rows` read the map from pair 86 (last in the chain);
+  `gen_bounty_pool.committed_look` turns a new look back. `check_content.py` holds the map (old look = the pool's, new outfits
+  3744-3746 worn once, no player look, no look worn by another monster) and checks no shared look, the idle rule and the crowd
+  rule at pair 86 too. look_idle.csv: 3744-3746 idle group of 4, 3280 added. The stock looks 1041 and 3280 have no idle
+  group; they walk in place while they stand (`game_bossanimate` list, O534; owner pick 2026-11-25), as White Lion on 1041
+  did before pair 70.
+- **Talath** (client only): drawn 1.75x (`game_monsterbar` `MonsterBarMath.LOOK_SCALE`, client/MANIFEST.md "Draw size").
+- **Owner step**: ship a client package with pair 86, then admin app Comandos > "Par do cliente" > Gravar 86
+  (`chaos-ctl.sh client-pair set 86`), then Atualizar servidor. Below 86 nothing changes.
+- Tests: `tools/install_monster_relook_looks_test.py` (the map, the guard end to end on a synthetic server, an earlier look moved
+  on, idempotence, errors, the audits at pair 86, the pool generator, the step order).
+
 ## Caster early damage (O764) (`spell_factor_config.lua` `early`, `spell_factor_core.lua`, `passivetree_effects.lua`, `tests/caster_early_test.lua`)
 
 Owner 2026-11-25 (pt-BR, translated): "Mage spell damage is too low early on. Maybe raise the spells' base damage a little and lower

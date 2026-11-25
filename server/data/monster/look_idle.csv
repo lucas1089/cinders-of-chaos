@@ -701,6 +701,7 @@ look,idle,phases,frames,how,walk,walk_frames
 3269,yes,8,8,idle group,0,0
 3277,yes,8,8,idle group,0,0
 3278,yes,8,8,idle group,0,0
+3280,no,1,1,none,8,8
 3293,no,1,1,none,8,8
 3294,yes,8,8,idle group,0,0
 3296,yes,8,8,idle group,0,0
@@ -904,3 +905,6 @@ look,idle,phases,frames,how,walk,walk_frames
 3741,yes,4,2,idle group,0,0
 3742,yes,4,2,idle group,0,0
 3743,yes,4,2,idle group,0,0
+3744,yes,4,4,idle group,0,0
+3745,yes,4,4,idle group,0,0
+3746,yes,4,4,idle group,0,0

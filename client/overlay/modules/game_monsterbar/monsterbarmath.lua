@@ -22,6 +22,10 @@ M.SCALE_MIN = 0.5
 -- attacks as effects that carry its body at the outfit's own pixel grid (client/tools/sprites/gen_malgrath_boss.py), and an
 -- effect is never scaled; at BOSS_SCALE the standing boss was 1.5x its attacks, so it shrank at every attack and grew back.
 M.NATIVE_LOOKS = { [3530] = true }
+-- Looks drawn at a scale of their own whatever the tier (O768, owner 2026-11-25 "talath pode ser maior"): Talath (outfit 3529, a
+-- 5x5 boss of O608, 107 x 120 px at 1x) at 1.75, about Malgrath's size (181 x 197 px at 1x); its attacks are tile effects, not
+-- effects that carry its body, so it is scaled like any boss.
+M.LOOK_SCALE = { [3529] = 1.75 }
 
 function M.bodySize(anchor)
   if type(anchor) ~= 'table' or type(anchor[2]) ~= 'number' or type(anchor[3]) ~= 'number'
@@ -35,6 +39,9 @@ end
 function M.drawScale(anchor, tier, role, look)
   if look and M.NATIVE_LOOKS[look] then
     return 1
+  end
+  if look and M.LOOK_SCALE[look] then
+    return M.LOOK_SCALE[look]
   end
   if tier == 'boss' or role == 'omen' then
     return M.BOSS_SCALE
