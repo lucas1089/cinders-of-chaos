@@ -106,6 +106,10 @@ eq(decide(corpse, false, GL.normalize({ corpses = false })), nil, 'corpse labels
 -- ---------------------------------------------------------------- text, timer, colour
 eq(GL.titleCase('fire sword'), 'Fire Sword', 'title case')
 eq(GL.titleCase("knight's axe"), "Knight's Axe", 'apostrophe')
+eq(GL.titleCase('orb of binding'), 'Orb of Binding', 'small word after the first stays lower case')
+eq(GL.titleCase('Orb Of The Void'), 'Orb of the Void', 'small words lowered')
+eq(GL.titleCase('the ember crown'), 'The Ember Crown', 'first word always capital')
+eq(GL.titleCase('ring of fire and ice'), 'Ring of Fire and Ice', 'and')
 eq(GL.itemText(rare), 'Magic Fire Sword', 'rarity prefix')
 eq(GL.itemText(unique), 'Soulreaper', 'unique: its own name')
 eq(GL.itemText(orb), '3x Chaos Orb', 'stack count')

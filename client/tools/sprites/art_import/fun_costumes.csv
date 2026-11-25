@@ -11,5 +11,5 @@ new,key,name,kind,tiles,dirs,idle,walk,flags,ms,src
 3520,mushroom,Mushroom Folk,costume,2,4,4,8,,110,a2cb00ad7cce
 3521,bone_jester,Bone Jester,costume,2,4,4,8,,110,008b0b4c7a5c
 3522,chicken,Chicken Suit,costume,2,4,4,8,,110,14b318017c81
-3523,dusk_moth,Dusk Moth,pet,1,4,0,28,moth,50,475fca979687
+3523,dusk_moth,Dusk Moth,pet,1,4,0,28,moth,50,09f15e4d6d49
 3524,rune_seal,Rune Seal,aura,3,1,0,24,,100,script

@@ -193,7 +193,7 @@ answer({ { pos = pos, rows = { rowShield } } })
 placeBlocks()
 local lab = getLabels()
 eq(#lab, 1, 'one label is drawn')
-eq(lab[1] and lab[1].text:find('Brawling Great Shield Of Insulation', 1, true) ~= nil, true, 'with the item name: ' .. tostring(lab[1] and lab[1].text))
+eq(lab[1] and lab[1].text:find('Brawling Great Shield of Insulation', 1, true) ~= nil, true, 'with the item name: ' .. tostring(lab[1] and lab[1].text))
 local function centreOfLabel()
   local l = getLabels()[1]
   return { x = l.rect.x + l.rect.width / 2, y = l.rect.y + l.rect.height / 2 }
