@@ -273,6 +273,9 @@ eq(L.liquidKind(4603), nil, 'between the stock water ranges')
 eq(L.liquidKind(4615), nil, 'one past the stock water')
 eq(L.liquidKind(729), 'lava', 'stock lava ground')
 eq(L.liquidKind(4800), nil, 'a stock lava border is not a liquid')
+eq(L.liquidKind(21477), 'lava', 'stock lava ground 598 is client id 21477 (V20: a lava cave stood still)')
+eq(L.liquidKind(21478), nil, 'the next newer lava piece is not in the set')
+eq(L.liquidKind(727), nil, '727 is not the lava ground 598')
 eq(L.liquidKind(33456), 'water', 'deep lake water')
 eq(L.liquidKind(33463), 'water', 'mountain shallows')
 eq(L.liquidKind(33464), nil, 'not a liquid')
@@ -292,7 +295,7 @@ for i, e in ipairs(list) do
   if e.kind == 1 then sawWater = true; kindsOk = kindsOk and L.liquidKind(e.id) == 'water' end
   if e.kind == 2 then sawLava = true; kindsOk = kindsOk and L.liquidKind(e.id) == 'lava' end
 end
-eq(#list, 6 + 6 + 6 + 8 + 1 + 3 + 1 + 4, 'liquid id count')
+eq(#list, 6 + 6 + 6 + 8 + 1 + 3 + 1 + 1 + 4, 'liquid id count')
 eq(sorted and sawWater and sawLava, true, 'the list is sorted and has both kinds')
 eq(kindsOk, true, 'list kinds agree with liquidKind')
 eq(L.LIQUID.kind.water, 1, 'water kind number of the engine table')

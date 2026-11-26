@@ -9,7 +9,8 @@
 --     openShopWindow(cid, shop, ChaosNpcCurrency.wrap(onBuy, chaosCurrency), ChaosNpcCurrency.wrap(onSell, chaosCurrency))
 -- and the client module game_npctradewindow shows the currency (name, icon, the balance) in that window.
 --   ChaosNpcCurrency.balance(player, spec)    the player's amount: the item count, or the storage value (never below 0)
---   ChaosNpcCurrency.payload(player, spec)    {code, name, item?, amount}: the name is the item type's name or spec.name
+--   ChaosNpcCurrency.payload(player, spec)    {code, name, item?, amount}: the name is the item type's name or spec.name;
+--                                             item is the client id of the currency item (the client draws by it)
 --   ChaosNpcCurrency.encode(t)                the JSON text of a payload (own encoder: the NPC Lua state has no json)
 --   ChaosNpcCurrency.announce(player, spec, again)  sends the payload on ChaosNpcCurrency.OPCODE, JSON {action = "currency"};
 --                                             again = true marks a balance update of an open window
@@ -28,6 +29,22 @@ local function itemName(id)
 	end)
 	return ok and type(name) == "string" and name or ""
 end
+
+-- The client draws items by client id; the scripts name the currency by its server id (the Azure Coin is server
+-- item 26780, client item 24124). Seen in a client 2026-11-26 (V20): the azure window showed no coin in the header
+-- nor on the cards, because the payload carried the server id. nil when the type has no client id.
+local function clientId(id)
+	local ok, cid = pcall(function()
+		local t = ItemType(id)
+		return t and t.getClientId and t:getClientId()
+	end)
+	cid = ok and tonumber(cid) or nil
+	if cid and cid > 0 then
+		return math.floor(cid)
+	end
+	return nil
+end
+C.clientId = clientId
 
 function C.balance(player, spec)
 	if not player or type(spec) ~= "table" then
@@ -54,7 +71,8 @@ function C.payload(player, spec)
 	if name == "" then
 		name = tostring(spec.code or "")
 	end
-	return {code = tostring(spec.code or ""), name = name, item = tonumber(spec.item), amount = C.balance(player, spec)}
+	local item = tonumber(spec.item) and clientId(tonumber(spec.item)) or nil
+	return {code = tostring(spec.code or ""), name = name, item = item, amount = C.balance(player, spec)}
 end
 
 local ESC = {['"'] = '\\"', ["\\"] = "\\\\", ["\n"] = "\\n", ["\r"] = "\\r", ["\t"] = "\\t"}

@@ -27,7 +27,10 @@ local function makePlayer(id)
 end
 local players = {[1] = makePlayer(1)}
 function Player(cid) return players[cid] end
-function ItemType(id) return {getName = function() return names[id] or "" end} end
+local clientIds = {[26780] = 24124} -- server id -> client id (items.otb); the client draws the icon by the client id
+function ItemType(id)
+	return {getName = function() return names[id] or "" end, getClientId = function() return clientIds[id] or 0 end}
+end
 
 dofile("data/lib/chaos_npc_currency.lua")
 local C = ChaosNpcCurrency
@@ -47,7 +50,10 @@ eq(pay.amount, 42, "payload amount")
 eq(C.payload(p, {code = "H", storage = 48079, name = "quillfall coins"}).name, "quillfall coins", "a storage currency keeps its own name")
 eq(C.payload(p, {code = "Q", storage = 5}).name, "Q", "no name: the code")
 eq(C.payload(p, {code = "ZZ", item = 123456}).name, "ZZ", "an item without a name: the code")
-eq(C.encode(pay), '{"action":"currency","data":{"code":"AZ","name":"Azure Coin","item":26780,"amount":42}}', "item currency JSON")
+eq(pay.item, 24124, "the item of the payload is the client id, not the server id (V20: no coin icon in a client)")
+eq(C.encode(pay), '{"action":"currency","data":{"code":"AZ","name":"Azure Coin","item":24124,"amount":42}}', "item currency JSON")
+eq(C.payload(p, {code = "DC", item = 28697}).item, nil, "an item without a client id: no icon")
+eq(C.balance(p, {code = "AZ", item = 26780}), 42, "the balance still counts the server id")
 eq(C.encode({code = "H", name = 'a "q"\\ b\n', amount = 3}),
 	'{"action":"currency","data":{"code":"H","name":"a \\"q\\"\\\\ b\\n","amount":3}}', "storage currency JSON: escapes, no item")
 eq(C.encode({code = "H", name = "x\1y", amount = 0}), '{"action":"currency","data":{"code":"H","name":"x\\u0001y","amount":0}}',

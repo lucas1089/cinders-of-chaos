@@ -2434,6 +2434,9 @@ Seen in a client (2026-11-26, V18): the Illusionist's attack spells read 2, 4, 6
 Spellbook, as `rotation_sim.py --ladder` gives them. The ladder lines of docs/CLASSES.md still had the 10 spells of
 before O455; they are copied from the tool again.
 
+Seen in a client (2026-11-26, V20, O176): Bastion Cry (Warrior) and Glacial Doom (Elementalist), the strongest attack spells,
+read 13 s in the Spellbook; cast on three Demons, a recast at once is refused ("You are exhausted") and one 13 s later hits.
+
 ### Class spell factor (owner 2026-10-20: the cooldown ladder's retune proposals applied)
 
 One factor on a class's spell damage: `data/scripts/chaos/spell_factor_config.lua`. Since the combat pass (O136,
@@ -7230,7 +7233,8 @@ Owner request 2026-10-16: "Remove the potion flasks and make the first pots infi
   "Only characters of level N or above may drink this fluid." and the Look text in `items.xml` "This potion can be consumed by
   characters of level N or higher." **The level gates stay** (50 strong, 80 great and great spirit, 130 ultimate, 200
   supreme; the base file has its own for the later tiers): they keep a low character off the strongest potions, and the
-  Apothecary refuses a buyer below them too. The buff potions (berserk, mastermind, bullseye: a condition, no heal) keep their
+  Apothecary refuses a buyer below them too. Seen in a client (2026-11-26, V20): a Warrior drank a Great Mana Potion and an
+  Elementalist a Great Health Potion; the helper's Potions list held all 12 for both and drank both rows. The buff potions (berserk, mastermind, bullseye: a condition, no heal) keep their
   lists, as does `strengthening_potions.lua`. `add_vocations.py` only appends to a list that exists, so its re-run brings
   nothing back. Tests: `tools/patch_open_potions_test.py`; `tests/potions_patch_test.lua` runs the patched script on a mock
   engine and checks that every vocation id (0-25: the stock ones, Thief, Ninja, Samurai, Necromancer, Lich, Templar and the
@@ -13002,6 +13006,13 @@ there as a broken JSON. The rows were cut by the base's `short_text(name, 15)` a
   read from their own messages and were not looked at in game; Quick Sell and Sell All still say "gold" in their
   messages (they were not changed).
 
+**Seen in a client (2026-11-26, V20).** The azure NPC's window said "Currency: Azure Coin", showed the balance in coins and
+whole names, and the "azure" reply named the three class lines and where the coins drop. The coin icon was missing in the
+header, on every card and in the total: the payload's `item` was the server id 26780, and the client draws items by client
+id (24124). `ChaosNpcCurrency.payload` now sends `ItemType(id):getClientId()` (no icon when a type has none; the balance still
+counts the server id); `tests/npc_currency_test.lua` holds it. Seen again with the coin. Live server: the `files` step and a
+restart.
+
 ## Base world texts (`tools/patch_base_texts.py`, `tools/base_rename_lib.py`, `data/npc/base_world_names.csv`)
 
 Every text of the base data that names the old world gets the new names: NPC dialogue and keywords, travel
@@ -14075,6 +14086,7 @@ scavenger with its sack, drawn with the golden outfit shader 12). It never attac
   visible tile farthest from the attackers. Taunts on further hits (60%, 2.5 s cooldown). 30 s after the first hit (18 s before O182) it
   escapes: portal effect, "Ha ha!", a message to players within 10 tiles, removed with no corpse and no loot. Never
   hit for 30 minutes: it vanishes quietly. `/goblin [level]` (god accounts) spawns one in front of you.
+  Seen in a client (2026-11-26, V20, O182): a goblin hit once fled and escaped 30.3 s after the first hit.
 - **Loot** (added to the corpse in the death event, so the stock loot message and autoloot see it; owner = most
   damage): gold worth (2000 + 400 x level) x 80-130% in crystal/platinum/gold coins; 2-4 Orbs of Upheaval + 1 per 150
   levels (max 10); an Orb of Fate at 25% x item find; 2-4 gear items from the replaced monster's loot table (fallback:
@@ -29812,7 +29824,7 @@ the Boss Spawns cooldown). Monsters: `data/monster/monsters/chaos/raid/` (regist
 **Entry.** A portal (magic forcefield 1387, action id 47801) for each town of `portal.townIds` (Cinderhold, the main city; Mirewake's went 2026-11-06, `noPortalTowns`): Cinderhold's at its fixed tile in the temple's portal gallery (`portal.positions` 32375, 32245, 7), a taken fixed tile next to the temple, the first free tile of
 `portal.offsets`) and Adventure > Raid: Ashen Sepulchre open the raid window. "Open New Raid" (or "Continue" on a saved
 raid of this week) in a protection zone, out of combat, level 800+, not multi-clienting: the opener's party within 12 sqm
-comes along, 1 to 15 of them (owner 2026-10-24: all content solo; `minPlayers` 1, `basePlayers` 5 is the group the boss numbers were measured for; staff may still open with `/raid open[, id]`). **Solo scaling** (`raid_core.lua`): under 5 raiders the boss, trash and add health is x (the group's damage / five raiders' damage) from the balance model (`K.smallMult`; solo x0.217, 2 x0.43, 3 x0.65, 4 x0.87), so one raider takes the same time as five and the enrage fits; from 5 up the old +18% / +12% / +10% per raider. Mechanics for one: Ember Brand needs `min(need, raiders)` inside and its total scales with that need (solo: one circle on you, 50% of max health, stand in it), Sundering Blows fades the stacks instead of a Crushing Verdict when nobody else is in the room (`sunderDecide(..., alone)`), packs are 3 monsters alone. Loot is personal and the weekly lockout per character as before, so a solo run pays what one member of a group gets. A lethal hit still throws the player to the hall; alone that is a wipe (the boss resets). Each member's own
+comes along, 1 to 15 of them (owner 2026-10-24: all content solo; `minPlayers` 1, `basePlayers` 5 is the group the boss numbers were measured for; staff may still open with `/raid open[, id]`). Seen in a client (2026-11-26, V20, O169): one level 800 player opened the raid; inside alone the trash and the bosses had x0.217 of the five-player health (pack 3, five raiders x1.000 and 4). **Solo scaling** (`raid_core.lua`): under 5 raiders the boss, trash and add health is x (the group's damage / five raiders' damage) from the balance model (`K.smallMult`; solo x0.217, 2 x0.43, 3 x0.65, 4 x0.87), so one raider takes the same time as five and the enrage fits; from 5 up the old +18% / +12% / +10% per raider. Mechanics for one: Ember Brand needs `min(need, raiders)` inside and its total scales with that need (solo: one circle on you, 50% of max health, stand in it), Sundering Blows fades the stacks instead of a Crushing Verdict when nobody else is in the room (`sunderDecide(..., alone)`), packs are 3 monsters alone. Loot is personal and the weekly lockout per character as before, so a solo run pays what one member of a group gets. A lethal hit still throws the player to the hall; alone that is a wipe (the boss resets). Each member's own
 problem (level, a fight, another instance) leaves only that member behind. "Join" puts a member of a raid that is open
 right now (or the party of someone inside) into it, up to 15.
 

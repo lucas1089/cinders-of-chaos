@@ -26,8 +26,9 @@ end
 
 local function apply()
   if g_app.isMobile and g_app.isMobile() then return applyPhone() end
-  -- only the Windows window divides the mouse position by the scale (win32window.cpp); elsewhere clicks would land off
-  if g_app.getOs and g_app.getOs() ~= 'windows' then return end
+  -- only a window that divides the mouse position by the scale (Windows, Linux with base patch 0212); elsewhere clicks
+  -- would land off
+  if g_app.getOs and not L.osScales(g_app.getOs()) then return end
   local w, h = windowSize()
   if w <= 0 or h <= 0 then return end                      -- minimised
   local f = L.factor(wanted, w, h)

@@ -100,7 +100,7 @@ namespace Chaos.Core
     public static class LiquidGrounds
     {
         static readonly int[][] Water = { new[] { 629, 634 }, new[] { 4597, 4602 }, new[] { 4609, 4614 }, new[] { 33456, 33463 }, new[] { 35101, 35101 } };
-        static readonly int[][] Lava = { new[] { 728, 730 }, new[] { 35059, 35059 }, new[] { 35070, 35073 } };
+        static readonly int[][] Lava = { new[] { 21477, 21477 }, new[] { 728, 730 }, new[] { 35059, 35059 }, new[] { 35070, 35073 } };
 
         static bool In(int[][] ranges, int id)
         {

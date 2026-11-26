@@ -80,5 +80,11 @@ eq(L.phoneFactor(854, 480), 0.888, 'an 854x480 phone -> 0.888, the width and hei
 eq(L.phoneFactor(320, 160), 0.5, 'never below the engine floor 0.5')
 eq(L.phoneFactor(960, 540), 1.0, 'exactly 960x540 -> 1x')
 
+-- the desktops that scale (O207: Linux reads the pointer in interface pixels since base patch 0212)
+eq(L.osScales('windows'), true, 'Windows scales')
+eq(L.osScales('linux'), true, 'Linux scales (base patch 0212)')
+eq(L.osScales('mac'), false, 'macOS stays at 100 %')
+eq(L.osScales(nil), false, 'unknown OS stays at 100 %')
+
 print(string.format('uiscale_test: %d checks, %d failed', checks, fails))
 os.exit(fails == 0 and 0 or 1)
