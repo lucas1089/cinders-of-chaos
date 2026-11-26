@@ -114,7 +114,7 @@ namespace Chaos.Core.Tests
         {
             check(LiquidGrounds.ModeOf(629) == FxMode.Water && LiquidGrounds.ModeOf(634) == FxMode.Water && LiquidGrounds.ModeOf(635) == FxMode.None, "liquids: stock shallow water");
             check(LiquidGrounds.ModeOf(4609) == FxMode.Water && LiquidGrounds.ModeOf(33463) == FxMode.Water && LiquidGrounds.ModeOf(35101) == FxMode.Water, "liquids: pack water");
-            check(LiquidGrounds.ModeOf(728) == FxMode.Lava && LiquidGrounds.ModeOf(730) == FxMode.Lava && LiquidGrounds.ModeOf(35059) == FxMode.Lava && LiquidGrounds.ModeOf(35073) == FxMode.Lava && LiquidGrounds.ModeOf(35074) == FxMode.None, "liquids: lava");
+            check(LiquidGrounds.ModeOf(21477) == FxMode.Lava && LiquidGrounds.ModeOf(728) == FxMode.Lava && LiquidGrounds.ModeOf(730) == FxMode.Lava && LiquidGrounds.ModeOf(35059) == FxMode.Lava && LiquidGrounds.ModeOf(35073) == FxMode.Lava && LiquidGrounds.ModeOf(35074) == FxMode.None, "liquids: lava");
             check(LiquidGrounds.ModeOf(0) == FxMode.None && LiquidGrounds.ModeOf(-5) == FxMode.None && LiquidGrounds.ModeOf(100) == FxMode.None, "liquids: other grounds are plain");
             // every range is the one of visualfx_logic.lua
             string root = FindRoot();
