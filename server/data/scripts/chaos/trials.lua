@@ -510,7 +510,11 @@ end
 local function spawnThrall(tr, pos, hp, opts)
 	local f = tr.fam
 	pos = ChaosArenaLook.freeSpot("trial" .. tr.L.slot, pos) -- never inside a cover piece or a light
-	local m = Game.createMonster("Trial Thrall", P(pos), true, true)
+	-- the level the trial is scaled to over its name (O187 seen in a client, 2026-11-26, V22: a Merciless Marked
+	-- Cutthroat showed "[2]", the estimate of its type, while the trial's Warden showed 800)
+	local level = tr.scale and tr.scale.level or nil
+	local create = Chaos.createMonsterNamed or function(t, q, e, f) return Game.createMonster(t, q, e, f) end
+	local m = create("Trial Thrall", P(pos), true, true, nil, level)
 	if not m then
 		return nil
 	end
@@ -675,6 +679,7 @@ local function hurt(tr, player, share, effect)
 	tr.raw = false
 end
 T.hurt = hurt -- tests
+T.spawnThrall = spawnThrall -- tests
 
 local function spawnBossAdds(tr, player)
 	local c = C()

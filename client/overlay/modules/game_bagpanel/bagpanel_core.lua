@@ -698,3 +698,16 @@ function C.dockChrome(parts, on, saved)
   if contents and saved.top then contents:setMarginTop(saved.top) end
   return nil
 end
+
+-- O122 (seen in a client 2026-11-26, V22): what a grid cell needs when the page is drawn again. The panel draws on every
+-- container signal (a burst of loot is several in a frame or two) and set and decorated every cell each time: with the
+-- Loot Bag shown, about 200 cells set twice and their rarity frame drawn twice per draw. A cell that already holds this
+-- very item object (or stays empty) is skipped; a changed cell is set, and setItem fires the cell's onItemChange (gamelib
+-- UIItem:onItemChange draws the rarity frame and the tier once). Only an engine that does not signal a removal
+-- (no UIItem.notifiesItemRemoval, base patch 0115) needs the decoration of an emptied cell drawn by hand.
+-- -> 'skip' | 'set' | 'set+decorate'
+function C.cellUpdate(current, item, notifiesRemoval)
+  if current == item then return 'skip' end
+  if item == nil and not notifiesRemoval then return 'set+decorate' end
+  return 'set'
+end

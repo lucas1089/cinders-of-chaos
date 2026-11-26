@@ -243,6 +243,16 @@ local function decorate(w, item)
   end
 end
 
+-- a grid cell gets its item only when it changed; setItem fires the cell's onItemChange, which draws the rarity frame
+-- and the tier once (C.cellUpdate, O122 V22: a burst of loot drew every cell of a 200-item page several times)
+local notifies = UIItem and UIItem.notifiesItemRemoval and UIItem.notifiesItemRemoval() or false
+local function putCell(w, item)
+  local what = C.cellUpdate(w:getItem(), item, notifies)
+  if what == 'skip' then return end
+  w:setItem(item)
+  if what == 'set+decorate' then decorate(w, item) end
+end
+
 local function drawGrid(c)
   local grid = child('grid')
   local empty = child('emptyLabel')
@@ -274,8 +284,7 @@ local function drawGrid(c)
     local w = cells[i + 1]
     if alive(w) then
       local item = c:getItem(i)
-      w:setItem(item)
-      decorate(w, item)
+      putCell(w, item)
     end
   end
   local height = C.gridHeight(vis, cols, C.CELL, 2)
@@ -358,8 +367,7 @@ local function drawLoot()
     local w = lootCells[j + 1]
     if alive(w) then
       local item = c:getItem(view.first + j)
-      w:setItem(item)
-      decorate(w, item)
+      putCell(w, item)
     end
   end
   local gh = C.gridHeight(shown, lcols, C.CELL, 2)

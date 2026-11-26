@@ -24,12 +24,15 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(os.path.dirname(HERE), 'overlay', 'modules', 'game_chaosweather', 'images')
 SIZE = 256
 SLANT = 0.30       # pixels right per pixel down; chaosweather_logic.lua L.SLANT is the same number
-COLOR = (178, 208, 255)
-# name, streaks per tile, length range, head alpha range, width, minimum distance between two streak heads
+COLOR = (214, 228, 255)
+# name, streaks per tile, length range, head alpha range, width, minimum distance between two streak heads.
+# O208 seen in a client (2026-11-26, V22): the first set (12 / 8 / 6 streaks of 8-25 px, head alpha 95-205) was drawn
+# but hardly seen in a 1280 x 720 window, on grass and at night: about 0.8% of the map pixels, short fading dots. About
+# twice the streaks, longer and brighter, so heavy rain reads as rain.
 LAYERS = [
-    ('rain_far', 12, (8, 12), (95, 135), 1, 44),
-    ('rain_mid', 8, (12, 17), (125, 165), 1, 52),
-    ('rain_near', 6, (17, 25), (150, 205), 2, 60),
+    ('rain_far', 26, (10, 16), (130, 175), 1, 30),
+    ('rain_mid', 16, (14, 22), (165, 205), 1, 38),
+    ('rain_near', 10, (22, 32), (205, 240), 2, 46),
 ]
 
 

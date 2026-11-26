@@ -679,8 +679,12 @@ local function onContainerSignal(container, force)
 	end)
 end
 
-local containerHandlers = {
-	onOpen = function(c) onContainerSignal(c, true) end,
+-- O122 (seen in a client 2026-11-26, V22): no forced sweep when a container opens. A full container packet for an open
+-- window (every loot batch into the Loot Bag) is an onOpen in the same window, whose panel is off already: its slots were
+-- drawn plain by their own onItemChange, and the forced sweep reset all 250 slots of the Loot Bag once more on every
+-- batch. A new window's panel is not off yet, so it is swept as before. Global for itemrarity_test.lua.
+itemRarityContainerHandlers = {
+	onOpen = function(c) onContainerSignal(c, false) end,
 	onAddItem = function(c) onContainerSignal(c, false) end,
 	onRemoveItem = function(c) onContainerSignal(c, false) end,
 	onUpdateItem = function(c) onContainerSignal(c, false) end,
@@ -741,7 +745,7 @@ function init()
 	connect(g_game, { onGameEnd = onGameEnd })
 	connect(LocalPlayer, { onInventoryChange = onInventoryChange })
 	if Container then -- absent in the slot harness (client/tools/slot_clear_test.py)
-		connect(Container, containerHandlers)
+		connect(Container, itemRarityContainerHandlers)
 	end
 	if g_game.isOnline() then
 		for _, c in pairs(g_game.getContainers() or {}) do
@@ -758,7 +762,7 @@ function terminate()
 	disconnect(g_game, { onGameEnd = onGameEnd })
 	disconnect(LocalPlayer, { onInventoryChange = onInventoryChange })
 	if Container then
-		disconnect(Container, containerHandlers)
+		disconnect(Container, itemRarityContainerHandlers)
 	end
 	if prismaticEvent then
 		removeEvent(prismaticEvent)

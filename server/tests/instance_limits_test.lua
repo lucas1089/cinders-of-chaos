@@ -571,8 +571,18 @@ creatureEvent:register()
 	end
 	stand(a, lever)
 	stand(b, P(1031, 1015, 7))
-	-- a first group goes in
+	-- a lever inside a queue dungeon run before its boss unlock (dungeons.lua bossGate, O183 seen in a client): refused,
+	-- no boss, no session; the gate gets the puller's tile
+	local oldDungeons, gateAt = ChaosDungeons, nil
+	ChaosDungeons = {bossGate = function(_, at) gateAt = at return false end}
+	nBefore = #creatures
 	action.onUse(a, item, lever)
+	ok(gateAt == a.pos and ChaosBossRooms.sessions.aid45001 == nil and #creatures == nBefore and item.id == 1945,
+		"a lever inside a dungeon run before the unlock: refused, no boss, no session")
+	ChaosDungeons = {bossGate = function() return true end}
+	-- a first group goes in (the dungeon gate open, or no dungeon there)
+	action.onUse(a, item, lever)
+	ChaosDungeons = oldDungeons
 	eq(a.pos.x, 1002, "the group is in the room")
 	local s = ChaosBossRooms.sessions.aid45001
 	ok(s ~= nil and s.limit == 600, "a session of the room's own 10 minutes")

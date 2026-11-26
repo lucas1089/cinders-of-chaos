@@ -579,4 +579,23 @@ eq(C.dockChrome(parts, false, nil), nil, 'given back twice: nothing changes')
 eq(win.text, 'Inventory', 'title kept')
 eq(C.dockChrome({}, true, nil) ~= nil, true, 'no widgets: no error')
 
+-- O122 (V22): a cell is set only when its item changed; its rarity frame is drawn by onItemChange, once
+eq(C.cellUpdate(nil, nil, true), 'skip', 'an empty cell that stays empty')
+local a, b = {}, {}
+eq(C.cellUpdate(a, a, true), 'skip', 'the very same item object again: nothing drawn')
+eq(C.cellUpdate(a, b, true), 'set', 'another item: set, onItemChange draws it')
+eq(C.cellUpdate(nil, b, false), 'set', 'an item in an empty cell: the engine signals it')
+eq(C.cellUpdate(a, nil, true), 'set', 'emptied on an engine that signals the removal')
+eq(C.cellUpdate(a, nil, false), 'set+decorate', 'emptied on an older engine: decorate by hand')
+do -- a draw of 200 cells twice in a row (a burst of loot): the second draw sets nothing
+  local cells, items, sets = {}, {}, 0
+  for i = 1, 200 do items[i] = {} end
+  for _ = 1, 2 do
+    for i = 1, 250 do
+      if C.cellUpdate(cells[i], items[i], true) ~= 'skip' then cells[i] = items[i]; sets = sets + 1 end
+    end
+  end
+  eq(sets, 200, 'two draws of the same page: each filled cell set once, the empty ones never')
+end
+
 if fails == 0 then print('bagpanel_core_test: ok') else os.exit(1) end

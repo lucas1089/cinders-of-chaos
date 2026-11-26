@@ -1525,8 +1525,22 @@ Solo dungeons (O147, beta feedback 2026-10-22: "dungeons need two players; my te
   without a death is gone from the scan. The real cause on the live map is not confirmed: run dungeon 1 and read the hint
   coordinates, they are the unreachable spawns (fix them with a `patch_*.py`, never by hand).
 - **Placement, one boss, boss level (O183, beta 2026-10-24: "I killed every monster that appeared and the bar did not fill. 2 bosses. Level 2.").** Cause, from the numbers of the screenshot (bar 66% with 57 alive = a total of 168; dungeon 2 keeps 110 after `patch_base_spawns.py`): since O179 `startRun` made the base list (`dg.Monsters`, one entry per species) after the clean-up, on top of the map's record; before, the clean-up always removed it. It was the dungeon a second time (about 58 monsters, unthinned, at base table positions that can be a line of tiles or out of reach) and its boss entry made a second boss next to the map record's boss. The map record's `fillFromMap` also made the boss with every other entry, and every placement was forced (`createMonster` force), which puts a monster on a wall or on another monster. The boss was made without a level, so `monster_levels.lua` showed the estimate of its type (2, 8): display only (`MD.levelOf` reads the engine level; health follows `extra[id].bossHealth` through `scaleMonster`, unchanged). Now: (1) the base list is made only when the dungeon has no start-up record (the old behaviour of every normal start); (2) `placeMonster` makes a monster unforced on its tile if that is walkable and free, else on the nearest such tile of the same floor inside the area within `Chaos.dungeons.placement.radius` (4), else not at all, and a monster not made or placed outside the area is not counted; (3) `settleMonsters` does the same for what stands there at the start (a generated dungeon's points, monsters left standing without a record): moved, or removed; (4) the boss is never in the entry placement or the roster: `placeBoss` makes it once per run (`run.bossSpawned`) at its record tile with `Chaos.createMonsterNamed(..., level)`, the dungeon's `Level`, and the tick removes a second one (`bosses > 1`, base dungeons); (5) the unlock is asked once per run (`fireUnlock`), also when the stall unlock (O180) and the 85% unlock meet; the stall hint lists only roster monsters still standing in the area. **Reachability** is approximated by the tile (ground, no solid item, one monster per tile, inside the boxes of "the area of a run"); a path check from the entry (`Creature:getPathTo`) is not used, because the engine's path search is bounded and would refuse far rooms of the 61,325-tile dungeon 2 (engine behaviour recalled, not measured here). A closed room or a one-way floor that passes that test is still caught by the O180 hint and unlock. Not run live: install `files` and restart, run dungeon 2 and compare the start total with 110. Tests: `tests/dungeons_area_test.lua` block O183.
+- **The stock boss step tile inside a run (O183 seen in a client, 2026-11-26, V22).** Dungeon 2's stock script
+  `customs/dungeon/master_of_the_elements/master_of_the_elements.lua` (MoveEvent, aid 63457 at 31715,32543,8) made the
+  boss 3 s after a step on the tile, at 0% of the monsters, without a level, and wrote storage 248500 = a time while it
+  checks "< 0": that character never got the boss again (a rerun could never be won). A boss killed early also won the
+  run the moment the unlock came (`bossSeen`, no boss left). Step `dungeonbossgate` (`tools/patch_dungeon_boss_gate.py`,
+  test `patch_dungeon_boss_gate_test.py`) puts `ChaosDungeons.bossStep(creature, position)` first in its onStepIn: inside a
+  run before the unlock it answers "The boss comes when 85% of the monsters are dead (now N%)." and nothing is made; the
+  run makes the boss itself at the unlock (`fireUnlock` -> `placeStepBoss`, `extra[2].bossPos` 31716,32563,8), once, at
+  the dungeon's level and the run's health curve, unless one stands there already; a step after the unlock makes nothing.
+  Outside a run the stock script works as before. The levers of dungeons 1, 3 and 4 ask `ChaosDungeons.bossGate` in
+  `instance_limits.lua` `BR.leverUse`: refused before the unlock. Tests: `tests/dungeons_area_test.lua` block "O183 seen
+  in a client", `tests/instance_limits_test.lua` (the lever).
 
 Seen in a client (2026-11-25): Bones Dungeon queued alone, solo start after the 5 s wait. Monsters killed, boss unlocked, the lever called Prince Skeletal once, run won. No monster and no boss came back before the exit teleport.
+
+Seen in a client (2026-11-26, V22, O179 / O180 / O183): Master of the Elements queued alone at difficulty 1. All 168 monsters stood there at the entry and the count stayed 168 at 10 and 20 s. The bar rose as they died (20 at a time by a test command) and the boss unlocked at 95% on the tick after 85% was passed. Before the fix the stock step tile of the boss room made the boss at 0%; after it the tile answered "The boss comes when 85% of the monsters are dead (now 0%)." and nothing came. At the unlock the run made Master of the Elements once at its stock tile, shown "[200]"; a second step made no second boss; the boss's death won the run. The local test server counted 168, not the 110 of the thinned spawn file, also after `install_all.py --only spawns`; the reason was not looked into.
 
 Beta test mode (O147)
 - `Chaos.betaMode` = `data/scripts/chaos/beta_mode_config.lua` (`enabled`, default **false**), read when the scripts start
@@ -3065,6 +3079,8 @@ or a random raid.
   storage), counting, damage-map and party credit, first kill only, the Trial Warden, the tree budget, the old kills once.
 
 ### Death and the point budget (O190)
+
+Seen in a client (2026-11-26, V22): a level 800 Ninja with 198 nodes in its tree died (797 after it) and logged in again. The tree still holds 198 nodes against 197 points; the login line says nothing was removed.
 
 - Beta 2026-10-24: the tree reset after a death. Cause: the login emptied every preset with more nodes than `totalPoints`
   (`refundOverBudget`), and the Paragon login saved an empty allocation when `spent > total`; a death takes levels, so a
@@ -8314,6 +8330,8 @@ Character > Spellbook in the client menu opens the client window `game_spellbook
 - `server/tests/spellbook_test.lua` (fixtures in `tests/fixtures/spellbook/`) covers the XML parsing, named, inline and local areas, refusal of unsafe or malformed inline tables, the classification and descriptions, the chunking and the talkaction/opcode flow. Not run on a server.
 - Chaos attack spells (O184, O185, 2026-10-24): a spell of the attack group with a `chaos/` script is always typed damage (the text scan misses helpers such as `ChaosSpell.weaponStrike`, and a spell typed Utility fell out of the client's Attack filter). A scripted pack hit with no `createCombatArea` takes its area from `data/scripts/chaos/spellbook_areas_config.lua` (shape and radius per spell name) or, for the attack kit, from `attack_kit_config.lua`, so its target, centre, grid and AoE tag show the pack. `tests/spellbook_areas_test.lua` checks all 99 Chaos attack spells against `rotation_model.csv` (2+ targets of the pack: an area; one target: none). Client: `game_spellbook/spellbook_classes_test.lua`, Learned + Attack gives each of the 21 classes its 10 attack spells.
 
+Seen in a client (2026-11-26, V22, O185): the Spellbook shows Shuriken Tempest as Type Damage, Target Area. Cast on 12 Demons held still, it hit the target and all 8 within 4 sqm of it, none of the 3 at 6-7 sqm.
+
 Seen in a client (2026-11-26, V18): Phantom Needles, Mirror Shards, Crimson Covenant, Dreamrot and Prismatic Rupture
 read "Element -" and had no "Scales" row. Their scripts only call `AttackKit.cast`, so the script text names no
 `COMBAT_` type and no formula. `Book.buildSpell` now takes the element from the attack kit row (`Book.kitSpec`, `ctype`)
@@ -12850,6 +12868,8 @@ these ids except the price tables, `sell_prices.lua` and `chaos_item_prices_data
   covers the typo rule. Run on a real base copy 2026-10-24: both scripts patched, parse in Lua 5.3 and LuaJIT, a second run
   changes nothing. Not run live.
 
+Seen in a client (2026-11-26, V22): the tooltips of the Star Inlay Stone, the Common Three Stars Inlay Stone and the Star Extractor name the five sets and "not worn". Stone, three stars and extractor on Skeletal Boots work, the Look of the star piece names its tier. Found: the extractor left the copied "Tier I ( 3 Star )" line on the empty-star piece, so its Look named the old tier and the next stone kept it as own text. `star_inlay_core.lua` `K.ownText` drops a copied tier line in `refine` and `unrefineItem` (an own text that holds nothing else goes); a piece that already carries a stale line is cleaned at its next stone. Tests: `tests/star_inlay_test.lua` (isTierLine, ownText, block 4b).
+
 ## Base monster names (`tools/patch_base_monster_names.py`, `data/monster/base_monster_names.csv`, `tests/base_monster_names_patch_test.lua`)
 
 Owner decision: the base monsters that carried names of the other world (its named bosses, races, factions, cults,
@@ -17010,6 +17030,8 @@ that fails does not use up a mark number, and a necromancer thrall that stood up
 chamber, and the map's own respawn is refused there. Not on a live server: the thralls were already skipped by the tier
 script (`skipTiers`), so an ambush was not the cause; the clock rule is. Tests: `tests/trials_test.lua` (block O187
 reproduces the old rule with the numbers above), `trials_flow_test.lua`, `monster_tiers_test.lua`.
+
+Seen in a client (2026-11-26, V22): a level 800 Ninja ran The Night Run on Merciless. The Marked Cutthroats came one after another and died; the run counted 5 of 5, then the Master of Shadows, cleared. Found: a Cutthroat showed "[2]" over its name (its type's estimate) while the Warden showed 800. `spawnThrall` makes every thrall with `Chaos.createMonsterNamed(..., tr.scale.level)` now (display only); seen after the fix: "[797]" for the level 797 Ninja. Test: `tests/trials_flow_test.lua`.
 
 ## Salvage (`salvage.lua`, `salvage_core.lua`, `salvage_config.lua`, `tools/install_salvage.py`, client `game_crafting`)
 
@@ -27075,6 +27097,8 @@ display level does not change):
   map monsters, nemesis, treasure goblins, the ascension quest guardian, adds and totems (stock monsters, no huge
   estimate).
 
+Seen in a client (2026-11-26, V22): Kaelgor the Infernal Warlord opened from the Boss Spawns window (Pocket) shows "[300]" over its health bar, the world boss entry level of the pocket.
+
 Tests: `tests/monster_levels_test.lua`.
 
 Seen in a client (2026-11-25, V12): Grimeleech [158], Giant Hornet [192], Reflect Spider [167] next to Orc Warrior [11] and Dragon [42] at Mirewake; health and experience follow the level (O163).
@@ -33336,6 +33360,8 @@ Install: apply the patch with the others, add zlib to a Visual Studio project by
 client with base patch `0131` (optional for the feature: the stock client inflates already, only the size cap is new).
 Then `packetCompression = true` in `config.lua`. Check in a client: map loads, walking, a hunt, relog; if anything is
 wrong set it back to false. VPS: the admin app (`android/`) has no key editor for it; edit `config.lua` and restart.
+
+Seen in a client (2026-11-26, V22): the same 35 s of play (walk, three windows, a fight on three Demons) on the local server, bytes the client socket received (`ss`): off 478,006 at the first sample and 602,036 at the end, 124,030 in game; with `packetCompression = true` 258,078 and 300,144, 42,066 in game: about 66% fewer bytes in game and 50% fewer for the whole session with the login. No inflate error in the client log; the game looked the same.
 
 ## Cheaper monster pathfinding (O211) (engine `src-patches/0070-cheaper-pathfinding.patch`, `src/chaospathing.h`, `tools/path_bench.cpp`, `tools/chaospathing_test.cpp`, `tools/path_bench_grid.py`)
 

@@ -993,6 +993,64 @@ local function placeBoss(run, dungeonId, dg, bossName, pos, taken, name)
 	return placeMonster(dungeonId, dg, name or ex.bossType or ex.bossName or bossName, pos, taken, levelOf(dg))
 end
 
+-- O183 seen in a client (2026-11-26, V22): the base dungeon's own boss triggers ran beside the run. Dungeon 2's step
+-- tile (aid 63457, master_of_the_elements.lua) made the boss at 0% of the monsters, without a level, and set a storage
+-- that blocked it for good (it checks "< 0" and writes a time); the levers of dungeons 1, 3 and 4 could be pulled
+-- before the unlock too. A boss killed early also won the run the moment the unlock came (bossSeen, no boss left).
+-- So inside a run the triggers ask here first (patch_dungeon_boss_gate.py, instance_limits.lua BR.leverUse): before the
+-- unlock they are refused with the percent needed; a step tile's boss (extra.bossPos) is made by the run itself at the
+-- unlock, once, at the dungeon's level. Outside a run the stock scripts work as before.
+local function gateRefuse(player, run)
+	if player and player.isPlayer and player:isPlayer() then
+		player:sendCancelMessage(Chaos.t(player, "The boss comes when %d%% of the monsters are dead (now %d%%).",
+			cfg.progressNeeded, math.max(0, run.lastPercent or 0)))
+	end
+end
+
+-- a lever inside a run: true = the stock lever goes on, false = refused (a message)
+function ChaosDungeons.bossGate(player, pos)
+	local run = pos and runAt(pos) or nil
+	if not run or run.ended or run.unlocked then
+		return true
+	end
+	gateRefuse(player, run)
+	return false
+end
+
+-- the run's own boss at extra.bossPos (a dungeon whose stock boss comes from a step tile): once per run
+local function placeStepBoss(run)
+	local extra = extraOf(run.dungeonId)
+	local dg = baseDungeons()[run.dungeonId]
+	if not extra.bossPos or extra.populate or run.bossSpawned or not dg then
+		return nil
+	end
+	local bossName = extra.bossName and extra.bossName:lower() or nil
+	local _, standing = scanArea(run.dungeonId, dg, bossName)
+	if standing > 0 then
+		run.bossSpawned = true -- one stands there already (made before the run, or by a script): no second one
+		return nil
+	end
+	local boss = placeBoss(run, run.dungeonId, dg, bossName, extra.bossPos, {}, nil)
+	if boss then
+		scaleMonster(run, boss)
+	end
+	return boss
+end
+
+-- the step tile inside a run: true = handled (the stock script returns at once), nil = no run there (stock behaviour)
+function ChaosDungeons.bossStep(creature, pos)
+	local run = pos and runAt(pos) or nil
+	if not run then
+		return nil
+	end
+	if not run.ended and not run.unlocked then
+		gateRefuse(creature, run)
+	elseif not run.ended then
+		placeStepBoss(run)
+	end
+	return true
+end
+
 local spawnCb = EventCallback
 spawnCb.onSpawn = function(self, position, startup, artificial)
 	if artificial then
@@ -1187,6 +1245,7 @@ local function fireUnlock(run, extra)
 		return
 	end
 	run.unlockFired = true
+	placeStepBoss(run) -- a step tile dungeon's boss comes now, once (O183 seen in a client)
 	if extra.unlock then
 		pcall(extra.unlock, run.dungeonId)
 	end
