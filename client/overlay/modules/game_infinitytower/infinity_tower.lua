@@ -24,6 +24,10 @@ local DEFAULT_MILESTONES = {
 }
 
 function init()
+  -- V12 (seen in a client 2026-11-25): the panel's style lived in infinity_tower.otui, which only the tower window loads
+  -- (displayUI). A character that came into a run without opening that window (a party member, a relog, a run started
+  -- elsewhere) got "'TowerPanel' is not a defined style" and no floor panel or Leave button. The style is its own file now.
+  g_ui.importStyle('towerpanel')
   ProtocolGame.registerExtendedOpcode(OPCODE_INFINITY_TOWER, onExtendedOpcode)
 
   connect(g_game, {

@@ -617,11 +617,19 @@ function death.onDeath(creature, corpse, killer, mostDamageKiller, lastHitUnjust
 	if ChaosTrials and ChaosTrials.runAt and ChaosTrials.runAt(pos) then
 		return true
 	end
+	-- nor inside the Infinity Tower (V12, seen in a client 2026-11-25: a level 11 Orc Warrior copy stood among the floor 2
+	-- monsters of level 122; the run does not count it, so the floor "cleared" with it alive and it kept its stock level)
+	if ChaosTowerRun and ChaosTowerRun.inArena and ChaosTowerRun.inArena(pos) then
+		return true
+	end
 	addEvent(function(typeName, shown, position, nt, d, look, wasPaced)
 		if ChaosDungeons and ChaosDungeons.runAt and ChaosDungeons.runAt(position) then
 			return -- the 600 ms delay: the position lies in a dungeon that opened meanwhile
 		end
 		if ChaosTrials and ChaosTrials.runAt and ChaosTrials.runAt(position) then
+			return
+		end
+		if ChaosTowerRun and ChaosTowerRun.inArena and ChaosTowerRun.inArena(position) then
 			return
 		end
 		pendingTier = nt

@@ -1,14 +1,14 @@
 -- Pure part of the movable tower panel of game_infinitytower (towerpanelpos_test.lua): where the panel sits, the
 -- saved spot per character (g_settings node chaosTowerPanel, key "world/name" -> { x, y } relative to the parent),
 -- the clamp that keeps it fully on screen, and the panel / Automatic box widths from the measured texts.
--- No saved spot: the default place (top centre, margin-top DEFAULT_TOP, as in infinity_tower.otui).
+-- No saved spot: the default place (top centre, margin-top DEFAULT_TOP, as in towerpanel.otui).
 TowerPanelPos = {}
 local M = TowerPanelPos
 
 M.NODE = 'chaosTowerPanel'
-M.DEFAULT_TOP = 40      -- margin-top of TowerPanel in infinity_tower.otui
+M.DEFAULT_TOP = 40      -- margin-top of TowerPanel in towerpanel.otui
 M.DRAG_MIN = 3          -- pixels the panel must move before a release saves the spot
-M.MIN_WIDTH = 290       -- width of TowerPanel in infinity_tower.otui
+M.MIN_WIDTH = 290       -- width of TowerPanel in towerpanel.otui
 M.EDGE = 6              -- panel edge and gap between the button and the box
 M.BOX_MIN = 84
 M.BOX_PAD = 24          -- the box image and its gap before the text, plus a little air
