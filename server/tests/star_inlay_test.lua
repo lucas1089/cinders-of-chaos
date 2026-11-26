@@ -54,6 +54,14 @@ eq(K.refine("Item Level: 80. Quality: +5%", "Tier I ( 2 Star )", "Aria"),
 	"Item Level: 80. Quality: +5%\nRefined by Aria.", "an own text stays")
 eq(K.refine("Item Level: 80\nRefined by Bo.", "x", "Aria"), "Item Level: 80\nRefined by Aria.", "one line only")
 eq(K.refine(nil, nil, "Aria"), "Refined by Aria.", "nothing at all")
+-- O181 seen in a client (2026-11-26, V22): the copied tier line is the type's text, not the item's own
+ok(K.isTierLine("Tier I ( 3 Star )") and K.isTierLine("Tier IV ( 1 Star )") and K.isTierLine("No Tier ( Empty Stars )"),
+	"the tier lines of the star items")
+ok(not K.isTierLine("Item Level: 80") and not K.isTierLine("Tier list: none"), "other lines are own text")
+eq(K.ownText("Tier I ( 3 Star )\nRefined by Aria."), "", "the copied tier line is no own text")
+eq(K.ownText("Item Level: 80\nTier I ( 3 Star )\nRefined by Aria."), "Item Level: 80", "the rolled text stays")
+eq(K.refine("Tier I ( 3 Star )", "Tier V ( 3 Star )", "Aria"), "Tier V ( 3 Star )\nRefined by Aria.",
+	"a stale tier line left by an old extraction gives way to the new tier")
 
 -- ---------------------------------------------------------------- the patch tool on fixtures
 local root = os.tmpname()
@@ -297,6 +305,27 @@ do
 	local plain = newItem(26813)
 	extract.onUse(p, newItem(27149), bag, plain, bag, false)
 	eq(plain.attrs[ITEM_ATTRIBUTE_DESCRIPTION], nil, "no attribute stays none")
+end
+
+-- 4b. O181 seen in a client (2026-11-26, V22): stone, extractor, stone again on a piece without own text. The
+-- extractor left "Tier I ( 1 Star )" on the empty piece (its Look named the old tier) and the next stone kept it
+do
+	local p = newPlayer()
+	local piece = newItem(27113)
+	stone.onUse(p, newItem(27134), bag, piece, bag, false)
+	eq(piece.attrs[ITEM_ATTRIBUTE_DESCRIPTION], "Tier I ( 1 Star )\nRefined by Aria.", "the stone: the tier line")
+	extract.onUse(p, newItem(27149), bag, piece, bag, false)
+	eq(piece.itemid, 27113, "the piece is empty again")
+	eq(piece.attrs[ITEM_ATTRIBUTE_DESCRIPTION], nil, "the extractor: no stale tier line, the type's text shows")
+	typeDesc[26813] = "Tier II ( 1 Star )" -- the next stone gives another tier
+	stone.onUse(p, newItem(27134), bag, piece, bag, false)
+	eq(piece.attrs[ITEM_ATTRIBUTE_DESCRIPTION], "Tier II ( 1 Star )\nRefined by Aria.", "the next stone names its own tier")
+	typeDesc[26813] = "Tier I ( 1 Star )"
+	-- a rolled text keeps its own text through the round trip
+	local rolled = newItem(27113, "Item Level: 120")
+	stone.onUse(p, newItem(27134), bag, rolled, bag, false)
+	extract.onUse(p, newItem(27149), bag, rolled, bag, false)
+	eq(rolled.attrs[ITEM_ATTRIBUTE_DESCRIPTION], "Item Level: 120", "the rolled text after the round trip")
 end
 
 -- 5. a worn piece: both refuse, nothing changes, nothing is used up

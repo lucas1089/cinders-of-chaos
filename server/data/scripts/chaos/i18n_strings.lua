@@ -420,6 +420,9 @@ return {
 		-- the queue dungeons (dungeons.lua unlockBoss)
 		["Boss unlocked! %d%% of the monsters are dead: %s awaits you."] =
 			"Boss liberado! %d%% dos monstros estão mortos: %s espera por você.",
+		-- the base boss step tile and levers inside a run (dungeons.lua bossGate, O183 seen in a client)
+		["The boss comes when %d%% of the monsters are dead (now %d%%)."] =
+			"O boss vem quando %d%% dos monstros estiverem mortos (agora %d%%).",
 		-- stuck safety (dungeons.lua, O180)
 		["%d monsters are left. Nearest: %s"] = "Restam %d monstros. Mais perto: %s",
 		["The last %d monsters could not be found. Boss unlocked: %s awaits you."] =

@@ -340,6 +340,21 @@ do
 	T.monsterRun[8804], tr.adds[8804], tr.risen[8804] = 4401, true, true
 	death.onDeath(creature(8804), nil, nil, nil)
 	eq(tr.killed, 1, "a risen thrall was counted when it fell the first time")
+	-- O187 seen in a client (2026-11-26, V22): a Marked Cutthroat showed "[2]" (its type's estimate); a thrall is made
+	-- with the level the trial is scaled to
+	local savedCreate, savedLook, shown = Game.createMonster, ChaosArenaLook, "none"
+	ChaosArenaLook = ChaosArenaLook or {}
+	local savedSpot = ChaosArenaLook.freeSpot
+	ChaosArenaLook.freeSpot = function(_, q) return q end
+	Game.createMonster = function()
+		shown = Chaos.spawnLevel
+		return nil -- nothing made: spawnThrall returns before touching the monster
+	end
+	tr.scale.level = 800
+	T.spawnThrall(tr, inside, 100)
+	eq(shown, 800, "a thrall is made at the trial's level (shown over its name)")
+	ChaosArenaLook.freeSpot, Game.createMonster = savedSpot, savedCreate
+	ChaosArenaLook = savedLook
 	T.runs[4401] = nil
 	Player = savedPlayer
 end

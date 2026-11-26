@@ -512,6 +512,10 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                window instead of the base modal window, so every dungeon entry goes through the queue (one run per
                box, the time cap and warnings); the modal run with its box scan and fixed timer never starts (README
                "Instance limits")
+  dungeonbossgate tools/patch_dungeon_boss_gate.py the base boss step tile of the Master of the Elements dungeon (aid 63457)
+               asks the queue run first: before the unlock a refusal with the percent needed, the boss made by the
+               run at the unlock, once, at the dungeon's level; outside a run the stock script (README "dungeons",
+               O183 seen in a client)
   waystonehideout tools/patch_waystone_hideout.py  the base waystone device (tier_maps.lua, item 29624, action id 42707)
                works in the owner's own hideout as well as in a house, and the texts say so (the refusal, the "no space"
                message, the six Waystone Tier descriptions in items.xml); the hideout has the device built in (README
@@ -1942,6 +1946,14 @@ def step_dungeonentry(server, data, ctx):
 
 
 STEPS.insert(STEPS.index('bossrooms') + 1, 'dungeonentry')  # after bossrooms, before sql
+
+
+def step_dungeonbossgate(server, data, ctx):
+    args = [tool('patch_dungeon_boss_gate.py'), data] + (['--dry-run'] if ctx['dry'] else [])
+    return tool_result(run_tool(args, 'patch_dungeon_boss_gate.py'))
+
+
+STEPS.insert(STEPS.index('dungeonentry') + 1, 'dungeonbossgate')  # after dungeonentry, before sql
 
 
 def step_eventrooms(server, data, ctx):

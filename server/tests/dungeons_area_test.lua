@@ -819,6 +819,95 @@ do
 	x4.unlock = nil
 end
 
+-- ------------------------------------------------------------------ O183 seen in a client: the stock boss step tile
+-- 2026-11-26 (V22): dungeon 2's stock step tile (aid 63457, master_of_the_elements.lua) made the boss at 0% of the
+-- monsters, without a level, and its storage 248500 blocked it for good. patch_dungeon_boss_gate.py puts
+-- ChaosDungeons.bossStep first in that onStepIn; the levers of dungeons 1, 3 and 4 ask ChaosDungeons.bossGate
+-- (instance_limits.lua BR.leverUse). Here the patched stock body runs against the mocked engine.
+do
+	for id, cr in pairs(creatures) do
+		if not cr:isPlayer() and id < 100000 then cr:remove() end
+	end
+	advance(3000)
+	Tile = nil
+	local rec = {}
+	ChaosDungeonMapSpawns[2] = rec
+	for i = 1, 10 do rec[#rec + 1] = {name = "elemental " .. i, pos = {x = 31700 + i, y = 32350, z = 8}} end
+	local nextId, levels, made = 8000, {}, {}
+	Game.createMonster = function(name, pos)
+		nextId = nextId + 1
+		local m = newCreature(nextId, name, P(pos.x, pos.y, pos.z), false)
+		levels[m.id] = Chaos.spawnLevel
+		made[#made + 1] = m
+		return m
+	end
+	-- the stock script with the patched first line (its body word for word apart from the scheduled create)
+	local function stockStep(player, position)
+		if ChaosDungeons and ChaosDungeons.bossStep and ChaosDungeons.bossStep(player, position) then return true end
+		if player:getStorageValue(248500) < 0 then
+			Game.createMonster("Master of the Elements", {x = 31716, y = 32563, z = 8})
+			player:setStorageValue(248500, os.time() + 1500)
+		else
+			return true
+		end
+	end
+	local function bosses()
+		local l = {}
+		for _, cr in pairs(creatures) do
+			if cr:isMonster() and cr.name:lower() == "master of the elements" then l[#l + 1] = cr end
+		end
+		return l
+	end
+	local stepTile = P(31715, 32543, 8)
+	local q = newCreature(205, "Stepper", P(32369, 32241, 7), true)
+	ext.onExtendedOpcode(q, ChaosOpcodes.dungeons, {action = "queue", data = {id = 2, difficulty = 1}})
+	advance(9000)
+	ok(ChaosDungeonIsInside(q), "O183 step: the run is on")
+	eq(#bosses(), 0, "O183 step: no boss at the entry (the stock tile made it)")
+	-- 0%: the step is answered by the run, the stock body never runs
+	q.pos = P(stepTile.x, stepTile.y, stepTile.z)
+	ok(stockStep(q, stepTile) == true, "O183 step: handled inside the run")
+	advance(4000)
+	eq(#bosses(), 0, "O183 step: no boss at 0% of the monsters")
+	eq(q.storage[248500], nil, "O183 step: the stock storage is not written")
+	local said = q.msgs[#q.msgs] or ""
+	ok(said:find("The boss comes when 85%", 1, true) ~= nil and said:find("(now 0%)", 1, true) ~= nil,
+		"O183 step: the refusal names the percent needed and the run's: " .. said)
+	ok(D.bossGate(q, stepTile) == false, "O183 lever: refused before the unlock")
+	ok(D.bossGate(q, temple) == true, "O183 lever: outside a run the stock lever goes on")
+	eq(D.bossStep(q, temple), nil, "O183 step: outside a run the stock script runs")
+	-- 90% dead: the unlock makes the boss once, at the dungeon's level and the run's scale
+	local trash = {}
+	for _, m in ipairs(made) do
+		if m.name:find("elemental", 1, true) then trash[#trash + 1] = m end
+	end
+	eq(#trash, 10, "O183 step: the ten monsters of the record")
+	for i = 1, 9 do trash[i]:remove() end
+	advance(4000)
+	local b = bosses()
+	eq(#b, 1, "O183 step: the unlock makes the boss")
+	ok(b[1] and b[1].pos.x == 31716 and b[1].pos.y == 32563, "O183 step: at the stock boss tile")
+	eq(b[1] and levels[b[1].id], 200, "O183 step: at the dungeon's level")
+	ok(b[1] and b[1].maxHp ~= 1000, "O183 step: its health scaled by the run's boss curve")
+	ok(D.bossGate(q, stepTile) == true, "O183 lever: allowed after the unlock")
+	ok(stockStep(q, stepTile) == true, "O183 step: after the unlock still handled by the run")
+	advance(4000)
+	eq(#bosses(), 1, "O183 step: a second step makes no second boss")
+	eq(q.storage[248500], nil, "O183 step: still no stock storage")
+	-- the boss dies: the run is won
+	b[1]:remove()
+	local nMsgs = #q.msgs
+	advance(16000) -- a tick, then the exit delay
+	local failed = false
+	for i = nMsgs + 1, #q.msgs do
+		if q.msgs[i]:find("unable", 1, true) then failed = true end
+	end
+	ok(not ChaosDungeonIsInside(q) and q.pos.x == 32369 and q.pos.y == 32241 and not failed,
+		"O183 step: the boss's death wins the run (out to the origin, no fail line)")
+	advance(4000)
+	ChaosDungeonMapSpawns[2] = nil
+end
+
 -- ------------------------------------------------------------------ beta test mode: no dungeon cooldown
 do
 	local before = Chaos.betaMode

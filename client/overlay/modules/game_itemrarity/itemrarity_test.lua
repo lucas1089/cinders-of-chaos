@@ -148,6 +148,31 @@ do
   g_ui = nil
 end
 
+-- O122 (V22, seen in a client): a full container packet for an open window is an onOpen in the same window. Its panel is
+-- off already, so the open does not sweep its slots again (it reset all 250 Loot Bag slots on every loot batch); a new
+-- window's panel is swept once
+do
+  local calls = 0
+  ItemsDatabase = { setRarityItem = function() calls = calls + 1 end }
+  local function slotOf() return { getItem = function() return nil end, isDestroyed = function() return false end } end
+  local kids = {}
+  for i = 1, 250 do kids[i] = slotOf() end
+  local panel = { getChildren = function() return kids end, isDestroyed = function() return false end }
+  local c = { itemsPanel = panel, getId = function() return 7 end }
+  local saveAdd, saveGet = addEvent, g_game.getContainer
+  addEvent = function(f) f() end
+  g_game.getContainer = function(id) return id == 7 and c or nil end
+  local H = itemRarityContainerHandlers
+  H.onOpen(c)
+  eq(calls, 250, 'a new window: every slot swept once')
+  eq(panel.drawRarity, false, 'its panel is off')
+  H.onOpen(c)
+  eq(calls, 250, 'the same window opened again (a loot batch): no second sweep')
+  H.onAddItem(c) H.onUpdateItem(c) H.onRemoveItem(c) H.onSizeChange(c)
+  eq(calls, 250, 'nor on the item signals')
+  addEvent, g_game.getContainer, ItemsDatabase = saveAdd, saveGet, nil
+end
+
 if fails > 0 then
   print(fails .. ' failure(s)')
   os.exit(1)

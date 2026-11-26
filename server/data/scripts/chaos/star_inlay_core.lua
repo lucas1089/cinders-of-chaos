@@ -32,10 +32,30 @@ function K.stripRefined(text)
 	return out
 end
 
+-- a tier line of the star items' type descriptions ("Tier I ( 3 Star )", "No Tier ( Empty Stars )"): the type's text,
+-- copied by refine(), never the item's own
+function K.isTierLine(line)
+	line = tostring(line or "")
+	return line:match("^%s*No Tier %b()%s*$") ~= nil or line:match("^%s*Tier [IVX]+ %b()%s*$") ~= nil
+end
+
+-- the item's own text: the description without the "Refined by" line and without a copied tier line. O181 seen in a
+-- client (2026-11-26, V22): the extractor left "Tier I ( 3 Star )" on the empty-star piece, so its Look named the old
+-- tier, and the next stone kept that line as own text and the new variant named the old tier too.
+function K.ownText(text)
+	local kept = {}
+	for line in (K.stripRefined(text) .. "\n"):gmatch("([^\n]*)\n") do
+		if not K.isTierLine(line) then
+			kept[#kept + 1] = line
+		end
+	end
+	return (table.concat(kept, "\n"):gsub("%s+$", ""))
+end
+
 -- the new description after a stone: the item's own text (a rolled "Item Level: N. ..." line stays), else the type's
 -- description (the tier line of the star variant), and one "Refined by <name>." line
 function K.refine(old, typeDescription, name)
-	local base = K.stripRefined(old)
+	local base = K.ownText(old)
 	if base == "" then
 		base = tostring(typeDescription or "")
 	end
@@ -54,14 +74,15 @@ function K.refineItem(item, typeDescription, name)
 	return text
 end
 
--- the extractor: the "Refined by" line goes (a stale line told the wrong tier on the empty-star piece); an own
--- description that holds nothing else goes too. Returns true when it changed the item.
+-- the extractor: the "Refined by" line and the copied tier line go (a stale line told the wrong tier on the empty-star
+-- piece); an own description that holds nothing else goes too, so the piece shows its type's text again. Returns true
+-- when it changed the item.
 function K.unrefineItem(item)
 	local ok, old = pcall(function() return item:getAttribute(ITEM_ATTRIBUTE_DESCRIPTION) end)
 	if not ok or type(old) ~= "string" or not old:find(K.REFINED, 1, true) then
 		return false
 	end
-	local text = K.stripRefined(old)
+	local text = K.ownText(old)
 	if text == "" then
 		item:removeAttribute(ITEM_ATTRIBUTE_DESCRIPTION)
 	else

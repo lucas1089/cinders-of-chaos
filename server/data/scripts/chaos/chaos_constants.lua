@@ -662,6 +662,9 @@ Chaos.dungeons = {
 		[2] = {
 			title = "Master of the Elements",
 			bossName = "master of the elements",
+			-- the boss tile of the stock step script (master_of_the_elements.lua, aid 63457): inside a run the run makes the
+			-- boss here at the unlock, once, at the dungeon's level; the step tile only answers (O183 seen in a client)
+			bossPos = {x = 31716, y = 32563, z = 8},
 			loot = {{id = 2160, count = 5}},
 			-- pack combat: the boss 300,000 at level 225 (685/s): 7:18 alone, x34% = 2:30
 			-- (bossHealth x 100-225% like the generated dungeons); the trash its own curve in place of the difficulty

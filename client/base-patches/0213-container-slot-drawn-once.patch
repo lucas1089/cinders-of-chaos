@@ -1,0 +1,56 @@
+# Chaos: a container slot is drawn once per change (modules/game_containers/containers.lua; after 0001-0212, touching the
+# same file as 0109, 0115 and 0122 in other places). O122 seen in a client (2026-11-26, V22): one full Loot Bag packet
+# (200 items, the bag open) ran ItemsDatabase.setRarityItem about five times per slot. In this file twice: setItem fires
+# the slot's onItemChange (gamelib UIItem:onItemChange: tooltip, setRarityItem, setTier) and the code then called
+# setRarityItem and setTier again. Now chaosSetSlotItem (0115) leaves a slot alone when it already shows that very item
+# object (or stays empty), and the explicit second calls are gone: a changed slot is drawn by its onItemChange, once (an
+# engine without 0115 still gets the removal signalled by chaosSetSlotItem). refreshContainerItems, the reopen of 0122
+# and onContainerUpdateItem all go through it.
+--- a/modules/game_containers/containers.lua
++++ b/modules/game_containers/containers.lua
+@@ -66,12 +66,17 @@
+ -- tooltip). With such an engine (no UIItem.notifiesItemRemoval) the change is signalled here, once.
+ function chaosSetSlotItem(itemWidget, item)
+   if not itemWidget then return end
+-  local had = itemWidget:getItem() ~= nil
++  local current = itemWidget:getItem()
++  -- Chaos (base patch 0213): the slot already shows this very item (or stays empty): nothing to draw again. A slot
++  -- that changes is redrawn by its onItemChange (UIItem:onItemChange: tooltip, the stock value frame, the tier), once.
++  if current == item then return false end
++  local had = current ~= nil
+   itemWidget:setItem(item)
+   if had and not item and not (UIItem.notifiesItemRemoval and UIItem.notifiesItemRemoval()) then
+     local onItemChange = itemWidget.onItemChange
+     if onItemChange then signalcall(onItemChange, itemWidget) end
+   end
++  return true
+ end
+ 
+ function refreshContainerItems(container)
+@@ -79,8 +84,6 @@
+     local itemWidget = container.itemsPanel:getChildById('item' .. slot)
+     local item = container:getItem(slot)
+     chaosSetSlotItem(itemWidget, item)
+-    ItemsDatabase.setRarityItem(itemWidget, item)
+-    ItemsDatabase.setTier(itemWidget, item)
+     updateFlags(item, itemWidget)
+   end
+ 
+@@ -286,8 +289,6 @@
+     local itemSlot = container:getItem(slot)
+ 
+     chaosSetSlotItem(itemWidget, itemSlot)
+-    ItemsDatabase.setRarityItem(itemWidget, itemSlot)
+-    ItemsDatabase.setTier(itemWidget, itemSlot)
+     itemWidget:setMargin(0)
+     itemWidget.position = container:getSlotPosition(slot)
+     updateFlags(itemSlot, itemWidget)
+@@ -383,8 +384,6 @@
+   local itemWidget = container.itemsPanel:getChildById('item' .. slot)
+   if not itemWidget then return end
+   chaosSetSlotItem(itemWidget, item)
+-  ItemsDatabase.setRarityItem(itemWidget, item)
+-  ItemsDatabase.setTier(itemWidget, item)
+   updateFlags(item, itemWidget)
+ end
+ 

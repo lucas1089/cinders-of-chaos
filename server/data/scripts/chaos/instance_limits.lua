@@ -417,6 +417,10 @@ function BR.leverUse(player, key, config)
 	if not (player and player.isPlayer and player:isPlayer()) then
 		return false
 	end
+	-- a lever inside a queue dungeon run waits for the run's boss unlock (dungeons.lua bossGate, O183 seen in a client)
+	if ChaosDungeons and ChaosDungeons.bossGate and not ChaosDungeons.bossGate(player, player:getPosition()) then
+		return false
+	end
 	if not BR.groupReady(player, config) then
 		player:sendCancelMessage(Chaos.t(player, "Stand on the tile in front of the lever to pull it (your group on the tiles behind you)."))
 		local first = config.participantsPos[1]
