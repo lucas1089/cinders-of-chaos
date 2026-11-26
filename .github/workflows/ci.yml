@@ -2226,7 +2226,7 @@ jobs:
     # forks have no access to it and skip the job
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20  # 5-9 min before O769; the stipple check and the redrawn O735 forms pushed it past 10
     steps:
       - uses: actions/checkout@v4
         with:
