@@ -118,6 +118,13 @@ H.getSpellDataById = spellById
 getSpellDataById = spellById
 
 local function playerHasSpell(player, spellId)
+  -- a quest spell the spellbook's learned list (server opcode 219, fetched at login) does not hold is not castable (O92:
+  -- the Auto setup put Keepfall and Ironbound Oath in the rotation and the helper said them every tick)
+  local core = rawget(_G, 'ChaosSpellCore')
+  if type(core) == 'table' and type(core.isLearnedKnown) == 'function' then
+    local spell = spellById(spellId)
+    if spell and not core.isLearnedKnown(spell) then return false end
+  end
   -- the learned-spell list is only enforced when the server filled it
   if player and player.getSpells then
     local ok, spells = pcall(function() return player:getSpells() end)
@@ -207,14 +214,17 @@ local function ready(spell, player, holdGroups, allowParameter)
   return true
 end
 
--- say the spell's words (or `words`: the heal-others spells add a name), through the rate guard; true when they went out
-local function cast(spell, channel, words)
+-- say the spell's words (or `words`: the heal-others spells add a name), through the rate guard; true when they went out.
+-- before(): runs once the guard let the cast through, just ahead of the words (the shooter's turn: O75, a wave goes out
+-- along the facing the server has when the words arrive, so the turn must be sent first)
+local function cast(spell, channel, words, before)
   local t = now()
   local timers = getTimers()
   words = words or spell.words
   if timers and not ChaosHelperTimers.castAllowed(timers, channel or Spl.channel(spell), words, t) then
     return false
   end
+  if before then before() end
   safeDoThing(false)
   g_game.talk(words)
   safeDoThing(true)
@@ -1759,8 +1769,8 @@ local function shooterTick(player)
           local tp = target and target:getPosition() or nil
           local turn = R and R.turnDirection(spell, SpellAreas, { enabled = R.autoTurnEnabled(),
             facing = player:getDirection(), best = dir, from = pos, target = tp })
-          if cast(spell, 'attack') then
-            if turn then g_game.turn(turn) end
+          -- the turn goes out before the words (seen in a client 2026-11-26: turned after, the wave hit the old side)
+          if cast(spell, 'attack', nil, turn and function() g_game.turn(turn) end or nil) then
             return -- one cast per tick: the next one waits for the server's answer
           end
         end

@@ -863,6 +863,12 @@ reset, storages and the free-respec rule are untouched. `tests/class_spells_test
 
 **Cinder Effigy (item 83).** Price x0.65 -> x0.75 and pulse 22% -> 24%: +10.6% of the spell damage in a pack (was -6.1%),
 +27.8% with the Idol, one target -22% (was -31%). Numbers and caveats: server/data/spells/README.md "Effigy rebalance".
+Seen in a client (2026-11-26): Forked Storm raised no effigy. Its jumps land 160 ms apart, and the hits of one tick were the
+cast, so each jump was a cast of one hit (and the Sigil of Cinders branded every jump). Now the ticks of
+`arEffigy.castWindowMs` (600, under the shortest attack group cooldown of 1000 ms) after the first hit are one cast window:
+the effigy rises once the window has 2 hits, later hits of the window update its cast, and the sigil brands only while the
+window holds one target (`archetypes.lua` `joinWindow`, `tests/archetypes_test.lua`). Then Forked Storm and Falling Pyre each
+raised an effigy and the pulses hit a pack of demons.
 
 ### Opcode collision check
 Searched the reference server for every `onExtendedOpcode`, `sendExtendedOpcode(` and opcode
@@ -2134,6 +2140,9 @@ pins the own-spell counts (max 15) and the new rows; `tests/spell_ids_test.lua` 
 
 ### Hawkeye retired, Tautstring (beta report 2026-10-20: the Ranger's auto attack stops)
 
+Seen in a client (2026-11-26): a level 800 Ranger with the helper on shoots every second against frozen demons while the
+helper casts Tautstring from the Support tab; the Spellbook finds no "Hawkeye"; `utito tempo san` does nothing.
+
 Report (owner, beta, live commit 53e35f94): "sometimes in a box or a small place the auto attack does not work", then "it
 stopped completely", then "it came back, then stopped again". A level ~25 Ranger, bow, Demon Skeletons and a Nightmare in a
 narrow corridor; the owner found that the bow stopped while the helper's Support tab kept the stock Sharpshooter up (Chaos
@@ -2180,6 +2189,9 @@ off (Stand) brings the shots back at once. After the update, `vyr ira sol` says 
 Tautstring.
 
 ### Bulwark and Windrunner retired, Ironhold and Wildstride (owner 2026-10-20: "pode trocar essas duas também")
+
+Seen in a client (2026-11-26): the Warrior's Auto setup puts Ironhold on the Support tab, the helper casts it, the shielding
+skill rises, no pacified condition at any poll, melee hits go on.
 
 The two stock self buffs that still blocked attacks. Base scripts (`support/protector.lua`, `support/swift_foot.lua`):
 Protector (Chaos name Bulwark, `utamo tempo` / `tor ira`, id 132, Warrior / Juggernaut / Berserker, level 55, 200 mana,
@@ -2484,6 +2496,9 @@ Used by phase 2 (2026-10-28), in the order line by line (quest 1, 2, 3 of the Wa
   live server.
 
 ## Necromancer summons and the summon cap (2026-10-18)
+
+Seen in a client (2026-11-26): the three Raise spells give a warrior, an archer and a mage; a fourth (another warrior) sends
+the oldest away and the count stays 3; the three fight a pack.
 
 Raise Bone Warrior / Archer / Mage (`data/spells/chaos/necromancer/raise_*.lua`, helper `NecroSpell.summon` in `_necro.lua`),
 one minion per cast; the minion types are `monsters/chaos/necro_risen_warrior|archer|mage.xml` (looks 298, 33, 99 of the
@@ -2995,6 +3010,9 @@ characters made under the old 1-point-per-level rate). Past the tree's budget, t
 bonuses.
 
 ### Boss passive points (`bosspoints.lua`, `bosspoints_core.lua`, `bosspoints_config.lua`)
+
+Seen in a client (2026-11-26): the passive tree header goes from "Boss points 0/10 (+0 passive points)" to 1/10 after The
+Rotmother, the tooltip marks it, and the point is spent with the rest on a plan to the Effigy Covenant.
 
 The first kill of each major boss gives the character +1 passive point, once per boss (10 points in all): the five world
 bosses (Kaelgor, Skaldra, The Rotmother, Nyxareth, Vharok), the Ascension Trial's Warden (type `Ascension Warden`, whatever
@@ -3619,7 +3637,7 @@ docs/BUILDS.md. Computed numbers: `data/spells/README.md` "Build archetypes" (no
 | 78 | Cascade Edge (`arCascade`) | all | a critical hit (8th argument of onHealthChange, engine patch 0001): 60% of it on the other enemies within 1 sqm of the target, as the strongest element increment of the tree (energy without one), once per 0.8 s | non-critical hits x0.95 |
 | 82 | Stormstring (`arStormstring`) | Ranger line | bow and crossbow hits (`ChaosArchery.kindOfType`): 3 arcs of 40% of the hit, energy, to the nearest other enemies within 3 sqm in sight | that hit x0.9 |
 | 355 | Winter's Lattice (`arWinterLattice`) | Mystic, Necromancer lines | a monster dying within 2 s of an ice hit of yours bursts: 5% (O452, was 6%) of its maximum health (at most 12 x level) as ice on enemies within 2 sqm (at most 8); bursts that kill burst again | fire and energy dealt x0.7 |
-| 262 | Effigy Covenant (`arEffigy`) | Mystic, Necromancer lines | a spell cast that hits 2+ enemies in one tick raises a Cinder Effigy on your tile (at most 2, the oldest goes; 12 s); every 2 s it hits the enemies within 3 sqm (as many as the cast hit) for 24% of the cast's average hit, of its main element (rebalanced 2026-10-18, a net gain of about +11% in a pack: server/data/spells/README.md "Effigy rebalance") | spells dealt x0.75 |
+| 262 | Effigy Covenant (`arEffigy`) | Mystic, Necromancer lines | a spell cast that hits 2+ enemies (hits within 600 ms count as one cast) raises a Cinder Effigy on your tile (at most 2, the oldest goes; 12 s); every 2 s it hits the enemies within 3 sqm (as many as the cast hit) for 24% of the cast's average hit, of its main element (rebalanced 2026-10-18, a net gain of about +11% in a pack: server/data/spells/README.md "Effigy rebalance") | spells dealt x0.75 |
 | 106 | Sigil of Cinders (`arCinderSigil`) | Mystic, Templar lines | fire and holy spell hits ignite (15% of the hit over 4 s, a fire condition owned by you); a cast that hits one enemy brands it for 8 s: 5% of that hit every second on the enemies within 1 sqm of the bearer (a cast on the bearer keeps the pulse clock, O452); it jumps to the nearest enemy within 3 sqm when the bearer dies; an ignited monster that dies passes the burn to 2 within 2 sqm, 3 steps | damage that is not fire or holy x0.8 |
 | 362 | Aether Edge (`arAetherEdge`) | Monk, Templar lines | weapon and fist hits add 33% of the current energy shield as energy (a spell of yours; O452, was 6%); 6% as before when the holder also has Hollow Vessel (the Hollow Palm, owner decision 2026-11-09: unchanged) | maximum health 80% (`CONDITION_ATTRIBUTES`, sub id 71090, set and removed with the keystone) |
 | 253 | Reliquary Vow (`arReliquary`) | Templar line | a Reliquary Warden summon follows you outside protection zones (brought back past 7 sqm); every 2 s it heals you and the party within 3 sqm for 0.6% of their maximum health + 2 x your magic level, gives the other members +5% damage for 3 s, and deals 0.6 x level + 3 x magic level holy to enemies within 2 sqm | own damage x0.9 |
@@ -15795,6 +15813,10 @@ never opens, the monsters keep stock looks.
   dressing, the decays, the boss events), the balance numbers in play.
 
 ## Item rarities (`data/lib/chaos_rarity.lua`, `rarity_migrate*.lua`, `sql/chaos_zz_rarity_migrate.sql`)
+
+Seen in a client (2026-11-26): six plate armours (Common to Divine) and a unique on the ground, each label in its rarity
+colour, the tooltip names the rarity; in pt-BR Comum, Incomum, Mágica, Rara, Lendária, Divina. Open: a boss-loot name
+("Legendary Ancestral Dawnpiercer") stayed English in pt-BR.
 
 Owner item 87 (2026-10-18): exactly **seven rarities**, in this order: **Common, Uncommon, Magic, Rare, Legendary, Divine,
 Unique** (pt-BR: Comum, Incomum, Mágica, Rara, Lendária, Divina, Única). Before there were 15 (Common .. Transcendent).

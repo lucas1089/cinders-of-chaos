@@ -235,6 +235,38 @@ for _ = 1, 40 do now = now + 60 runDue() end
 eq(attacked, monster, 'Auto Target attacks the monster')
 eq(talked[#talked], 'exevo flam', 'the shooter casts the wave at it')
 
+-- O92: a quest spell the spellbook's learned list does not hold is not the player's (the Auto setup and the shooter
+-- skip it); a plain spell and any spell before the list arrived pass
+do
+  local core = dofile(base .. 'game_spellbook/spellbook_core.lua')
+  spells['Keepfall'] = { id = 142, name = 'Keepfall', words = 'vok aeg thun brak', group = { [1] = 2000 }, mana = 30,
+    level = 1, vocations = { 5 }, range = 3, icon = 'k', quest = 1 }
+  eq(_Helper.playerHasSpell(player, 142), true, 'no learned list yet: the spell passes')
+  core.setLearned({ 'Old Secret' })
+  eq(_Helper.playerHasSpell(player, 142), false, 'learned list without it: refused')
+  eq(_Helper.playerHasSpell(player, 2), true, 'a plain spell still passes')
+  core.setLearned({ 'Keepfall' })
+  eq(_Helper.playerHasSpell(player, 142), true, 'learned: passes')
+  core.setLearned(nil)
+  spells['Keepfall'] = nil
+end
+
+-- O75: a wave at a target on another side turns first, then says the words (the server casts along its facing then)
+do
+  local order = {}
+  local oldTalk, oldTurn, oldAtt, oldPos = g_game.talk, g_game.turn, g_game.getAttackingCreature, monster.getPosition
+  SpellAreas = { AREA_WAVE3 = spells['Fire Wave'].area }
+  function monster:getPosition() return { x = 101, y = 100, z = 7 } end
+  g_game.getAttackingCreature = function() return monster end
+  g_game.talk = function(w) order[#order + 1] = 'talk ' .. w end
+  g_game.turn = function(d) order[#order + 1] = 'turn ' .. tostring(d) end
+  for _ = 1, 40 do now = now + 60 runDue() if #order >= 2 then break end end
+  eq(order[1], 'turn 1', 'the shooter turns east toward the target first')
+  eq(order[2], 'talk exevo flam', 'and only then says the wave')
+  g_game.talk, g_game.turn, g_game.getAttackingCreature, monster.getPosition = oldTalk, oldTurn, oldAtt, oldPos
+  SpellAreas = {}
+end
+
 -- a protection zone pauses the fight systems but not the settings
 helperConfig.magicShooterEnabled = true
 player.pz = true

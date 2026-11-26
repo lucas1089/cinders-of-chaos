@@ -618,6 +618,11 @@ rotation and a potion never for a rune. The test also reads base patch 0062.
   `g_settings` `chaosHelperAutoTurn`; pt-BR "Virar sozinho") switches it off. Tests: `rotation_test.lua`. To check live: the
   box fits in the Targeting & Spell Rules panel under the button; a Warrior/Mystic rotation with Fire Wave / Energy Beam
   turns toward the target before each cast and does not turn when already facing it.
+  Seen in a client (2026-11-26): the shooter said the words first and turned after, so the cast went out along the old
+  facing. Fixed: `cast(spell, channel, words, before)` in `game_helper/helper.lua` runs the turn once the rate guard lets the
+  cast through, just ahead of the words (`helper_test.lua`: turn east, then the words). Then a Ranger facing north with
+  demons east turned east before Skewering Line. Only Skewering Line and the stock wave / beam entries are directional: the
+  Chaos waves are `needTarget` spells the server aims at the target itself.
 - **Class change (item 84).** The server (`class_spells.lua`, `ChaosSpellbook.refresh`) refreshes the Spellbook window on
   any class change, and `autorotation_ui.lua` takes the old class's shooter rules and healing slots out of the Helper when
   the local player's vocation changes (a pt-BR message says how many; Auto rotation fills the new class). The action bar's
@@ -669,6 +674,8 @@ Breath and Chi Ward 1) instead of sending it to be refused.
 ## Spellbook (new)
 
 Seen in a client (2026-11-25): Learned + Attack lists the 9 attack spells of a level 180 Ninja, all with icons. Fixed then: the row's level label was 40 px and cut "Lv 100" to ".v 100". It is 50 px now.
+Seen in a client (2026-11-26, O76): the Type filter (All types / Attack / Support) and the "AoE" / "Área" marks in English and pt-BR. Fixed then: in pt-BR the detail values stayed English ("Grupo Attack, Tipo Damage, Alvo Single target"); they go through `tr` now. The pt-BR footer "Próximo desbloqueio: nível 860" was cut to "n"; it is "Próximo: Nv %d".
+Quest spells and the helper (2026-11-26, O91 / O92): `ChaosSpellCore.questOf` read the spell data only from the global table, but `game_chaosspells` is sandboxed, so no spell was a quest spell. It reads `modules.game_chaosspells.ChaosSpellData` too, and the SpellInfo entries carry `quest`. `ChaosSpellCore.isLearnedKnown(spell)` is false for a quest (or needLearn) spell missing from the server's learned list (fetched at login; before the first reply every spell passes). The helper's `playerHasSpell` asks it, so the Auto setup and the shooter skip an unlearned quest spell. Before, a level 800 Ranger and Warrior said Moonshard Rain, Unblinking Gaze, Keepfall and Ironbound Oath every few seconds ("You must learn this spell first."). Tests: `spellbook_core_test.lua`, `helper_test.lua`.
 `game_spellbook` opens on Character > Spellbook (or Character > Spellbook in the top menu, which asks the server with `open`). Left: search box (name or words), a filter ("My vocation" / "All spells") and the spell list (icon, name in the element colour, words, level in red when it is above yours). Right: icon, name, words, level, magic level, mana, soul, cooldown (group cooldown in the tooltip), group, type, element, target, what it scales with, vocations (initials, full names in the tooltip), the description and the area of effect drawn as a grid (hit cells in the element colour, your tile gold, the target outlined white; single-target spells show you and the target, self spells only you; cells shrink to fit areas up to 21 x 21). Icons come from `Spells.getSpellIcon(words)` of gamelib; runes show their rune item. Names, descriptions and areas come from the server (`server/data/scripts/chaos/spellbook.lua`), so the client keeps no spell data of its own. Not run in a client: the layout sizes, the theme styles in this window and the combo box popup were checked by reading only.
 
 Speed and filter (2026-10-16): the window shows at once. The list is fetched about 3 s after login and kept with the
@@ -5845,6 +5852,7 @@ them into the spell entries. The popup is as wide as its widest row (text width 
 ### Helper Auto setup (`game_helperrotation/autosetup.lua`, `autosetup_ui.lua`)
 
 Seen in a client (2026-11-25): for a level 180 Ninja it adds Blade Flurry, Razor Rain, Shuriken Barrage, Venom Spiral and Gutting Slash.
+Seen in a client (2026-11-26): the Ranger's Support tab has Tautstring, the Warrior's has Ironhold. Unlearned quest spells stay out of both tabs now (see "Spellbook", quest spells and the helper).
 The "Auto setup" button sits in the top row of the helper window (`autoSetupHost`). One click,
 for the character's class and level (`ChaosAutoSetup.plan`, tested per class in `autosetup_test.lua`):
 - Healing: the class heals (`ChaosAutoRotation.heals`) at 80 %, 60 / 80 or 50 / 65 / 80 (the strongest lowest); the

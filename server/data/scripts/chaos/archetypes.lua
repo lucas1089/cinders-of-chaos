@@ -576,6 +576,7 @@ local function raiseEffigy(player, cast)
 	for _, gone in ipairs(A.effigyAdd(s.effigies, e, hasUnique(pid, "effigyIdol"))) do
 		effigyRemove(gone)
 	end
+	return e
 end
 
 local function pulseEffigies(player, s, t)
@@ -659,8 +660,33 @@ local function sigilJump(deadId, pos)
 end
 
 -- ------------------------------------------------------------------------------------------------ spell casts
--- hits of one cast are collected until the end of the tick (an area spell hits every target at once)
+-- hits of one cast are collected until the end of the tick (an area spell hits every target at once). A spell whose hits
+-- land over several ticks (Forked Storm jumps every 160 ms) is one cast too: the ticks of castWindowMs after the first
+-- one join a cast window (O83, seen in a client 2026-11-26: each jump was a cast of one hit, so Forked Storm raised no
+-- effigy and branded every jump). The window raises at most one effigy, as soon as it has minTargets hits, and later
+-- hits of the window update that effigy's cast. castWindowMs stays under the shortest attack group cooldown (1000 ms).
 local castBuffer = {}
+local castWindow = {} -- player id -> {untilTime, hits, index, effigy}
+local function joinWindow(pid, hits)
+	local t = now()
+	local w = castWindow[pid]
+	if not w or t >= w.untilTime then
+		w = {untilTime = t + (cfg().arEffigy.castWindowMs or 0), hits = {}, index = {}}
+		castWindow[pid] = w
+	end
+	for _, h in ipairs(hits) do
+		local i = w.index[h.id]
+		if i then
+			w.hits[i].amount = w.hits[i].amount + h.amount
+		else
+			w.hits[#w.hits + 1] = {id = h.id, amount = h.amount, type = h.type}
+			w.index[h.id] = #w.hits
+		end
+	end
+	return w
+end
+M.castWindow = castWindow
+
 local function flushCast(pid)
 	local buffer = castBuffer[pid]
 	castBuffer[pid] = nil
@@ -669,13 +695,16 @@ local function flushCast(pid)
 		return
 	end
 	local flags = flagsOf(pid) or {}
+	local w = joinWindow(pid, buffer.hits)
 	if flags.arEffigy then
-		local cast = A.effigyCast(buffer.hits)
-		if cast then
-			raiseEffigy(player, cast)
+		local cast = A.effigyCast(w.hits)
+		if cast and w.effigy then
+			w.effigy.cast = cast -- a later hit of the same cast: the effigy repeats the whole cast
+		elseif cast then
+			w.effigy = raiseEffigy(player, cast)
 		end
 	end
-	if flags.arCinderSigil and #buffer.hits == 1 then
+	if flags.arCinderSigil and #w.hits == 1 then
 		local h = buffer.hits[1]
 		local target = Creature(h.id)
 		if target and target:getHealth() > 0 then
@@ -1387,6 +1416,7 @@ local function cleanup(pid)
 		M.dismissRelic(pid)
 	end
 	state[pid], M.flags[pid], M.uniques[pid], castBuffer[pid], relicBuffs[pid] = nil, nil, nil, nil, nil
+	castWindow[pid] = nil
 	hobbleMarks[pid] = nil
 	M.hollow[pid], M.lastHit[pid], M.vitality[pid] = nil, nil, nil
 	-- the snares live on the spells' side; when it shares this Lua state they go at once (else at its next visit)

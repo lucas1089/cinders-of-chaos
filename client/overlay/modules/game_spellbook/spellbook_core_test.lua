@@ -345,6 +345,16 @@ do
   C.setLearned({ 'Keepfall' })
   eq(C.status(qs[1], { vocation = 4, level = 900 }), 'ready', 'the shared learned list unlocks it')
   C.setLearned({})
+  -- the helper's check (O92): only a reply proves a quest spell unlearned; before it and after logout every spell passes
+  C.setLearned(nil)
+  eq(C.learnedKnown, false, 'no reply yet'); eq(C.isLearnedKnown(qs[1]), true, 'no reply: the helper may try it')
+  C.setLearned({ 'Keepfall' })
+  eq(C.isLearnedKnown(qs[1]), true, 'learned quest spell passes')
+  eq(C.isLearnedKnown(qs[2]), false, 'unlearned quest spell refused')
+  eq(C.isLearnedKnown({ name = 'Old Secret', needLearn = true }), false, 'an unlearned needLearn row refused')
+  eq(C.isLearnedKnown({ name = 'Reaping Gyre' }), true, 'a plain spell always passes')
+  C.setLearned({})
+  eq(C.learnedKnown, true, 'an empty reply is a reply'); eq(C.isLearnedKnown(qs[1]), false, 'nothing learned: refused')
   -- the real data: every quest spell of the client has a number 1..3 and a level of the quest
   C.questByName = nil
   dofile(here .. '../game_chaosspells/spelldata.lua')
@@ -357,6 +367,18 @@ do
     end
   end
   eq(count[1] .. '/' .. count[2] .. '/' .. count[3], '7/7/7', 'seven quest spells per quest in the spell data')
+  C.questByName = nil
+end
+
+-- game_chaosspells is sandboxed: the spell data is found in its module table when no global holds it (seen in a client
+-- 2026-11-26: the global read alone made every quest spell a plain one)
+do
+  local savedData, savedModules = rawget(_G, 'ChaosSpellData'), rawget(_G, 'modules')
+  ChaosSpellData = nil
+  modules = { game_chaosspells = { ChaosSpellData = { { name = 'Sandboxed Rite', quest = 2 } } } }
+  C.questByName = nil
+  eq(C.questOf({ name = 'Sandboxed Rite' }), 2, 'the quest from the sandboxed module table')
+  ChaosSpellData, modules = savedData, savedModules
   C.questByName = nil
 end
 
