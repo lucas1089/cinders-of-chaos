@@ -62,7 +62,12 @@ local function markOnMap(pos, label)
   local mm = modules.game_minimap
   local widget = mm and rawget(mm, 'minimapWidget')
   if widget then
-    pcall(function() widget:addFlag(pos, 0, label) end)
+    -- this engine's minimap has no addFlag: the mark is a minimap widget (base patch 0005 shim, style MinimapFlag; V28)
+    if type(widget.addFlag) == 'function' then
+      pcall(function() widget:addFlag(pos, 0, label) end)
+    elseif type(widget.addWidget) == 'function' then
+      pcall(function() widget:addWidget('/data/images/game/minimap/flag0.png', { width = 11, height = 11 }, pos, label) end)
+    end
     pcall(function() widget:setCameraPosition(pos) end)
   end
   status(tr('Marked on your map: %s', label ~= '' and label or string.format('%d, %d, %d', pos.x, pos.y, pos.z)))

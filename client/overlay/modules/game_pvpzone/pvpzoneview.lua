@@ -259,7 +259,9 @@ function V.goalLines(d, exitWhere, shrineWhere)
     lines[2] = { shrineWhere and tr('Shrine event: slay the Shrine Warden at the shrine (%s, marked on your map).', shrineWhere)
       or tr('Shrine event: slay the Shrine Warden at the shrine (marked on your map).'), '#ff7040' }
   elseif c.phase == 'capture' then
-    if pledged then
+    if pledged and d.inShrine then
+      lines[2] = { tr('Shrine event: you are in the shrine circle. Stay in it with your faction until the bar is full.'), '#ff7040' }
+    elseif pledged then
       lines[2] = { shrineWhere and tr('Shrine event: stand in the shrine circle with your faction to take it (%s, marked on your map).', shrineWhere)
         or tr('Shrine event: stand in the shrine circle with your faction to take it (marked on your map).'), '#ff7040' }
     else
@@ -292,6 +294,43 @@ function V.savedFlags(node)
     end
   end
   return out
+end
+
+-- ---------------------------------------------------------------- putting a flag on the minimap (V28, 2026-11-26)
+-- This engine's minimap has no addFlag / removeFlag (seen in a client: the pcall failed and no flag ever showed). The
+-- widget way is UIMinimap:addWidget(image, size, pos, text) -> id and :removeWidget(id) (the base minimap's own marks,
+-- corelib shim of base patch 0005, style MinimapFlag). addFlag is kept first for an engine that has it.
+V.FLAG_SIZE = { width = 11, height = 11 }
+function V.flagImage(icon)
+  return '/data/images/game/minimap/flag' .. tostring(tonumber(icon) or 0) .. '.png'
+end
+
+-- puts the flag; returns the handle to keep ({ widget = id } or { flag = true }), nil when the minimap cannot
+function V.addFlag(w, pos, icon, name)
+  if not w then return nil end
+  if type(w.addFlag) == 'function' then
+    if pcall(function() w:addFlag(pos, icon, name) end) then return { flag = true } end
+  end
+  if type(w.addWidget) == 'function' then
+    local ok, id = pcall(function() return w:addWidget(V.flagImage(icon), V.FLAG_SIZE, pos, name) end)
+    if ok and id ~= nil then return { widget = id } end
+  end
+  return nil
+end
+
+-- takes a flag put by V.addFlag off again (a flag read back after a restart has no widget id: only removeFlag)
+function V.removeFlag(w, f)
+  if not w or type(f) ~= 'table' then return end
+  if f.widget ~= nil then
+    if type(w.removeWidget) == 'function' then pcall(function() w:removeWidget(f.widget) end) end
+    return
+  end
+  if type(w.removeFlag) == 'function' then
+    local pos = { x = f.x, y = f.y, z = f.z }
+    if not pcall(function() w:removeFlag(pos) end) then
+      pcall(function() w:removeFlag(pos, f.icon, f.name) end)
+    end
+  end
 end
 
 return V

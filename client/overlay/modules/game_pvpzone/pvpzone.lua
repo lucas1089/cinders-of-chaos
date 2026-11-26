@@ -198,12 +198,7 @@ end
 local function clearFlags()
   local w = minimapWidget()
   for _, f in ipairs(flags) do
-    if w then
-      local pos = { x = f.x, y = f.y, z = f.z }
-      if not pcall(function() w:removeFlag(pos) end) then
-        pcall(function() w:removeFlag(pos, f.icon, f.name) end)
-      end
-    end
+    V.removeFlag(w, f)
   end
   flags = {}
   saveFlags()
@@ -224,8 +219,9 @@ local function setMarks(list)
   if not w then return end
   for _, m in ipairs(marks) do
     local icon = V.ICON[m.kind] or 0
-    if pcall(function() w:addFlag({ x = m.x, y = m.y, z = m.z }, icon, m.name) end) then
-      flags[#flags + 1] = { x = m.x, y = m.y, z = m.z, icon = icon, name = m.name }
+    local put = V.addFlag(w, { x = m.x, y = m.y, z = m.z }, icon, m.name)
+    if put then
+      flags[#flags + 1] = { x = m.x, y = m.y, z = m.z, icon = icon, name = m.name, widget = put.widget }
     end
   end
   saveFlags()

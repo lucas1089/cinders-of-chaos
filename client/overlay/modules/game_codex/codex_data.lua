@@ -7070,7 +7070,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"A circlet of black glass that rains sparks in the wind. Rain of Sparks: On a critical hit, a energy nova hits up to 6 monsters within 2 tiles for 80 plus 1.1 per level, every 3 s. Costs 0.5% health, never below 35%. For: Mystic, Necromancer. (Meant for level 400.)"}
+							p = {"A circlet of black glass that rains sparks in the wind. Rain of Sparks: On a critical hit, an energy nova hits up to 6 monsters within 2 tiles for 80 plus 1.1 per level, every 3 s. Costs 0.5% health, never below 35%. For: Mystic, Necromancer. (Meant for level 400.)"}
 						},
 						{h = "Stats", p = {"Armor 11", "Fire Absorb +4%", "Magic Level +1"}},
 						{
@@ -8490,7 +8490,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"The seer saw every death but her own. The eye still watches for it. Seer's Last Sight: On a critical hit, a energy nova hits up to 7 monsters within 2 tiles for 90 plus 1.2 per level, every 3 s. Costs 0.6% health, never below 35%. For: Mystic, Necromancer, Thief. (Meant for level 1000.)"}
+							p = {"The seer saw every death but her own. The eye still watches for it. Seer's Last Sight: On a critical hit, an energy nova hits up to 7 monsters within 2 tiles for 90 plus 1.2 per level, every 3 s. Costs 0.6% health, never below 35%. For: Mystic, Necromancer, Thief. (Meant for level 1000.)"}
 						},
 						{
 							h = "Stats",
@@ -11023,7 +11023,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"They leave two sets of footprints. Two Sets of Footprints: On a monster hit of 5% of your health or more, a energy nova hits up to 6 monsters within 2 tiles for 70 plus 1.2 per level, every 4 s. For: Mystic, Necromancer, Templar. (Requires level 300.)"}
+							p = {"They leave two sets of footprints. Two Sets of Footprints: On a monster hit of 5% of your health or more, an energy nova hits up to 6 monsters within 2 tiles for 70 plus 1.2 per level, every 4 s. For: Mystic, Necromancer, Templar. (Requires level 300.)"}
 						},
 						{h = "Stats", p = {"Armor 3", "Physical Absorb +2%"}},
 						{
@@ -12911,7 +12911,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Description",
-							p = {"A moment cracked in two; one half keeps happening. Cascade Edge: the burst deals 25% more of the critical hit and comes 0.2 s sooner. Crack in Time: On a critical hit, a energy nova hits up to 6 monsters within 2 tiles for 70 plus 1.2 per level, every 3 s. Costs 0.5% health, never below 35%. For: Thief, Monk, Ranger. (Requires level 400.)"}
+							p = {"A moment cracked in two; one half keeps happening. Cascade Edge: the burst deals 25% more of the critical hit and comes 0.2 s sooner. Crack in Time: On a critical hit, an energy nova hits up to 6 monsters within 2 tiles for 70 plus 1.2 per level, every 3 s. Costs 0.5% health, never below 35%. For: Thief, Monk, Ranger. (Requires level 400.)"}
 						},
 						{h = "Stats", p = {"The base item's own stats (no extra stats of its own)."}},
 						{

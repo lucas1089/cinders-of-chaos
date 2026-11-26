@@ -98,6 +98,8 @@ for id in pairs(real) do
 	local en, pt = C.text(CFG, e, "en"), C.text(CFG, e, "pt-BR")
 	ok(en ~= "" and pt ~= "", "text of " .. id)
 	ok(ChaosUniqueSpecs[id].description:find(en, 1, true), "the description of " .. id .. " carries its passive line (run tools/gen_unique_specs.py)")
+	-- V28 (seen in a client 2026-11-26): "a energy nova"; the article follows the element word
+	ok(not en:find("%f[%a]a [aeiouAEIOU]%a* nova"), "the English nova line of " .. id .. " says \"an\" before a vowel: " .. en)
 	local a, b = table.concat(C.numbers(en), ","), table.concat(C.numbers(pt), ",")
 	eq(a, b, "the numbers of the pt-BR line of " .. id .. " are in the English order")
 	ok(#en < 330, "the line of " .. id .. " is short enough for the tooltip: " .. #en)

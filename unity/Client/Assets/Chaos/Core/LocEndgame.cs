@@ -222,6 +222,7 @@ namespace Chaos.Core
             { "Shrine event: slay the Shrine Warden at the shrine (marked on your map).", "Evento do santuário: mate o Guardião do Santuário no santuário (marcado no mapa)." },
             { "Shrine event: stand in the shrine circle with your faction to take it ({0}, marked on your map).", "Evento do santuário: fique no círculo do santuário com a sua facção para tomá-lo ({0}, marcado no mapa)." },
             { "Shrine event: stand in the shrine circle with your faction to take it (marked on your map).", "Evento do santuário: fique no círculo do santuário com a sua facção para tomá-lo (marcado no mapa)." },
+            { "Shrine event: you are in the shrine circle. Stay in it with your faction until the bar is full.", "Evento do santuário: você está no círculo do santuário. Fique nele com a sua facção até a barra encher." },
             { "Shrine event: only players pledged to a faction can take the shrine.", "Evento do santuário: só jogadores com juramento a uma facção podem tomar o santuário." },
             { "Pledged", "Jurado" }, { "Pledge", "Jurar" }, { "Cosmetic, account-wide", "Cosmético, vale para a conta" }, { "Consumable", "Consumível" },
             { "How it works", "Como funciona" }, { "Open PvP, risk and reward", "PvP aberto, risco e recompensa" },

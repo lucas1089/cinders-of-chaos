@@ -121,6 +121,11 @@ eq(#g, 2, 'a shrine line during the warden')
 eq(g[2][1], 'Shrine event: slay the Shrine Warden at the shrine (12 tiles west, marked on your map).', 'warden line')
 g = V.goalLines({ embers = 0, contest = { phase = 'capture' }, pledge = { key = 'vigil' } }, nil, '3 tiles north')
 eq(g[2][1], 'Shrine event: stand in the shrine circle with your faction to take it (3 tiles north, marked on your map).', 'capture line')
+g = V.goalLines({ embers = 0, contest = { phase = 'capture' }, pledge = { key = 'vigil' }, inShrine = true }, nil, '2 tiles north')
+eq(g[2][1], 'Shrine event: you are in the shrine circle. Stay in it with your faction until the bar is full.',
+  'V28: in the circle the line says so, not "2 tiles north"')
+g = V.goalLines({ embers = 0, contest = { phase = 'warden' }, pledge = { key = 'vigil' }, inShrine = true }, nil, '2 tiles north')
+eq(g[2][1]:find('slay the Shrine Warden', 1, true) ~= nil, true, 'V28: the warden line stays while the warden lives')
 g = V.goalLines({ embers = 0, contest = { phase = 'capture' } }, nil, nil)
 eq(g[2][1], 'Shrine event: only players pledged to a faction can take the shrine.', 'capture, unpledged')
 eq(#V.goalLines(nil, nil, nil), 1, 'no data: the goal')
@@ -141,6 +146,33 @@ do
   eq(#V.savedFlags(g.getNode('pvpzoneFlags')), 0, 'flags: an empty list comes back nil, read as none')
   eq(#V.savedFlags({ list = { { x = 1, y = 2, z = 'x' }, 'bad', { x = 3, y = 4, z = 5 } } }), 1, 'flags: bad rows dropped')
   eq(#V.savedFlags(nil), 0, 'flags: no node')
+end
+
+-- the minimap flag (V28, seen in a client 2026-11-26): this engine's minimap has addWidget / removeWidget, no addFlag
+do
+  local made, gone = {}, {}
+  local mm = {}
+  function mm.addWidget(self, image, size, pos, text) made[#made + 1] = { image, size, pos, text }; return #made end
+  function mm.removeWidget(self, id) gone[#gone + 1] = id end
+  local put = V.addFlag(mm, { x = 10, y = 20, z = 7 }, 0, 'Cinder Shrine')
+  eq(put and put.widget, 1, 'flag: put as a minimap widget when there is no addFlag')
+  eq(made[1][1], '/data/images/game/minimap/flag0.png', 'flag: the image of icon 0')
+  eq(made[1][2].width, 11, 'flag: 11 px'); eq(made[1][3].x, 10, 'flag: at the mark'); eq(made[1][4], 'Cinder Shrine', 'flag: its text')
+  V.removeFlag(mm, { x = 10, y = 20, z = 7, icon = 0, name = 'Cinder Shrine', widget = put.widget })
+  eq(gone[1], 1, 'flag: taken off by its widget id')
+  V.removeFlag(mm, { x = 10, y = 20, z = 7, icon = 0, name = 'old' })
+  eq(#gone, 1, 'flag: a flag read back after a restart (no id) never removes another widget')
+  local old = { calls = {} }
+  function old.addFlag(self, pos, icon, name) self.calls[#self.calls + 1] = 'add' end
+  function old.removeFlag(self, pos) self.calls[#self.calls + 1] = 'remove' end
+  local f = V.addFlag(old, { x = 1, y = 2, z = 7 }, 0, 'x')
+  eq(f and f.flag, true, 'flag: addFlag first on an engine that has it')
+  V.removeFlag(old, { x = 1, y = 2, z = 7 })
+  eq(old.calls[2], 'remove', 'flag: and removeFlag')
+  eq(V.addFlag(nil, { x = 1, y = 2, z = 7 }, 0, 'x'), nil, 'flag: no minimap')
+  eq(V.addFlag({}, { x = 1, y = 2, z = 7 }, 0, 'x'), nil, 'flag: a minimap with neither way')
+  local saved = V.flagsNode({ { x = 1, y = 2, z = 7, icon = 0, name = 'x', widget = 4 } }).list[1]
+  eq(saved.widget, nil, 'flag: the widget id is never saved (ids do not survive a restart)')
 end
 
 print(string.format('pvpzoneview_test: %d checks, %d failed', checks, fails))

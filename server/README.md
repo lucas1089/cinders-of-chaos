@@ -4477,6 +4477,13 @@ its own and the rule in bright text. `tip.desc` keeps the whole text for an olde
 | 2200 | Bellringer of the Last Vigil | Hour Without End | mend | Warrior, Monk, Templar |
 | 2400 | Choirless Pendant | Silence Left Behind | feast | all |
 
+**Seen in a client (2026-11-26, V28, local server).** Crown of Cinders worn on the head: the tooltip shows "Burning Crown / On a
+kill, a fire nova hits up to 6 monsters within 2 tiles for 60 plus 1.2 per level, every 3 s ..." and "Active"; a kill in a
+Behemoth pack set off the nova, its numbers (205, 195; 371, 232, 139 on the second kill) on the other Behemoths. Fixed: the English
+nova line said "a energy nova" (now "an" before a vowel, `unique_passives_text.lua`; descriptions, Codex, wiki and pt-BR lines
+regenerated; checked in `unique_passives_test.lua`). Also fixed in passing: `game_itemtooltip` logged "attempt to index local
+'pos'" for an item a client widget made (no position): such an item gets position 0,0,0 and is never asked.
+
 ## Uniques explain themselves (O467)
 A player on the test server held 14 uniques and could not tell what they were. Before this, a unique's tooltip never said
 whether its power worked for the viewer, nothing led from the item to its Codex page, the Codex did not explain the
@@ -4918,6 +4925,11 @@ Owner request 2026-10-27: "as arenas de bosses, infinity tower e tudo mais preci
   - Guild hall tiers: 1 `"marble"` (white stone wall 1111-1116), 2 `"greystone"` (stone wall 1049-1054; the dark set's obsidian wall when installed), 3 `"brick"` (brick wall 1025-1030). Before, each tier put one piece (1111, 1049, 1025) on every wall tile. A hall built with the old ids changes look to the pieces.
   - Sets checked in the installed items.otb and the client pair (2x2 blocking walls). Preview renders were made with `client/tools/sprites/datspr.py`.
   - Tests: `tests/arenalook_test.lua` (sets, placer, ids, size, `clearOfWall`, no config with 5648), wall checks in `uber_test.lua`, `raid_test.lua`, `arena_flow_test.lua` (and the moved basin), `battleground_flow_test.lua`, `pvpzone_test.lua`, `worldboss_test.lua`.
+
+**Seen in a client (2026-11-26, V28, local server).** Infinity Tower floor 1 (slate floor in a checker of two greys, ember
+patches, rocks along the walls, the floor panel), the world boss room of Skaldra the Rime Queen (cobble and gravel patches, the
+paved lane, pillars, cover) and the pocket boss arena of Kaelgor the Infernal Warlord (cracked ember ground, the lane to the boss,
+braziers and crystals mirrored, the run panel). Walls and floors whole, no hole or stray piece seen. Nothing to fix.
 
 ## Infinity Tower gameplay (`infinitytower_run.lua`)
 The tower exists now. The Enter Tower button of the client window (action `enter`) takes you, or your party (leader only, members within 12 tiles, up to 4), into an arena that is built at runtime with `Game.createTile` in an empty part of the map (x from 2000, y 2000, z 7; sixteen arenas side by side), so no map editing is needed. Floors are waves: kill everything to open the next one (6 s pause, half of the missing health and mana restored, `floorGold` x floor gold); every 10th floor is a boss floor with its helpers (twice the floor time since 2026-10-13: 10 minutes). Pools get harder every 8 floors, and the chance of magic, rare and legendary monsters (with their modifiers and shaders) rises with the floor. A floor has a 300 s limit and a whole run 60 minutes (`runTimeLimit`, warnings at 5 min, 1 min and 10 s, the floor's at 1 min and 10 s; "Instance limits"); at most 16 arenas, the wait and the waiting line when all are busy. Dying, leaving (see "Infinity Tower: leaving a run"), logging out or running out of time ends your part of the run and records the cleared floors with `ChaosTower.recordRun` (points, best floor, ranking, milestones). Logging in inside an arena sends you to the temple. Milestone rewards now use item ids that exist (gold, Orbs of Upheaval and Fate, Soulreaper). Everything is configured at the top of the file (`ChaosTowerRunConfig`).
@@ -20408,6 +20420,19 @@ over a restart, a logout inside and the login at the nearest safe exit with the 
 contesting, the faction buff on real experience and loot, map mode, a season instance, reputation gains (the test
 characters shared an IP).
 
+**Seen in a client (2026-11-26, V28, local server, Linux client).** The window's "How it works" in four steps, the risk box, the
+goal and carried-embers messages on entering, the HUD lines (goal, embers bar, pledge, contest timer, holder), the scorched field
+with cover in clumps, the road and the shrine plaza; the Warden rose, its health showed in the HUD, its kill gave "+102 embers
+(carrying 102)", the capture bar went up. Two things were wrong and are fixed:
+- No minimap flags: this engine's minimap has no `addFlag` / `removeFlag` (the call failed in a `pcall`, silent). The client now
+  puts a flag as a minimap widget (`addWidget(image, size, pos, text)`, `/data/images/game/minimap/flagN.png`, 11 px) when there
+  is no `addFlag`, and takes it off by its widget id (`PvpZoneView.addFlag` / `removeFlag`); a flag read back after a restart has
+  no id and never removes another widget. game_goals' map mark does the same. Seen after the fix: the exits and the shrine flagged.
+- In the circle the objective line still said "stand in the shrine circle ... (2 tiles north)". The HUD now carries `inShrine`
+  (`K.inShrine` on the player's tile) and the line reads "Shrine event: you are in the shrine circle. Stay in it with your faction
+  until the bar is full." (pt-BR in `pt_br.lua`; the Unity mirror `PvpZoneView.GoalLines` too). Tests: `pvpzone_test.lua`,
+  `pvpzoneview_test.lua`, Unity `EndgameTests`.
+
 ## Hunt tracker (`hunt.lua`, `hunt_core.lua`, `hunt_config.lua`, `hunt_supplies.lua`, `tools/gen_supply_prices.py`)
 
 Client `game_hunt` (opcode 241), opened with Hunt > Hunt Tracker in the top menu. `Hunt > Hunt Tracker pause`, `Hunt > Hunt Tracker resume`
@@ -32859,6 +32884,12 @@ server step runs, else the new pieces are invisible and only the red fill is lef
 --archive-spr pair51/removed/Tibia.spr --ids item:38477-38487 --out-dir NEXT` (the archive pair, or `backup/removed-pair51.tar.xz` on
 windows-assets), `check_pair.py`, then the new md5s into `client/MANIFEST.md`. `prune_pair.py check-map` on the new map finds no blanked
 item. Done: pair 52 (dat 7046ab6e35a08b2289699f95323fd506) is pair 51 with missiles plus these 11 items, on windows-assets (MANIFEST.md "Pair 52"). Before and after pictures were rendered from the installed map with the pair 50 art (not committed, they show the base map).
+
+**Seen in a client (2026-11-26, V28, local server, floor 7).** From the street (31586,33009 and 31587,33018) the cabins carry the
+flat grey tin roofs with their dark edges, no red fill, gable, ledge spike or hole left; inside a cabin (31580,33008) the roof
+hides and the room shows. Standing at the hunt mark 31583,33009 itself hides every roof: a cabin's open doorway is next to it
+(the client hides the floors above when a tile beside the player that it can look into has a roof). That is the client's rule,
+not the patch. Nothing to fix.
 
 ## Temple cleanse (`temple_cleanse.lua`, `temple_cleanse_core.lua`)
 
