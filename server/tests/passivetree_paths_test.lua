@@ -224,13 +224,13 @@ end
 
 -- ------------------------------------------------------------------------------------------------ ascension (O305)
 -- Tester report: after Ranger -> Beastmaster the allocated Vitality / Dexterity / Physical Damage nodes gave other stats.
--- The ascended lanes are intended (Auto build, presets), so the ascension refunds the tree once (passivetree.lua
--- refundLaneChange); the core finds the nodes the new lane changes and decides when the refund is due.
+-- The ascended lanes are intended (Auto build, presets), but a saved tree keeps the lane it was made under (V30, owner
+-- 2026-11-25: the same nodes stay allocated with the same stats): treeLane decides the lane the plain nodes read.
 do
 	local C2, CC = ChaosPassiveTreeCore, ChaosClasses
 	local RANGER, DEADEYE, BEAST = 3, 7, 15
-	local base = CC.keystoneKey(RANGER)
-	local diff = C2.laneDiff(tree, base, CC.keystoneKey(BEAST))
+	local base, beast = CC.keystoneKey(RANGER), CC.keystoneKey(BEAST)
+	local diff = C2.laneDiff(tree, base, beast)
 	local count = 0
 	for id in pairs(diff) do
 		count = count + 1
@@ -240,12 +240,45 @@ do
 	check(diff[2], "node 2 (Strength for the Ranger, Spirit for the Beastmaster) is in the lane diff")
 	check(next(C2.laneDiff(tree, base, base)) == nil, "the same key changes no node")
 	local baseOf = Chaos.classes.baseOf
-	eq(C2.laneChangeFrom(RANGER, BEAST, CC.keystoneKey, baseOf), base, "recorded Ranger -> Beastmaster: refund from the Ranger lane")
-	eq(C2.laneChangeFrom(BEAST, BEAST, CC.keystoneKey, baseOf), nil, "recorded Beastmaster, still Beastmaster: nothing")
-	eq(C2.laneChangeFrom(-1, BEAST, CC.keystoneKey, baseOf), base, "ascended before the record: refund from the base lane")
-	eq(C2.laneChangeFrom(-1, RANGER, CC.keystoneKey, baseOf), nil, "unascended without a record: nothing, only recorded")
-	eq(C2.laneChangeFrom(nil, DEADEYE, CC.keystoneKey, baseOf), base, "no record at all reads as -1")
-	eq(C2.laneChangeFrom(1, 5, CC.keystoneKey, baseOf), nil, "Mystic -> Elementalist share a key: nothing")
+	local function lane(ids, stored, voc)
+		return C2.treeLane(tree, ids, stored, voc, CC.keystoneKey, baseOf)
+	end
+	local same
+	for id = 2, 700 do
+		local node = tree.nodes[id]
+		if node and node.s and not node.m and not diff[id] then same = id break end
+	end
+	check(same ~= nil, "a plain node the two lanes agree on exists")
+	local l, r = lane({2, 3}, RANGER, BEAST)
+	eq(l, base, "recorded Ranger, now Beastmaster, a node the lanes differ on: the tree keeps the Ranger lane")
+	eq(r, RANGER, "and the record stays the Ranger")
+	l, r = lane({}, RANGER, BEAST)
+	eq(l, beast, "an empty tree takes the Beastmaster lane")
+	eq(r, BEAST, "and records the Beastmaster")
+	l, r = lane({same}, RANGER, BEAST)
+	eq(l, beast, "a tree of nodes the lanes agree on takes the own lane (node " .. tostring(same) .. ")")
+	eq(r, BEAST, "and records it")
+	l, r = lane({2}, BEAST, BEAST)
+	eq(l, beast, "recorded Beastmaster, still Beastmaster: its own lane")
+	l, r = lane({2}, -1, BEAST)
+	eq(l, beast, "no record: the own class (what an unrecorded tree read)")
+	eq(r, BEAST, "and records it")
+	l, r = lane({2}, nil, DEADEYE)
+	eq(l, CC.keystoneKey(DEADEYE), "a nil record reads as -1")
+	l, r = lane({2}, 1, 5)
+	eq(l, CC.keystoneKey(5), "Mystic -> Elementalist share a key: nothing to keep")
+	l, r = lane({2}, 4, BEAST)
+	eq(l, beast, "a record of another line (a store change) gives the own class")
+	eq(r, BEAST, "and records it")
+	l, r = lane({2}, BEAST, RANGER)
+	eq(l, beast, "the way back inside the line (Beastmaster tree, now Ranger) keeps the Beastmaster lane too")
+	-- nodeStats: a plain node reads the lane, a keystone the class's own variant
+	local n2 = tree.nodes[2]
+	eq(next(C2.nodeStats(n2, beast, nil, base)), next(n2.v[base] or n2.s), "a plain node reads the given lane")
+	eq(next(C2.nodeStats(n2, beast)), next(n2.v[beast] or n2.s), "without a lane it reads the class's own")
+	local ks = tree.nodes[624]
+	check(ks.s == nil and ks.v[beast] ~= nil, "624 is a keystone with a Beastmaster variant")
+	eq(next(C2.nodeStats(ks, beast, nil, base)), next(ks.v[beast]), "a keystone ignores the lane: the class's own keystone")
 end
 
 print(string.format("passivetree_paths_test: %d checks, %d failures", checks, failures))

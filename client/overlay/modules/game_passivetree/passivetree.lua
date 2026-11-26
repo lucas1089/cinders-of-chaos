@@ -88,6 +88,20 @@ local function getPlayerVocation()
   return class and (VARIANT_OF[class] or class) or nil
 end
 
+-- the lane the saved tree's plain nodes read (O305, V30: kept from the class it was made under; sendNodes `lane`)
+local serverLane = nil
+local function getTreeLaneKey()
+  if viewing then
+    return viewing.lane
+  end
+  return serverLane
+end
+
+-- the per-class table a node is read with: a plain node the tree's lane, a keystone the class's own (treelanes.lua)
+local function nodeVariant(node)
+  return node[TreeLanes.variantKey(node, getPlayerVocation(), getTreeLaneKey())]
+end
+
 -- class nodes: shown only to their line (node.line); taken only by their classes (node.classes)
 -- hidden nodes (node.hidden: a stray node of the original tree) are never shown
 local function nodeShown(node)
@@ -554,7 +568,8 @@ local function scaleDecoWidget(child)
 end
 
 local function treeKey()
-	return string.format("%.4f|%s|%s", SCALE, tostring(getPlayerVocation()), tostring(getPlayerClass()))
+	return string.format("%.4f|%s|%s|%s", SCALE, tostring(getPlayerVocation()), tostring(getPlayerClass()),
+		tostring(getTreeLaneKey()))
 end
 
 local function destroyChildrenJob(parent)
@@ -573,7 +588,7 @@ end
 -- the tooltip of a node widget: name, stats, the class lines; a mastery node lists its effects and marks the chosen one
 -- (saved, planned, or the inspected character's)
 function setNodeTooltip(widget, node)
-	local vocationNode = node[getPlayerVocation()]
+	local vocationNode = nodeVariant(node)
 	local tooltipType = 1
 	if node.isUncommon then
 		tooltipType = 2
@@ -822,7 +837,7 @@ local function buildTree()
 
 		if node or false then
 			local group = treeData.groups[node.group]
-			local vocationNode = node[getPlayerVocation()]
+			local vocationNode = nodeVariant(node)
 			local icon = treeData.icons[node.icon]
 
 			if not node.isStartNode and vocationNode then
@@ -1393,6 +1408,11 @@ function getTreeVariant()
 	return getPlayerVocation()
 end
 
+-- the variant key one node is read with: a plain node the saved tree's lane (O305), else getTreeVariant (search.lua)
+function getTreeNodeVariant(node)
+	return TreeLanes.variantKey(node, getPlayerVocation(), getTreeLaneKey())
+end
+
 function getTreeNodeWidget(id)
 	return nodeWidgets[id]
 end
@@ -1472,7 +1492,7 @@ end
 local ownNodes = nil
 function setTreeViewing(data)
 	if data then
-		viewing = {name = data.name, cls = data.cls, line = data.line, vocation = data.vocation, nodes = data.nodes or {},
+		viewing = {name = data.name, cls = data.cls, line = data.line, vocation = data.vocation, lane = type(data.lane) == "string" and data.lane or nil, nodes = data.nodes or {},
 			masteries = masteryMap(data.masteries)}
 		showAllocation(viewing.nodes, true)
 		return
@@ -1600,6 +1620,7 @@ function updateNodes(data)
 	if type(data.vocation) == "string" then
 		serverVocation = data.vocation
 	end
+	serverLane = type(data.lane) == "string" and data.lane or nil
 	if type(data.cls) == "string" then
 		serverClass = data.cls
 	end
@@ -1920,7 +1941,7 @@ function getSkillTreeBonuses(planned)
 		local node = nodeMap[id]
 
 		if node then
-			local vocationNode = node[getPlayerVocation()]
+			local vocationNode = nodeVariant(node)
 			local customStats = (vocationNode and vocationNode.customStats) or node.customStats
 			if node.isMastery then
 				local effect = (node.masteries or {})[getChosenMastery(id) or 0]
@@ -2054,7 +2075,7 @@ end
 
 function destroy()
 	stopTreeAltPoll()
-	serverVocation = nil -- the next character may have another class
+	serverVocation, serverLane = nil, nil -- the next character may have another class
 	serverClass, serverLine = nil, nil
 	destroyParagon() -- paragon.lua
 	if destroyTreeTotals then

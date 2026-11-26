@@ -4,7 +4,8 @@
 --   ChaosPassiveTreeCore.parseAlloc(text)             ids, masteries of a saved allocation text (see below)
 --   ChaosPassiveTreeCore.formatAlloc(ids, masteries)  the text; ids sorted, mastery choices only for listed mastery ids
 --   ChaosPassiveTreeCore.isMastery(node)              the node offers effects to choose from (node.m)
---   ChaosPassiveTreeCore.nodeStats(node, variantKey, choice)   the stats a node gives (variant, or the chosen effect)
+--   ChaosPassiveTreeCore.nodeStats(node, variantKey, choice, laneKey)   the stats a node gives (variant, lane, or the chosen effect)
+--   ChaosPassiveTreeCore.treeLane(tree, ids, stored, vocId, keyOf, baseOf)   the class lane the plain nodes read (O305)
 --   ChaosPassiveTreeCore.cleanMasteries(tree, ids, masteries)  only allocated mastery nodes with a valid choice
 --   ChaosPassiveTreeCore.toMap(raw) / toList(map)     masteries from a request ({{id, choice}} or {[id] = choice}) / to JSON
 --   ChaosPassiveTreeCore.validatePlan(tree, current, currentMasteries, plan, ctx)   a whole planned allocation, see there
@@ -222,15 +223,20 @@ function M.validChoice(node, choice)
 end
 
 -- the stats a node gives: a mastery its chosen effect (nothing without a choice), a keystone the variant of
--- variantKey when it has one, any other node its own stats
-function M.nodeStats(node, variantKey, choice)
+-- variantKey when it has one, a plain node (own stats `s`) the class lane of laneKey (variantKey when no laneKey is
+-- given), else its own stats. laneKey is the lane the saved tree was made under (treeLane, O305): an ascension keeps it.
+function M.nodeStats(node, variantKey, choice, laneKey)
 	if not node then
 		return nil
 	end
 	if M.isMastery(node) then
 		return M.validChoice(node, choice) and node.m[int(choice)] or nil
 	end
-	return (node.v and variantKey and node.v[variantKey]) or node.s
+	local key = variantKey
+	if node.s and laneKey then
+		key = laneKey
+	end
+	return (node.v and key and node.v[key]) or node.s
 end
 
 function M.cleanMasteries(tree, ids, masteries)
@@ -524,28 +530,45 @@ function M.reworkedSince(list, seen, tree, variantKey)
 	return set, newest, any
 end
 
--- ------------------------------------------------------------------------------------------------ lane change (O305)
--- The plain nodes read the class lane of the character's variant key, so an ascension (or a switch between ascended
--- classes) changes what an allocated node gives. The saved tree is refunded once for free instead of silently changing.
--- laneChangeFrom(stored, vocId, keyOf, baseOf) -> the variant key the saved tree was made under, or nil when nothing
--- needs refunding. `stored` is the recorded vocation id (< 0 = none: a character that ascended before the record is
--- taken to have planned under its base class's lane; an unascended one just gets recorded). A change between two
--- vocations of the same variant key (Mystic / Elementalist) needs nothing.
-function M.laneChangeFrom(stored, vocId, keyOf, baseOf)
+-- ------------------------------------------------------------------------------------------------ tree lane (O305)
+-- The plain nodes (own stats `s`) read a class lane (`v`); each class has its own. An ascension (or a switch between the
+-- classes of one line) would change what every allocated plain node gives. The saved tree keeps the lane it was made
+-- under instead: the same nodes stay with the same stats. The lane moves to the character's own class when nothing
+-- would change (an empty tree after a reset, or no allocated node that differs between the two lanes). Keystones and
+-- masteries never read the lane (a keystone is the class's own: variantKey).
+-- treeLane(tree, ids, stored, vocId, keyOf, baseOf) -> laneKey, vocation id to record. `stored` is the vocation id the
+-- tree was made under (Chaos.storage.passiveLane; < 0 = not recorded: the character's own class, which is what an
+-- unrecorded tree has been reading). A recorded vocation of another line means nothing any more (a store change: the
+-- class nodes of the old line are refunded elsewhere) and gives the own class.
+local function sameStats(a, b)
+	for k, v in pairs(a or {}) do
+		if (b or {})[k] ~= v then return false end
+	end
+	for k, v in pairs(b or {}) do
+		if (a or {})[k] ~= v then return false end
+	end
+	return true
+end
+
+function M.treeLane(tree, ids, stored, vocId, keyOf, baseOf)
+	local own = keyOf(vocId)
 	stored = tonumber(stored) or -1
-	local from = stored
-	if from < 0 then
-		local base = baseOf and baseOf[vocId]
-		if not base or base == vocId then
-			return nil
+	if stored < 0 or stored == vocId then
+		return own, vocId
+	end
+	local storedBase = (baseOf and baseOf[stored]) or stored
+	local ownBase = (baseOf and baseOf[vocId]) or vocId
+	local old = keyOf(stored)
+	if storedBase ~= ownBase or not old or not own or old == own then
+		return own, vocId
+	end
+	for _, id in ipairs(ids or {}) do
+		local node = tree.nodes[id]
+		if node and node.s and not M.isMastery(node) and not sameStats(M.nodeStats(node, old), M.nodeStats(node, own)) then
+			return old, stored
 		end
-		from = base
 	end
-	local oldKey, newKey = keyOf(from), keyOf(vocId)
-	if not oldKey or not newKey or oldKey == newKey then
-		return nil
-	end
-	return oldKey
+	return own, vocId
 end
 
 -- laneDiff(tree, oldKey, newKey) -> set of the plain nodes (shared stats, no mastery) that give other stats under

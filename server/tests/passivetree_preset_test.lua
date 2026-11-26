@@ -62,6 +62,7 @@ function p:getGuid() return 1 end
 function p:getId() return 1 end
 function p:getLevel() return 500 end
 function p:getStorageValue() return -1 end
+function p:setStorageValue() end
 function p:getVocation() return {getId = function() return 4 end} end
 function p:sendExtendedOpcode() return true end
 function p:registerEvent() end

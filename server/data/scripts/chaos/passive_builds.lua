@@ -270,6 +270,9 @@ function P.apply(player, buildId, mode, seenCost)
 		end
 	end
 	local guid = player:getGuid()
+	if plan.treeReset and ChaosPassiveTree.resetLane then
+		ChaosPassiveTree.resetLane(player) -- built from nothing: the tree is made under the character's own class lane (O305)
+	end
 	st.T.savePreset(guid, st.active and st.active.preset or 1, st.active and st.active.name or "Preset 1", ids, plan.masteries)
 	ChaosPassiveTree.apply(player)
 	st.T.sendNodes(player)

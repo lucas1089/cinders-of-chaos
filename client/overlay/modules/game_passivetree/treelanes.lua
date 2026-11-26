@@ -198,3 +198,14 @@ function TreeLanes.displayName(node, key)
 	end
 	return node.name
 end
+
+-- the variant key a node is read with (O305, V30): a saved tree keeps the lane it was made under, so after an ascension
+-- a plain node (own stats, no mastery, no keystone) reads the lane the server sends (sendNodes `lane`); a keystone and
+-- every other per-class table read the character's own variant. lane nil = the own variant.
+function TreeLanes.variantKey(node, vocation, lane)
+	if lane and type(node) == "table" and node.customStats and not node.masteries and not node.isMastery
+		and not node.isKeystone then
+		return lane
+	end
+	return vocation
+end

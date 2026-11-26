@@ -138,6 +138,8 @@ local function sendNodes(player, rows)
 		masteries = Core.toList(active and Core.cleanMasteries(getTree(), active.nodes, active.masteries) or {}),
 		-- which per-class node variants (keystones) the client must show: the ones the server applies
 		vocation = ChaosPassiveTree.vocationKey and ChaosPassiveTree.vocationKey(player) or nil,
+		-- the class lane the plain nodes read (O305: the lane the tree was made under, kept through an ascension)
+		lane = ChaosPassiveTree.laneKey and ChaosPassiveTree.laneKey(player, rows) or nil,
 		-- the class (which class nodes it may take) and its line (whose class section the client shows)
 		cls = ChaosPassiveTree.classKey(player),
 		line = ChaosPassiveTree.lineKey(player),
@@ -222,9 +224,41 @@ function ChaosPassiveTree.lineKey(player)
 end
 
 -- stats a node gives this vocation: its own variant (node.v) if it has one, else the shared stats; a mastery node the
--- chosen effect (choice; nothing without one)
-function ChaosPassiveTree.nodeStats(node, vocationKey, choice)
-	return Core.nodeStats(node, vocationKey, choice)
+-- chosen effect (choice; nothing without one); a plain node the lane of laneKey when given (O305)
+function ChaosPassiveTree.nodeStats(node, vocationKey, choice, laneKey)
+	return Core.nodeStats(node, vocationKey, choice, laneKey)
+end
+
+-- the class lane the plain nodes of the saved tree read (O305): the lane the tree was made under, kept through an
+-- ascension or a switch inside the line, until nothing would change (an empty tree, or no allocated node that differs
+-- between the lanes: passivetree_core.lua treeLane). Chaos.storage.passiveLane records the vocation id of that lane.
+-- rows: the presets when the caller has them.
+function ChaosPassiveTree.laneKey(player, rows)
+	local vocation = player:getVocation()
+	if not vocation then
+		return nil
+	end
+	local vocId = vocation:getId()
+	local key = Chaos.storage.passiveLane
+	if not key then
+		return ChaosClasses.keystoneKey(vocId)
+	end
+	local active = activePreset(rows or loadPresets(player:getGuid()))
+	local stored = tonumber(player:getStorageValue(key)) or -1
+	local lane, record = Core.treeLane(getTree(), active and active.nodes or {}, stored, vocId, ChaosClasses.keystoneKey,
+		Chaos.classes and Chaos.classes.baseOf)
+	if record ~= stored then
+		player:setStorageValue(key, record)
+	end
+	return lane
+end
+
+-- a tree built from nothing in one step (Auto build "Reset and apply") is made under the character's own class
+function ChaosPassiveTree.resetLane(player)
+	local key = Chaos.storage.passiveLane
+	if key and player:getVocation() then
+		player:setStorageValue(key, player:getVocation():getId())
+	end
 end
 
 function ChaosPassiveTree.getBonuses(player)
@@ -234,12 +268,13 @@ function ChaosPassiveTree.getBonuses(player)
 	local bonuses = {}
 	local vocationKey = ChaosPassiveTree.vocationKey(player)
 	local classKey = ChaosPassiveTree.classKey(player)
+	local laneKey = ChaosPassiveTree.laneKey(player, rows)
 	if active then
 		for _, id in ipairs(active.nodes) do
 			local node = tree.nodes[id]
 			-- a node of another class (a vocation change before the next login check) gives nothing
 			local stats = node and ChaosClassTree.allowed(node, classKey) and
-				ChaosPassiveTree.nodeStats(node, vocationKey, active.masteries and active.masteries[id])
+				ChaosPassiveTree.nodeStats(node, vocationKey, active.masteries and active.masteries[id], laneKey)
 			if stats then
 				for stat, value in pairs(stats) do
 					bonuses[stat] = (bonuses[stat] or 0) + value
@@ -433,7 +468,7 @@ function ChaosPassiveTree.publicView(player)
 	return {
 		nodes = nodes, masteries = Core.toList(Core.cleanMasteries(getTree(), nodes, active and active.masteries)),
 		cls = ChaosPassiveTree.classKey(player), line = ChaosPassiveTree.lineKey(player),
-		vocation = ChaosPassiveTree.vocationKey(player), total = totalPoints(player)
+		vocation = ChaosPassiveTree.vocationKey(player), lane = ChaosPassiveTree.laneKey(player), total = totalPoints(player)
 	}
 end
 
@@ -586,52 +621,33 @@ local function refundReworked(player)
 end
 ChaosPassiveTree.refundReworked = refundReworked
 
--- the class lane of the plain nodes changed (an ascension, a switch between ascended classes, or an ascension made before
--- this record existed): the nodes that give other stats under the new lane are refunded once, for free, with a message
--- (O305). Chaos.storage.passiveLane records the vocation id the tree was made under. `live` = the player is in the game.
-local function refundLaneChange(player, live)
-	local key = Chaos.storage.passiveLane
+-- a class change inside the line (an ascension, a switch between ascended classes): the saved tree keeps the lane it was
+-- made under, so every allocated node keeps its stats (O305; laneKey). The player is told once when the lane differs
+-- from the new class's and how to move it. `live` = the player is in the game (the client gets the nodes again).
+local function noteLaneChange(player, live)
 	local vocation = player:getVocation()
-	if not key or not vocation then
+	if not vocation or not Chaos.storage.passiveLane then
 		return 0
 	end
-	local vocId = vocation:getId()
-	local baseOf = Chaos.classes and Chaos.classes.baseOf
-	local oldKey = Core.laneChangeFrom(player:getStorageValue(key), vocId, ChaosClasses.keystoneKey, baseOf)
-	local total = 0
-	if oldKey then
-		local tree = getTree()
-		local drop = Core.laneDiff(tree, oldKey, ChaosPassiveTree.vocationKey(player))
-		for _, row in ipairs(loadPresets(player:getGuid())) do
-			local kept, removed = Core.dropNodes(tree, row.nodes, drop)
-			if #removed > 0 then
-				savePreset(player:getGuid(), row.preset, row.name, kept, row.masteries)
-				total = total + #removed
-			end
+	local rows = loadPresets(player:getGuid())
+	local lane = ChaosPassiveTree.laneKey(player, rows)
+	local own = ChaosClasses.keystoneKey(vocation:getId())
+	if live then
+		if lane and own and lane ~= own then
+			local stored = tonumber(player:getStorageValue(Chaos.storage.passiveLane)) or -1
+			local ok, made = pcall(function() return stored > 0 and Vocation(stored) or nil end)
+			made = ok and made or nil
+			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player,
+				"Your passive tree keeps the %s lane: every node you hold gives what it gave. A reset of the tree (or Auto build, Reset and apply) moves it to the %s lane.",
+				made and made:getName() or "old", vocation:getName()))
 		end
-		if ChaosLoadouts and ChaosLoadouts.dropNodes then
-			local ok, err = pcall(ChaosLoadouts.dropNodes, player, drop)
-			if not ok then
-				print("[ChaosPassiveTree] lane change in loadouts: " .. tostring(err))
-			end
-		end
+		applyBonuses(player)
+		sendNodes(player, rows)
+		sendPoints(player, rows)
 	end
-	player:setStorageValue(key, vocId)
-	if total > 0 then
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, total == 1 and
-			"Your ascension changed your passive tree to the %s lane: your %d point was refunded for free. Open the tree to spend it, or use Auto build." or
-			"Your ascension changed your passive tree to the %s lane: your %d points were refunded for free. Open the tree to spend them, or use Auto build.",
-			vocation:getName(), total))
-		if live then
-			applyBonuses(player)
-			local rows = loadPresets(player:getGuid())
-			sendNodes(player, rows)
-			sendPoints(player, rows)
-		end
-	end
-	return total
+	return 0
 end
-ChaosPassiveTree.refundLaneChange = refundLaneChange
+ChaosPassiveTree.noteLaneChange = noteLaneChange
 
 -- the keystone cap (O447): a character that holds more keystones than the cap (a beta character made before the rule)
 -- gets its whole tree back for free at the login, once: the cap itself is checked, so a character at or under it is
@@ -667,7 +683,7 @@ ChaosPassiveTree.refundOverCap = refundOverCap
 function LoginEvent.onLogin(player)
 	player:registerEvent("ChaosPassiveTreeExtended")
 	refundReworked(player)
-	refundLaneChange(player, false)
+	noteLaneChange(player, false)
 	refundForeignNodes(player)
 	refundOverCap(player)
 	noteOverBudget(player)

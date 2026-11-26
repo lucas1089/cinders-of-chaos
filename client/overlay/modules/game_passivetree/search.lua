@@ -22,7 +22,7 @@ local function nodeText(node)
       parts[#parts + 1] = line
     end
   end
-  local variant = getTreeVariant()
+  local variant = getTreeNodeVariant and getTreeNodeVariant(node) or getTreeVariant()
   local own = variant and node[variant]
   -- a class lane replaces the node's own name and stats for that class; a keystone keeps its base name ("... Keystone")
   local lane = type(own) == 'table' and own.customStats ~= nil and not node.isKeystone

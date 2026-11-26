@@ -164,18 +164,18 @@ namespace Chaos.Core
         {
             HashSet<int> allocated;
             Dictionary<int, int> masteries;
-            string cls = "", line = "", vocation = "";
+            string cls = "", line = "", vocation = "", lane = "";
 
             public static OwnState Take(PassiveTree t) => new OwnState
             {
-                allocated = new HashSet<int>(t.Allocated), masteries = new Dictionary<int, int>(t.Masteries), cls = t.Cls, line = t.Line, vocation = t.Vocation,
+                allocated = new HashSet<int>(t.Allocated), masteries = new Dictionary<int, int>(t.Masteries), cls = t.Cls, line = t.Line, vocation = t.Vocation, lane = t.Lane,
             };
 
             public void Restore(PassiveTree t)
             {
                 t.Allocated.Clear(); foreach (int i in allocated) t.Allocated.Add(i);
                 t.Masteries.Clear(); foreach (var kv in masteries) t.Masteries[kv.Key] = kv.Value;
-                t.Cls = cls; t.Line = line; t.Vocation = vocation;
+                t.Cls = cls; t.Line = line; t.Vocation = vocation; t.Lane = lane;
             }
         }
     }
