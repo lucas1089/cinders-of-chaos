@@ -3493,6 +3493,8 @@ Owner request 2026-10-26: "Gere novas runas. Vamos usar as artes das runas como 
 - **Ship order.** A client on pair 45 or older draws nothing for the new ids: ship pair 46 and a client build (the new icons) before the
   server's `supports` install step, or keep `clientFirstId = nil` until then.
 
+Seen in a client (2026-11-26, V26, pair 88): 8 runes of 8 supports, Common to Mythic, in the backpack, four on action bar 1 and the same pictures as icons in the Spell Supports window. Each its own look, none blank.
+
 ## Reward Chest look, one tile (pair 47: item 38758, `tools/sprites/gen_reward_chest_art.py build-small`, `art_import/reward_chest_small*`; built 2026-10-26; on windows-assets ba3a1e01)
 Owner request 2026-10-26: the base map's quest chests were one tile big, and a 2 x 2 chest overlaps walls and neighbouring chests in tight
 quest rooms (31 of about 297 sit next to another chest). The owner picked a one-tile version of the Reward Chest look ("use o 15", candidate
@@ -6431,12 +6433,16 @@ on every level change, and `new {key, level, menu, title, why}` one entry at a t
   Waystone Atlas, Ember Descent, Battleground, Scorched Marches, Raid: Ashen Sepulchre): the status is by menu text, so they hide
   and lock like the built-in ones. No new tr() key. Not run in a client.
 
+Seen in a client (2026-11-26, V26, pair 88): a new character at level 8 sees the early entries and the next one grey with its lock level. A locked hotkey says "Unlocks at level N". From level 12 to 30 the entries came one at a time with their New callout (Passive Tree, Loadouts, Bounty Board, Crafting Bench, Salvage, Pets, Hideout, Season Pass, Events, ...), after the quiet-login introductions. At level 30, 13 entries stay hidden (all above level 30).
+
 ## Drop feed option and personal records (O260)
 
 - **game_dropfeed** (new; extended opcode 229, action `feedopt {mode}`, client to server; server `retention_loot.lua`): System > Drop Feed opens a small window with one drop-down, Off / Unique and Divine only / Legendary and better (default). The choice is kept in the client settings (node `chaosDropFeed`) and sent at login and on a change; the server filters the drop lines of other players (Default tab and the channel Drops). Logic `dropfeed_logic.lua`, tested by `dropfeed_logic_test.lua`. Not run in a client.
 - **game_playerinspect**: a `records` packet after the result (`{name, rows = [{key, name, value}]}`, text in the viewer's language) and a Records button next to Passive Tree that swaps the equipment panel for the rows (`L.onRecords`, `L.recordsButtonText`, tested). Not run in a client.
 - **game_leaderboard**: the Records view has a client category **My Records** (`rmine` on opcode 229, `rmine {rows}` back; `recordsview.lua` adds the category, tested). Not run in a client.
 - **client_chaos_topbar**: the System menu has the entry Drop Feed.
+
+Seen in a client (2026-11-26, V26, pair 88): the feed line "Tester Iris (Lv 30) found [...]!" in the Server Log tab, "New record: Best Drop Value" lines, and the My Records tab of Leaderboards with the best drop rows.
 
 ## Interface skins (`client_chaos_theme`, base patch 0159, O281)
 

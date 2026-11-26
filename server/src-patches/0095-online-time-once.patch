@@ -1,0 +1,66 @@
+# players.onlinetime counts each online second once (O253, O258; server/README.md "Online time counted once (engine
+# patch 0095)"). Seen in a client 2026-11-26: a new character had onlinetime 1795718727 after a 258 s session, so the
+# progress metrics put its minutes to level 10 and 25 in the "inf" bucket and the mentor rule (100 hours) was met at once.
+# IOLoginData::savePlayer added time(nullptr) - lastLoginSaved at every save of an online player. Two faults:
+#   * lastLoginSaved is the last login read from the database until ProtocolGame::login sets it, after placeCreature.
+#     A save before that (the first-login kit gains levels inside onLogin, and the stock advance_save saves on every
+#     level) added the whole Unix clock for a new character (lastlogin 0), or the offline time for a returning one;
+#   * a save inside the session (advance_save, the server save, a script) added the time from the login again, so the
+#     second save counted the first part twice.
+#   * the fix: a new Player field onlineCountedAt, 0 until ProtocolGame::login sets it to the new lastLoginSaved. A save
+#     counts onlineCountedAt to now only when it is set, and moves it to now after the transaction commits (a failed save
+#     counts nothing and keeps the mark). A takeover of a lingering character keeps the mark: it was online all along.
+#   * lastlogin, lastlogout and the other columns are as before. Existing bad rows: metrics.lua repairs them at startup.
+# Apply in the server source root after 0001-0094: patch -p1 < 0095-online-time-once.patch, then rebuild.
+diff --git a/src/iologindata.cpp b/src/iologindata.cpp
+--- a/src/iologindata.cpp
++++ b/src/iologindata.cpp
+@@ -857,8 +857,13 @@
+ 	query << "`skill_jewelsmith` = " << player->skills[SKILL_JEWELSMITH].level << ',';
+ 	query << "`skill_jewelsmith_tries` = " << player->skills[SKILL_JEWELSMITH].tries << ',';
+ 
+-	if (!player->isOffline()) {
+-		query << "`onlinetime` = `onlinetime` + " << (time(nullptr) - player->lastLoginSaved) << ',';
++	// Chaos (patch 0095): count each online second once. The stock line added now - lastLoginSaved at every save, so a
++	// save inside the session counted its start again, and a save before the login finished (a level gained in onLogin:
++	// advance_save) added the whole clock, lastLoginSaved being 0 or the last login then.
++	const time_t onlineNow = time(nullptr);
++	const bool countOnline = !player->isOffline() && player->onlineCountedAt != 0 && onlineNow > player->onlineCountedAt;
++	if (countOnline) {
++		query << "`onlinetime` = `onlinetime` + " << (onlineNow - player->onlineCountedAt) << ',';
+ 	}
+ 	query << "`blessings` = " << player->blessings.to_ulong();
+ 	query << " WHERE `id` = " << player->getGUID();
+@@ -980,6 +985,9 @@
+ 	if (!transaction.commit()) {
+ 		return chaosSaveFailed(player, "COMMIT");
+ 	}
++	if (countOnline) {
++		player->onlineCountedAt = onlineNow; // Chaos (patch 0095): counted up to here
++	}
+ 	return true;
+ }
+ 
+diff --git a/src/player.h b/src/player.h
+--- a/src/player.h
++++ b/src/player.h
+@@ -1388,6 +1388,8 @@
+ 		Position lastWalkthroughPosition;
+ 
+ 		time_t lastLoginSaved = 0;
++		// Chaos (patch 0095): the time up to which players.onlinetime counts this session; 0 until the login is done
++		time_t onlineCountedAt = 0;
+ 		time_t lastLogout = 0;
+ 		time_t premiumEndsAt = 0;
+ 
+diff --git a/src/protocolgame.cpp b/src/protocolgame.cpp
+--- a/src/protocolgame.cpp
++++ b/src/protocolgame.cpp
+@@ -404,6 +404,7 @@
+ 
+ 		player->lastIP = player->getIP();
+ 		player->lastLoginSaved = std::max<time_t>(time(nullptr), player->lastLoginSaved + 1);
++		player->onlineCountedAt = player->lastLoginSaved; // Chaos (patch 0095): onlinetime counts from here
+ 		acceptPackets = true;
+ 		if (auto loginConnection = getConnection()) {
+ 			loginConnection->endPreAuth(); // Chaos (patch 0067): logged in, no longer a pre-auth connection

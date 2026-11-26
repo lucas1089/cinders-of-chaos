@@ -14,6 +14,8 @@
 --   M.milestonesCrossed(old, new, mask, cfg)  -> list of milestones newly reached, new mask
 --   M.suppress(n, cfg)                        n, or the text "<5" for 1 to minShown - 1 (the report tool does the same; 0 stays 0)
 --   M.sessionMinutes(seconds)                 whole minutes, a session of 0 s counts as 0
+--   M.onlineBase(t, cfg)                      players.onlinetime as played seconds, nil when it is a clock value (O253 fix)
+--   M.repairOnlineSql(cfg)                    one UPDATE that repairs onlinetime rows the engine filled with the clock, or nil
 -- O258 funnel (server/README.md "Funnel metrics (O258)"):
 --   M.dayNumber(t, offset) / M.dayString(day)  whole days since the epoch in server time / "YYYYMMDD"
 --   M.returnCheck(stored, today, cfg)          -> list of "d1" / "d3" / "d7" newly due, new stored value, cohort day
@@ -115,6 +117,35 @@ function M.sessionMinutes(seconds)
 		return 0
 	end
 	return floor(seconds / 60)
+end
+
+-- players.onlinetime is the played seconds of a character. The stock engine added the whole Unix clock to it when a
+-- save ran before the login was done (a level gained in onLogin: advance_save) and counted a session start again at
+-- every later save (fixed by src-patch 0095, "Online time counted once"). A value at or above cfg.onlineSane (the
+-- clock of 2000-01-01: 30 years of play) is such a clock value, not a time played: nil, so no bucket gets it.
+function M.onlineBase(t, cfg)
+	t = tonumber(t)
+	if not t or t < 0 then
+		return nil
+	end
+	if t >= ((cfg and cfg.onlineSane) or 946684800) then
+		return nil
+	end
+	return t
+end
+
+-- The rows such a save left hold no trace of the real time. What is known is the last session: lastlogout - lastlogin
+-- (the client run: 72 s and 258 s). That is a lower bound of the time played, never more; without a last session
+-- the row gets 0. A second run changes nothing (every value is below onlineSane after it).
+function M.repairOnlineSql(cfg)
+	local sane = math.floor(tonumber(cfg and cfg.onlineSane) or 946684800)
+	if cfg and cfg.repairOnline == false then
+		return nil
+	end
+	return string.format("UPDATE `players` SET `onlinetime` = CASE WHEN `lastlogin` > 0 AND "
+		.. "CAST(`lastlogout` AS SIGNED) - CAST(`lastlogin` AS SIGNED) BETWEEN 0 AND %d "
+		.. "THEN CAST(`lastlogout` AS SIGNED) - CAST(`lastlogin` AS SIGNED) ELSE 0 END WHERE `onlinetime` >= %d",
+		sane - 1, sane)
 end
 
 -- small-number suppression: a count behind which fewer than cfg.minShown players could stand is never shown exactly

@@ -50,6 +50,33 @@ eq(M.bucketLabel(481, cfg.sessionBuckets), "inf", "481 minutes")
 eq(M.sessionMinutes(59), 0, "59 s")
 eq(M.sessionMinutes(125), 2, "125 s")
 eq(M.sessionMinutes(-5), 0, "negative")
+-- onlinetime: a clock value the stock engine added is no time played (src-patch 0095; seen in a client 2026-11-26)
+eq(M.onlineBase(600, cfg), 600, "onlinetime 600 s is 600 s played")
+eq(M.onlineBase(0, cfg), 0, "onlinetime 0")
+eq(M.onlineBase(cfg.onlineSane - 1, cfg), cfg.onlineSane - 1, "just below the clock limit")
+eq(M.onlineBase(1795718727, cfg), nil, "the value of the 258 s session seen in the client: a clock, unknown")
+eq(M.onlineBase(cfg.onlineSane, cfg), nil, "the limit itself is a clock")
+eq(M.onlineBase(nil, cfg), nil, "no value")
+eq(M.onlineBase(-3, cfg), nil, "negative")
+do
+	local q = M.repairOnlineSql(cfg)
+	check(q:find("^UPDATE `players` SET `onlinetime` = ") ~= nil, "repair: one UPDATE of players")
+	check(q:find("WHERE `onlinetime` >= 946684800", 1, true) ~= nil, "repair: only the clock rows")
+	check(q:find("CAST(`lastlogout` AS SIGNED) - CAST(`lastlogin` AS SIGNED)", 1, true) ~= nil, "repair: the last session, signed")
+	check(q:find("BETWEEN 0 AND 946684799", 1, true) ~= nil and q:find("ELSE 0 END", 1, true) ~= nil,
+		"repair: below 0 or a clock again gives 0, so a second run changes nothing")
+	-- the rule on the two characters of the client run (2026-11-26), both one session
+	local function repaired(lastlogin, lastlogout)
+		local d = lastlogout - lastlogin
+		if lastlogin > 0 and d >= 0 and d <= cfg.onlineSane - 1 then return d end
+		return 0
+	end
+	eq(repaired(1795717707, 1795717779), 72, "Tester Nova of the run: its 72 s session (it read 1795717779)")
+	eq(repaired(1795717836, 1795718094), 258, "Tester Nyx of the run: its 258 s session (it read 1795718727)")
+	eq(repaired(0, 1795718094), 0, "no last login: 0")
+	eq(repaired(1795718094, 1795717836), 0, "online now or a logout before the login: 0")
+	eq(M.repairOnlineSql({onlineSane = cfg.onlineSane, repairOnline = false}), nil, "repair off")
+end
 
 -- ---------------------------------------------------------------- who counts
 eq(M.suppress(0, cfg), 0, "suppress: zero stays zero")
@@ -248,7 +275,15 @@ eq(registry.ChaosMetricsThink.i, 60000, "think interval")
 ChaosMetrics.spots = {{name = "Ember Caves", x = 100, y = 100, z = 7}}
 registry.ChaosMetricsStartup.onStartup()
 ChaosMetrics.spots = {{name = "Ember Caves", x = 100, y = 100, z = 7}} -- (startup read no places file)
-check(queries[1]:find("CREATE TABLE IF NOT EXISTS `chaos_progress_metrics`", 1, true) ~= nil, "table created at startup")
+do
+	local created, repairAt, createAt = false, nil, nil
+	for i, q in ipairs(queries) do
+		if q:find("CREATE TABLE IF NOT EXISTS `chaos_progress_metrics`", 1, true) then created, createAt = true, createAt or i end
+		if q == M.repairOnlineSql(cfg) then repairAt = repairAt or i end
+	end
+	check(created, "table created at startup")
+	check(repairAt ~= nil, "startup repairs the onlinetime clock rows")
+end
 
 local newbie = mk({id = 1, guid = 7, name = "Synthetic One", player = true, level = 1, group = 1, lastLogin = 0, pos = {x = 105, y = 100, z = 7}})
 local vet = mk({id = 2, guid = 8, name = "Synthetic Two", player = true, level = 40, group = 1, lastLogin = 999, pos = {x = 500, y = 500, z = 7}})
@@ -298,6 +333,9 @@ vet.inArena = true
 death(vet, nil, dragon, nil)
 vet.inArena = false
 vet.level = 60
+-- a save inside the session (advance_save) has added this session's time to onlinetime by now: the base read at the
+-- login (7200) still counts, not the new row (12200 would give bucket 240)
+playersOnline.onlinetime[8] = 12200
 advance(vet, SKILL_LEVEL, 40, 60)
 logout(vet)
 
@@ -712,6 +750,29 @@ total = 0
 for k, v in pairs(tbl) do if k:find("^first|guild|") then total = total + v end end
 eq(total, 1, "already in a guild at login: not counted")
 eq(g.storage[cfg.firstStorage], 2 ^ 8, "the guild bit is set silently")
+
+-- a character whose onlinetime holds the clock (the stock engine before src-patch 0095): the milestone is marked, no
+-- time bucket is guessed, a first use counts in the "?" bucket
+do
+	playersOnline.onlinetime[23] = 1795718727
+	local c = mk({id = 23, guid = 23, name = "Synthetic Clock", player = true, level = 9, group = 1, lastLogin = 1795717836,
+		pos = {x = 1, y = 1, z = 7}})
+	onlineList = {c}
+	registry.ChaosMetricsLogin.onLogin(c)
+	eq(ChaosMetrics.sessions[23].base, false, "clock value: base unknown")
+	clock = clock + 120
+	c.level = 10
+	advance(c, SKILL_LEVEL, 9, 10)
+	eq(c.storage[cfg.storage], 1, "clock value: level 10 marked")
+	eq(ChaosMetrics.firstUse(c, "rift"), true, "clock value: first use still counted")
+	flushAll()
+	local ttl10 = 0
+	for k, v in pairs(tbl) do if k:find("^ttl|10|") then ttl10 = ttl10 + v end end
+	eq(ttl10, 1, "clock value: no new time-to-level row (only the newbie's)")
+	eq(key("first", "rift", "6-10|?"), 1, "clock value: first use in the ? bucket")
+	for k in pairs(tbl) do check(not k:find("|inf$") or not k:find("^ttl|"), "no ttl row in inf: " .. k) end
+	registry.ChaosMetricsLogout.onLogout(c)
+end
 
 -- where they stop: written with the churn snapshot, replaced each time
 local stopArea = key("stop", "Ember Caves", "1-5")

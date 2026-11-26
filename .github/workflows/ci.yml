@@ -1692,6 +1692,9 @@ jobs:
           python3 -I server/tools/wide_missile_patch_test.py
           python3 -I client/tools/wide_missile_patch_test.py
 
+      - name: Online time counted once (src-patch 0095, O253 / O258)
+        run: python3 -I server/tools/online_time_patch_test.py
+
       - name: Base raids with unknown monsters (patch_base_raids.py, install_all step baseraids)
         run: python3 -I server/tools/patch_base_raids_test.py
 
