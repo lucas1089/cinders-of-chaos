@@ -17,7 +17,14 @@ reg{id = "spawn_monster", name = "Spawn monster", description = "Create a monste
 		local made = 0
 		for _ = 1, p.count do
 			local m = Game.createMonster(p.name, pos, true, false)
-			if m then made = made + 1 end
+			if m then
+				made = made + 1
+				-- paced as a map spawn of its level (pace.lua): health, experience and loot of a hunt, not the stock
+				-- loot (2026-11-26: an unpaced Bloodfang Reaver paid 10k-40k a kill, a paced one about 670)
+				if ChaosPace and ChaosPace.mark then
+					ChaosPace.mark(m)
+				end
+			end
 		end
 		if made == 0 then return false, "Could not spawn '" .. p.name .. "' (unknown name or no room)." end
 		pos:sendMagicEffect(CONST_ME_TELEPORT)

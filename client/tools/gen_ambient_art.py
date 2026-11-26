@@ -10,8 +10,11 @@ rectangles the engine already batches, with no particle system, no per-speck Lua
 
 O456: the ember and dust specks were 1 to 3 pixels at 0.2 to 0.5 alpha and could not be seen on grass; they are now a bright round
 core with a glow of 4 and 6 px (embers) and soft pale discs of 3.6 and 5.4 px radius (dust), at the same counts.
-The count of specks per tile is the cap of the effect: COUNTS below (ember 12 + 5, mote 9 + 4, dust 16 + 6 per tile, so a
-kind shows at most 17 / 13 / 22 specks for each 512 x 512 pixels of the game window). chaosambient_logic.lua L.ART names the
+Owner 2026-11-26 ("4 aumenta"; a client showed about 20 dust pixels in a 340 x 210 px cave view): 2.5x the specks and 1.6x the
+radius of every layer, the minimum distance / 1.58 so they still spread evenly. The cost does not move: the specks are pixels
+of the same six tiles, drawn by the same two rectangles per tile.
+The count of specks per tile is the cap of the effect: COUNTS below (ember 30 + 12, mote 22 + 10, dust 40 + 15 per tile, so a
+kind shows at most 42 / 32 / 55 specks for each 512 x 512 pixels of the game window). chaosambient_logic.lua L.ART names the
 same numbers and its test compares them with this file. Positions come from a fixed pseudo random sequence, keep a minimum
 distance from each other and wrap around the tile edges, so the tile repeats with no seam.
 
@@ -29,12 +32,12 @@ OUT = os.path.join(os.path.dirname(HERE), 'overlay', 'modules', 'game_chaosweath
 SIZE = 512         # chaosambient_logic.lua L.TILE is the same number
 # name, kind, specks per tile, radius in pixels (the glow reaches this far), peak alpha range, colour, min distance
 LAYERS = [
-    ('ember_far', 'ember', 12, 4.2, (185, 235), (255, 140, 50), 70),
-    ('ember_near', 'ember', 5, 6.4, (215, 255), (255, 170, 70), 110),
-    ('mote_far', 'mote', 9, 4.2, (95, 140), (190, 235, 120), 80),
-    ('mote_near', 'mote', 4, 7.0, (130, 185), (210, 245, 140), 120),
-    ('dust_far', 'dust', 16, 3.6, (120, 170), (238, 226, 202), 60),
-    ('dust_near', 'dust', 6, 5.4, (150, 205), (245, 234, 210), 100),
+    ('ember_far', 'ember', 30, 6.7, (185, 235), (255, 140, 50), 44),
+    ('ember_near', 'ember', 12, 10.2, (215, 255), (255, 170, 70), 70),
+    ('mote_far', 'mote', 22, 6.7, (95, 140), (190, 235, 120), 50),
+    ('mote_near', 'mote', 10, 11.2, (130, 185), (210, 245, 140), 76),
+    ('dust_far', 'dust', 40, 5.8, (120, 170), (238, 226, 202), 38),
+    ('dust_near', 'dust', 15, 8.6, (150, 205), (245, 234, 210), 63),
 ]
 COUNTS = {name: count for name, _kind, count, _r, _a, _c, _d in LAYERS}
 

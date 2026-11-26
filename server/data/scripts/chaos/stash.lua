@@ -665,6 +665,10 @@ local function isPouch(item)
 end
 
 function S.stowWithdrawn(player, item)
+	-- a star piece saved before the V22 fix loses its stale tier line on the way out (star_inlay_clean.lua)
+	if ChaosStarInlayClean and ChaosStarInlayClean.cleanItem then
+		pcall(ChaosStarInlayClean.cleanItem, item)
+	end
 	local bp = call(player, "getSlotItem", CONST_SLOT_BACKPACK)
 	if not bp or call(bp, "isContainer") ~= true or isPouch(bp) then
 		return false, "room"
