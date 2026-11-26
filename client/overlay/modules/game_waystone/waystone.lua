@@ -33,7 +33,15 @@ end
 local function pick(i)
   selected = i
   local w = rowWidgets[i]
-  if w then w:focus() end
+  if w then
+    w:focus()
+    -- a deep tier picked by its waystone is scrolled into view (seen 2026-11-26: Tier XX picked, rows I-VI shown)
+    -- (again after the new rows took their place)
+    window.tierList:ensureChildVisible(w)
+    scheduleEvent(function()
+      if window and not w:isDestroyed() then window.tierList:ensureChildVisible(w) end
+    end, 80)
+  end
   refreshButtons()
 end
 

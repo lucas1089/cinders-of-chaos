@@ -6703,7 +6703,12 @@ still opened them for 60 s); and the six Waystone Tier items (29845-29850) get a
 anywhere in the player's own hideout (`ChaosHideout.waystoneDevice(player)`), it runs the device's own use with that tier
 as `pick`; elsewhere it says "Use this waystone on the waystone device in your hideout or house." Tests:
 `tools/patch_waystone_hideout_test.py` (part 2 on a mocked engine, a part-1 install upgraded once; `WAYSTONE_BASE_DATA`
-checks the real files), `tests/hideout_test.lua` (`waystoneDevice`). **Install:** `install_all.py` step `waystonehideout` (after `files`, so
+checks the real files), `tests/hideout_test.lua` (`waystoneDevice`). **Part 5 (seen in a client 2026-11-26).** A waystone
+used in the hideout opened nothing: the tier items' action called `showTabletUI.onUse(...)`, but on an engine Action that
+name reads back the engine's setter, not the Lua function (the console said "Event::loadCallback scriptInterface ==
+nullptr"). The device's `onUse` now hands over to a local `chaosShowTablet`, and the tier items call that. The test's
+mocked Action behaves like the engine (`onUse` read back is a setter), so the old call fails it. Part 3 on an install
+from before O666 (VII-XV registered only) adds XVI-XXV to the tier items' line on the next run. **Install:** `install_all.py` step `waystonehideout` (after `files`, so
 `hideout.lua` has the API; the patch itself needs only the base files). **Needs a live check:** the device opens its window in a
 hideout, the pads appear and lead to a tier map, a visitor is refused, the wrap button is refused, the pads are not blocked by
 decorations on the other tiles.
@@ -16964,6 +16969,8 @@ these rows). The shards stay currency of the character upgrades. The look text a
 the Crafting Bench (Salvage tab) into an Ember Orb." (`ChaosSalvage.shardHint`, `item_tooltip_core.lua`); the Codex and
 the wiki say it on the shard and in the orb's Sources. Client: `game_crafting/recipeview.lua` (the grid's logic, tested by
 `recipeview_test.lua`): the row shows "1,000 Ember Shards" in amber and the tooltip "Your Ember Shards: 3,200.".
+Seen in a client (2026-11-26, V16): Economy > Salvage, the Ember Orb row at 1,000; Make turned 1,000 Ember Shards into an
+Ember Orb.
 
 *The counts.* The owner set 1,000 for both (2026-10-21, "pode deixar 1000 shards por orb"). The model first proposed 1,500 and 1,750 (computed from the base server's monster files, not measured in game); its reasoning, kept for reference: The shards drop only from
 the 30 monsters of the waystone maps (estimated level 470-610): per map tier the five monsters' loot entries give Ember
@@ -21208,6 +21215,10 @@ bounty pool. Balance numbers are first guesses. Not run in game.
 Modifiers: see "Waystone modifiers". `retierDrops` also rolls a dropped waystone's rarity inside a run, and the
 experience callback multiplies by the run's experience bonus.
 
+Seen in a client (2026-11-26, V16): the hideout device lists Tier I to XXV with the level and the count held. A Rare
+Tier III run on a tier I map had that map's own monsters at level 1300; the boss came from its lever. Fixed: the deep tiers
+on an install from before O666 (part 3 adds XVI-XXV), a waystone used in the hideout (part 5, see "Hideouts").
+
 ## Waystone modifiers (`waystone_mods.lua`, `waystone_mods_core.lua`, `waystone_mods_config.lua`, `lib/chaos_crafting.lua`, `tools/patch_waystone_hideout.py` part 4)
 
 Owner 2026-10-23: waystones work like the maps of the well-known action RPG: they take modifiers, each a buff for the
@@ -21244,7 +21255,8 @@ experience: `waystone_tiers.lua`; waystone: a second waystone chance in `retierD
 rolls `dropRarity` (Normal 55, Magic 30, Rare 15); outside the maps it is Normal.
 
 Tests: `tests/waystone_mods_test.lua` (core and mocked engine), `tools/patch_waystone_hideout_test.py`. Balance numbers
-are first guesses. Not run in game.
+are first guesses. Seen in a client (2026-11-26, V16): a Rare Tier III with two prefixes and Burning ground shows them in
+the look text; Use in the hideout picks Tier III and Open portals runs it at level 1300.
 
 ## Waystone Atlas (`waystone_atlas.lua`, `waystone_atlas_core.lua`, `waystone_atlas_config.lua`, `sql/chaos_waystone_atlas.sql`, client `game_riftatlas` waystone mode)
 
@@ -21274,8 +21286,10 @@ modifier rewards halved), Hunter's Vow (the boss drops two more waystones, half 
 Hooks: `WM.lootMult`, `WM.rarityFind`, `WM.expMult`, `WM.extraWaystone`, `WM.rollDrop` (`WC.dropRows`) and
 `waystone_tiers.lua` `retierDrops` (`WC.dropTier`, keystones on the boss's drops).
 
-Tests: `tests/waystone_atlas_test.lua` (core, mocked engine and the hooks). Balance numbers are first guesses. Not run in
-game.
+Tests: `tests/waystone_atlas_test.lua` (core, mocked engine and the hooks). Balance numbers are first guesses. Seen in a
+client (2026-11-26, V16): the boss of a Rare Tier III run said "Waystone Atlas: Ember Cave, Tier III, Rare, Tier III
+completed, +2 points"; the window showed the points and the filled grid cells. Fixed in the client: the window stopped
+drawing after each answer (`game_riftatlas`, client/MANIFEST.md).
 
 ## Waystone endgame (O666) (`waystone_endgame.lua`, `waystone_endgame_core.lua`, `waystone_endgame_config.lua`, `waystone_endgame_balance_config.lua`, `tools/waystone_endgame_model.py`, `data/monster/monsters/chaos/waystone_bosses`)
 
@@ -22702,6 +22716,8 @@ Choose your ascended class (0/1). The quest's stages and storages (7101000 block
   with "Done"). It shares the fold and the Goal Tracker switch (Adventure > Goal Tracker); with no open goals the panel is
   titled "Ascension".
 - Tests: `tests/ascension_tracker_test.lua` (rules, languages, signature, mocked engine), client `goalsview_test.lua`.
+- Seen in a client (2026-11-26, V16): a level 1500 Mystic sees the four steps; "ascension" at the Ascendant Oracle marks
+  the Calling Done.
 
 ## Line spell quests (`spellquest.lua`, `spellquest_core.lua`, `spellquest_config.lua`, `spellquest_tracker*.lua`)
 

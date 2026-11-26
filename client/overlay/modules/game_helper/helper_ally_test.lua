@@ -97,7 +97,9 @@ eq(A.selfFirst({ spells = {}, potions = {}, runeHeal = { { id = 3152, percent = 
 eq(A.selfFirst({ spells = { { id = 0, percent = 90 } }, potions = {}, runeHeal = {} }, 10), false, 'an empty row never counts')
 
 -- ---------------------------------------------------------------- the pick
-local function spell(id, words) return { id = id, words = words, name = 'S' .. id } end
+local NAMES = { [84] = 'Kindred Mend', [101] = 'Heartwood Embrace', [82] = 'Circle of Mending', [96] = 'Mirror Mend',
+  [66] = 'Kindled Breath', [128] = 'Mending Communion' }
+local function spell(id, words) return { id = id, words = words, name = NAMES[id] or ('S' .. id) } end
 local spells = { [84] = spell(84, 'saen kin'), [101] = spell(101, 'saen gal kin'), [82] = spell(82, 'saen gal vas kal'),
   [96] = spell(96, 'saen spek'), [66] = spell(66, 'saen qhal'), [128] = spell(128, 'reth vas kin') }
 local function ctx(over)
@@ -187,6 +189,41 @@ ids = {}
 for _, o in ipairs(off) do ids[o.spell.id] = true end
 eq(ids[66], true, 'Kindled Breath for the Iron Sage')
 eq(#A.offered(A.GROUP, function(id) return spells[id] end, function() return true end, 3), 2, 'the group spells the table has (not Lucid Reverie)')
+
+-- an id that now belongs to another spell (the server retired the stock heal and gave the id to an attack spell):
+-- never offered, never cast (seen 2026-11-26: a Monk was offered Quaking Stomp)
+local reused = { [84] = { id = 84, words = 'drai krak dhun', name = 'Quaking Stomp' },
+  [82] = { id = 82, words = 'kah hol dhun', name = 'Hollow Knuckle' }, [128] = { id = 128, words = 'drai sol krak', name = 'Bell of Reckoning' },
+  [96] = spells[96] }
+local reusedOf = function(id) return reused[id] end
+off = A.offered(A.SINGLE, reusedOf, function() return true end, 17)
+eq(#off, 1, 'a reused id is not offered (only Mirror Mend)')
+eq(off[1].spell.id, 96, 'the one offered is Mirror Mend')
+eq(#A.offered(A.GROUP, reusedOf, function() return true end, 17), 0, 'Hollow Knuckle and Bell of Reckoning are no group heals')
+eq(A.pick({ party = cfg.party, friends = cfg.friends, spell = 84, group = { id = 82, count = 1 }, rune = { id = 0 } },
+  ctx({ spellOf = reusedOf })), nil, 'a saved retired heal casts nothing')
+eq(A.spellOf(A.single(96), reusedOf).id, 96, 'spellOf: the name matches')
+eq(A.spellOf(A.single(84), reusedOf), nil, 'spellOf: another spell under the id')
+eq(A.spellOf(nil, reusedOf), nil, 'spellOf: no entry')
+-- the client's real spell table: every entry is either missing or still its own spell
+local real = {}
+local sf = io.open(dir .. '../game_chaosspells/spelldata.lua', 'r')
+if sf then
+  for line in sf:read('*a'):gmatch('[^\n]+') do
+    local id, name = line:match('^%s*{ id = (%d+), name = "([^"]+)"')
+    if id then real[tonumber(id)] = { id = tonumber(id), name = name } end
+  end
+  sf:close()
+  local realOf = function(id) return real[id] end
+  for _, list in ipairs({ A.SINGLE, A.GROUP }) do
+    for _, e in ipairs(list) do
+      local got = A.spellOf(e, realOf)
+      eq(got == nil or got.name == e.name, true, 'real table: entry ' .. e.id .. ' is its own spell or none')
+    end
+  end
+  eq(A.spellOf(A.single(84), realOf), nil, 'real table: 84 is not Kindred Mend any more')
+  eq(A.spellOf(A.single(96), realOf).name, 'Mirror Mend', 'real table: Mirror Mend')
+end
 
 -- ---------------------------------------------------------------- never a utility
 -- the heal-others spells are healing spells, none of them in the helper's utility lists

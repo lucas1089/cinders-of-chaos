@@ -152,7 +152,7 @@ def check_tree(d, label, lua, xml):
     ok(t.index('local clientToServer') < t.index('local function chaosWaystoneTiers'), label + ': tiers helper after the table')
     ok(t.index('You have no waystone of that tier.') < t.index('local center = pendingCenter[guid]'), label + ': item check first')
     ok(t.index('chaosTierUse:register()') > t.index('showTabletUI:register()'), label + ': tier action after the device')
-    ok('chaosTierUse:id(29845, 29846, 29847, 29848, 29849, 29850, 41951, ' in t and ', 41959)' in t, label + ': the fifteen tiers')
+    ok('chaosTierUse:id(29845, 29846, 29847, 29848, 29849, 29850, 41951, ' in t and ', 41969)' in t, label + ': the twenty-five tiers')
     ok(t.count(P.MARK3) == 1, label + ': part 3 once')
     ok(t.index('local function chaosWaystoneOptions') > t.index('local teleportMapping'), label + ': part 3 helpers after the mapping')
     ok(t.index('chaosWaystoneMerge()') < t.index('local serverTypeId = clientToServer[data.clientId]'), label + ': merged before the lookup')
@@ -164,7 +164,10 @@ def check_tree(d, label, lua, xml):
        label + ': the take')
     ok(t.index('local function chaosWaystoneTake') < t.index('chaosWaystoneTake(player, serverTypeId)'), label + ': take helper first')
     ok(P.P4_START_NEW in t and t.index('chaosWaystoneTake(player, serverTypeId)') < t.index(P.P4_START_NEW), label + ': mods to the run')
-    ok(t.index(P.P4_CHOOSE) < t.index('showTabletUI.onUse(player, device'), label + ': the used waystone chosen')
+    ok(t.index(P.P4_CHOOSE) < t.index(P.P5_CALL_NEW), label + ': the used waystone chosen')
+    # part 5: the tier items call the device's function, never the Action's onUse field
+    ok(t.count(P.MARK5) == 1 and P.P5_CALL_OLD not in t, label + ': part 5 once, no onUse read back')
+    ok(t.index('local chaosShowTablet') < t.index(P.P5_CALL_NEW), label + ': chaosShowTablet declared before the call')
     return t
 
 
@@ -211,7 +214,11 @@ try:
             # hideout / elsewhere
             probe2 = (
                 'local actions, sent, texts = {}, {}, {}\n'
-                'function Action() local a = {ids = {}} function a:aid(x) self.aidv = x end '
+                '-- like the engine: onUse assigned is kept as the callback, onUse read back is the engine\'s setter\n'
+                'function Action() local a = setmetatable({ids = {}, cb = {}}, {__newindex = function(t, k, v) '
+                'if k == "onUse" then t.cb.onUse = v else rawset(t, k, v) end end, __index = function(t, k) '
+                'if k == "onUse" then return function() setterCalls = (setterCalls or 0) + 1 end end end}) '
+                'function a:aid(x) self.aidv = x end '
                 'function a:id(...) for _, v in ipairs({...}) do self.ids[#self.ids + 1] = v end end '
                 'function a:register() actions[#actions + 1] = self end return a end\n'
                 'json = {encode = function(t) return t end}\n'
@@ -233,8 +240,8 @@ try:
                 'local function eq(a, b, m) if a ~= b then error(m .. ": " .. tostring(a), 2) end end\n'
                 'eq(#actions, 2, "device action and tier action")\n'
                 'local dev, tier = actions[1], actions[2]\n'
-                'eq(#tier.ids, 15, "fifteen tier ids")\n'
-                'dev.onUse(me, device, dpos, nil, dpos, false)\n'
+                'eq(#tier.ids, 25, "twenty-five tier ids")\n'
+                'dev.cb.onUse(me, device, dpos, nil, dpos, false)\n'
                 'local m = sent[#sent]\n'
                 'eq(m.action, "show", "show")\n'
                 'eq(#m.tiers, 6, "six tiers")\n'
@@ -244,27 +251,45 @@ try:
                 'eq(m.pick, nil, "the device alone picks nothing")\n'
                 'local tierItem = {getId = function() return 29847 end}\n'
                 'setmetatable(device, {__index = function() return nil end})\n'
-                'tier.onUse(me, tierItem, {}, nil, {}, false)\n'
+                'tier.cb.onUse(me, tierItem, {}, nil, {}, false)\n'
                 'eq(texts[#texts], "Use this waystone on the waystone device in your hideout or house.", "elsewhere: where to use it")\n'
                 'ChaosHideout = {waystoneDevice = function(p) return device end}\n'
-                'tier.onUse(me, tierItem, {}, nil, {}, false)\n'
+                'tier.cb.onUse(me, tierItem, {}, nil, {}, false)\n'
                 'eq(sent[#sent].pick, 27191, "used in the hideout: tier III picked")\n'
                 'ChaosHideout = nil\n'
-                'tier.onUse(me, tierItem, {}, device, dpos, false)\n'
+                'tier.cb.onUse(me, tierItem, {}, device, dpos, false)\n'
                 'eq(sent[#sent].pick, 27191, "used on the device: tier III picked")\n'
-                'dev.onUse(me, device, dpos, nil, dpos, false)\n'
+                'dev.cb.onUse(me, device, dpos, nil, dpos, false)\n'
                 'eq(sent[#sent].pick, nil, "the pick is used once")\n'
                 'held[41959] = 3\n'
-                'ChaosWaystoneTiers = {tablets = function() local o = {} for i = 41951, 41959 do o[i] = i end return o end, '
-                'tierLevel = function(t) return 1000 + 100 * t end}\n'
-                'dev.onUse(me, device, dpos, nil, dpos, false)\n'
+                'ChaosWaystoneTiers = {tablets = function() local o = {} for i = 41951, 41969 do o[i] = i end return o end, '
+                'tierLevel = function(t) return math.min(2500, 1000 + 100 * t) end}\n'
+                'dev.cb.onUse(me, device, dpos, nil, dpos, false)\n'
                 'm = sent[#sent]\n'
-                'eq(#m.tiers, 15, "part 3: fifteen tiers")\n'
+                'eq(#m.tiers, 25, "part 3: twenty-five tiers")\n'
                 'eq(m.tiers[1].level, 1100, "tier I level") eq(m.tiers[15].clientId, 41959, "tier XV keyed by its server id")\n'
                 'eq(m.tiers[15].count, 3, "tier XV held") eq(m.tiers[15].level, 2500, "tier XV level")\n'
+                'eq(m.tiers[25].clientId, 41969, "tier XXV keyed by its server id") eq(m.tiers[25].level, 2500, "tier XXV level")\n'
+                'eq(setterCalls, nil, "no onUse read back from an Action")\n'
                 'print("part 2 ok")\n') % lua_path(d)
             r = subprocess.run([lua, '-e', probe2], stdin=subprocess.DEVNULL, capture_output=True, timeout=30)
             ok(r.returncode == 0 and b'part 2 ok' in r.stdout, '%s runs part 2: %s %s' % (lua, r.stdout[-300:], r.stderr[:300]))
+finally:
+    shutil.rmtree(d)
+
+# an install of part 3 from before O666 (tiers VII-XV only) gets XVI-XXV on the next run (seen in a client 2026-11-26:
+# a tier XVI waystone used on the device did nothing)
+d = tree()
+try:
+    ok(P.main([d]) == 0, 'old part 3: first run')
+    full = rd(lua_path(d))
+    old = full.replace(P.P3_IDS_NEW, P.P3_IDS_FIFTEEN)
+    ok(old != full and ', 41959)' in old, 'old part 3: the fifteen-tier line')
+    with open(lua_path(d), 'w', newline='') as f:
+        f.write(old)
+    ok(P.main([d]) == 0, 'old part 3: next run')
+    ok(rd(lua_path(d)) == full, 'old part 3: the line moved on to XXV, nothing else changed')
+    ok(P.main([d]) == 0 and rd(lua_path(d)) == full, 'old part 3: a third run changes nothing')
 finally:
     shutil.rmtree(d)
 

@@ -16,9 +16,12 @@ local W = ChaosWaystone
 
 W.OPCODE = 202
 -- the client ids of the Waystone Tier I-VI items, in tier order (tier_maps.lua clientToServer; server ids 29845-29850).
--- A server with part 3 of the patch lists VII-XV as well (owner 2026-10-23: 15 tiers, monster level 1100 to 2500).
+-- A server with part 3 of the patch lists VII-XV as well (owner 2026-10-23: 15 tiers, monster level 1100 to 2500), and
+-- the deep tiers XVI-XXV since O666 (all at level 2500, O672). The list stopped at XV, so the window dropped the deep
+-- rows the server sent (seen in a client 2026-11-26).
 W.TIER_CLIENT_IDS = { 27189, 27190, 27191, 27192, 27193, 27194 }
-W.ROMAN = { 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII', 'XIII', 'XIV', 'XV' }
+W.ROMAN = { 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII', 'XIII', 'XIV', 'XV',
+  'XVI', 'XVII', 'XVIII', 'XIX', 'XX', 'XXI', 'XXII', 'XXIII', 'XXIV', 'XXV' }
 
 local function whole(v)
   v = tonumber(v)
@@ -28,7 +31,7 @@ local function whole(v)
 end
 
 -- the rows of the window from a "show" message, in tier order: {tier, roman, clientId, look (the icon's client id), count,
--- level, usable}. The six base tiers always; a tier the server lists (a whole tier 1..15 with a client id) adds or
+-- level, usable}. The six base tiers always; a tier the server lists (a whole tier 1..25 with a client id) adds or
 -- replaces its row. count is nil when the server did not say (a server without part 2 of the patch): such a row stays
 -- usable and the server decides. level is nil without part 3.
 function W.rows(msg)

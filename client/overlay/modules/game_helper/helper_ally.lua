@@ -27,19 +27,23 @@ A.GROUP_COUNT_MAX = 8
 -- single-target spells: mode 'name' (the name goes after the words) or 'auto' (the server picks the most hurt party member)
 -- partyOnly: the server heals only the caster and the party; range: tiles (Chebyshev) on top of the helper's window;
 -- vocations: the classes that really heal others with it (Kindled Breath heals only the caster for the other Monk lines)
+-- name: the spell the entry is for. The stock heal-others spells were retired by the server's spell cap and three of
+-- their ids went to new attack spells (84 Quaking Stomp, 82 Hollow Knuckle, 128 Bell of Reckoning), so an id alone
+-- offered a Monk "Quaking Stomp" as a heal and cast it with a name (seen 2026-11-26): an entry counts only while the
+-- client's spell of that id still carries its name (A.spellOf).
 A.SINGLE = {
-  { id = 84, mode = 'name' },                                                -- Kindred Mend (stock Heal Friend)
-  { id = 101, mode = 'name' },                                               -- Heartwood Embrace (stock Nature's Embrace)
-  { id = 96, mode = 'name', partyOnly = true, range = 7 },                   -- Mirror Mend
-  { id = 253, mode = 'name', partyOnly = true, range = 5 },                  -- Lay on Hands
-  { id = 66, mode = 'auto', partyOnly = true, range = 5, vocations = { 19 } }, -- Kindled Breath (Iron Sage)
+  { id = 84, name = 'Kindred Mend', mode = 'name' },                         -- stock Heal Friend (retired)
+  { id = 101, name = 'Heartwood Embrace', mode = 'name' },                   -- stock Nature's Embrace (retired)
+  { id = 96, name = 'Mirror Mend', mode = 'name', partyOnly = true, range = 7 },
+  { id = 253, name = 'Lay on Hands', mode = 'name', partyOnly = true, range = 5 },
+  { id = 66, name = 'Kindled Breath', mode = 'auto', partyOnly = true, range = 5, vocations = { 19 } }, -- Iron Sage
 }
 -- group spells: they are cast on the caster's words, no name. radius: the area round the caster (nil: the helper's window);
 -- partyOnly: only party members count
 A.GROUP = {
-  { id = 82, radius = 3 },                       -- Circle of Mending (stock Mass Healing): every player in the area
-  { id = 128, partyOnly = true },                -- Mending Communion (stock Heal Party)
-  { id = 97, partyOnly = true },                 -- Lucid Reverie
+  { id = 82, name = 'Circle of Mending', radius = 3 },     -- stock Mass Healing (retired): every player in the area
+  { id = 128, name = 'Mending Communion', partyOnly = true }, -- stock Heal Party (retired)
+  { id = 97, name = 'Lucid Reverie', partyOnly = true },
 }
 
 local singleById, groupById = {}, {}
@@ -47,6 +51,14 @@ for _, e in ipairs(A.SINGLE) do singleById[e.id] = e end
 for _, e in ipairs(A.GROUP) do groupById[e.id] = e end
 function A.single(id) return singleById[tonumber(id) or -1] end
 function A.group(id) return groupById[tonumber(id) or -1] end
+
+-- the client's spell of an entry, or nil: spellOf(id) gives it, and it must still carry the entry's name
+function A.spellOf(entry, spellOf)
+  if type(entry) ~= 'table' or type(spellOf) ~= 'function' then return nil end
+  local s = spellOf(entry.id)
+  if type(s) ~= 'table' or (entry.name and s.name ~= entry.name) then return nil end
+  return s
+end
 
 -- ---------------------------------------------------------------- names
 -- a player name the helper may put into a chat line, or nil: trimmed, single spaces, letters / space / ' / - only
@@ -178,14 +190,14 @@ function A.pick(cfg, ctx)
   -- a group spell when enough players need it
   local g = A.group(cfg.group and cfg.group.id)
   if g then
-    local spell = ctx.spellOf(g.id)
+    local spell = A.spellOf(g, ctx.spellOf)
     if spell and A.groupHits(g, from, ctx.cands) >= math.max(1, tonumber(cfg.group.count) or 1) and ctx.ready(spell) then
       return { kind = 'group', spell = spell, words = spell.words }
     end
   end
   -- the single-target spell on the most hurt player it can reach
   local s = A.single(cfg.spell)
-  local spell = s and ctx.spellOf(s.id)
+  local spell = s and A.spellOf(s, ctx.spellOf)
   if s and spell and ctx.ready(spell) then
     for _, c in ipairs(ctx.cands) do
       if reaches(s, from, c) then
@@ -236,7 +248,7 @@ end
 function A.offered(list, spellOf, castable, vocation)
   local out = {}
   for _, e in ipairs(list) do
-    local s = spellOf(e.id)
+    local s = A.spellOf(e, spellOf)
     local classOk = true
     if e.vocations then
       classOk = false

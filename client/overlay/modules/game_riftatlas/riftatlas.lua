@@ -324,6 +324,10 @@ updatePanel = function()
   p.refundOrb:setEnabled(okR and true or false)
 end
 
+-- defined with the endgame page below; render() calls it, so the name is declared here (a later `local function`
+-- left render() calling a nil global: the window stopped half drawn after every server answer, seen 2026-11-26)
+local refreshReset
+
 local function render()
   if not window or not state then return end
   window.pointsPlate.pointsValue:setText(V.pointsLine(state))
@@ -337,7 +341,7 @@ local function render()
 end
 
 -- ---------------------------------------------------------------- the endgame page (Waystone mode)
-local function refreshReset()
+refreshReset = function()
   if not window then return end
   if egView then
     window.resetButton:setWidth(170)

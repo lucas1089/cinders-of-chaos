@@ -90,5 +90,33 @@ eq(E.toggleText(false), 'Endgame', 'toggle off')
 eq(E.roman(25), 'XXV', 'roman 25')
 eq(E.roman(40), '40', 'roman beyond')
 
+-- riftatlas.lua: no local function is called above the line that defines it (it would be a nil global there), unless
+-- its name is declared before the first call
+do
+  local f = io.open(dir .. 'riftatlas.lua')
+  local src = f and f:read('*a') or ''
+  if f then f:close() end
+  ok(#src > 0, 'riftatlas.lua read')
+  local lines = {}
+  for line in (src .. '\n'):gmatch('(.-)\n') do lines[#lines + 1] = line end
+  local defined, declared = {}, {}
+  for i, line in ipairs(lines) do
+    local code = line:gsub('%-%-.*$', '')
+    local name = code:match('^local function ([%w_]+)')
+    if name then defined[name] = defined[name] or i end
+    local decl = code:match('^local ([%w_]+)%s*$')
+    if decl then declared[decl] = declared[decl] or i end
+  end
+  for name, at in pairs(defined) do
+    for i = 1, at - 1 do
+      local code = lines[i]:gsub('%-%-.*$', '')
+      if code:find('%f[%w_]' .. name .. '%(') and not (declared[name] and declared[name] < i) then
+        ok(false, 'riftatlas.lua line ' .. i .. ' calls ' .. name .. ' before line ' .. at .. ' defines it')
+      end
+    end
+  end
+  ok(declared.refreshReset ~= nil, 'refreshReset declared before render')
+end
+
 print(string.format('waystoneegview_test: %d checks, %d failed', checks, fails))
 if fails > 0 then os.exit(1) end

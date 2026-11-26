@@ -10,14 +10,14 @@ local function ok(c, what) eq(not not c, true, what) end
 
 eq(W.OPCODE, 202, 'the base waystone opcode')
 eq(#W.TIER_CLIENT_IDS, 6, 'six base tiers')
-eq(#W.ROMAN, 15, 'fifteen numerals')
+eq(#W.ROMAN, 25, 'twenty-five numerals')
 
 -- a patched server: the tiers held, a pick
 local rows = W.rows({ action = 'show', tiers = {
   { clientId = 27189, look = 30001, tier = 1, count = 2 },
   { clientId = 27191, tier = 3, count = 1 },
   { clientId = 27194, tier = 6, count = 0 },
-  { clientId = 99999, tier = 16, count = 5 },    -- not a tier: ignored
+  { clientId = 99999, tier = 26, count = 5 },    -- not a tier: ignored
   'junk', { clientId = 'x' } }, pick = 27191 })
 eq(#rows, 6, 'six rows')
 eq(rows[1].roman, 'I', 'tier I')
@@ -48,6 +48,22 @@ eq(r15[15].level, 2500, 'tier XV level 2500')
 eq(W.levelText(r15[15]), 'level 2500', 'level text')
 eq(W.firstRow(r15, 41959), 15, 'tier XV picked')
 ok(r15[15].usable and not r15[7].usable, 'held / not held')
+
+-- O666: the deep tiers XVI-XXV (items 41960-41969, level 2500) are rows too (the window dropped them, 2026-11-26)
+local deep = {}
+for t = 1, 25 do
+  deep[#deep + 1] = { clientId = t <= 6 and 27188 + t or 41944 + t, tier = t, count = t == 20 and 2 or 0,
+    level = math.min(2500, 1000 + 100 * t) }
+end
+local r25 = W.rows({ action = 'show', tiers = deep, pick = 41964 })
+eq(#r25, 25, 'twenty-five rows')
+eq(r25[16].roman, 'XVI', 'tier XVI') eq(r25[25].roman, 'XXV', 'tier XXV')
+eq(r25[25].clientId, 41969, 'tier XXV key') eq(r25[25].level, 2500, 'tier XXV level 2500')
+eq(W.firstRow(r25, 41964), 20, 'tier XX picked')
+ok(r25[20].usable and not r25[21].usable, 'deep: held / not held')
+eq(W.teleportRequest(r25[20]).clientId, 41964, 'tier XX opens by its key')
+eq(W.sourceText(r25[18]), 'None held. Drops in waystone maps of tier XVI to XVIII; the boss of tier XVII drops one.', 'tier XVIII source')
+eq(#W.rows({ tiers = { { clientId = 1, tier = 26, count = 1 } } }), 6, 'a tier past XXV is no row')
 eq(W.levelText({}), '', 'no level: no text')
 r15 = W.rows({ tiers = { { clientId = 41951, tier = 7, count = 1, level = -5 } } })
 eq(#r15, 7, 'the six and tier VII')
