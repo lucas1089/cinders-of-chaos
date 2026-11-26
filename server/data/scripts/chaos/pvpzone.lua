@@ -1228,6 +1228,10 @@ function Z.sendHud(player, st, force)
 		end
 	end
 	d.piles = near
+	-- V28 (2026-11-26): the client's objective line says "you are in the circle" instead of a way to it
+	if inst and inst.L and K.inShrine(cfg, inst.L, player:getPosition()) then
+		d.inShrine = true
+	end
 	send(player, "hud", d)
 end
 

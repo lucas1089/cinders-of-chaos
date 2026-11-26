@@ -4477,6 +4477,13 @@ its own and the rule in bright text. `tip.desc` keeps the whole text for an olde
 | 2200 | Bellringer of the Last Vigil | Hour Without End | mend | Warrior, Monk, Templar |
 | 2400 | Choirless Pendant | Silence Left Behind | feast | all |
 
+**Seen in a client (2026-11-26, V28, local server).** Crown of Cinders worn on the head: the tooltip shows "Burning Crown / On a
+kill, a fire nova hits up to 6 monsters within 2 tiles for 60 plus 1.2 per level, every 3 s ..." and "Active"; a kill in a
+Behemoth pack set off the nova, its numbers (205, 195; 371, 232, 139 on the second kill) on the other Behemoths. Fixed: the English
+nova line said "a energy nova" (now "an" before a vowel, `unique_passives_text.lua`; descriptions, Codex, wiki and pt-BR lines
+regenerated; checked in `unique_passives_test.lua`). Also fixed in passing: `game_itemtooltip` logged "attempt to index local
+'pos'" for an item a client widget made (no position): such an item gets position 0,0,0 and is never asked.
+
 ## Uniques explain themselves (O467)
 A player on the test server held 14 uniques and could not tell what they were. Before this, a unique's tooltip never said
 whether its power worked for the viewer, nothing led from the item to its Codex page, the Codex did not explain the
@@ -4918,6 +4925,11 @@ Owner request 2026-10-27: "as arenas de bosses, infinity tower e tudo mais preci
   - Guild hall tiers: 1 `"marble"` (white stone wall 1111-1116), 2 `"greystone"` (stone wall 1049-1054; the dark set's obsidian wall when installed), 3 `"brick"` (brick wall 1025-1030). Before, each tier put one piece (1111, 1049, 1025) on every wall tile. A hall built with the old ids changes look to the pieces.
   - Sets checked in the installed items.otb and the client pair (2x2 blocking walls). Preview renders were made with `client/tools/sprites/datspr.py`.
   - Tests: `tests/arenalook_test.lua` (sets, placer, ids, size, `clearOfWall`, no config with 5648), wall checks in `uber_test.lua`, `raid_test.lua`, `arena_flow_test.lua` (and the moved basin), `battleground_flow_test.lua`, `pvpzone_test.lua`, `worldboss_test.lua`.
+
+**Seen in a client (2026-11-26, V28, local server).** Infinity Tower floor 1 (slate floor in a checker of two greys, ember
+patches, rocks along the walls, the floor panel), the world boss room of Skaldra the Rime Queen (cobble and gravel patches, the
+paved lane, pillars, cover) and the pocket boss arena of Kaelgor the Infernal Warlord (cracked ember ground, the lane to the boss,
+braziers and crystals mirrored, the run panel). Walls and floors whole, no hole or stray piece seen. Nothing to fix.
 
 ## Infinity Tower gameplay (`infinitytower_run.lua`)
 The tower exists now. The Enter Tower button of the client window (action `enter`) takes you, or your party (leader only, members within 12 tiles, up to 4), into an arena that is built at runtime with `Game.createTile` in an empty part of the map (x from 2000, y 2000, z 7; sixteen arenas side by side), so no map editing is needed. Floors are waves: kill everything to open the next one (6 s pause, half of the missing health and mana restored, `floorGold` x floor gold); every 10th floor is a boss floor with its helpers (twice the floor time since 2026-10-13: 10 minutes). Pools get harder every 8 floors, and the chance of magic, rare and legendary monsters (with their modifiers and shaders) rises with the floor. A floor has a 300 s limit and a whole run 60 minutes (`runTimeLimit`, warnings at 5 min, 1 min and 10 s, the floor's at 1 min and 10 s; "Instance limits"); at most 16 arenas, the wait and the waiting line when all are busy. Dying, leaving (see "Infinity Tower: leaving a run"), logging out or running out of time ends your part of the run and records the cleared floors with `ChaosTower.recordRun` (points, best floor, ranking, milestones). Logging in inside an arena sends you to the temple. Milestone rewards now use item ids that exist (gold, Orbs of Upheaval and Fate, Soulreaper). Everything is configured at the top of the file (`ChaosTowerRunConfig`).
@@ -7210,6 +7222,9 @@ autoloot list is needed.
   the Loot Bag; with the Orbs Pouch full a new orb overflowed into the Loot Bag ("Orbs Pouch is full; 3 to your Loot Bag");
   with overflow off the next orb went to the backpack; click-to-loot (`ChaosPouches.stow`) refused the Loot Bag with overflow off
   and used it with overflow on; the overflow checkbox saved on the server both ways.
+- Seen in a client (2026-11-26, V29): the Gem Pouch bought in Convenience for 150 coins, delivered to the purse. Capacities:
+  Loot Bag 500, Orbs Pouch 100, Rift Key Pouch 100, Gem Pouch 100. A Troll kill with a gem, an orb and a Rift Key: the gem
+  went to the Gem Pouch, the orb to the Orbs Pouch, the key to the Rift Key Pouch.
 
 ## Store pouches and the Everfull Ration (`store_food.lua`, `store_food_core.lua`, `store_food_config.lua`, `tools/install_store_food.py`)
 
@@ -8861,6 +8876,9 @@ exercise axe turning into the melee weapon, a bow from 8 tiles refused.
 
 Seen in a client (2026-11-26, V21): the Exercise Melee Weapon on a dummy, sword on a Warrior, fist on a Monk (the weapon turns into the fist weapon).
 
+Seen in a client (2026-11-26, V29): the Monk sees Exercise Fist Weapon (500) for 25 coins in Store > Consumables > Training,
+beside the melee weapon. Bought, it went to the purse; on a dummy "You started training", fist fighting 10 to 45 in about 17 s.
+
 ## Attack delay after changing floor (owner debug item 50: "Demora para começar a atacar depois de subir ou descer escada"; fixed by src-patch 0066, not measured in game)
 
 What happens, from the repository's own engine notes (`src-patches/0028`, `0042`; the stock source is not here): taking a
@@ -9825,6 +9843,9 @@ full health" anomalies. Causes found:
   dying and kept failing its own spawn. `setup` also keeps testers off the waystone tier maps (`LT.waystone_areas` of
   `waystone_tiers_config.lua`): their monsters count at the run tier (1100+), not at the pool level, and two level 600
   testers stood next to level 1600 and 2100 monsters.
+  Seen in a client (2026-11-26, V29): a level 40 tester died to 6 Cyclops Smiths. The client death recap read damage 495,
+  11 hits, a biggest hit of 165. The helper line read hits 11, damage 582 (117%), biggest 165 by Cyclops Smith. The helper
+  counts the raw hit, before the player defence layer and the clamp to the health left, so its total runs higher.
 - Live run 2026-11-15 (O580 part B, 100 bots, 1 hour, 3241 deaths). Found in the code and fixed in the helper (v10) and the checks:
   * `dual_fists` "weapon hand code 33, shield hand code 33": 33 is `RETURNVALUE_NOTENOUGHLEVEL`. The probe always wore the pair of ember
     knuckles (level 150) and the ossuary gauntlet (level 300), and the engine refuses a fist weapon below its level. Level 30 to 149:
@@ -9961,6 +9982,9 @@ systems that never answered, with no refusal and no log error, on one line "no a
   `patch_shop_prices_test.py`) makes `ShopModule.requestTrade` send 0 for a negative price (a copy; the shop list and
   `getShopItem` keep -1). The bot treats 4294967295 as no price, never trades on it and counts one failure
   `shop: the trade window prices an item ...` per visit while the server is not patched.
+  Seen in a client (2026-11-26, V29): Perara's Sell tab listed only Black Pearl and Blue Crystal Shard of a mixed backpack.
+  A search for "goblet" or "amulet" showed "Nothing matches". Sell all paid 4400 gold; goblet, amulet and sword stayed.
+  The server log held no "non-sellable" or "non-buyable" line.
 - *Connection closed without a message (65).* The engine logs a player out without a message 60 s after its last ping
   answer (`Player::sendPing`, see src-patch 0034). The bot pinged in its behaviour loop, which stops while the keystone
   scenario waits for minutes. The ping now runs in the always-on guard task as well.
@@ -15506,6 +15530,9 @@ Rift; then two hunt monsters that fit the game. All three live in the Embergut R
 - **Tests.** `tests/autosprite_art_test.lua` (luajit and lua5.3): the picks rows in look order, the switch against picks.csv and
   each file's look, `lookOf` on and off, the boss flag, the boss room and both hunt monsters in the plan; `tests/bossspawns_test.lua`
   covers the new row. Not run live.
+- **Seen in a client (2026-11-26, V29).** Vharzul the Verdant Eye in the Embergut Rift (16542,14381,10): 4x4 look 3361, level
+  700 nameplate. It walks and faces each way and hits for 2900-4300. Facing west the body sits about 3 tiles left of its name
+  and health bar: the pair 54 art is not placed by the dat displacement like the O616 bosses. Not fixed here: it needs pair work.
 
 ## AI Sprite Studio monsters (pair 57) (`data/lib/chaos_aiss_art.lua`, switch `ChaosAissArt.PAIR57`, on)
 
@@ -17245,6 +17272,8 @@ sell list with the rarity opt-in: the unlocked one sold (4000 gold to the bank),
 locked sword (new copy, still locked). Unit tests: yields, orb roll, checks, the lock, batch cap and skips, signature,
 combine, the economy average, and `salvage.lua` single / batch / lock / combine / full backpack / look text against
 mocks; `tests/shop_services_test.lua`: the auto seller keeps a locked item.
+Seen in a client (2026-11-26, V29): Salvage All on the Loot Bag held 3 Common, 3 Uncommon, 2 Magic, 2 Rare and 1 Legendary.
+"Up to Uncommon" took the 6 lowest for 12 rune shards. "Up to Rare" then took the 4 others for 25. The Legendary stayed.
 
 ## Item attributes in packets and rich tooltips (`src-patches/0003-item-custom-attributes.patch`, `item_tooltip.lua`, `item_tooltip_core.lua`, client `game_itemrarity`, `game_itemtooltip`)
 
@@ -20407,6 +20436,19 @@ the screenshot), the contest (warden, capture by one Vigil player in ~60 s, "Vig
 over a restart, a logout inside and the login at the nearest safe exit with the carry kept. Not in game: two factions
 contesting, the faction buff on real experience and loot, map mode, a season instance, reputation gains (the test
 characters shared an IP).
+
+**Seen in a client (2026-11-26, V28, local server, Linux client).** The window's "How it works" in four steps, the risk box, the
+goal and carried-embers messages on entering, the HUD lines (goal, embers bar, pledge, contest timer, holder), the scorched field
+with cover in clumps, the road and the shrine plaza; the Warden rose, its health showed in the HUD, its kill gave "+102 embers
+(carrying 102)", the capture bar went up. Two things were wrong and are fixed:
+- No minimap flags: this engine's minimap has no `addFlag` / `removeFlag` (the call failed in a `pcall`, silent). The client now
+  puts a flag as a minimap widget (`addWidget(image, size, pos, text)`, `/data/images/game/minimap/flagN.png`, 11 px) when there
+  is no `addFlag`, and takes it off by its widget id (`PvpZoneView.addFlag` / `removeFlag`); a flag read back after a restart has
+  no id and never removes another widget. game_goals' map mark does the same. Seen after the fix: the exits and the shrine flagged.
+- In the circle the objective line still said "stand in the shrine circle ... (2 tiles north)". The HUD now carries `inShrine`
+  (`K.inShrine` on the player's tile) and the line reads "Shrine event: you are in the shrine circle. Stay in it with your faction
+  until the bar is full." (pt-BR in `pt_br.lua`; the Unity mirror `PvpZoneView.GoalLines` too). Tests: `pvpzone_test.lua`,
+  `pvpzoneview_test.lua`, Unity `EndgameTests`.
 
 ## Hunt tracker (`hunt.lua`, `hunt_core.lua`, `hunt_config.lua`, `hunt_supplies.lua`, `tools/gen_supply_prices.py`)
 
@@ -32859,6 +32901,12 @@ server step runs, else the new pieces are invisible and only the red fill is lef
 --archive-spr pair51/removed/Tibia.spr --ids item:38477-38487 --out-dir NEXT` (the archive pair, or `backup/removed-pair51.tar.xz` on
 windows-assets), `check_pair.py`, then the new md5s into `client/MANIFEST.md`. `prune_pair.py check-map` on the new map finds no blanked
 item. Done: pair 52 (dat 7046ab6e35a08b2289699f95323fd506) is pair 51 with missiles plus these 11 items, on windows-assets (MANIFEST.md "Pair 52"). Before and after pictures were rendered from the installed map with the pair 50 art (not committed, they show the base map).
+
+**Seen in a client (2026-11-26, V28, local server, floor 7).** From the street (31586,33009 and 31587,33018) the cabins carry the
+flat grey tin roofs with their dark edges, no red fill, gable, ledge spike or hole left; inside a cabin (31580,33008) the roof
+hides and the room shows. Standing at the hunt mark 31583,33009 itself hides every roof: a cabin's open doorway is next to it
+(the client hides the floors above when a tile beside the player that it can look into has a roof). That is the client's rule,
+not the patch. Nothing to fix.
 
 ## Temple cleanse (`temple_cleanse.lua`, `temple_cleanse_core.lua`)
 

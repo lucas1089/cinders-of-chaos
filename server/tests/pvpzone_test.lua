@@ -845,6 +845,17 @@ labels = {}
 Z.inst[0].contest.phase = "capture"
 Z.beacons(Z.inst[0])
 eq(labels[1].text, "Take the Shrine!", "the label says what to do while the shrine can be taken")
+-- V28 (seen in a client 2026-11-26): the HUD tells the client whether the player stands in the shrine circle
+do
+  local keep = ana.pos
+  ana.pos = {x = Lz.shrine.x + cfg.contest.capture.radius, y = Lz.shrine.y + 1, z = Lz.z}
+  Z.sendHud(ana, Z.state[ana.id] or Z.state[ana:getId()], true)
+  eq(lastSend(ana, "hud").inShrine, true, "hud: in the shrine circle")
+  ana.pos = {x = Lz.shrine.x + cfg.contest.capture.radius + 1, y = Lz.shrine.y, z = Lz.z}
+  Z.sendHud(ana, Z.state[ana.id] or Z.state[ana:getId()], true)
+  eq(lastSend(ana, "hud").inShrine, nil, "hud: one tile out of the circle")
+  ana.pos = keep
+end
 Z.inst[0].contest.phase = "idle"
 ChaosCombatFx = nil
 eq(Z.targetCombat(ana, bo), RETURNVALUE_YOUMAYNOTATTACKTHISPLAYER, "protected after entering")

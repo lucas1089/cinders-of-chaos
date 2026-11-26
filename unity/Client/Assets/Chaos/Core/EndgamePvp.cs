@@ -765,7 +765,9 @@ namespace Chaos.Core
                 add(shrineWhere != null ? Loc.T("Shrine event: slay the Shrine Warden at the shrine ({0}, marked on your map).", shrineWhere) : Loc.T("Shrine event: slay the Shrine Warden at the shrine (marked on your map)."), "#ff7040");
             else if (phase == "capture")
             {
-                if (pledged) add(shrineWhere != null ? Loc.T("Shrine event: stand in the shrine circle with your faction to take it ({0}, marked on your map).", shrineWhere) : Loc.T("Shrine event: stand in the shrine circle with your faction to take it (marked on your map)."), "#ff7040");
+                // V28 (seen 2026-11-26): in the circle the line says so (the server sends inShrine), not a way to it
+                if (pledged && Json.Get(d, "inShrine") is bool inside && inside) add(Loc.T("Shrine event: you are in the shrine circle. Stay in it with your faction until the bar is full."), "#ff7040");
+                else if (pledged) add(shrineWhere != null ? Loc.T("Shrine event: stand in the shrine circle with your faction to take it ({0}, marked on your map).", shrineWhere) : Loc.T("Shrine event: stand in the shrine circle with your faction to take it (marked on your map)."), "#ff7040");
                 else add(Loc.T("Shrine event: only players pledged to a faction can take the shrine."), "#8c8070");
             }
             return lines;

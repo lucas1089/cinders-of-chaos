@@ -62,8 +62,9 @@ end
 
 local function describe(item)
   local A = ChaosItemAttr or { ID = 6, VERSION = 7 }
-  local pos = item:getPosition()
-  pos = { x = pos.x, y = pos.y, z = pos.z }
+  -- an item made on the client (a loot list, an action bar slot) has no position: never askable (V28, seen 2026-11-26)
+  local p = item:getPosition()
+  local pos = p and { x = p.x, y = p.y, z = p.z } or { x = 0, y = 0, z = 0 }
   local iid = attr(item, A.ID)
   local key, plain = L.cacheKey({ id = iid, ver = attr(item, A.VERSION) }, item:getId(), item:getCount(), pos)
   local stackable = item.isStackable and item:isStackable() or false

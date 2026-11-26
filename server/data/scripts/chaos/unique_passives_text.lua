@@ -246,11 +246,17 @@ function F.mark(e, _, i)
 		string.format(" Os demais sofrem %s%% a menos.", f(e.unmarked)), i)
 end
 
+-- "a" or "an" before an English word ("an energy nova", "a fire nova")
+local function article(word)
+	return tostring(word or ""):match("^[AEIOUaeiou]") and "an" or "a"
+end
+
 function F.nova(e, _, i)
 	local on = pick(i, e.on == "kill" and "a kill" or (e.on == "crit" and "a critical hit" or "a monster hit of " .. f(e.minHit) .. "% of your health or more"),
 		e.on == "kill" and "uma morte" or (e.on == "crit" and "um golpe crítico" or "um golpe de monstro de " .. f(e.minHit) .. "% da sua vida ou mais"))
-	return pick(i, string.format("On %s, a %s nova hits up to %s monsters within %s tiles for %s plus %s per level, every %s s.",
-		on, el(e, "elem", 1), f(e.targets), f(e.radius), f(e.base), f(e.perLevel), f(e.icdMs / 1000)),
+	local elem = el(e, "elem", 1)
+	return pick(i, string.format("On %s, %s %s nova hits up to %s monsters within %s tiles for %s plus %s per level, every %s s.",
+		on, article(elem), elem, f(e.targets), f(e.radius), f(e.base), f(e.perLevel), f(e.icdMs / 1000)),
 		string.format("Em %s, uma nova de %s atinge até %s monstros a %s passos com %s mais %s por nível, a cada %s s.",
 		on, el(e, "elem", 2), f(e.targets), f(e.radius), f(e.base), f(e.perLevel), f(e.icdMs / 1000)))
 		.. opt(e.selfCost, string.format(" Costs %s%% health, never below %s%%.", f(e.selfCost), f(e.minHealth)),
