@@ -143,7 +143,12 @@ local function hideRemovedSpells(order)
   if not order or type(ChaosRemovedSpells) ~= 'table' then return end
   local gone = {}
   for old, new in pairs(ChaosRemovedSpells) do gone[old] = true; gone[new] = true end
-  for old in pairs(type(ChaosRetiredSpells) == 'table' and ChaosRetiredSpells or {}) do gone[old] = true end
+  for old in pairs(type(ChaosRetiredSpells) == 'table' and ChaosRetiredSpells or {}) do
+    gone[old] = true
+    -- a retired spell the rename gave new words (Lantern "utevo lux" -> "vael lyss"): the order holds the new words now
+    local e = type(ChaosSpellNames) == 'table' and ChaosSpellNames[old]
+    if type(e) == 'table' and e.words then gone[e.words:lower()] = true end
+  end
   -- the stock spells the 15-spell cap retired (no class keeps them: ChaosCappedSpells, server/tools/patch_spell_cap.py)
   for words, keep in pairs(type(ChaosCappedSpells) == 'table' and ChaosCappedSpells or {}) do
     if #keep == 0 then gone[words] = true end
@@ -203,6 +208,19 @@ local function onGameStartMana()
   updatePercentMana(g_game.getLocalPlayer())
 end
 
+-- V14 (2026-11-25, seen in a client): after the store's Vocation Change the action bar kept its old greying. The base
+-- action bar greys a spell slot the class cannot cast (playerCanUseSpell) only on a mana, soul or level change, and the
+-- server sends the new vocation after the new mana, so at full mana the old class's slots stayed lit and the new ones
+-- grey until the next mana tick. The vocation change now refreshes every slot's state (game_actionbar
+-- onUpdateActionBarStatus). Nothing is removed: the slots are the player's.
+local function onVocationChangeBar(localPlayer, vocation, oldVocation)
+  if vocation == oldVocation then return end
+  local bar = modules.game_actionbar
+  if bar and type(bar.onUpdateActionBarStatus) == 'function' then
+    pcall(bar.onUpdateActionBarStatus)
+  end
+end
+
 -- signal handlers must not return a truthy value: signalcall stops at it, and every onGameStart handler
 -- connected after this one (passive tree, dungeons, bank, ...) would never run
 local function onGameStartExtend()
@@ -220,11 +238,12 @@ function init()
   remapStockVocations()
   -- ids, numbers and groups of the stock entries as the server has them (spellfix.lua), before the Chaos entries come in
   fixUndo, fixIdMap, fixRemovedIds = ChaosSpellFix.apply(SpellInfo.Default, SpellIcons, SpellRunesData,
-    ChaosSpellFix.serverWords(ChaosSpellData, ChaosSpellNames), ChaosSpellFix.removedWords(ChaosRemovedSpells, ChaosCappedSpells),
+    ChaosSpellFix.serverWords(ChaosSpellData, ChaosSpellNames), ChaosSpellFix.removedWords(ChaosRemovedSpells, ChaosCappedSpells, ChaosRetiredSpells, ChaosSpellNames),
     ChaosSpellFix.chaosIds(ChaosSpellData))
   connect(g_game, { onGameStart = onGameStartExtend })
   connect(g_game, { onGameStart = onGameStartMana })
   connect(LocalPlayer, { onManaChange = updatePercentMana })
+  connect(LocalPlayer, { onVocationChange = onVocationChangeBar })
   extendHelper()
   for _, s in ipairs(ChaosSpellData) do
     SpellInfo.Default[s.name] = {
@@ -291,4 +310,5 @@ function terminate()
   disconnect(g_game, { onGameStart = onGameStartExtend })
   disconnect(g_game, { onGameStart = onGameStartMana })
   disconnect(LocalPlayer, { onManaChange = updatePercentMana })
+  disconnect(LocalPlayer, { onVocationChange = onVocationChangeBar })
 end

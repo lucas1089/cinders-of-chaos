@@ -177,8 +177,12 @@ function F.apply(info, icons, runes, serverWords, removedWords, chaosIds)
 end
 
 -- the words of ChaosRemovedSpells (old -> new words) as a set, plus the stock spells the 15-spell cap retired
--- (ChaosCappedSpells entries with no class left: server/tools/patch_spell_cap.py)
-function F.removedWords(removed, capped)
+-- (ChaosCappedSpells entries with no class left: server/tools/patch_spell_cap.py), plus the stock spells the server
+-- retired (ChaosRetiredSpells, stock words) under their stock words and, when `names` (ChaosSpellNames) renames one,
+-- under the renamed words too. V14 (2026-11-25, seen in a client): Lantern and Greater Lantern are retired on the
+-- server but renamed ("utevo lux" -> "vael lyss"); the client renames before F.apply, so the stock words never matched
+-- and the hotbar's Assign Spell list offered both to every class.
+function F.removedWords(removed, capped, retired, names)
   local s = {}
   for old, new in pairs(removed or {}) do
     s[old:lower()] = true
@@ -187,6 +191,13 @@ function F.removedWords(removed, capped)
   for words, keep in pairs(capped or {}) do
     if #keep == 0 then
       s[words:lower()] = true
+    end
+  end
+  for words in pairs(retired or {}) do
+    s[words:lower()] = true
+    local e = names and names[words:lower()]
+    if type(e) == 'table' and type(e.words) == 'string' then
+      s[e.words:lower()] = true
     end
   end
   return s
