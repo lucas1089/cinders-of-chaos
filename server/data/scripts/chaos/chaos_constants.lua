@@ -1477,6 +1477,9 @@ function Chaos.decode(buffer)
 	if ok and type(decoded) == "table" then
 		return decoded
 	end
+	if Chaos.noteBadRequest then
+		Chaos.noteBadRequest(ok and "not a JSON object" or tostring(decoded))
+	end
 	return nil
 end
 
@@ -2101,7 +2104,8 @@ Chaos.opcodeRequestMax = 16384 -- bytes; the client's requests are far under 8 K
 -- console line per player a minute.
 Chaos.opcodeBudget = {burst = 250, perSecond = 60}
 
-local D = {byName = {}, byOpcode = {}, any = {}, players = {}, seq = 0, warned = {}, bucket = {}, warnedRate = {}}
+local D = {byName = {}, byOpcode = {}, any = {}, players = {}, seq = 0, warned = {}, bucket = {}, warnedRate = {},
+	warnedBad = {}}
 Chaos.opcodeDispatch = D
 
 -- the opcode of a handler's guard (an upvalue named OPCODE holding a number), else nil
@@ -2200,6 +2204,7 @@ function D.dispatch(player, opcode, buffer)
 	end
 	-- no record of the player's registrations (a reload of the scripts while online): every handler, as all register
 	local mine = D.players[pid]
+	D.current = {pid = pid, player = player, opcode = opcode, noted = false} -- for Chaos.noteBadRequest
 	for _, e in ipairs(D.handlersFor(opcode)) do
 		if not mine or mine[e.name] then
 			-- an error in one handler is reported and the next ones still run, as with one engine event each
@@ -2209,6 +2214,30 @@ function D.dispatch(player, opcode, buffer)
 			end
 		end
 	end
+	D.current = nil
+end
+
+-- A request whose JSON a handler could not decode (cut off, not JSON, nested over Chaos.jsonMaxDepth): Chaos.decode
+-- calls this, and inside a dispatch it prints one console line per player a minute (O220 seen live, V25: these were
+-- dropped without a word). Outside a dispatch (a test, a script's own decode) it does nothing.
+function Chaos.noteBadRequest(reason)
+	local c = D.current
+	if not c or c.noted then
+		return
+	end
+	c.noted = true
+	local t = nowMs()
+	if D.warnedBad[c.pid] and t - D.warnedBad[c.pid] < 60000 then
+		return
+	end
+	D.warnedBad[c.pid] = t
+	local name = "?"
+	pcall(function() name = c.player:getName() end)
+	reason = tostring(reason)
+	for _ = 1, 3 do -- "file:line: " prefixes of the error (the decoder's, a wrapper's)
+		reason = reason:gsub("^[^%s:]+:%d+: ", "")
+	end
+	print(string.format("[Warning - Chaos] extended opcode %d from %s: bad request (%s), dropped", c.opcode, name, reason))
 end
 
 function D.forget(pid)
@@ -2216,6 +2245,7 @@ function D.forget(pid)
 	D.warned[pid] = nil
 	D.bucket[pid] = nil
 	D.warnedRate[pid] = nil
+	D.warnedBad[pid] = nil
 end
 
 if type(rawgetmetatable) == "function" and type(CreatureEvent) == "table" and getmetatable(CreatureEvent)

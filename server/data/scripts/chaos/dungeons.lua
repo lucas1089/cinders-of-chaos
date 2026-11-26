@@ -936,6 +936,19 @@ local function isBoss(name, bossName)
 	return bossName ~= nil and tostring(name):lower() == bossName
 end
 
+-- a monster whose type gives no experience (dungeon 2's Tornadoes): a hazard of the map, not a monster of the run's
+-- count. The thinning of tools/patch_base_spawns.py leaves these out the same way (`huntable`: experience above 0), so
+-- dungeon 2 counts its 110 kept monsters, not 110 + 58 Tornadoes (V25: the bar needed 33 of them killed). A monster with
+-- no readable type counts
+local function isHazard(m)
+	local okT, mt = pcall(function() return m.getType and m:getType() end)
+	if not okT or not mt then
+		return false
+	end
+	local okE, exp = pcall(function() return mt:experience() end)
+	return okE and tonumber(exp) == 0
+end
+
 -- one monster at (or beside) pos; level: shown after its name. Returns the monster or nil (nothing made)
 local function placeMonster(id, dg, name, pos, taken, level)
 	local q = freeTile(id, dg, pos, taken)
@@ -1154,8 +1167,9 @@ local function startRun(dungeonId, difficulty, players, side)
 	local bossPos, bossTypeName = bossRecord and bossRecord.pos or nil, bossRecord and bossRecord.name or nil
 	-- the base dungeon's own list (SpawnMonsters: one entry per species, at a base table position) is only the fallback
 	-- of a dungeon without a start-up record. With a record it is the same dungeon's monsters a second time: since O179
-	-- it came after the clean-up and added about 58 monsters to dungeon 2 (168 against its thinned 110) that nobody found,
-	-- and its boss entry was a second boss (O183)
+	-- it came after the clean-up and made the dungeon's species a second time, and its boss entry was a second boss
+	-- (O183). Dungeon 2's 168 against its thinned 110 was not this list: 58 of the 168 are Tornadoes, which the thinning
+	-- does not count (no experience); the run leaves them out of its count too (isHazard, V25)
 	if made == 0 and not bossRecord and dg.SpawnMonsters and dg.Monsters then
 		for monsterName, position in pairs(dg.Monsters) do
 			if isBoss(monsterName, bossName) then
@@ -1199,17 +1213,19 @@ local function startRun(dungeonId, difficulty, players, side)
 	-- ones left standing without a start-up record): a monster on a blocked tile or on a tile of another one is moved to a
 	-- free tile, else removed; a second boss is removed. Only what is left counts (O183)
 	monsterList, bosses = settleMonsters(dungeonId, dg, bossName, monsterList, taken)
-	monsters = #monsterList - bosses
-	run.total = monsters
 	run.bossSeen = bosses > 0
 	-- the roster: the monsters of this run. Nothing that appears later (a boss fight's adds, a stray summon) joins the
-	-- count, so the total is known from the start and "Monsters Alive" never grows (O179)
+	-- count, so the total is known from the start and "Monsters Alive" never grows (O179). A hazard (a type that gives
+	-- no experience: dungeon 2's 58 Tornadoes, 5,000 health each) stays and fights but does not count (V25)
 	run.roster = {}
+	monsters = 0
 	for _, m in ipairs(monsterList) do
-		if not (bossName and m:getName():lower() == bossName) then
+		if not (bossName and m:getName():lower() == bossName) and not isHazard(m) then
 			run.roster[m:getId()] = true
+			monsters = monsters + 1
 		end
 	end
+	run.total = monsters
 	scaleList(run, monsterList)
 
 	local durationMs = durationOf(dg)
