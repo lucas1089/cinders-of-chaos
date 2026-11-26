@@ -523,6 +523,11 @@ do
 	end
 end
 -- the stow and the sort of one kill are one held batch of container updates (engine patch 0054, Chaos.containerBatch)
+-- The engine's Player is a class table called through its __call metatable, not a function. V19 (seen in a client
+-- 2026-11-26): a guard type(Player) ~= "function" sent every kill of a burst down the one-kill path, so the open Loot
+-- Bag got one full container packet per corpse (9-10 per burst, 200-600 ms client stalls). The block runs with that shape.
+local fnPlayer = Player
+Player = setmetatable({}, {__call = function(_, v) return fnPlayer(v) end})
 do
 	local begins, ends, depth, maxDepth = 0, 0, 0, 0
 	hero.beginContainerBatch = function() begins = begins + 1 depth = depth + 1 maxDepth = math.max(maxDepth, depth) return true end
@@ -562,6 +567,7 @@ do
 	end
 	hero.beginContainerBatch, hero.endContainerBatch = nil, nil
 end
+Player = fnPlayer
 for _, it in ipairs({junk2, rare2, plain2}) do
 	for i = #lootPouch.items, 1, -1 do if lootPouch.items[i] == it then table.remove(lootPouch.items, i) end end
 	it.parent = nil

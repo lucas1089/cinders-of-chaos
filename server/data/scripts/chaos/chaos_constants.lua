@@ -1567,12 +1567,14 @@ end
 -- 2026-10-23: "o client dá uma travada rápida quando a janela do loot bag está aberta e o auto loot pega muita coisa
 -- de uma vez"). Cost: a window shows the loot up to the window later (150 ms). The timer looks the player up again, so
 -- a player gone by then is skipped; without the engine patch (no batch methods) fn just runs.
+-- The engine's Player is a class table called through __call, not a function: the guard takes both (V19, seen in a
+-- client 2026-11-26: a function-only check sent every burst down the one-kill path, one full packet per corpse).
 Chaos.burstWindowMs = 150
 local burstHeld = {} -- [creature id] = true while the outer batch of that player is held
 
 function Chaos.containerBurst(player, fn, ...)
 	if not player or type(player.beginContainerBatch) ~= "function" or type(player.endContainerBatch) ~= "function"
-		or type(addEvent) ~= "function" or type(Player) ~= "function" then
+		or type(addEvent) ~= "function" or (type(Player) ~= "function" and type(Player) ~= "table") then
 		return Chaos.containerBatch(player, fn, ...)
 	end
 	local id = player:getId()
