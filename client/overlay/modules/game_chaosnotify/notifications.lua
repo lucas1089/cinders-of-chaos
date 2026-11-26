@@ -1205,14 +1205,22 @@ function showDanger(message, caution)
         w:setBorderWidth(1)
         w:setBorderColor('#7a1f1f')
         w:setPhantom(false)
-        if map and map:getParent() == root and map:getId() ~= '' then
+        local onRoot = map and map:getParent() == root and map:getId() ~= ''
+        if onRoot then
             w:addAnchor(AnchorHorizontalCenter, map:getId(), AnchorHorizontalCenter)
-            w:addAnchor(AnchorTop, map:getId(), AnchorTop)
         else
             w:addAnchor(AnchorHorizontalCenter, 'parent', AnchorHorizontalCenter)
-            w:addAnchor(AnchorTop, 'parent', AnchorTop)
         end
-        w:setMarginTop(40)
+        -- V12: from the visible top of the map, below the menu bar (notifyview.lua dangerTop); the map panel can reach
+        -- above the screen, and 40 under its own top cut the DANGER header off
+        w:addAnchor(AnchorTop, 'parent', AnchorTop)
+        local bar = root:recursiveGetChildById('chaosMenuBar')
+        local barBottom = nil
+        if bar and bar:isVisible() then
+            local r = bar:getRect()
+            barBottom = r.y + r.height
+        end
+        w:setMarginTop(ChaosNotifyView.dangerTop(root:getRect().y, onRoot and map:getRect().y or nil, barBottom))
         local title = g_ui.createWidget('Label', w)
         title:setText(caution and tr('CAUTION') or tr('DANGER'))
         title:setFont(titleFont())

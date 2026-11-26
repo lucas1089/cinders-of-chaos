@@ -364,6 +364,38 @@ do
 	cfg.ambush.normal = 400
 end
 
+-- V12 (seen in a client 2026-11-25): no ambush copy inside the Infinity Tower arena (a level 11 Orc Warrior copy stood among
+-- the floor 2 monsters of level 122, uncounted by the run)
+do
+	ChaosTowerRun = {inArena = function(pos) return pos.x == 9500 end}
+	cfg.ambush.normal = 10000
+	local inTower = Game.createMonster("Dragon", position(9500, 9100, 7), true, false)
+	think(inTower)
+	events = {}
+	local made = nextId
+	creatureEvents.ChaosTierDeath.onDeath(inTower, nil, player, player)
+	runEvents()
+	eq(nextId, made, "V12: a kill inside the tower brings no ambush copy")
+	local outside = Game.createMonster("Dragon", position(9600, 9100, 7), true, false)
+	think(outside)
+	events = {}
+	made = nextId
+	creatureEvents.ChaosTierDeath.onDeath(outside, nil, player, player)
+	runEvents()
+	check(nextId > made, "V12: a kill outside the tower still brings an ambush")
+	-- a copy queued for a tile that is in the tower at its delay is dropped
+	local early = Game.createMonster("Dragon", position(9700, 9300, 7), true, false)
+	think(early)
+	events = {}
+	creatureEvents.ChaosTierDeath.onDeath(early, nil, player, player)
+	made = nextId
+	ChaosTowerRun.inArena = function() return true end
+	runEvents()
+	eq(nextId, made, "V12: an ambush whose tile is in the tower at its delay is dropped")
+	ChaosTowerRun = nil
+	cfg.ambush.normal = 400
+end
+
 -- pack combat (pace.lua): the ambush chance of a paced monster x its loot factor, and its copy is marked for the layer
 do
 	local marked = {}

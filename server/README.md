@@ -1566,7 +1566,7 @@ Everything adjustable is in `chaos_constants.lua`: rewards, limits, boss names, 
 
 `data/scripts/chaos/monster_tiers.lua` (opcode 125, client `game_monsterbar`): magic, rare and legendary monsters (health, speed, damage and experience multipliers in `ChaosTiers`), a roll on every spawn (`spawnChance`), and an ambush: when a player kills a monster a magic, rare or legendary copy may appear next to the corpse (`ambush`, `ambushTier`, `maxChain`). All numbers are at the top of the file. Not run on a server; it assumes the base server `onSpawn` and `onGainExperience` event callbacks, `Creature:setMaxHealth`/`changeSpeed` and `Game.createMonster(name, pos, extended, force)`. Tier state is kept in memory only and is lost on reload. No name prefix is set in the world (there is no `Monster:setName`); the client prefixes the tier on the bar only. Tier and boss multipliers also do not change loot.
 
-When the tier is applied: the engine runs `onSpawn` before the placement and gives a monster its id only at the placement, so nothing keyed by the id can be written in `onSpawn`. The natural roll is decided there and the monster gets a think event for that tier (`ChaosTierRollMagic` / `Rare` / `Legendary` / `Boss`); at its first think, after the placement, the tier is applied and the event removes itself. A map respawn or `Game.createMonster` thinks within about a second; a startup spawn once a player comes near. A tier set in between (`ChaosApplyTier`: rift, invasion, tower) wins over the roll. Ambush copies get their tier right after `Game.createMonster` returns. Loading the script drops any entry an older version left under id 0 in `ChaosTierState` (the table survives a reload, so a server that ran the old roll would otherwise keep it). `tests/monster_tiers_test.lua` runs the file against a mocked engine whose `getId()` is 0 until the placement. Checked in game: a forced legendary roll lands under the monster's id with modifiers, monster bar tier and announcement; a normal kill after it still brings an ambush.
+When the tier is applied: the engine runs `onSpawn` before the placement and gives a monster its id only at the placement, so nothing keyed by the id can be written in `onSpawn`. The natural roll is decided there and the monster gets a think event for that tier (`ChaosTierRollMagic` / `Rare` / `Legendary` / `Boss`); at its first think, after the placement, the tier is applied and the event removes itself. A map respawn or `Game.createMonster` thinks within about a second; a startup spawn once a player comes near. A tier set in between (`ChaosApplyTier`: rift, invasion, tower) wins over the roll. Ambush copies get their tier right after `Game.createMonster` returns. Loading the script drops any entry an older version left under id 0 in `ChaosTierState` (the table survives a reload, so a server that ran the old roll would otherwise keep it). `tests/monster_tiers_test.lua` runs the file against a mocked engine whose `getId()` is 0 until the placement. Checked in game: a forced legendary roll lands under the monster's id with modifiers, monster bar tier and announcement; a normal kill after it still brings an ambush. No ambush inside the Infinity Tower (V12, seen in a client 2026-11-25: a level 11 Orc Warrior copy stood among the floor 2 monsters of level 122; the run does not count it, so the floor cleared with it alive): `ChaosTowerRun.inArena(pos)` is asked at the kill and again at the delayed creation, like the Trials check.
 
 ### Modifiers and shaders (monster_tiers.lua)
 Every magic, rare and legendary monster rolls modifiers: magic 1-2, rare 2-3, legendary 3-4 (`modCount`; boss 4-5 only with `bossMods` on). Twenty modifiers in `ChaosMods` (seven added in O462, see "Monster defence (O462)": Emberforged, Frostforged, Stormforged, Plated, Resistant, Ruthless, Bulwark): Blazing, Chilling, Venomous and Shocking (on-hit conditions), Vampiric (heals 15% of the damage dealt), Berserker (more damage below half health), Brutal (+40% damage), Stoneskin (-30% damage taken), Reflective (reflects 15% of the damage that lands, overkill not reflected, dealt back with no attacker so the monster's own damage multipliers do not scale it a second time: O433 phase 25, a 30k hit on a Reflective legendary guardian had come back as 16.9k and killed a 10k player; O483: the amount of one hit is also cut to 10% of the attacker's pool and 25% per second, `monster_tiers.lua` `reflectCap`, see "Nemesis"), Regenerating (1% health every 2.5 s; never together with Vampiric: `exclusive`, beta report 2026-10-20 of a monster that could not be brought below 90%), Swift (+40 speed), Explosive (fire blast on death), Juggernaut (+60% health). The monster is drawn with the outfit shader of its strongest modifier, from the 17 shaders already in `data/XML/shaders.xml` (animated, glowing), and a rotating magic effect plays one modifier's icon at a time, so the look follows the modifiers. Only one shader fits one monster, so a monster with five modifiers shows the colour of the strongest one. Bosses roll no modifiers (`bossMods = false`, O696, owner 2026-11-21); the switch turns the old boss roll (4-5 modifiers, no stat scaling) back on. The names are listed under the bar. The client must register those shader names (base server does it in `game_shaders`; the base client base needs the same list, see below). Shader ids 5 ("blue Dortmond", name differs from the client's "blue_Dortmond") is not used.
@@ -2301,6 +2301,7 @@ split (`Game::combatChangeHealth`); no Chaos patch changes it.
   hit went to the health whole. Now the spell adds the sub id 0 shield (15 s; a longer Ward of the Mind keeps its time)
   and the marker beside it; the buff bar hides the plain row while it ends with the marker. Test:
   `tests/soulward_shield_test.lua`. No engine change; reload spells (or restart), no client change.
+  Seen in a client (2026-11-25, V12): Soulward up, a 1,550 Orcaruz hit took mana only, health stayed full.
 * **Orcaruz (O162).** An imported level 200 monster (Azuregate Reliquary, hunt 180-220) never got the hit rule: strongest
   hit 2,500 (78% of a level 200 knight's 3,185 health; Fenmaw, same level, 1,100). A level 230 Mystic line character has
   about 1,295 health (150 + 5 per level). With the engine level bonus (x1.30), the late boost (+4.7%) and the pack curve
@@ -4855,6 +4856,8 @@ The tower has two clocks. A floor has `floorTimeLimit` (300 s, a boss floor x `b
   "Whole run: 1 minute left", then floor 0:58 with "Floor 1: 1 minute left". The two agree. The toast header said
   ACHIEVEMENT UNLOCKED; it says TIME LEFT now ("Instance limits").
 
+Seen in a client (2026-11-25, V12): floors 1, 2, 3 at monster level 100, 122, 144. Fixed: no tier ambush copy in the tower (see "Monster tiers and monster bar"), the client tower panel style loads at module init (client/MANIFEST.md game_infinitytower).
+
 ## Infinity Tower: leaving a run
 Owner bug 2026-11-02: "no way out of the tower, not by portal nor by command". Causes:
 - No portal. `buildArena` built ground, walls and the look only; nothing in the arena led out.
@@ -5224,6 +5227,8 @@ Owner 2026-10-29: some low-level hunts have a hole or a portal inside them that 
 - **Tests.** `tests/hunt_warnings_test.lua` (core rules, config, the key), `tests/i18n_test.lua` (the pt-BR texts), `tools/audit_hunt_transitions_test.py`.
 - **Install.** Nothing extra: the `files` step copies the scripts. No map change, so no base data is edited. A skull sign item on the map was not done: the effect works with the map as it is and the installed map is the owner's master.
 - **Not covered.** Teleports whose target a movement script sets (action or unique id) have no destination on the map; most teleport items of the base map are of that kind. Holes a player digs. Cliff edges without an item. The planned content hunts. Re-run the audit on the installed server's data folder when the map changes.
+
+Seen in a client (2026-11-25, V12): Demon Skeleton stairs at 33031,32450,11, the effect and the DANGER window two tiles off, the Caution message on arrival. The client window was cut off at the top; fixed in `game_chaosnotify` (client/MANIFEST.md). The cooldown lives in memory: a restart shows the warning again.
 
 ## Hunt bands (O333) (`tools/audit_hunt_bands.py`, `tools/patch_hunt_gates.py`, `tools/hunt_gates.csv`, install step `huntgates`)
 
@@ -20572,6 +20577,8 @@ attacker in ghost mode: "Unseen attacker", no name in the row. The history list 
 entry, "Open after a death" off (no window), 5 rows kept. Not in game: the real arena, battleground and other modes,
 Hardcore, a mana shield.
 
+Seen in a client (2026-11-25, V12): after three mana potions a death to Orcaruz showed "Killed by Orcaruz" with Orcaruz the only line (O159).
+
 ## Loot filter, loot channel, loot beams and loot rays (`lootfilter.lua`, `lootfilter_core.lua`, `lootfilter_config.lua`, client `game_lootfilter`)
 
 Extended opcode 238 (`ChaosOpcodes.lootfilter`), Hunt > Loot Filter (or Hunt > Loot Filter) opens the window; Hunt > Loot Filter applies a preset.
@@ -26896,6 +26903,8 @@ display level does not change):
   estimate).
 
 Tests: `tests/monster_levels_test.lua`.
+
+Seen in a client (2026-11-25, V12): Grimeleech [158], Giant Hornet [192], Reflect Spider [167] next to Orc Warrior [11] and Dragon [42] at Mirewake; health and experience follow the level (O163).
 
 ## Stop request file (`stop_request.lua`, `stop_request_core.lua`, `stop_request_config.lua`)
 Windows ends a closed console window after about 5 seconds, too soon for the engine's save, so closing the game server
@@ -34649,6 +34658,8 @@ cannot do it alone now has a **Go to NPC** button.
   a wall is possible in a town whose NPC stands next to a building; the first choice is the side of the temple). The 30 seconds
   and the no-protection-zone rule are a proposal: a free trip to the hub from anywhere out of combat competes with the Town
   Portal (its own cooldown and cast); raise `cooldownSeconds` or add a cast if that matters.
+Seen in a client (2026-11-25, V12): Go to NPC of the Cinderforge Compact put the character beside Forgemaster Brannoc (32955,32076) with "You stand before Forgemaster Brannoc.".
+
 ## How it works cards (O331) (`tools/gen_howitworks_data.lua`, `tools/howitworks_config.lua`, client `game_howitworks`)
 
 Tester feedback: a feature opens at a level, but its screen did not say who it is for, which monster levels it has, what drops,
@@ -34718,6 +34729,8 @@ files: Phantom Shade, Shadowgeist, Shadow Reaper, Grimbone (0, 0, 7, 21 spawns b
 (0, 18, 0, 0), Cunning Hyaena, Snake Master, Ashbound Thrall, Slagback Hound (0, 0, 25, 17), Elite Ice Dragon, Elite Yeti, Elite Ice Witch,
 Ice Dragon (0 each). Assumptions: the sprite pair draws every kept id (looked at in the previews); the 7 x 7 camp protection zone has no
 monster; the base spawn counts come from the installed base spawn file, not a running server. `tools/area_import_test.py` (CI).
+
+Seen in a client (2026-11-25, V12): Brickhold Depths camp 17883,14414 and Rimewind Isle camp 17982,14618, each with its exit portal and the imported packs.
 
 ## Hunt survival by class (O367) (`tools/survival_model.py`, `tools/survival_numbers.lua`, `chaos/survival_balance_config.lua`; Ninja guard in `thief_combat.lua`)
 Owner 2026-11-02 (pt-BR): a level 757 Ascended Ninja cannot hunt level 750 monsters (Cursed Ape, Gallows Oak 750, Grove

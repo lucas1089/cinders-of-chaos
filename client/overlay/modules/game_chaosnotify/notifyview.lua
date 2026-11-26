@@ -105,3 +105,21 @@ V.PHONE_TYPES = { PARTY_INVITE = true, CATACOMB_FREE = true }
 function V.showOnPhone(notificationType)
   return V.PHONE_TYPES[notificationType] == true
 end
+
+-- V12 (seen in a client 2026-11-25): the danger window of the hunt warnings sat 40 px under the top of the map panel, but
+-- the map panel can reach above the screen (a 1280 x 720 window: map at y -65), so the window began at y -25 and its
+-- DANGER header was cut off. Its top is now measured from the visible top of the map (never above the game root) and
+-- kept below the menu bar when that is in the way. All values are screen y; the result is the margin from the root's top.
+--   rootY     the root panel's top     mapY   the map panel's top     barBottom   the menu bar's bottom (nil: none shown)
+V.DANGER_GAP = 40
+V.DANGER_BAR_GAP = 6
+
+function V.dangerTop(rootY, mapY, barBottom, gap)
+  rootY = tonumber(rootY) or 0
+  gap = tonumber(gap) or V.DANGER_GAP
+  local top = math.max(rootY, tonumber(mapY) or rootY) + gap
+  if tonumber(barBottom) then
+    top = math.max(top, barBottom + V.DANGER_BAR_GAP)
+  end
+  return top - rootY
+end

@@ -110,5 +110,13 @@ eq(V.showOnPhone('SALE'), false, 'phone drops a sale toast')
 eq(V.showOnPhone('GM_BROADCAST'), false, 'phone drops a broadcast toast')
 eq(V.showOnPhone(nil), false, 'phone drops an unknown toast')
 
+-- V12: the danger window starts on the screen, below the menu bar
+eq(V.dangerTop(0, -65, nil), 40, 'a map above the screen: 40 under the root top, not y -25')
+eq(V.dangerTop(0, 30, nil), 70, 'a map below the root top: 40 under the map top')
+eq(V.dangerTop(0, -65, 44), 50, 'the menu bar is in the way: 6 under its bottom')
+eq(V.dangerTop(0, 30, 20), 70, 'a menu bar above the spot changes nothing')
+eq(V.dangerTop(100, 50, nil), 40, 'the margin is from the root top')
+eq(V.dangerTop(0, nil, nil), 40, 'no map: 40 under the root top')
+
 print(string.format('notifyview_test: %d checks, %d failed', n, fails))
 if fails > 0 then os.exit(1) end
