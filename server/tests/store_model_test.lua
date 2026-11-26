@@ -214,6 +214,15 @@ check(reset.cost == 100, "Passive Tree Reset is 100 coins")
 check(frame.cost == 200, "plate frames are 200 coins")
 check(xpOffers[1].weeklyLimit == 4 and xpOffers[2].weeklyLimit == 2, "4 singles and 2 packs of 5 a week")
 
+-- V15 (seen in a client 2026-11-26): the first donation bonus of the model is the one the server credits (C.packCredit,
+-- shown in the Donate window): a share of the base coins, the pack's own bonus not counted. The 525 coin pack showed
+-- 1025 coins (500 + 525 bonus) while the model counted 1050.
+for _, p in ipairs(env.coins.packs) do
+	local credit = env.K.packCredit(p, true, env.coins)
+	check(M.packCoins(p) + M.firstBonus(p, env.coins.firstPurchase) == credit.total,
+		"first donation of " .. p.key .. ": model " .. (M.packCoins(p) + M.firstBonus(p, env.coins.firstPurchase)) .. " = server " .. credit.total)
+end
+
 if failures > 0 then
 	print(string.format("store_model_test: %d of %d checks FAILED", failures, checks))
 	os.exit(1)
