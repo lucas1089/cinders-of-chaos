@@ -129,7 +129,11 @@ local function mkPlayer(id, items)
 	function p:getId() return self.id end
 	function p:getName() return "P" .. self.id end
 	function p:getStorageValue(k) return self.st[k] or -1 end
-	function p:getItemCount(id) return self.items[id] or 0 end
+	-- engine patch 0009: a locked item (every Everfull flask) is counted only with includeLocked (V27, 2026-11-26)
+	function p:getItemCount(id, subType, includeLocked)
+		if not includeLocked then return 0 end
+		return self.items[id] or 0
+	end
 	function p:registerEvent(n) self.events[#self.events + 1] = n end
 	function p:sendExtendedOpcode(op, buffer) self.sent[#self.sent + 1] = {op = op, buffer = buffer} end
 	players[id] = p
