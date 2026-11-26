@@ -118,8 +118,8 @@ PAIR_STIPPLE = 88   # pair 87 with the stipple inside the pack effects redrawn s
                     # client/tools/sprites/fix_stipple.py build): holes on the Bayer or checker grid filled from their sides, the dim
                     # lattice dots of a faint fringe removed, frames and timing kept. Client art only, no server gate.
 
-PAIR_ASSETS = 87
-PAIR_ASSETS_DAT_MD5 = '8980aa6725278864dcb79945fe8b220d'
+PAIR_ASSETS = 88
+PAIR_ASSETS_DAT_MD5 = 'cf780a4a956aefca0ee3860d5171982a'
 
 
 def parse(text):
