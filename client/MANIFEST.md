@@ -7438,6 +7438,21 @@ Found in a client (2026-11-25, pair 84, the V4 spell effects video): effect 3036
 - **Local pair 85, first build** (/dev/shm, 2026-11-25, never on windows-assets): dat md5 d6ad2d8258db11b21156c2d48f0b3cde (cut only), spr = pair 84 (bb67c639...). `check_pair.py --old` pair 84 with the 141 ids allowed: 0 errors. On it: `fix_dissolve_tail.py check` cut 141, `fix_pack_fx.py check` 130 fixed, `recentre_effects.py check`, `gen_area_fx.py live`, `gen_gap_fx.py live`, `gen_wst_more_fx.py live`, `gen_awakened_fx.py live` OK. Seen in a client: 3036, 255, 388, 1210, 3900, 3404, 5305, 4076 end clean, no grid, no dots.
 - **Pair 85**: built and on windows-assets ("Pair 85 on windows-assets" below). Build from pair 84: `fix_dissolve_tail.py build P84/Tibia.dat P84/Tibia.spr OUT`.
 
+## Stipple of the pack effects redrawn solid (O769, `tools/sprites/fix_stipple.py`, `pair_fixes/stipple.csv` and `.sums`; pair 88)
+Owner 2026-11-26 (pt-BR): "3 redesenha". After O766 the dotted rests and the Bayer or checker fill inside the body of the pack effects stay (708 `nova_frost`, 745, 2573, 2913, 3901, 2479, 2115 named in "Pair 66"). Wanted: solid pixel-art fills, hard alpha, the house rules of O733. Numbers only: no pack picture viewed or sent to a service.
+- **Cause**: up to pair 65 the imports cut the soft glow to 0 / 255 by a 4x4 Bayer threshold. Pair 66 took the lone dots of a glow under alpha 0.5. A glow above 0.5 kept its art with holes on the Bayer grid: one pixel in four or in two clear inside the body. The O735 imports carry a few such fields too.
+- **Rule** (`fix_stipple.masks`, per frame canvas):
+  - fill: a clear pixel with art on its four sides and another such hole on its grid (a diagonal neighbour, or two away along an axis or a diagonal). It takes the colour most of its four sides share (ties: nearest their mean), alpha 255. Only colours the effect has. A lone drawn hole (an eye, a ring centre) has no partner and stays.
+  - drop: a lone art pixel (empty 8-neighbourhood) with 2 or more lone pixels two away, darker than 0.75 of the frame's median art luma: the dotted fringe. Bright lone pixels are sparks and stay. One pixel lines stay.
+  - A thing is listed at 24 or more fill pixels and 0.4% of its art. Soft alpha things (595, e.g. the loot beams) are never touched.
+  - Left out, their own live check holds them: 4743-4744, 5143-5189, 5321-5441, the donor effects, the redrawn missiles, missiles 43 46 47 52 147-151. On pair 87 a few of them would list (e.g. 5188), left to their tools.
+- **Op**: `anim_fixes.py` op `unstipple` (`fill=n;drop=m`, the counts it must find again). Frame count, timing, sizes, ids and flags never change. A changed tile is a new sprite record.
+- **Scan of pair 87**: 640 things (`scan DAT SPR --write`): 438 below 5442 (pair 27 / 29 / 36 / 41 imports, area and gap pieces) and 202 O735 effects. 641,047 pixels filled, 11,637 dots removed.
+- **Measured** on the 640 things, pair 87 -> pair 88: holes (clear pixel, four art sides) 705,133 -> 64,086 (left: lone drawn holes); art 17,750,803 -> 18,380,213 (+3.5%); lone checker art 154,831 -> 122,542. Per id holes: 708 1,942 -> 198, 745 7,866 -> 1,117, 2573 3,557 -> 499, 2913 1,583 -> 254, 3901 4,565 -> 2,004 (and 5,088 dim dots gone), 2479 3,616 -> 176, 2115 1,773 -> 194, 2083 15,962 -> 39.
+- **Run**: `fix_stipple.py build DAT SPR OUT [--dry-run] [--write-sums]`, then `check DAT SPR`. `stipple.sums` holds each thing's digest in pair 87 and after; a build that differs stops; a second run writes nothing. `check` holds the redrawn form from `client_pair.PAIR_STIPPLE` 88 (pending before).
+- **Chained forms**: `fix_pack_fx.forms` takes a thing whose fixed (or tail cut) form was redrawn as fixed; `fixed_ids` adds the redrawn things. So `fix_pack_fx.py check`, `fix_dissolve_tail.py check`, `recentre_effects.py check`, `gen_area_fx.py live`, `gen_gap_fx.py live` and `gen_wst_more_fx.py live` (new hook) pass on pair 88.
+- **Preview** (never committed): before beside after of 13 ids at 4x and 1x.
+
 ## Creature packs as boss outfits (O608, after O605; `tools/sprites/gen_creature_outfits.py`, `art_import/creature_outfits.csv`; joins pair 73; owner 2026-11-17)
 O605 made nine 2x2 outfits for 11 monsters. The owner saw the preview and changed it (translated): "Put the creatures back the way they were.
 Forget the humanoids and add the others to bosses. They can be bigger." Then: "3 is the number of monsters."
@@ -8516,3 +8531,11 @@ Owner (pt-BR) 2026-11-25: "banshee, white lion, hellhound, werelion, leaf golem 
 - **Pending rule**: `gen_fun_costumes.py live` takes 3523 in the old form as pending while `PAIR_ASSETS` < 87 (`PAIR_MOTH_FIT`). After the switch only the new form passes.
 - **Switch on (done)**: the parts and their `SHA256SUMS.parts` lines are on windows-assets 04890a54. `PAIR_ASSETS` 87 and its dat md5 are in `server/tools/client_pair.py`. Tables regenerated from pair 87: `outfit_anchors.lua`, `info_lifts.lua` and `InfoLiftData.cs`, `wing_centres.lua`, `head_centres.lua`, `foot_marks.lua` (only the rows of 3523 moved). `check_content.py` `PAIR_NAME` 'pair 87'. Every step of the CI job "Live sprite pair" passes on it.
 - **Owner steps**: a client package with pair 87, then admin app Comandos > "Par do cliente" > Gravar 87 (`chaos-ctl.sh client-pair set 87`). No server step: the moth keeps its id.
+
+## Pair 88 (O769; 2026-11-26, built locally, not on windows-assets yet)
+- **What it holds**: pair 87 (windows-assets 04890a54) + `fix_stipple.py build`: the stipple of 640 pack effects and missiles redrawn solid ("Stipple of the pack effects redrawn solid (O769)" above). Every other entry byte for byte the same.
+- **Build**: `fix_stipple.py build P87/Tibia.dat P87/Tibia.spr OUT` on a RAM disk: 29,772 sprite records appended (1,646,253 to 1,676,024).
+- **Pair 88**: dat md5 cf780a4a956aefca0ee3860d5171982a (15,229,034 bytes), spr md5 2452f0212a54236c4941af08f6f14c1f (1,840,657,363 bytes).
+- **Held**: `check_pair.py P88 --old P87 --allow-changed` (the 640 things) 0 errors, 5,300 warnings (pair 87's). Every step of the CI job "Live sprite pair" passes on it except the four tables that carry the dat md5 in their header (below).
+- **Switch on (coordinator)**: the archive and its parts on windows-assets (recipe of pair 86), `PAIR_ASSETS` 88 and its dat md5 in `server/tools/client_pair.py`, then regenerate `outfit_anchors.lua`, `info_lifts.lua` (and `InfoLiftData.cs`), `wing_centres.lua`, `head_centres.lua`, `foot_marks.lua` (only the md5 line changes, checked), `check_content.py` `PAIR_NAME` 'pair 88'.
+- **Owner steps**: a client package with pair 88, then admin app Comandos > "Par do cliente" > Gravar 88 (`chaos-ctl.sh client-pair set 88`). No server step: client art only.

@@ -120,13 +120,22 @@ def tail_sums():
     return read_sums(fix_dissolve_tail.SUMS)
 
 
-def forms(dat_path, spr_path, sums=None, raw=False):
+def stipple_sums():
+    """fix_stipple.py's sums (O769): {(kind, id): (before, after)}, the stipple redrawn after this tool's fixes and the tail cut"""
+    import fix_stipple
+    return read_sums(fix_stipple.SUMS)
+
+
+def forms(dat_path, spr_path, sums=None, raw=False, stipple=True):
     """{(kind, id): 'after' | 'before' | None} of every thing of the sums file in this pair (cached per path and size). A thing
-    whose fixed form later lost its dissolve tail (fix_dissolve_tail.py, O766) counts as 'after' unless `raw`."""
+    whose fixed form later lost its dissolve tail (fix_dissolve_tail.py, O766) counts as 'after' unless `raw`; a thing whose
+    form of this table (or its tail cut form) later had its stipple redrawn (fix_stipple.py, O769) counts as 'after' unless
+    not `stipple`."""
     sums = read_sums() if sums is None else sums
     tails = {} if raw else tail_sums()
+    stip = stipple_sums() if stipple else {}
     key = (os.path.abspath(dat_path), os.path.getsize(dat_path), os.path.abspath(spr_path), os.path.getsize(spr_path),
-           tuple(sorted(sums.items())), tuple(sorted(tails.items())))
+           tuple(sorted(sums.items())), tuple(sorted(tails.items())), tuple(sorted(stip.items())))
     if key in _FORMS:
         return _FORMS[key]
     d, spr, things = load(dat_path, spr_path)
@@ -136,17 +145,22 @@ def forms(dat_path, spr_path, sums=None, raw=False):
         t = thing_of(things, kind, i)
         got = digest(store, AF.TS(t).groups) if t is not None else None
         tb, ta = tails.get((kind, i), (None, None))
-        out[(kind, i)] = 'after' if got == a or (got == ta and tb == a) else 'before' if got == b else None
+        sb, sa = stip.get((kind, i), (None, None))
+        mine = {a} | ({ta} if tb == a else set())
+        out[(kind, i)] = ('after' if got in mine or (got == sa and sb in mine) else 'before' if got == b else None)
     _FORMS[key] = out
     return out
 
 
 def fixed_ids(dat_path, spr_path):
     """{(kind, id)} of the things this pair holds in their fixed (`after`) form, with the things whose dissolve tail
-    fix_dissolve_tail.py cut (O766): the live checks of the import tools take that form as theirs"""
+    fix_dissolve_tail.py cut (O766) and the things whose stipple fix_stipple.py redrew (O769): the live checks of the import
+    tools take that form as theirs"""
     import fix_dissolve_tail
     out = {k for k, v in forms(dat_path, spr_path).items() if v == 'after'}
-    return out | {k for k, v in fix_dissolve_tail.forms(dat_path, spr_path).items() if v == 'after'}
+    import fix_stipple
+    out |= {k for k, v in fix_dissolve_tail.forms(dat_path, spr_path).items() if v == 'after'}
+    return out | {k for k, v in fix_stipple.forms(dat_path, spr_path).items() if v == 'after'}
 
 
 # ------------------------------------------------------------------------------------------------ build

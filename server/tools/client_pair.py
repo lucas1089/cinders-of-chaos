@@ -114,6 +114,10 @@ PAIR_RELOOK_MONSTERS = 86   # five hunt monsters that read wrong for their names
                     # Leaf Golem; our own PixelLab drawings, client/tools/sprites/gen_relook_monsters.py build on pair 85) and two stock looks
                     # (White Lion 1041, Hellhound 3280); data/monster/monster_relook_looks.csv, install step `monsterrelooklooks`.
 
+PAIR_STIPPLE = 88   # pair 87 with the stipple inside the pack effects redrawn solid (O769, owner 2026-11-26 "3 redesenha";
+                    # client/tools/sprites/fix_stipple.py build): holes on the Bayer or checker grid filled from their sides, the dim
+                    # lattice dots of a faint fringe removed, frames and timing kept. Client art only, no server gate.
+
 PAIR_ASSETS = 87
 PAIR_ASSETS_DAT_MD5 = '8980aa6725278864dcb79945fe8b220d'
 

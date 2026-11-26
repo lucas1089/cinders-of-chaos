@@ -36,6 +36,8 @@ per row (rows of one thing are applied in table order, each on the result of the
   demesh      (O734) remove, in every frame, the checker and lattice pixels of clean_pack_dither.mesh_mask (the pair 66 rule
               for a glow cut by a Bayer dither: a pixel with no opaque 4-neighbour inside a checker or lattice of its colour).
               Must remove `expect=n` pixels.
+  unstipple   (O769) the stipple inside the body redrawn solid (fix_stipple.py: a hole on the Bayer or checker grid takes the
+              colour of its sides, a dim lattice dot of a faint fringe goes). Must find `fill=n;drop=m`.
   undissolve  (O766) cut the 3-phase Bayer dissolve tail of a pack import (dissolve_tail: the signature on the last three
               phases with art) with its time; blank end phases stay. Must give `keep=A-B,C` out of `of=N` phases.
   pulse       a one-frame look gets an idle of `n` phases (`ms` each): a slow brightness pulse, never darker than the
@@ -570,6 +572,13 @@ def op_undissolve(store, ts, a):
     ts.log.append(('0', 'undissolve', 'tail of %d phases' % (int(a['of']) - len(keep)), 'cut with its time'))
 
 
+def op_unstipple(store, ts, a):
+    """(O769) the stipple redrawn solid: fix_stipple.py's rule (holes on the dither grid filled from their sides, dim lattice
+    dots removed); must find `fill=n;drop=m`"""
+    import fix_stipple
+    fix_stipple.op_unstipple(store, ts, a)
+
+
 def op_clear_color(store, ts, a):
     need(a, 'frame', 'rgb', 'expect')
     g = ts.groups[int(a.get('group', 0))]
@@ -629,7 +638,7 @@ def set_displacement(ts, xy):
 OPS = {'trim': op_trim, 'dedupe': op_dedupe, 'lift': op_lift,
        'clear_px': op_clear_px, 'clear_color': op_clear_color,
        'merge': op_merge, 'clear_strays': op_clear_strays, 'drop_faint': op_drop_faint, 'demesh': op_demesh,
-       'undissolve': op_undissolve}
+       'undissolve': op_undissolve, 'unstipple': op_unstipple}
 EXTRA_OPS = {'pulse': op_pulse}
 
 
