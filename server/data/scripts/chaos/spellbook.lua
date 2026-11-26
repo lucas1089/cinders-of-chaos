@@ -416,6 +416,9 @@ function Book.analyzeScript(src)
 		info.scaling = "skill x weapon attack"
 	elseif code:find("CALLBACK_PARAM_LEVELMAGICVALUE") or code:find("mlValues%s*%(") then
 		info.scaling = "magic level"
+	elseif code:find(":getMagicLevel%s*%(") then
+		-- a hand-made formula, as Bewitching Hex after O468 (patch_stock_spell_inputs.py); V18 saw it without "Scales"
+		info.scaling = "magic level"
 	end
 
 	-- conditions the spell gives (Condition(...)) and conditions it removes (dispel / removeCondition)
@@ -542,23 +545,44 @@ function Book.shapeArea(spec)
 	return nil
 end
 
+-- the attack kit row of a spell by name (attack_kit_config.lua), or nil
+function Book.kitSpec(name)
+	if ChaosAttackKit == nil then
+		pcall(dofile, "data/scripts/chaos/attack_kit_config.lua")
+	end
+	if ChaosAttackKit and ChaosAttackKit.cfg then
+		for _, s in pairs(ChaosAttackKit.cfg.spells) do
+			if s.name == name then
+				return s
+			end
+		end
+	end
+	return nil
+end
+
+-- the scaling text of an attack kit row, from its hit (l + P x p + ML x m + b): the same texts analyzeScript writes
+function Book.kitScaling(kit)
+	local p, m = tonumber(kit.pMax) or 0, tonumber(kit.mMax) or 0
+	if p > 0 and m > 0 then
+		return "skill x weapon attack, magic level"
+	elseif m > 0 then
+		return "magic level"
+	elseif p <= 0 then
+		return nil
+	elseif kit.power == "monk" then
+		return "fist skill x fist attack (or a staff)"
+	elseif kit.power == "distance" then
+		return "distance skill x weapon attack"
+	end
+	return "skill x weapon attack"
+end
+
 -- the area hint of a Chaos spell by name: its row of the areas config, else its attack kit shape
 function Book.areaHint(name)
 	if ChaosSpellbookAreas == nil then
 		pcall(dofile, "data/scripts/chaos/spellbook_areas_config.lua")
 	end
-	if ChaosAttackKit == nil then
-		pcall(dofile, "data/scripts/chaos/attack_kit_config.lua")
-	end
-	local spec = ChaosSpellbookAreas and ChaosSpellbookAreas[name]
-	if not spec and ChaosAttackKit and ChaosAttackKit.cfg then
-		for _, s in pairs(ChaosAttackKit.cfg.spells) do
-			if s.name == name then
-				spec = s
-				break
-			end
-		end
-	end
+	local spec = (ChaosSpellbookAreas and ChaosSpellbookAreas[name]) or Book.kitSpec(name)
 	if not spec then
 		return nil
 	end
@@ -964,6 +988,18 @@ function Book.buildSpell(entry, scriptCache)
 		spell.element = "healing"
 	else
 		spell.element = info.damage[1]
+		-- an attack kit spell's script only calls AttackKit.cast: no COMBAT_ token to read, the kit row names the element
+		-- (V18, 2026-11-26: Phantom Needles, Mirror Shards, Dreamrot, Crimson Covenant read "Element -" in the Spellbook)
+		-- Their "Scales" row was missing too, as if the hit ignored the caster: the kit row's hit factors name it.
+		if kind == "damage" and (not spell.element or not spell.scaling) then
+			local kit = Book.kitSpec(a.name)
+			if kit and not spell.element and type(kit.ctype) == "string" and kit.ctype ~= "" then
+				spell.element = kit.ctype
+			end
+			if kit and not spell.scaling then
+				spell.scaling = Book.kitScaling(kit)
+			end
+		end
 	end
 	if entry.tag == "rune" then
 		spell.rune = num(a.id)

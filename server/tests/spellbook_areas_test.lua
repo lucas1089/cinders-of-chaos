@@ -87,7 +87,49 @@ for _, entry in ipairs(B.parseXml(read(B.spellsXml))) do
 	end
 end
 
+-- V18 (2026-11-26, seen in a client): an attack kit spell's script only calls AttackKit.cast, so the script text names no
+-- element; the Spellbook read "Element -" for Phantom Needles, Mirror Shards, Dreamrot and Crimson Covenant. The kit row's
+-- ctype is the element now (as client/tools/gen_spell_data.py reads it for spelldata.lua), and its hit factors give the
+-- "Scales" row, which was empty for the same spells.
+local kitChecked = 0
+for _, entry in ipairs(B.parseXml(read(B.spellsXml))) do
+	local a = entry.attrs
+	if a.group == "attack" and a.script and a.script:find("^chaos/") then
+		local s = B.buildSpell(entry, {})
+		local kit = B.kitSpec(a.name)
+		if kit and kit.ctype then
+			kitChecked = kitChecked + 1
+			if s.element ~= kit.ctype then
+				problems[#problems + 1] = a.name .. ": element " .. tostring(s.element) .. ", the attack kit says " .. kit.ctype
+			end
+			-- the same for the "Scales" row: every kit hit reads magic level or a skill, the Spellbook must say which
+			if not s.scaling then
+				problems[#problems + 1] = a.name .. ": no scaling text, the attack kit hit scales"
+			elseif (tonumber(kit.mMax) or 0) > 0 and not s.scaling:find("magic level") then
+				problems[#problems + 1] = a.name .. ": scaling " .. s.scaling .. ", the kit hit reads magic level"
+			elseif (tonumber(kit.pMax) or 0) > 0 and not s.scaling:find("skill") then
+				problems[#problems + 1] = a.name .. ": scaling " .. s.scaling .. ", the kit hit reads a skill"
+			end
+		end
+	end
+end
+assert(kitChecked >= 40, "attack kit spells checked: " .. kitChecked)
+for _, entry in ipairs(B.parseXml(read(B.spellsXml))) do
+	if entry.attrs.name == "Mirror Shards" then
+		local s = B.buildSpell(entry, {})
+		assert(s.element == "ice", "Mirror Shards is an ice spell")
+		assert(s.scaling == "magic level", "Mirror Shards scales with magic level: " .. tostring(s.scaling))
+	end
+end
+-- Bewitching Hex reads the caster in its own lines after O468 (patch_stock_spell_inputs.py), no callback token; the
+-- installed text, as the patch writes it, must read as magic level too
+local hexText = "local caster = creature:getPlayer()\n" ..
+	"local baseDamage = caster and math.floor(caster:getLevel() / 5 + caster:getMagicLevel() * 2 + 44.5) or 128\n" ..
+	"combat:setParameter(COMBAT_PARAM_TYPE, COMBAT_DEATHDAMAGE)\n"
+assert(B.analyzeScript(hexText).scaling == "magic level", "Bewitching Hex text: " .. tostring(B.analyzeScript(hexText).scaling))
+assert(B.analyzeScript("combat:setParameter(COMBAT_PARAM_TYPE, COMBAT_FIREDAMAGE)\n").scaling == nil, "no input, no text")
+
 if #problems > 0 then
 	error(#problems .. " spells wrong:\n  " .. table.concat(problems, "\n  "), 0)
 end
-print("spellbook_areas_test: ok (" .. attack .. " attack spells, " .. areas .. " with an area)")
+print("spellbook_areas_test: ok (" .. attack .. " attack spells, " .. areas .. " with an area, " .. kitChecked .. " kit elements)")
