@@ -624,7 +624,7 @@ function A.shatterRadius(unique)
 end
 
 -- ------------------------------------------------------------------------------------------------ Effigy Covenant
--- a cast: hits = {{id, amount, type}, ...} of one spell in one tick. Returns {count, average, type} when it raises an
+-- a cast: hits = {{id, amount, type}, ...} of one spell cast (the hits of its cast window, archetypes.lua). Returns {count, average, type} when it raises an
 -- effigy, else nil (fewer than minTargets)
 function A.effigyCast(hits)
 	local e = cfg().arEffigy

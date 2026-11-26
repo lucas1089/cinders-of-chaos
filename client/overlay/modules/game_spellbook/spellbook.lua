@@ -414,11 +414,13 @@ local function showDetails(spell)
   if (tonumber(spell.soul) or 0) > 0 then addStat(tr('Soul'), tonumber(spell.soul)) end
   addStat(tr('Cooldown'), formatSeconds(spell.cooldown),
     spell.groupCooldown and tr('Group cooldown: %s', formatSeconds(spell.groupCooldown)) or nil)
-  addStat(tr('Group'), capitalize(spell.group or '-'))
-  addStat(tr('Type'), TYPE_TEXT[spell.type] or capitalize(spell.type or '-'))
-  local elementRow = addStat(tr('Element'), spell.element and capitalize(spell.element) or '-')
+  -- the values in the language too (seen in a client 2026-11-26: pt-BR showed "Grupo Attack, Tipo Damage, Alvo Single
+  -- target")
+  addStat(tr('Group'), tr(capitalize(spell.group or '-')))
+  addStat(tr('Type'), tr(TYPE_TEXT[spell.type] or capitalize(spell.type or '-')))
+  local elementRow = addStat(tr('Element'), spell.element and tr(capitalize(spell.element)) or '-')
   if elementRow and spell.element then elementRow.value:setColor(elementColor(spell.element)) end
-  addStat(tr('Target'), TARGET_TEXT[spell.target] or '-')
+  addStat(tr('Target'), TARGET_TEXT[spell.target] and tr(TARGET_TEXT[spell.target]) or '-')
   if spell.scaling then
     -- the column is narrow: short form here, the full text in the tooltip
     local short = spell.scaling:gsub('distance skill x weapon attack', 'dist. x weapon'):gsub('skill x weapon attack', 'skill x weapon')
@@ -936,7 +938,7 @@ local function onGameEnd()
   -- the list and its rows stay (the next login checks the signature); the character's state goes
   pending, selected, meta, request = nil, nil, {}, nil
   cooldownEnds = {}
-  Core.setLearned({})
+  Core.setLearned(nil)
 end
 
 function init()

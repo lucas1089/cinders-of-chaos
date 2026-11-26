@@ -58,6 +58,13 @@ function Core.questOf(spell)
   if q and Core.QUEST_LEVELS[q] then return q end
   if not Core.questByName then
     local data = rawget(_G, 'ChaosSpellData')
+    if type(data) ~= 'table' then
+      -- game_chaosspells is sandboxed: its globals live in its module table (seen in a client 2026-11-26: the global
+      -- read alone found nothing, so no spell was a quest spell)
+      local mods = rawget(_G, 'modules')
+      local m = type(mods) == 'table' and mods.game_chaosspells or nil
+      data = type(m) == 'table' and m.ChaosSpellData or nil
+    end
     if type(data) ~= 'table' then return nil end -- not loaded yet: ask again later
     Core.setQuestSpells(data)
   end
@@ -74,13 +81,25 @@ local function lower(s)
   return tostring(s or ''):lower()
 end
 
+-- names: the server's learned list; nil when no reply came yet (logout). learnedKnown tells the helper whether the
+-- list can be trusted to refuse a spell (O92: the Auto setup took unlearned quest spells and the helper spammed them).
+Core.learnedKnown = false
 function Core.setLearned(names)
   local set = {}
   if type(names) == 'table' then
     for _, name in pairs(names) do set[lower(name)] = true end
   end
   Core.learnedNames = set
+  Core.learnedKnown = type(names) == 'table'
   return set
+end
+
+-- false only for a spell the server's learned list proves unlearned: a quest spell (or a needLearn row) whose name is
+-- not in the list. Before the first reply every spell passes (the server still refuses the cast).
+function Core.isLearnedKnown(spell)
+  if not Core.learnedKnown or type(spell) ~= 'table' or type(spell.name) ~= 'string' then return true end
+  if not (spell.needLearn or Core.questOf(spell)) then return true end
+  return Core.learnedNames[lower(spell.name)] == true
 end
 
 function Core.normalizeFilter(key)

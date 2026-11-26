@@ -254,7 +254,10 @@ function init()
       -- report 2026-10-17, "Auto turn"); the area lets its monster counter look along the beam
       directional = s.directional, area = s.areaName and SpellAreas and SpellAreas[s.areaName] or nil,
       -- where the spell hits and its element (gen_spell_data.py): the helper's spell lists show them (game_helper/spellinfo_logic.lua)
-      areaShape = s.areaShape, areaSize = s.areaSize, areaWidth = s.areaWidth, element = s.element
+      areaShape = s.areaShape, areaSize = s.areaSize, areaWidth = s.areaWidth, element = s.element,
+      -- the spell quest that teaches it (1..3, nil for none): the helper skips an unlearned quest spell (O92,
+      -- ChaosSpellCore.isLearnedKnown)
+      quest = s.quest
     }
     SpellIcons[s.iconKey] = { s.clientId, s.id }
     if order then

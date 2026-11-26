@@ -972,6 +972,26 @@ eq(math.abs(hitEv.onHealthChange(e1, caster, -1000, COMBAT_ICEDAMAGE, 0, COMBAT_
 hitEv.onHealthChange(e2, caster, -1000, COMBAT_ICEDAMAGE, 0, COMBAT_NONE, ORIGIN_SPELL)
 runEvents()
 eq(#M.state[caster:getId()].effigies, 0, "not a cast: no effigy")
+caster.c.storage[7109990] = nil
+-- O83: a cast whose hits land over several ticks (Forked Storm: a jump every 160 ms) is one cast: one effigy, raised
+-- at the second hit, and the third hit joins its cast; a cast after the window is a new one
+local e3 = mk("monster", {hp = 90000, pos = P(503, 500)})
+NOW = NOW + 5000
+hitBy(caster, e1, 1000, COMBAT_ENERGYDAMAGE, ORIGIN_SPELL); runEvents()
+eq(#M.state[caster:getId()].effigies, 0, "first jump: one hit, no effigy yet")
+NOW = NOW + 160
+hitBy(caster, e2, 800, COMBAT_ENERGYDAMAGE, ORIGIN_SPELL); runEvents()
+eq(#M.state[caster:getId()].effigies, 1, "second jump 160 ms later: the cast hit two, one effigy")
+NOW = NOW + 160
+hitBy(caster, e3, 600, COMBAT_ENERGYDAMAGE, ORIGIN_SPELL); runEvents()
+local fe = M.state[caster:getId()].effigies
+eq(#fe, 1, "third jump: still one effigy")
+eq(fe[1].cast.count, 3, "the effigy repeats the whole cast (three targets)")
+eq(fe[1].cast.average, 600, "average of the priced hits (750 + 600 + 450) / 3")
+NOW = NOW + 1000
+hitBy(caster, e1, 1000, COMBAT_ENERGYDAMAGE, ORIGIN_SPELL); runEvents()
+eq(#M.state[caster:getId()].effigies, 1, "a cast after the window starts a new one (one hit: no effigy)")
+eq(C.arEffigy.castWindowMs < 1000, true, "the window is under the shortest attack group cooldown")
 
 -- Sigil of Cinders: a one-target fire spell ignites and brands; the sigil pulses
 creatures, dealt, conditionsAdded = {}, {}, {}

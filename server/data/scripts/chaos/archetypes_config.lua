@@ -159,8 +159,10 @@ ChaosArchetypesConfig = {
 	-- effigies give back 2 x 0.24 x 0.75 = 0.36 for 0.25 lost, net +11% of the spell damage from 2 targets on (+28% with the
 	-- Idol's third effigy). One target raises no effigy, so the price alone (-25% of the spell damage, was -35%) stays
 	-- there: the keystone is an area one. ChaosArchetypesCore.effigyNetGain computes it; numbers in data/spells/README.md.
+	-- castWindowMs (O83): hits of one cast that land over several ticks (Forked Storm's jumps, 160 ms apart) count as one
+	-- cast for the effigy and the sigil; under the shortest attack group cooldown (1000 ms), so two casts never join.
 	arEffigy = {max = 2, lifeMs = 12000, pulseMs = 2000, share = 0.24, radius = 3, minTargets = 2, ownSpell = 0.75,
-		monster = "Cinder Effigy", uniqueMax = 1},
+		monster = "Cinder Effigy", uniqueMax = 1, castWindowMs = 600},
 
 	-- Sigil of Cinders (Mystic and Templar lines): your fire and holy spell hits ignite (igniteShare of the hit as
 	-- fire over igniteTicks ticks of igniteTickMs; a new one replaces it). A spell cast that hits one enemy brands it
