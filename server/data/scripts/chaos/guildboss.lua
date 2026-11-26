@@ -995,6 +995,9 @@ end
 local function shareHit(run, player, share)
 	local boss = bossOf(run)
 	local dmg = U.shareDamage(Chaos.percentBase(player), share)
+	if boss and Chaos.shareHitAmount then
+		dmg = Chaos.shareHitAmount(boss, dmg) -- no engine monster level bonus on a share
+	end
 	run.scripted = true
 	if hitFn then
 		pcall(hitFn, boss and boss:getId() or 0, player, _G[COMBAT[C().boss.element] or "COMBAT_PHYSICALDAMAGE"] or COMBAT_PHYSICALDAMAGE,

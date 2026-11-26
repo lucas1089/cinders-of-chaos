@@ -286,6 +286,10 @@ local function hit(f, player, share)
 		return
 	end
 	local dmg = math.max(1, math.floor(Chaos.percentBase(player) * share + 0.5))
+	-- the engine's monster level bonus would grow the share (Vaelith, level 1700: x3.55): dealt without it
+	if Chaos.shareHitAmount then
+		dmg = Chaos.shareHitAmount(Monster(f.id), dmg)
+	end
 	local fn = doTargetCombat or doTargetCombatHealth
 	f.scripted = true
 	if fn then

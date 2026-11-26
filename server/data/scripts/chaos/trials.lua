@@ -667,6 +667,9 @@ end
 local function hurt(tr, player, share, effect)
 	local g = tr.bossId and Monster(tr.bossId)
 	local dmg = math.max(1, math.floor(Chaos.percentBase(player) * share))
+	if g and Chaos.shareHitAmount then
+		dmg = Chaos.shareHitAmount(g, dmg) -- no engine monster level bonus on a share
+	end
 	tr.raw = true
 	pcall(doTargetCombat, g or 0, player, COMBAT_PHYSICALDAMAGE, -dmg, -dmg, effect or CONST_ME_GROUNDSHAKER, ORIGIN_SPELL)
 	tr.raw = false

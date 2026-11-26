@@ -383,6 +383,24 @@ do
 	ok(hot.size() <= 100, "bounded under a stream of new monsters")
 end
 
+-- ---------------------------------------------------------------- a boss mechanic's scripted share hit (seen in a client
+-- 2026-11-26): already a share of the victim's max health, so no level, pace, waystone tier or floor factor on top
+do
+	local boss = monster(1700)
+	local scripted = false
+	ChaosPace = {damageMultOf = function(a) return a == boss and 2 or 1 end}
+	ChaosBossMech = {scriptedHit = function(a) return a == boss and scripted end}
+	scripted = true
+	p = hit(pl, boss, 6000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_SPELL)
+	eq(p, 6000, "scripted share hit: untouched")
+	p = manaHit(pl, boss, 6000, COMBAT_HOLYDAMAGE, 0, COMBAT_NONE, ORIGIN_SPELL)
+	eq(p, 6000, "scripted share hit on the mana shield: untouched")
+	scripted = false
+	p = hit(pl, boss, 1000, COMBAT_HOLYDAMAGE, 0, COMBAT_NONE, ORIGIN_SPELL)
+	eq(p, 2000, "the same boss's ordinary spell: still scaled")
+	ChaosPace, ChaosBossMech = nil, nil
+end
+
 print(string.format("monster_damage_test: %d checks, %d failures", checks, fails))
 if fails > 0 then
 	os.exit(1)
