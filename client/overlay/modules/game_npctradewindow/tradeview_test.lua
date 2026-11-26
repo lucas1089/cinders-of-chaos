@@ -187,9 +187,9 @@ view:setTab(M.SELL)
 eq(ui.tradeButton.text, 'Sell', 'the button says Sell'); eq(ui.sellAllButton.visible, true, 'Sell all on a sell tab')
 eq(ui.equippedCheck.visible, true, 'equipped option on a sell tab'); eq(ui.bagsCheck.visible, false, 'no bags on a sell tab')
 -- another currency: coin icon and captions follow it
-view:setHeader({ name = 'Azure Coin', item = 26780, caption = 'Balance', balance = 5, gold = false })
+view:setHeader({ name = 'Azure Coin', item = 24124, caption = 'Balance', balance = 5, gold = false })
 view:setSelection(card, M.detail(buy, card, 2), buy)
-eq(ui.afterCaption.text, 'Balance after', 'balance after'); eq(ui.totalCoin.itemId, 26780, 'the total shows that coin')
+eq(ui.afterCaption.text, 'Balance after', 'balance after'); eq(ui.totalCoin.itemId, 24124, 'the total shows that coin')
 -- clearing the cards
 view:clearCards()
 eq(#ui.list.kids, 0, 'cards cleared')

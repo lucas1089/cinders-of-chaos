@@ -25,9 +25,9 @@ eq(g.w, 560, 'bad input: minimum'); eq(g.x, 0, 'bad input x')
 
 -- ---------------------------------------------------------------- a currency other than gold
 local JSON = {
-  azure = { action = 'currency', data = { code = 'AZ', name = 'Azure Coin', item = 26780, amount = 42 } },
+  azure = { action = 'currency', data = { code = 'AZ', name = 'Azure Coin', item = 24124, amount = 42 } },
   storage = { action = 'currency', data = { code = 'H', name = 'hallowfall coins', amount = 17.9 } },
-  again = { action = 'currency', data = { code = 'AZ', name = 'Azure Coin', item = 26780, amount = 12, again = true } },
+  again = { action = 'currency', data = { code = 'AZ', name = 'Azure Coin', item = 24124, amount = 12, again = true } },
   long = { action = 'currency', data = { code = 'X', name = 'a very long currency name of the old world', amount = 1 } },
   noname = { action = 'currency', data = { code = 'AZ', amount = 1 } },
   noamount = { action = 'currency', data = { code = 'AZ', name = 'x' } },
@@ -43,7 +43,7 @@ end
 local P = function(text) return L.parseCurrency(text, decode) end
 
 local az = P('azure')
-eq(az.name, 'Azure Coin', 'item currency: name'); eq(az.item, 26780, 'item currency: item'); eq(az.amount, 42, 'amount')
+eq(az.name, 'Azure Coin', 'item currency: name'); eq(az.item, 24124, 'item currency: item'); eq(az.amount, 42, 'amount')
 eq(az.again, false, 'a first packet is not an update'); eq(az.code, 'AZ', 'code')
 local st = P('storage')
 eq(st.name, 'Hallowfall Coins', 'storage currency: title case'); eq(st.item, nil, 'storage currency: no icon')
@@ -66,7 +66,7 @@ eq(L.receive(S, P('again'), 100), 'ignored', 'a balance without an open window i
 eq(L.take(S, 100), nil, 'and leaves nothing pending')
 eq(L.receive(S, nil, 100), 'ignored', 'nothing parsed: ignored')
 eq(L.receive(S, P('azure'), 100), 'pending', 'the packet before the shop is pending')
-eq(L.take(S, 101).item, 26780, 'the shown window takes it')
+eq(L.take(S, 101).item, 24124, 'the shown window takes it')
 eq(L.take(S, 102) == S.active, true, 'a window shown again keeps it')
 eq(L.receive(S, P('again'), 110), 'update', 'a balance while the window is open updates it')
 eq(S.active.amount, 12, 'the new balance')

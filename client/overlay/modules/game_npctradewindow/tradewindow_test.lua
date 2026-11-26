@@ -295,14 +295,14 @@ find('closeButton').onClick()
 eq(sent[#sent][1], 'close', 'the x closes the shop'); eq(ended, 1, 'and ends the conversation')
 
 -- a currency other than gold
-JSONS = { azure = { action = 'currency', data = { code = 'AZ', name = 'azure coin', item = 26780, amount = 42 } },
-  again = { action = 'currency', data = { code = 'AZ', name = 'azure coin', item = 26780, amount = 12, again = true } } }
+JSONS = { azure = { action = 'currency', data = { code = 'AZ', name = 'azure coin', item = 24124, amount = 42 } },
+  again = { action = 'currency', data = { code = 'AZ', name = 'azure coin', item = 24124, amount = 12, again = true } } }
 opcodes[113](nil, 113, 'azure')
 open({ row(potion, 'strong health potion', 3.5, 30, 0) }, 1000000, {})
-eq(find('currencyLabel').text, 'Currency: Azure Coin', 'the currency of the NPC'); eq(find('currencyItem').itemId, 26780, 'its icon')
+eq(find('currencyLabel').text, 'Currency: Azure Coin', 'the currency of the NPC'); eq(find('currencyItem').itemId, 24124, 'its icon')
 eq(find('balanceLabel').text, 'Balance: 42', 'the balance in that currency, not the gold'); eq(trade.getPlayerMoney(), 42, 'for the other modules too')
 eq(find('bagsCheck').visible, false, 'no shopping bags')
-eq(find('list').kids[1]:getChildById('coin').itemId, 26780, 'the price shows that coin')
+eq(find('list').kids[1]:getChildById('coin').itemId, 24124, 'the price shows that coin')
 card('Strong Health Potion').onClick(); eq(find('quantityScroll').scroll.max, 1, 'the limit is the 42 coins (30 each)')
 opcodes[113](nil, 113, 'again'); eq(find('balanceLabel').text, 'Balance: 12', 'the balance after a purchase')
 eq(find('quantityScroll').scroll.max, 0, 'and the limit'); eq(find('warnLabel').text, 'You cannot afford this.', 'cannot afford')

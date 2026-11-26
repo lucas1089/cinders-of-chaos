@@ -85,3 +85,11 @@ function L.phoneFactor(w, h)
   end
   return best
 end
+
+-- desktops whose window reads the pointer in interface pixels under g_app.scale: win32window.cpp always did, the Linux
+-- x11window.cpp since base patch 0212 (O207, seen in a client 2026-11-26: 200 % did nothing on Linux). Elsewhere a
+-- scale would put every click off, so the option stays at 100 % there.
+L.SCALING_OS = { windows = true, linux = true }
+function L.osScales(os)
+  return L.SCALING_OS[os] == true
+end

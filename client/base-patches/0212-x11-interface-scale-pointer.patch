@@ -1,0 +1,20 @@
+# Chaos: the Linux window reads the pointer in interface pixels under the interface scale (O207; client/BASE.md "0212";
+# src/framework/platform/x11window.cpp; after 0001-0211).
+# Seen in a client 2026-11-26 (V20, Xvfb 2560x1440): Options > Interface scale 200 % did nothing on Linux. g_app.scale draws
+# the interface larger and win32window.cpp divides the mouse position by the scale, but x11window.cpp did not, so
+# game_chaosuiscale applied the scale on Windows only (clicks would have landed off). The MotionNotify handler now
+# divides as Windows does; a button press takes the position of the last motion, as before.
+diff -ruN a/src/framework/platform/x11window.cpp b/src/framework/platform/x11window.cpp
+--- a/src/framework/platform/x11window.cpp
++++ b/src/framework/platform/x11window.cpp
+@@ -1024,6 +1024,10 @@
+                     m_inputEvent.reset();
+                     m_inputEvent.type = Fw::MouseMoveInputEvent;
+                     Point newMousePos(event.xbutton.x, event.xbutton.y);
++                    // Chaos (base patch 0212, O207): the interface is drawn m_scaling times larger (g_app.scale), so the
++                    // pointer is read in interface pixels, as win32window.cpp does; at 1.0 nothing changes
++                    if(m_scaling > 1.0f)
++                        newMousePos = Point(newMousePos.x / m_scaling, newMousePos.y / m_scaling);
+                     m_inputEvent.mouseMoved = newMousePos - m_inputEvent.mousePos;
+                     m_inputEvent.mousePos = newMousePos;
+                     if(m_onInputEvent)
