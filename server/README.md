@@ -5965,10 +5965,14 @@ level 800; the Eternal Blessing is 4-8 All Blessings of the same level band (300
 starter pack are listed at the Pact's price per day. Prices, before and after, and the reasons: docs/PRICES.md "Store balance (O140)".
 Changed: Double Experience Potion weekly limit (new), Passive Tree Reset 60 -> 100, plate frames 300 -> 200. Server: `files` step and a
 restart; the website wiki data is regenerated (`tools/gen_wiki_data.lua`).
+Seen in a client (2026-11-26, V15): the Donate window, the XP Boosts tab (50, 225) and the Training tab (25, 75, 450) show the
+model's prices. One fix: the model gave the first donation bonus on the pack's coins with its own bonus (R$ 49,90: 525 -> 1050,
+21.04 a real), the server credits it on the base coins (500 -> 1025, 20.54; `ChaosShopCore.packCredit`, `tests/shop_test.lua`).
+`M.firstBonus` now follows that rule; `tests/store_model_test.lua` holds every pack to `packCredit`.
 
 Exercise weapons (O150): valued with `tools/skill_model.lua` (`skill_model_config.lua`; `tests/skill_model_test.lua`; computed, not measured): a dummy hour is worth 10-27 hunting hours, 5.6-24 coins per hunting hour, so the prices stay; `store_model.lua --check` bounds them (half of Premium's coins per hour to the Double Experience Potion's, tier discount at most 40%). Assumes the base server's `skills_stages.lua` with the O154 factor (below) and 70% of a hunting hour swinging. Skill 100 to 130 by hunting alone is 180-300 hours with it (900-1,500 with the stock stages; docs/PRICES.md "Skill training (O150)").
 
-**Skill stages x5 (O154).** Owner 2026-10-24 ("pode acelerar 5x o treino de skill"): `tools/patch_skill_stages.py` (install step `skillstages`, right after `meleeskill`; `python3 -I tools/patch_skill_stages.py DATA_DIR [--dry-run]`) multiplies every stage multiplier of the base server's `data/scripts/customs/skills/skills_stages.lua` (every skill and the magic level) from trained level 101 up by `factor` (5, in `data/scripts/chaos/skill_stages_config.lua` with `fromLevel` 101; the stages up to 100 stay). Hunting, exercise weapons and offline training all pass that script, so all three get it and the price of an exercise weapon per hunting hour does not change. Assumptions: the file is the stock shape (`local skillStages = {`, `[SKILL_X] = {` blocks of `[{ a, b}] = {multiplier = n}` rows, the last row `[{150}]`, and the `onGainSkillTries` callback); any other shape is refused (exit 1, the file untouched, the reason printed). A stage spanning 100 and 101 would be split. Each changed row ends with `-- Chaos: was N` and a header line on top carries the marker, so a second run changes nothing and a new factor derives from the originals (set it to 1 to restore the stock numbers). CRLF is kept. Test `tools/patch_skill_stages_test.py` (synthetic copies, and the real base copy when `/tmp/wk` has one); `tools/skill_model.lua` reads the same config (`tests/skill_model_test.lua`). Deploy: `install_all.py SERVER_DIR --only skillstages` (the admin app's Update button runs every step) and a restart; no client change. Not run on the live server; the figures are computed, like O150.
+**Skill stages x5 (O154).** Owner 2026-10-24 ("pode acelerar 5x o treino de skill"): `tools/patch_skill_stages.py` (install step `skillstages`, right after `meleeskill`; `python3 -I tools/patch_skill_stages.py DATA_DIR [--dry-run]`) multiplies every stage multiplier of the base server's `data/scripts/customs/skills/skills_stages.lua` (every skill and the magic level) from trained level 101 up by `factor` (5, in `data/scripts/chaos/skill_stages_config.lua` with `fromLevel` 101; the stages up to 100 stay). Hunting, exercise weapons and offline training all pass that script, so all three get it and the price of an exercise weapon per hunting hour does not change. Assumptions: the file is the stock shape (`local skillStages = {`, `[SKILL_X] = {` blocks of `[{ a, b}] = {multiplier = n}` rows, the last row `[{150}]`, and the `onGainSkillTries` callback); any other shape is refused (exit 1, the file untouched, the reason printed). A stage spanning 100 and 101 would be split. Each changed row ends with `-- Chaos: was N` and a header line on top carries the marker, so a second run changes nothing and a new factor derives from the originals (set it to 1 to restore the stock numbers). CRLF is kept. Test `tools/patch_skill_stages_test.py` (synthetic copies, and the real base copy when `/tmp/wk` has one); `tools/skill_model.lua` reads the same config (`tests/skill_model_test.lua`). Deploy: `install_all.py SERVER_DIR --only skillstages` (the admin app's Update button runs every step) and a restart; no client change. Not run on the live server; the figures are computed, like O150. Seen in a client (2026-11-26, V15): a Warrior with sword 100 used an exercise sword (500 charges) on a dummy in the temple; the server's tries per 750 ms tick were 231 at sword 100 (7 x 3 x stage 11) and 630 from sword 101 (7 x 2 x stage 45; 126 with the stock stage 9, so x5), as computed.
 
 **Temple Teleport Scroll (retired from the store).** Every character has the free Town Portal now ("Town Portal" below), so the store no longer offers the scroll or the 25-use scroll. Scrolls bought earlier keep working: the handler, `S.teleportBlocked` and the action id stay in `shop_services.lua`, and `shop_config.lua` keeps the `templeScroll` service kind. The old description: an ordinary "scroll" (item 6119, used by no other script) with action id 47301, the name
 "temple teleport scroll", a description and the uses left in the custom attribute `chaos_uses`; no new item id. Using it
@@ -23741,6 +23745,14 @@ experience re-fit: 500 -> 1000 in 112 h for the median class again, the model's 
 
 ## Progression smoothness (O135, `tools/progression_model.lua`, `progression_config.lua`, `tools/late_game.py` `SMOOTH_STAGES`, 2026-10-23)
 
+**Seen in a client (2026-11-26, V15).** A level 200 Elementalist (magic level 90, Rare helmet, armour and legs of item
+level 150 from the tester helper, Auto setup, Magic Shooter and Auto Target on) hunted Azuregate Reliquary (180-220), set
+up in the hall and placed 6 tiles from the quietest pack: 200 -> 201 in 3.5 minutes from the first step (2.6-3.3 minutes a
+level while packs were near; the model says 2.45; the test placed the character back at the camp only, so the far packs
+were not walked to). No wall: no death, no idle wait for a respawn while packs were near. A first take ran 1.39 minutes a
+level: the same character had been level 2050, so the alt catch-up (`catchup_config.lua` `alt`, +100% below the account's
+best level) doubled it, as designed.
+
 Owner request (pt-BR): "Faça a progressão ser mais fluída". Read as the leveling journey from the start level (8) to 2200:
 find the walls, dead zones and spikes, measure them with the repo's own models, and smooth them.
 
@@ -23855,6 +23867,13 @@ Tests: `tests/class_spell_progression_test.lua` (new levels), `tests/spell_facto
 (coins on the curve, gold per hour grows between bands).
 
 ## Hall coverage (O139, `tools/areaplan/plans/`, `progression_config.lua` `hall.tight`, 2026-10-23)
+
+**Seen in a client (2026-11-26, V15).** From each hall teleport front tile (one step onto the teleport) a level 2050
+character reached all six hunts; the monsters there carry the band's levels: Azuregate Reliquary Knowledge Elemental [175],
+Orcaruz [200], Shadowreaper [200]; Rustcog Warrens Bat Goblin [407], Mountain Goblin [436]; Bramblegrave Reach Gallows Oak
+[750], Cursed Ape [750], Grove Keeper [700]; Hollowbell Mausoleum Dawn Strayer [980], Acid Hydra [930], Crypt Crab [930];
+Antlerwight Brake Cinderskull Reaver [1500], Rimeshroud Revenant [1400]; Gloomsilt Mire Mirecoil Wyrm [1900], Pyre Stork
+[2000]. Nothing wrong.
 
 Owner (pt-BR): "faça as hunts que faltam nos níveis 200 e 450. Pode fazer teleportes sobrescrevendo alguns dos já existentes.
 Coloca esses teleportes dessa faixa de nível." Then, the same for 700, 1000, 1500 and 2000. The check of "Progression smoothness
@@ -31347,6 +31366,10 @@ Not run: `setup_gateway.sh` and `setup_backend_firewall.sh` for real (apt, syste
 which render and check every file, were run), a gateway on a real VPS with real DDoS filtering, the Windows build.
 
 ## Display scale (`display_scale.lua`, `display_scale_core.lua`, `display_scale_config.lua`, engine `src-patches/0037-display-scale.patch`, client `game_chaosscale`)
+
+**Seen in a client (2026-11-26, V15).** A level 800 Elementalist on two Dragon Lords: every health loss the server logged
+(a watch on the monster's health, 25 ms) is the number the map and the console showed (389, 470, 449, 313...); the bars
+show the real health and mana (4.14k of 4,145 at full); the loot line and "Auto loot: 98 gold to your bank" show the real coins.
 
 **Off since 2026-10-23** (owner: "Tire, por favor, a inflação artificial de números que a gente colocou"): the curve is
 `{{1, 1}}`, x1 at every level, so every player sees the internal numbers. The code, the engine patch and the client

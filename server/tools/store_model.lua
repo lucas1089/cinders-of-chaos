@@ -109,6 +109,13 @@ function M.packCoins(pack)
 	return pack.coins + math.floor(pack.coins * (pack.bonusPct or 0) / 100) + (pack.bonusCoins or 0)
 end
 
+-- the first donation bonus of a pack: a share of the pack's base coins, the pack's own bonus not counted, capped
+-- (shop_core.lua C.packCredit, the rule the server credits; tests/shop_test.lua pins 500 -> +500); the starter has none
+function M.firstBonus(pack, fp)
+	if pack.starter then return 0 end
+	return math.min(math.floor(pack.coins * fp.bonusPct / 100), fp.maxBonus)
+end
+
 function M.packRate(env, pack)
 	return M.packCoins(pack) / (M.pixCents(env, pack) / 100)
 end
@@ -170,7 +177,7 @@ function M.problems(env)
 			prev = rate
 			if rate > pk.coinsPerReal * pk.maxBulkMult then bad("pack %s: %.2f coins per real is above %.2fx the base rate", p.key, rate, pk.maxBulkMult) end
 			local fp = env.coins.firstPurchase
-			local extra = math.min(math.floor(M.packCoins(p) * fp.bonusPct / 100), fp.maxBonus)
+			local extra = M.firstBonus(p, fp)
 			local frate = (M.packCoins(p) + extra) / (M.pixCents(env, p) / 100)
 			if frate > pk.coinsPerReal * pk.firstMaxMult then bad("pack %s: with the first donation bonus %.1f coins per real (> %.2fx)", p.key, frate, pk.firstMaxMult) end
 		end
@@ -670,7 +677,7 @@ function M.report(env)
 	for _, p in ipairs(env.coins.packs) do
 		local fp = env.coins.firstPurchase
 		local total = M.packCoins(p)
-		local extra = p.starter and 0 or math.min(math.floor(total * fp.bonusPct / 100), fp.maxBonus)
+		local extra = M.firstBonus(p, fp)
 		line("| %s | %d | R$ %s | US$ %.2f | %.2f | %.2f |", p.key, total, string.format("%.2f", M.pixCents(env, p) / 100):gsub("%.", ","),
 			p.usdCents / 100, M.packRate(env, p), (total + extra) / (M.pixCents(env, p) / 100))
 	end

@@ -205,6 +205,11 @@ Server side and the action list: `server/data/scripts/chaos/admin/README.md`. No
 categories were added.
 
 ## Visual effects (O203)
+**Seen in a client (2026-11-26, V15).** Linux build, software OpenGL: hit flash, creature shadow, screen shake (a 25% hit
+taken) and the colour grade with vignette, each switched on and off in Options > Graphics, change the picture as described
+here. The grade is subtle by design (the vignette leaves about 0.81 of the brightness at the right edge, mid height, about
+0.98 at the centre); `screenGrade` stays off by default until the owner decides.
+
 Four switches in Options > Graphics (base patch `0126`, module `game_visualfx`, `dataset.lua` keys `hitFlash`, `screenShake`,
 `creatureShadow` on by default, `screenGrade` off until the owner has seen it, since it shifts the biome colours). Audit before it (grep of the base patches, BASE.md, this file, the engine tree and the shader folders): floor fading exists
 (base option `floorFading`, `MapView` fades the floors), ambient light exists (Effects > ambient light slider, base light view,
@@ -513,6 +518,10 @@ errors and nil holes, record, CSV, summary). Not run in a client: the hotkey, th
 functions and how many cycle events a default record misses.
 
 ## Lazy modules (O202)
+**Seen in a client (2026-11-26, V15).** Linux build, software OpenGL: the login screen came 2.3-2.5 s after start, 278
+modules loaded at start, `game_codex` and `client_chaos_credits` not among them. With `textureCacheMB` 64 the thing textures
+reached 51-60 MB over six hunts and 400-650 types were unloaded; no creature, item or ground was missing on screen.
+
 Two modules with a window that is opened rarely and no server push load on first use (`autoload: false`) instead of at start:
 `game_codex` (the Codex, 800 KB of generated data, no opcode) and `client_chaos_credits` (the Credits window, no opcode).
 Startup loads 125 modules instead of 127 and about 5.28 MB of Lua and OTUI instead of 6.15 MB (-0.87 MB, -14%; counted
