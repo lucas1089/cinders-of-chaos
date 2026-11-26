@@ -106,6 +106,11 @@ namespace Chaos.Core.Tests
             if (logic != null)
             {
                 check(Regex.IsMatch(logic, "threshold = " + MapGradeFx.BloomThreshold.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)) && Regex.IsMatch(logic, "full = " + MapGradeFx.BloomFull.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)), "bloom: the luma limits of visualfx_logic.lua");
+                string F2(float v) => v.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture);
+                check(Regex.IsMatch(logic, "contrast = \\{ " + F2(MapGradeFx.BloomContrastFrom) + ", " + F2(MapGradeFx.BloomContrastTo) + " \\}")
+                      && Regex.IsMatch(logic, "ground = \\{ " + F2(MapGradeFx.BloomGroundFrom) + ", " + F2(MapGradeFx.BloomGroundTo) + " \\}")
+                      && Regex.IsMatch(logic, "ring = " + ((int)MapGradeFx.BloomRing).ToString(System.Globalization.CultureInfo.InvariantCulture) + ","), "bloom: the contrast and ground rule of visualfx_logic.lua");
+                check(MapGradeFx.BloomContrastFrom < MapGradeFx.BloomContrastTo && MapGradeFx.BloomGroundFrom < MapGradeFx.BloomGroundTo, "bloom: the contrast and ground ramps go up");
                 check(Regex.IsMatch(logic, "strength = " + MapGradeFx.BloomStrength.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)) && Regex.IsMatch(logic, "maxStrength = " + MapGradeFx.BloomMaxStrength.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture)), "bloom: the strengths of visualfx_logic.lua");
             }
         }

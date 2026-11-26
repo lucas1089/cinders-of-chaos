@@ -15,12 +15,17 @@ S.CFG = {
   minH = 80,
 }
 
+-- the window classes that fade: UIWindow and the dialogs corelib derives from it (displayGeneralBox, displayInfoBox,
+-- displayCancelBox, the input boxes). Their className is their own, so a check for 'UIWindow' alone let no dialog fade
+-- (seen in a client 2026-11-26). UIMiniWindow, also derived from UIWindow, is left out: the side panels have their own show.
+S.CLASSES = { UIWindow = true, UIMessageBox = true, UIInputBox = true }
+
 -- may this window fade? info: on (option), className, topLevel (child of the root or of the game root panel),
 -- phantom, noFade (a window sets `chaosNoFade = true` to opt out), w, h (pixels)
 function S.eligible(info)
   if type(info) ~= 'table' then return false end
   if info.on ~= true then return false end
-  if info.className ~= 'UIWindow' then return false end   -- UIMiniWindow (side panels) and other kinds have their own show
+  if not S.CLASSES[info.className] then return false end   -- UIMiniWindow (side panels) and other kinds have their own show
   if info.topLevel ~= true then return false end
   if info.phantom == true or info.noFade == true then return false end
   local w, h = tonumber(info.w), tonumber(info.h)
@@ -49,6 +54,16 @@ function S.begin(kind, now, from)
   local ms = (isIn and C.inMs or C.outMs) * span
   if ms < C.minMs then ms = C.minMs end
   return { kind = isIn and 'in' or 'out', t0 = now, ms = ms, from = from, shown = nil }
+end
+
+-- the first timer tick of a fade: when it comes late (the loop was busy, e.g. a window that builds its rows in show() and
+-- holds the loop for 400 ms before its first frame; seen in a client 2026-11-26: the spellbook opened at full opacity),
+-- the fade starts over from that tick, so the time no frame was drawn does not eat the fade. Only once per fade.
+function S.settle(st, now)
+  if st.settled then return end
+  st.settled = true
+  local late = (tonumber(now) or st.t0) - st.t0 - S.CFG.tickMs
+  if late > S.CFG.tickMs then st.t0 = st.t0 + late end
 end
 
 -- the opacity at `now` and whether the fade is over. `changed` is false when the rounded value is the one last given.

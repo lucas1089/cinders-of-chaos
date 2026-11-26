@@ -95,6 +95,7 @@ namespace Chaos.Client
             mat.SetVector("_Mood", new Vector4(m[0], m[1], m[2], m[3]));
             mat.SetVector("_Mood2", new Vector4(m[4], 0f, 0f, 0f));
             mat.SetVector("_Params", new Vector4(Grade ? 1f : 0f, strength, MapGradeFx.BloomThreshold, MapGradeFx.BloomFull));
+            mat.SetVector("_Params2", new Vector4(MapGradeFx.BloomContrastFrom, MapGradeFx.BloomContrastTo, MapGradeFx.BloomGroundFrom, MapGradeFx.BloomGroundTo));
             RenderTexture a = null, b = null;
             if (strength > 0f)
             {

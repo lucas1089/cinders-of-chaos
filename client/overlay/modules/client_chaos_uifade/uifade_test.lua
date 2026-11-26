@@ -22,6 +22,9 @@ eq(L.eligible(with('on', false)), false, 'option off')
 eq(L.eligible(with('on', nil)), false, 'option unknown is off')
 eq(L.eligible(with('className', 'UIMiniWindow')), false, 'mini window')
 eq(L.eligible(with('className', 'UIWidget')), false, 'plain widget')
+eq(L.eligible(with('className', 'UIMessageBox')), true, 'a message box dialog fades')
+eq(L.eligible(with('className', 'UIInputBox')), true, 'an input box dialog fades')
+eq(L.eligible(with('className', 'UIPopupMenu')), false, 'popup menu')
 eq(L.eligible(with('topLevel', false)), false, 'nested window')
 eq(L.eligible(with('phantom', true)), false, 'phantom (tooltip)')
 eq(L.eligible(with('noFade', true)), false, 'opt out')
@@ -88,6 +91,33 @@ do
   eq(d.ms, L.CFG.minMs, 'closing a window at 0 takes the minimum')
   local _, dd = L.step(d, 100 + L.CFG.minMs)
   eq(dd, true, 'and finishes')
+end
+
+-- a late first tick (the loop was busy after the show) starts the fade from that tick (seen in a client 2026-11-26)
+do
+  local T = L.CFG.tickMs
+  local st = L.begin('in', 1000)
+  L.settle(st, 1000 + 446)
+  eq(st.t0, 1000 + 446 - T, 'late first tick: the fade starts one tick before it')
+  local v, done = L.step(st, 1000 + 446)
+  eq(done, false, 'not over at the late tick')
+  eq(v > 0 and v < 1, true, 'part way up at the late tick')
+  L.settle(st, 5000)
+  eq(st.t0, 1000 + 446 - T, 'only the first tick moves the start')
+  local on = L.begin('in', 2000)
+  L.settle(on, 2000 + T)
+  eq(on.t0, 2000, 'a tick on time leaves the start')
+  local two = L.begin('in', 3000)
+  L.settle(two, 3000 + 2 * T)
+  eq(two.t0, 3000, 'two ticks late is still on time')
+  local o = L.begin('out', 0)
+  L.settle(o, 300)
+  local ov, od = L.step(o, 300)
+  eq(od, false, 'a close with a late first tick still shows the fade')
+  eq(ov > 0 and ov < 1, true, 'close part way down')
+  local n = L.begin('in', 0)
+  L.settle(n, 0 / 0)
+  eq(n.t0, 0, 'nan clock leaves the start')
 end
 
 -- bad input never gives a bad opacity

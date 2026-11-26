@@ -7,11 +7,18 @@
 --    Lua asking isVisible() / isExplicitlyVisible() is told "hidden" at once, so a toggle key pressed in that tenth of a
 --    second opens it again instead of closing it twice. show() during a close turns the fade round.
 --  * A window made visible by createWidget / loadUI (most dialogs: no show() ever follows) is made clear in UIWindow.create
---    and fades in from the first event of the next loop.
+--    and fades in from the first event of the next loop. The dialogs corelib derives from UIWindow (UIMessageBox of
+--    displayGeneralBox and the other boxes, UIInputBox) go through the same create and fade too (uifade_logic CLASSES).
 --  * Not faded, always instant: destroy() (most dialogs close that way: a ghost with the id of a window that is gone would
 --    break getChildById lookups), setVisible(false), C++ callers, UIMiniWindow (side panels), phantom windows (tooltips),
 --    windows under 140x80, windows that are not a child of the root or of gameRootPanel, and a window with
 --    `chaosNoFade = true`.
+--  * The hook goes on UIWindow's own table (corelib's extends() gives it no metatable); windows made from then on carry a
+--    copy of it. After terminate the copies pass every call straight to the engine.
+--  * Windows made before this module loads (the Options window of client_settings, made at its init) have no copy. init
+--    adopts the top-level ones: hide / show / isVisible / isExplicitlyVisible go on the window itself when it still has the
+--    engine's, and the fade-in is connected to its onVisibilityChange beside what is there (seen in a client 2026-11-26: the
+--    Options window opened and closed at once). terminate takes them off again.
 --  * Every scheduled step checks that the window is alive and that its fade is still the current one. Any hide path, a
 --    destroy and a terminate end with opacity 1 and the phantom flag as it was, so the next show starts clean.
 -- The option uiFade (default on) comes from client_settings (base patch 0141); off, the hook passes everything through.
@@ -22,6 +29,7 @@ local base = {}        -- the functions the hook wraps
 local mine = {}        -- the functions the hook installed (so terminate only removes its own)
 local installed = false
 local live = {}        -- windows with a running fade (weak), so terminate can finish them
+local adopted = {}     -- windows made before the hook, given it by adopt() (weak), so terminate can take it off
 
 local function alive(w)
   return w ~= nil and not w:isDestroyed()
@@ -62,7 +70,9 @@ end
 local function tick(w, st)
   if not alive(w) or w.chaosFade ~= st then return end
   st.event = nil
-  local value, done, changed = L.step(st.fade, nowMs())
+  local now = nowMs()
+  L.settle(st.fade, now)
+  local value, done, changed = L.step(st.fade, now)
   if done then
     finish(w, st)
     return
@@ -108,6 +118,7 @@ end
 
 -- hide(): fade out, then hide for real
 local function hook_hide(self, ...)
+  if not installed then return base.hide(self, ...) end
   local st = self.chaosFade
   if st and st.closing then return end                      -- already on its way out
   -- nothing to fade out when it is not drawn yet (a window made clear at creation, closed before its first frame)
@@ -130,6 +141,7 @@ end
 
 -- show(): a window on its way out turns round
 local function hook_show(self, ...)
+  if not installed then return base.show(self, ...) end
   local st = self.chaosFade
   if st and st.closing then
     local from = st.own > 0 and (self:getOpacity() / st.own) or 0
@@ -142,18 +154,19 @@ end
 
 -- Lua code that asks whether the window is up is told the truth about the close that has begun
 local function hook_isVisible(self)
+  if not installed then return base.isVisible(self) end
   if closing(self) then return false end
   return base.isVisible(self)
 end
 
 local function hook_isExplicitlyVisible(self)
+  if not installed then return base.isExplicitlyVisible(self) end
   if closing(self) then return false end
   return base.isExplicitlyVisible(self)
 end
 
-local function hook_onVisibilityChange(self, visible)
-  if base.onVisibilityChange then base.onVisibilityChange(self, visible) end
-  if not alive(self) then return end
+local function fade_onVisibilityChange(self, visible)
+  if not installed or not alive(self) then return end
   if not visible then
     if self.chaosFade then clear(self) end
     return
@@ -163,6 +176,11 @@ local function hook_onVisibilityChange(self, visible)
   elseif self.chaosFade then
     clear(self)
   end
+end
+
+local function hook_onVisibilityChange(self, visible)
+  if base.onVisibilityChange then base.onVisibilityChange(self, visible) end
+  fade_onVisibilityChange(self, visible)
 end
 
 -- a window made by g_ui.createWidget / loadUI is visible from the start, so no visibility change ever announces it: it is
@@ -176,21 +194,63 @@ local function settleNew(w)
   end
 end
 
-local function hook_create(...)
-  local w = base.create(...)
-  if enabled and w and alive(w) then
+local function markNew(w)
+  if enabled and w and alive(w) and not w.chaosFade then
     w:setOpacity(0)
     scheduleEvent(function() settleNew(w) end, 0)
   end
   return w
 end
 
+local function hook_create(...)
+  return markNew(base.create(...))
+end
+
+-- The dialog classes are made by their own internalCreate, which calls the create of the UIWindow table that existed when
+-- corelib loaded them: uiinputbox.lua runs `dofile 'uiwindow'` before corelib's `dofiles 'ui'` loads uiwindow.lua again, so
+-- that is an older table than the UIWindow global and never reaches hook_create (seen in a client 2026-11-26: a
+-- displayGeneralBox dialog faded out but popped in). The new window still copies the global UIWindow's fields, hooks
+-- included, so only the creation needs its own wrapper.
+local wrapped = {}     -- { cls, internalCreate, create } of every dialog class wrapped
+local function wrapDerived()
+  local dialogs = { UIMessageBox = UIMessageBox, UIInputBox = UIInputBox }   -- globals, read through the sandbox
+  for name in pairs(L.CLASSES) do
+    local cls = dialogs[name]
+    local orig = type(cls) == 'table' and rawget(cls, 'internalCreate') or nil
+    if type(orig) == 'function' then
+      local rec = { cls = cls, internalCreate = orig, create = rawget(cls, 'create') }
+      rec.wrapper = function(...) return markNew(orig(...)) end
+      cls.internalCreate = rec.wrapper
+      if rec.create == orig then cls.create = rec.wrapper end
+      wrapped[#wrapped + 1] = rec
+    end
+  end
+end
+
+local function unwrapDerived()
+  for _, rec in ipairs(wrapped) do
+    if rawget(rec.cls, 'internalCreate') == rec.wrapper then rec.cls.internalCreate = rec.internalCreate end
+    if rawget(rec.cls, 'create') == rec.wrapper then rec.cls.create = rec.create end
+  end
+  wrapped = {}
+end
+
+-- UIWindow is a plain table made by corelib's extends(): no metatable, so UIWindow.hide is nil. A window instance gets a copy
+-- of UIWindow's fields when it is created and finds the engine's methods (hide, show, isVisible, ...) through UIWidget. So the
+-- functions to wrap come from UIWidget when UIWindow has none of its own (seen in a client 2026-11-26: reading UIWindow.hide
+-- found nothing and the hook never went in, so no window faded).
+local function method(name)
+  local own = rawget(UIWindow, name)
+  if own ~= nil then return own end
+  return UIWidget and UIWidget[name] or nil
+end
+
 local function install()
   if installed or not UIWindow then return end
-  base.hide = UIWindow.hide
-  base.show = UIWindow.show
-  base.isVisible = UIWindow.isVisible
-  base.isExplicitlyVisible = UIWindow.isExplicitlyVisible
+  base.hide = method('hide')
+  base.show = method('show')
+  base.isVisible = method('isVisible')
+  base.isExplicitlyVisible = method('isExplicitlyVisible')
   base.onVisibilityChange = rawget(UIWindow, 'onVisibilityChange')
   base.create = rawget(UIWindow, 'create')
   if not (base.hide and base.show and base.isVisible and base.isExplicitlyVisible) then return end
@@ -202,11 +262,52 @@ local function install()
   UIWindow.isVisible = hook_isVisible
   UIWindow.isExplicitlyVisible = hook_isExplicitlyVisible
   UIWindow.onVisibilityChange = hook_onVisibilityChange
+  wrapDerived()
   installed = true
+end
+
+-- the engine's methods a window made before the hook finds (its own copy of the class fields has none of them)
+local ADOPT = { 'hide', 'show', 'isVisible', 'isExplicitlyVisible' }
+
+local function adoptOne(w)
+  if adopted[w] or not alive(w) or not L.CLASSES[w:getClassName()] then return end
+  if w.hide == hook_hide then return end                  -- made after the hook: it has the copy
+  local put = {}
+  for _, name in ipairs(ADOPT) do
+    if w[name] == base[name] then w[name] = mine[name]; put[#put + 1] = name end
+  end
+  if connect then connect(w, { onVisibilityChange = fade_onVisibilityChange }) end
+  adopted[w] = put
+end
+
+-- the windows already up at the root and in the game root panel
+local function adopt()
+  local root = g_ui.getRootWidget()
+  if not root or not root.getChildren then return end
+  local lists = { root:getChildren() }
+  local game = root.recursiveGetChildById and root:recursiveGetChildById('gameRootPanel')
+  if game and game.getChildren then lists[#lists + 1] = game:getChildren() end
+  for _, list in ipairs(lists) do
+    for _, w in ipairs(list or {}) do adoptOne(w) end
+  end
+end
+
+local function unadopt()
+  for w, put in pairs(adopted) do
+    if alive(w) then
+      for _, name in ipairs(put) do
+        if w[name] == mine[name] then w[name] = nil end   -- back to the engine's method
+      end
+      if disconnect then pcall(disconnect, w, { onVisibilityChange = fade_onVisibilityChange }) end
+    end
+  end
+  adopted = setmetatable({}, { __mode = 'k' })
 end
 
 local function uninstall()
   if not installed then return end
+  unadopt()
+  unwrapDerived()
   for name, fn in pairs(mine) do
     if rawget(UIWindow, name) == fn then
       local was = nil
@@ -236,9 +337,11 @@ end
 
 function init()
   setmetatable(live, { __mode = 'k' })
+  setmetatable(adopted, { __mode = 'k' })
   local ok, value = pcall(function() return modules.client_settings.getOption('uiFade') end)
   enabled = not (ok and value == false)
   install()
+  if installed then adopt() end
 end
 
 function terminate()

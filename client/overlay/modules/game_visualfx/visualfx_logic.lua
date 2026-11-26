@@ -432,14 +432,21 @@ end
 
 -- ---------------------------------------------------------------- soft glow (O210)
 -- A halo around very bright light only (base patch 0132, g_app.setMapBloom; shaders chaos_bloom_extract / chaos_bloom_blur in
--- data/shaders). The engine keeps a pixel only when its luma is above `threshold` (smooth up to `full`) and screen-blends the blurred
--- result over the map, so ordinary ground and biome colours are never changed. The two luma numbers are written in
+-- data/shaders). The engine keeps a pixel only when its luma is above `threshold` (smooth up to `full`) and above the ground round
+-- it (`contrast`, `ground`, `ring`), and screen-blends the blurred result over the map, so ordinary ground, and bright ground
+-- such as snow or white sand, keeps its colours. The two luma numbers are written in
 -- chaos_bloom_extract.frag; they are here so the test can hold them to the owner's rule (high threshold, low strength).
 L.BLOOM = {
   strength = 0.35,   -- weight of the halo, 0..1 (the engine clamps it); low on purpose
   maxStrength = 0.5, -- the most this file may ask for
   threshold = 0.80,  -- luma under which nothing glows
   full = 0.96,       -- luma from which a pixel glows at full weight
+  -- a bright pixel glows only when it stands out from the ground round it (seen in a client 2026-11-26: a snow field passed
+  -- the luma test everywhere and went pale): its luma over the mean of a ring of 8 reads `ring` tap offsets away (12 offsets,
+  -- about 24 picture pixels) ramps from contrast[1] to contrast[2], and a ring mean from ground[1] to ground[2] turns it off
+  contrast = { 0.15, 0.35 },
+  ground = { 0.50, 0.70 },
+  ring = 12,
   extractShader = 'chaos_bloom_extract',
   blurShader = 'chaos_bloom_blur',
   vertex = '/shaders/chaos_bloom_vertex',

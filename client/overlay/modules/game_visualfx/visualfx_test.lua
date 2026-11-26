@@ -308,6 +308,8 @@ eq(L.bloomStrength(true), L.BLOOM.strength, 'on asks for the configured strength
 eq(L.BLOOM.strength <= 0.5, true, 'the strength is low')
 eq(L.BLOOM.threshold >= 0.8, true, 'the threshold is high (luma 0.8 or more)')
 eq(L.BLOOM.full > L.BLOOM.threshold and L.BLOOM.full <= 1, true, 'the ramp goes up to full')
+eq(L.BLOOM.contrast[1] > 0 and L.BLOOM.contrast[2] > L.BLOOM.contrast[1], true, 'a pixel must stand out from its ground')
+eq(L.BLOOM.ground[2] > L.BLOOM.ground[1] and L.BLOOM.ground[2] < L.BLOOM.threshold, true, 'bright ground turns the glow off')
 do
   local saved = L.BLOOM.strength
   L.BLOOM.strength = 3
@@ -323,6 +325,14 @@ do
     local lo, hi = src:match('smoothstep%(([%d%.]+),%s*([%d%.]+),%s*l%)')
     eq(tonumber(lo), L.BLOOM.threshold, 'the shader threshold is L.BLOOM.threshold')
     eq(tonumber(hi), L.BLOOM.full, 'the shader ramp end is L.BLOOM.full')
+    local c0, c1 = src:match('smoothstep%(([%d%.]+),%s*([%d%.]+),%s*l %- ground%)')
+    eq(tonumber(c0), L.BLOOM.contrast[1], 'the shader contrast start is L.BLOOM.contrast[1]')
+    eq(tonumber(c1), L.BLOOM.contrast[2], 'the shader contrast end is L.BLOOM.contrast[2]')
+    local g0, g1 = src:match('1%.0 %- smoothstep%(([%d%.]+),%s*([%d%.]+),%s*ground%)')
+    eq(tonumber(g0), L.BLOOM.ground[1], 'the shader bright ground start is L.BLOOM.ground[1]')
+    eq(tonumber(g1), L.BLOOM.ground[2], 'the shader bright ground end is L.BLOOM.ground[2]')
+    eq(tonumber(src:match('vec2 r = o %* ([%d%.]+);')), L.BLOOM.ring, 'the shader ring is L.BLOOM.ring tap offsets')
+    eq(select(2, src:gsub('luma%(v_TexCoord', '')), 8, 'the ground is the mean of 8 reads')
   end
 end
 
