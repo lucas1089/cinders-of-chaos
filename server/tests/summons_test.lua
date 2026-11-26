@@ -105,6 +105,13 @@ eq(hit(wolf, ownerB), 0, "and the owner's enemies (PvP rules decide the rest)")
 ownerA.c.target = wolf
 eq(hit(ownerA, wolf), 77, "a player never hits its own summon"); eq(ownerA.c.target, nil, "and the target is dropped")
 eq(hit(ownerA, friendWolf), 77, "nor a party member's summon")
+-- seen in a client 2026-11-25: the Beastmaster's arrow splash (an area hit) touched its own wolf, the refusal dropped the
+-- Behemoth it was shooting, so Feral Command and the wolves' bites had no target. A refused area hit keeps the target.
+ownerA.c.target = boar
+eq(hit(ownerA, wolf), 77, "the splash on the own wolf is refused"); eq(ownerA.c.target, boar, "and the monster stays the target")
+local wolfCopy = mk("monster"); wolfCopy.c.id = wolf.c.id; wolfCopy.c.master = ownerA
+ownerA.c.target = wolfCopy
+eq(hit(ownerA, wolf), 77, "same wolf, other userdata"); eq(ownerA.c.target, nil, "is dropped by id")
 eq(hit(ownerA, boar), 0, "a player hits monsters"); eq(hit(ownerA, ownerB), 0, "players: the base PvP rules")
 eq(hit(boar, ownerA), 0, "a wild monster hits players"); eq(hit(nil, ownerA), 0, "nothing")
 -- the 0.5 s tick drops an ally summon from the target

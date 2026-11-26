@@ -1,7 +1,8 @@
 -- summons.lua: player summons are allies of their owner (rules: summons_core.lua; owner report 2026-10-17, see there).
 --   * EventCallback onTargetCombat: a summon never acts on its owner, the owner's party or their summons (the base rule
 --     of data/events/scripts/creature.lua covers only players), and a player never acts on its own summons or its
---     party's: the hit is refused and the attack target dropped;
+--     party's: the hit is refused, and the attack target dropped when it is that summon (an area hit that also touches
+--     the own wolf keeps the monster as target);
 --   * a 0.5 s tick drops the attack target of a player holding one of its allies' summons as target (the client's click
 --     or auto target), so the owner is not stuck with its wolf and Feral Command and the companions' bites go at monsters.
 --   * the same tick purges allies (owner, party, their summons) from the engine target list of each summon (K.purge).
@@ -35,11 +36,27 @@ function S.refusal(creature, target)
 	return nil
 end
 
+-- the player's attack target is this creature (same id: engine userdata are fresh objects per call)
+function S.isTarget(player, target)
+	local ok, t = pcall(player.getTarget, player)
+	if not ok or not t then
+		return false
+	end
+	if t == target then
+		return true
+	end
+	local okA, a = pcall(t.getId, t)
+	local okB, b = pcall(target.getId, target)
+	return okA and okB and a ~= nil and a == b
+end
+
 local cb = EventCallback
 cb.onTargetCombat = function(creature, target)
 	local refused = S.refusal(creature, target)
 	if refused then
-		if creature.isPlayer and creature:isPlayer() and creature.setTarget then
+		-- only a refused hit on the attack target itself drops it: an area hit (arrow splash, Pack Howl) that also
+		-- touches the own wolf is refused for the wolf alone, the monster stays the target (seen in a client 2026-11-25)
+		if creature.isPlayer and creature:isPlayer() and creature.setTarget and S.isTarget(creature, target) then
 			pcall(creature.setTarget, creature, nil)
 		end
 		return refused

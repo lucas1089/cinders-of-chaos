@@ -1520,6 +1520,8 @@ Solo dungeons (O147, beta feedback 2026-10-22: "dungeons need two players; my te
   coordinates, they are the unreachable spawns (fix them with a `patch_*.py`, never by hand).
 - **Placement, one boss, boss level (O183, beta 2026-10-24: "I killed every monster that appeared and the bar did not fill. 2 bosses. Level 2.").** Cause, from the numbers of the screenshot (bar 66% with 57 alive = a total of 168; dungeon 2 keeps 110 after `patch_base_spawns.py`): since O179 `startRun` made the base list (`dg.Monsters`, one entry per species) after the clean-up, on top of the map's record; before, the clean-up always removed it. It was the dungeon a second time (about 58 monsters, unthinned, at base table positions that can be a line of tiles or out of reach) and its boss entry made a second boss next to the map record's boss. The map record's `fillFromMap` also made the boss with every other entry, and every placement was forced (`createMonster` force), which puts a monster on a wall or on another monster. The boss was made without a level, so `monster_levels.lua` showed the estimate of its type (2, 8): display only (`MD.levelOf` reads the engine level; health follows `extra[id].bossHealth` through `scaleMonster`, unchanged). Now: (1) the base list is made only when the dungeon has no start-up record (the old behaviour of every normal start); (2) `placeMonster` makes a monster unforced on its tile if that is walkable and free, else on the nearest such tile of the same floor inside the area within `Chaos.dungeons.placement.radius` (4), else not at all, and a monster not made or placed outside the area is not counted; (3) `settleMonsters` does the same for what stands there at the start (a generated dungeon's points, monsters left standing without a record): moved, or removed; (4) the boss is never in the entry placement or the roster: `placeBoss` makes it once per run (`run.bossSpawned`) at its record tile with `Chaos.createMonsterNamed(..., level)`, the dungeon's `Level`, and the tick removes a second one (`bosses > 1`, base dungeons); (5) the unlock is asked once per run (`fireUnlock`), also when the stall unlock (O180) and the 85% unlock meet; the stall hint lists only roster monsters still standing in the area. **Reachability** is approximated by the tile (ground, no solid item, one monster per tile, inside the boxes of "the area of a run"); a path check from the entry (`Creature:getPathTo`) is not used, because the engine's path search is bounded and would refuse far rooms of the 61,325-tile dungeon 2 (engine behaviour recalled, not measured here). A closed room or a one-way floor that passes that test is still caught by the O180 hint and unlock. Not run live: install `files` and restart, run dungeon 2 and compare the start total with 110. Tests: `tests/dungeons_area_test.lua` block O183.
 
+Seen in a client (2026-11-25): Bones Dungeon queued alone, solo start after the 5 s wait. Monsters killed, boss unlocked, the lever called Prince Skeletal once, run won. No monster and no boss came back before the exit teleport.
+
 Beta test mode (O147)
 - `Chaos.betaMode` = `data/scripts/chaos/beta_mode_config.lua` (`enabled`, default **false**), read when the scripts start
   (`chaos_constants.lua`; a restart or `/reload scripts` reads it again), logic in `beta_mode_core.lua`
@@ -2583,6 +2585,12 @@ base read, not reproduced live):
   (a lock on an own summon is dropped; a lock the server refuses 3 times within 3 s is dropped; attack next / previous
   skip own summons; client/BASE.md, client/MANIFEST.md "Target guard"); engine patch 0057 (`creature:setTarget(nil)` on a
   player sends the cancel target packet). The server's refusals stay as they were.
+- **Area hit on the own wolf (seen in a client 2026-11-25).** The engine asks `onTargetCombat` for every creature of an
+  area hit. A Beastmaster's arrow splash or Pack Howl that also touched its own wolf was refused for the wolf, and the
+  refusal also dropped the player's attack target: the monster. One shot, then no target. Wolf bites need the owner's
+  target and Feral Command said "You can only use it on creatures". The DPS Meter showed War Wolf at 0.3%. Now the
+  refusal drops the target only when the refused creature is the target itself, by id (`ChaosSummons.isTarget`).
+  `tests/summons_test.lua` covers both cases. After the fix: the target holds until the monster dies, bites 70%.
 - **Blocking.** A melee minion stands next to its owner and only moved one tile per push. Engine patch 0055: a player
   walks through its own summons (`Player::canWalkthrough`, the server's step and path check) and the creature packets
   tell its client so (`canWalkthroughEx`, the "unpassable" byte; the client's `Tile::isWalkable` honours it, no client
@@ -5216,6 +5224,8 @@ A fixed weekend every week that players can count on (owner 2026-10-29). Friday 
 - **Global storages 7103040 - 7103049** (`Game.setStorageValue`): +0 the staff switch (1 = off), +1 the weekend (YYYYMMDD of its first day) whose start was announced, +2 whose end warning was said, +3 whose highlight was started. +4..9 free.
 - **Tests.** `tests/weekend_test.lua`: the clock and the window at every edge (17:59:59, 18:00, Sunday 23:59:59, Monday 00:00, the new year), the rotation, the bonuses and the season rule, what is due and the late restart, the login preview, the calendar, the config check, the experience order against the cap, the pt-BR texts, and the glue on a mocked engine (callbacks, rift hook, highlight retry, switch, admin action, `/weekend`).
 - **Not run on a live server.** The glue's engine calls (`EventCallback`, `GlobalEvent`, `CreatureEvent`, `TalkAction`, `Game` storage, `ChaosWorldBoss.start`, `ChaosInvasion.start`) are the ones other scripts here use, but this file has only run against the mock. To check live: `/weekend status`, then `/weekend off` and `on`; wait for Friday 18:00 or move the clock; watch the console for `[Chaos weekend]` lines.
+
+Seen in a client (2026-11-25): tfs under libfaketime at Friday 17:58 Sao Paulo. At 18:00 the broadcast and the toast named Ritual of Rifts, rift chests 25% richer, until Sunday 23:59. The status then said running, highlight Saturday 19:00.
 
 ## Hunt warnings (O323) (`hunt_warnings.lua`, `hunt_warnings_core.lua`, `hunt_warnings_config.lua`, `tools/audit_hunt_transitions.py`)
 
@@ -12549,6 +12559,8 @@ server or in a client.
   `tools/patch_remove_decks_test.py`, client `game_carddeck/carddecklogic_test.lua`, `game_chaosnotify/notifyview_test.lua`,
   `client_chaos_topbar` tests, `tools/ci/check_topbar_tree.py`.
 
+Seen in a client (2026-11-25): three looted cards went into the deck by themselves. Ancestral, Abyssal and Blade Flurry switched on in the window. Thirain came on a hit, was sent away, then Blackfang came. Blade Flurry hit as fire.
+
 ## Tile labels (`tile_labels.lua`, `tile_labels_core.lua`, `tile_labels_config.lua`)
 
 Orange name labels over tiles (owner 2026-10-18: the area of the new NPCs should show their names in orange text).
@@ -19103,6 +19115,8 @@ side is less uncertain (the reward and the 20 minute session are in the base scr
 `prizes.lua`). No client change. Players see the Crystal Roulette named in the two Tower Defense rooms and the new prizes on the tiles.
 Not run on a live server. To measure: kill a few boss rooms and time them (`minutesPerBossKill`), count the tokens per kill, and time a Tower
 Defense run, then edit `roulette_value_config.lua` and rerun the model.
+
+Seen in a client (2026-11-25): Boss, Exercise and Premium roulette spun once each. Prizes: Orb of Tempering, 18 crystal coins worth 180k gold at level 400, Fireflies Aura. No card.
 
 ## Rings and necklaces as gear (`data/lib/chaos_jewelry.lua`, `chaos/jewelry.lua`, `tools/patch_base_jewelry.py`, `tests/jewelry_test.lua`)
 
@@ -27659,6 +27673,8 @@ rest of the kit was arrow skills that felt unrelated. Wanted: "a necromancer, bu
 Tests: `tests/wolf_spells_test.lua` (numbers against the XML, the model CSV, the kit and the id pool; the wolf factor; the cast on a
 mocked engine: circle membership, one hit per companion, allies, no companion), `tests/passivetree_effects_test.lua` (the storage
 mirror), `tests/classes_test.lua`, `tests/class_tree_test.lua`, `tests/attack_kit_test.lua`, `server/tools/companion_model_test.py`.
+
+Seen in a client (2026-11-25): first take broken, the area hit refusal dropped the target. See "Summons: targets, walk-through, levels", area hit on the own wolf. After the fix: level 750, bow, 8 Behemoths, only wolf spells cast. DPS Meter: Companion bites 70%, Rending Pounce, Pack Howl, Pack Frenzy, Feral Command 19%, bow 10%.
 
 ## Pets (`pets.lua`, `pets_core.lua`, `pets_config.lua`, `sql/chaos_pets.sql`, client `game_pets`)
 
