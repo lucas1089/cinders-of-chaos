@@ -865,7 +865,9 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     kept when the capacity and the lock state are unchanged and only their contents are set again, through
     `chaosSetSlotItem` of `0115`. Applies after `0001`-`0116` (`patch` clean on the assembled tree through `0116`).
     Model test `tools/slot_reuse_test.py` (CI, LuaJIT and Lua 5.3): 6 full packets for a 255-slot bag build 1530 widgets
-    with the stock code and 255 with `0122`; another capacity or lock state rebuilds. Not seen in a client.
+    with the stock code and 255 with `0122`; another capacity or lock state rebuilds. Seen in a client (2026-11-26, V19):
+    the Loot Bag open with 200 items, two bursts of 10 kills: the window kept its widgets, one full packet a burst after the
+    server fix of `Chaos.containerBurst` (server/README.md "Loot burst: one update"), largest frame gap 45-71 ms.
 69p. `0123` (Lua `modules/game_actionbar/actionbar.lua`): **the action bar clears the slots and hotkeys of retired spells.**
     Slots and classic hotkeys are saved by the words they say (`Options.actionBarMappings`, `actionsetting.chatText`), so a
     retired spell (Galeborne Stride, O145) stayed in the bar and did nothing. `online()` calls
@@ -885,6 +887,8 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     `tools/textedit_restored_test.py` (CI): stock rule 101 loops, `0124` 1. Applies after `0001`-`0123`. A headless run of
     the assembled client (software GL, login scene): 23 errors in 14 s before, none after. The "attempt to destroy
     widget two times" line at logout was not reproduced and is not traced to a Chaos module.
+    Seen in a client (2026-11-26, V19): four client logs from start to game and play, 0 "event list is not getting empty"
+    lines.
 69r. `0125` (C++ `src/client/thingtype.h/.cpp`, `thingtypemanager.h/.cpp`, `luafunctions_client.cpp`): **a cap on the memory of thing
     textures (O202).** The base frees a thing texture only after 60 s without use (`ThingTypeManager::check`), so a long
     walk over many outfits, items and effects kept them all until the minute passed (at HD scale 3-4 each texture is 9-16

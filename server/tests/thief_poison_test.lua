@@ -12,9 +12,9 @@ local events = {}
 local function obj(name) local o = {} function o:register() events[name] = o end function o:interval() end return o end
 function CreatureEvent(name) return obj(name) end
 function GlobalEvent(name) return obj(name) end
-local pendingCb
+local callbacks = {}
 EventCallback = setmetatable({}, {__index = function(_, k) if k == "register" then return function() end end end,
-	__newindex = function(_, k, v) pendingCb = {k, v} end})
+	__newindex = function(_, k, v) callbacks[k] = callbacks[k] or {}; table.insert(callbacks[k], v) end})
 function addEvent() end
 ChaosSpell = {canAttack = function() return true end}
 local added = {}
@@ -22,16 +22,17 @@ function Condition(t) local c = {type = t, p = {}} function c:setParameter(k, v)
 local M = {} M.__index = M
 function M:getId() return self.id end
 function M:isPlayer() return self.player == true end
+function M:isMonster() return self.player ~= true end
 function M:getPlayer() return self.player and self or nil end
 function M:getVocation() local v = self.voc return {getId = function() return v end} end
 function M:getCondition(t, id, sub) return self.conds[sub] end
 function M:addCondition(c) added[#added + 1] = {self.id, c} end
-function M:registerEvent() end
+function M:registerEvent(name) self.events = self.events or {}; self.events[name] = true end
 function M:getStorageValue() return -1 end
 function M:setStorageValue() end
 function M:getPosition() return {sendMagicEffect = function() end} end
 function M:getSlotItem() return nil end
-local function mk(o) return setmetatable({id = o.id, voc = o.voc, player = o.player, conds = {}}, M) end
+local function mk(o) return setmetatable({id = o.id, voc = o.voc, player = o.player, conds = {}, events = {}}, M) end
 function Player() return nil end
 dofile("data/scripts/chaos/thief_combat.lua")
 
@@ -114,6 +115,56 @@ withCreed(false, function()
 	eq(poisons(thief, ORIGIN_SPELL, 120), 0, "the Poison Blades buff alone: weapon hits only")
 	thief.conds[sub] = nil
 end)
+-- V19 (seen in a client 2026-11-26): an area spell's hit on a monster the player never targeted. The engine's Lua
+-- doTargetCombat never asks onTargetCombat, so ChaosThiefCombat is only on the attacked target; ChaosThiefPoison goes on
+-- every monster at its spawn and gives the others their poison, once, and never on a monster that has the first event
+local pev = events.ChaosThiefPoison
+eq(pev ~= nil, true, "the spawn poison event exists")
+local spawnHooks = callbacks.onSpawn or {}
+eq(#spawnHooks >= 1, true, "an onSpawn callback")
+local function spawned(id)
+	local m = mk{id = id}
+	m.events = {}
+	for _, f in ipairs(spawnHooks) do f(m, nil, false, false) end
+	return m
+end
+local function hitAll(list, attacker, origin, dmg, ctype)
+	added = {}
+	for _, m in ipairs(list) do
+		-- the engine runs every event the monster carries
+		if m.events.ChaosThiefCombat then
+			ev.onHealthChange(m, attacker, dmg or -80, ctype or COMBAT_EARTHDAMAGE, 0, COMBAT_NONE, origin)
+		end
+		if m.events.ChaosThiefPoison then
+			pev.onHealthChange(m, attacker, dmg or -80, ctype or COMBAT_EARTHDAMAGE, 0, COMBAT_NONE, origin)
+		end
+	end
+	return #added
+end
+withCreed(true, function()
+	local pack = {spawned(70), spawned(71), spawned(72)}
+	eq(pack[1].events.ChaosThiefPoison, true, "registered at the spawn")
+	eq(pack[1].events.ChaosThiefCombat, nil, "the main event waits for a target")
+	eq(hitAll(pack, creedThief, ORIGIN_SPELL), 3, "creed: area spell on three untargeted monsters, three poisons")
+	eq(hitAll(pack, creedThief, ORIGIN_MELEE), 3, "creed: a blade strike of an area spell")
+	-- the thief targets the first one: the main event takes it over, still one poison each
+	Chaos.registerOnce(pack[1], "ChaosThiefCombat")
+	eq(hitAll(pack, creedThief, ORIGIN_SPELL), 3, "one poison per monster when one is the target")
+	eq(added[1][1], 70, "the target's poison from the main event")
+	eq(hitAll(pack, creedThief, ORIGIN_CONDITION, -30), 0, "the poison tick never poisons")
+	eq(hitAll(pack, creedThief, ORIGIN_NONE), 0, "scripted damage never poisons")
+	eq(hitAll(pack, knight, ORIGIN_SPELL), 0, "a non-thief never")
+	local healed = hitAll({spawned(73)}, creedThief, ORIGIN_SPELL, 40, COMBAT_HEALING)
+	eq(healed, 0, "healing never poisons")
+end)
+withCreed(false, function()
+	eq(hitAll({spawned(74)}, creedThief, ORIGIN_SPELL), 0, "without the keystone an area spell does not poison")
+	thief.conds[sub] = true
+	eq(hitAll({spawned(75)}, thief, ORIGIN_MELEE), 1, "Poison Blades: a blade strike on an untargeted monster")
+	eq(hitAll({spawned(76)}, thief, ORIGIN_SPELL), 0, "Poison Blades: a spell hit still never")
+	thief.conds[sub] = nil
+end)
+
 local cp = ChaosClasses.creedPoisons
 eq(cp(true, true), true) eq(cp(false, true), false) eq(cp(true, false), false)
 

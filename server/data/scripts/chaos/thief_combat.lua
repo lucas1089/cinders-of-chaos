@@ -388,6 +388,51 @@ targetCb.onTargetCombat = function(creature, target)
 end
 targetCb:register(5)
 
+-- The poison on monsters the player never targeted (V19, seen in a client 2026-11-26: Smoke Bomb on three monsters with
+-- Blackblood Creed poisoned none). Every Chaos spell deals its hit through the engine's Lua doTargetCombat, which never
+-- asks onTargetCombat, so the event above sits only on what the player attacked: an area hit on the others skipped
+-- Blackblood Creed and Poison Blades. This second event sits on every monster from its spawn (as the passive tree's
+-- ChaosPassiveDealt does) and adds the poison only, on a monster the event above is not on; the damage rules above
+-- (stealth, Living Shadow, Bushido, the speed cut, dual wield) stay with the attacked target as before.
+local poisonEvent = CreatureEvent("ChaosThiefPoison")
+function poisonEvent.onHealthChange(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType, origin)
+	local ok, err = pcall(function()
+		if not creature:isMonster() or eventKnown(creature, "ChaosThiefCombat") then
+			return
+		end
+		local player = attacker and attacker:getPlayer()
+		if not player or scripted or primaryType == COMBAT_HEALING then
+			return
+		end
+		if not C.isThiefLine(player:getVocation():getId()) then
+			return
+		end
+		local amount = math.abs(primaryDamage) + math.abs(secondaryDamage)
+		if amount == 0 then
+			return
+		end
+		local isWeapon = origin == ORIGIN_MELEE or origin == ORIGIN_RANGED
+		local creed = CT.has(player, "ksBlackbloodCreed")
+		if C.weaponPoisons(isWeapon, hasCond(player, CONDITION_ATTRIBUTES, cfg().subId.poisonBlades), creed)
+				or C.creedPoisons(ATTACK_ORIGIN[origin] == true, creed) then
+			poison(player, creature, amount, creed and CT.fx.ksBlackbloodCreed.poisonBonus or 0)
+		end
+	end)
+	if not ok then
+		print("[ChaosThief] " .. tostring(err))
+	end
+	return primaryDamage, primaryType, secondaryDamage, secondaryType
+end
+poisonEvent:register()
+
+-- getId() is still 0 in onSpawn: straight onto the creature, as passivetree_keystones.lua does
+local spawnCb = EventCallback
+spawnCb.onSpawn = function(self, position, startup, artificial)
+	self:registerEvent("ChaosThiefPoison")
+	return true
+end
+spawnCb:register(12)
+
 local login = CreatureEvent("ChaosThiefLogin")
 function login.onLogin(player)
 	player:registerEvent("ChaosThiefCombat")

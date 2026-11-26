@@ -3197,6 +3197,12 @@ Points earned after the track is full stay free and are never lost.
 Protocol (opcode 65): `paragonMastery {key, n}`, `paragonConvert {n}` in; `paragonState` gains `mastery {maxRanks, rows[]}` and
 `exchange {ratio, treeFree, converted}`. Build codes carry the category stats only (`buildshare.lua`); loadouts check both.
 
+Seen in a client (2026-11-26, V19): a level 1500 Ninja with the Phantom build, sanguine greaves and the forbidden ring. The
+TOTALS section reads "Dexterity: 273 points -> 178.2 effective (full value up to 80)", "Physical damage: +219% -> +195.9%
+effective (full value up to +150%)", "Critical chance: 17% (tree 15%, gear and other 2%)", "Critical damage: +19% (tree 16%,
+Paragon 0%, gear and other 3%)", the same 17 / 19 the server reports. "500 Paragon points to spend"; the Paragon and the
+Paragon Mastery windows open with 500 available. Nothing wrong.
+
 **Totals** (`passivetree_totals.lua`, rules `passivetree_totals_core.lua`): request `statTotals`, answer `statTotals
 {attributes[], damage[], crit {chance {total, tree, other, raw, cap, capped}, amount {total, tree, paragon, other, raw, cap,
 capped}}}` (rate limit 300 ms). The crit totals are the engine's own value (gear, gems, blessings, tree, Paragon) under the
@@ -5120,6 +5126,12 @@ unit test (`tower_model_test.py`) breaks each of them. Lua: `tests/infinitytower
 floors up to 1e12, nan, rewards) and `tests/infinitytower_floor_test.lua` (plans at floors 121 to 100000 fit int32 with every tier).
 Not measured live; a level 2000 median class gets about 93 floors deep (unchanged), so floors above 120 are for the future.
 
+Seen in a client (2026-11-26, V19): a level 800 Elementalist entered from the window (Enter Tower). The entry message names the
+next reward ("floor 5, 1 Crystal Coin (first clear this season: 5 Crystal Coin)"), the exit portal and the Leave button. Four
+monsters a floor at the floor's level: Orc Warrior L100 584 health on floor 1, Skeleton L122 750 on floor 2, L144 925 on
+floor 3; each floor fell 5-10 s after its start (two or three area spells), "Floor N cleared!", a heal, floor gold to the bank, the next floor
+in 6 s. Leave took the character back to the temple ("You cleared 3 floor(s)"). Nothing wrong.
+
 ## Infinity Tower: damage and loot follow the floor, O328
 
 Tester report of 2026-10-29: at floors that show level ~1200 "the level scales but it is fake: it hits like its level 100 version, only
@@ -6137,6 +6149,13 @@ a 150 ms timer (`Chaos.burstWindowMs`) ends it, so every kill in that window sha
 packet. Cost: the Loot Bag window shows the loot up to 150 ms later. The timer looks the player up again (a player gone by
 then is skipped); without engine patch 0054 `fn` just runs. Checked in `tests/pouches_test.lua`: four kills in one tick, one
 hold and one release timer, balanced afterwards; a later kill holds again. Client side: `client/BASE.md` 69n.
+
+Seen in a client (2026-11-26, V19): the burst never held. `Chaos.containerBurst` checked `type(Player) ~= "function"`, but the
+engine's `Player` is a class table called through `__call`, so every kill took the one-kill path: one full Loot Bag packet per
+corpse. With 200 items in the open bag, a burst of 10 kills froze frames for 293-638 ms (closed: 50-100 ms). Fix: the guard
+takes a table too. After it: one packet per burst, largest frame gap 45-71 ms with the bag open (idle 17 ms).
+`tests/pouches_test.lua` now runs the burst with `Player` as a `__call` table and fails on the old guard. Left as is: the
+client refresh of one full packet still costs about 40-65 ms (`setRarityItem` runs about 5 times per slot).
 
 **Sell every X minutes** (owner 2026-10-17: "Auto seller: opção de vender a cada X minutos"; `autosell.lua`, `autosell_core.lua`
 `INTERVALS`, window dropdown "Sell the Loot Bag automatically every" in `autoseller.otui`). Off by default; choices 5, 10,
@@ -24321,6 +24340,12 @@ Generated area points and bosses are unchanged. Deploy: `files` and `spawns` ins
 plan `paceKillsPerHour.scaled` and the base set's seam changed: see "Monster health curve (O470)" at the end. The O138 figures
 above are what the levels from 1000 up still are.
 
+Seen in a client (2026-11-26, V19): a level 700 Ninja with the Phantom build and the tester gear set against 8 Blazebringers
+(level 720, frozen, paced as a map spawn: 84,795 health -> 6,897). The pack died 0.5-0.6 s after the first hit (two takes),
+under the model's 2.5 s at 670 and 3.3 s at 800: an opening area volley against a pack that stands still and does not need
+luring; the model is sustained damage of the median class. Not a wall, nothing changed. A monster made by a script is not
+paced (84,795 health, about 14 times the hunt's): a test that times packs must call `ChaosPace.apply(monster, true)`.
+
 These come on top of the engine's x(1 + 0.0074 L) health and x0.03 L experience of a monster with a level of its own.
 Loot: `pace_config.lua` (and "Loot by monster level").
 
@@ -31366,6 +31391,17 @@ ranged poison with the buff; a spell hit (`ORIGIN_SPELL`), zero damage, healing 
 buff. No code change: the failure did not reproduce in the script layer, so the root cause is not proven (the engine side needs a
 run in game with a bow and the buff active). The Thief line itself carries no bows or crossbows (stackable throwing weapons left
 the game, "Throwing weapons").
+
+**Area hits on monsters never targeted (V19, seen in a client 2026-11-26).** A level 700 Ninja with Blackblood Creed: the auto
+attack poisoned, Smoke Bomb on three frozen Blazebringers poisoned none. Root cause: every Chaos spell deals its hit through the
+engine's Lua `doTargetCombat`, which never asks `onTargetCombat`, so `ChaosThiefCombat` sat only on the attacked monster; the
+other monsters of an area hit never ran `onOffence` (Blackblood Creed and Poison Blades on blade and shuriken area strikes
+alike). Fix: a second event `ChaosThiefPoison` (`thief_combat.lua`) goes on every monster at its spawn, as the passive tree's
+`ChaosPassiveDealt` does, and adds only the poison, on a monster that does not carry `ChaosThiefCombat` (one poison per monster
+per hit). The damage rules of `onOffence` (stealth, Living Shadow, Bushido, the speed cut, dual wield) stay with the attacked
+target, so no damage number moves. After the fix the same Smoke Bomb poisoned 3 of 3. `tests/thief_poison_test.lua` spawns
+monsters through the real onSpawn callback and runs only the events they carry (fails on the old file). Server: `files` step
+and a restart.
 
 ## Gateways and the PROXY protocol (engine `src-patches/0025-proxy-protocol.patch`, `deploy/gateway/`, `deploy/firewall/`)
 
