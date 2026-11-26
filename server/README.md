@@ -2267,6 +2267,10 @@ Every class and ascension has at most 15 spells of its own (kits, counts and wha
   install on a copy of the base server (the counts per class read back from the installed `spells.xml`). Not run on a
   live server.
 
+Seen in a client (2026-11-26, V18): an Illusionist at level 800 lists 36 rows under My vocation in the Spellbook: the 12
+spells every class shares, the 2 mana shields and 22 of its own. That is inside `MAX_SPELLS` 24, the cap the owner
+raised from 15 to 20 and then 24.
+
 ### Magic Shield (owner 2026-10-21: "quero aquele antigo, que o usuário toma dano primeiro da mana e depois da hp. somente pra mages e rangers")
 
 Ward of the Mind (spell 44, stock Magic Shield, words "tor ael") is the classic one again: the stock
@@ -2326,6 +2330,10 @@ split (`Game::combatChangeHealth`); no Chaos patch changes it.
   on a mocked engine flow), the mana shield checks of `monster_tiers_test`, `boss_mechanics_test`, `raid_test`,
   `pocketboss_test`, `invasion_test`, `trials_flow_test`, `archetypes_test`, `class_keystones_test`,
   `tools/patch_spell_cap_test.py`. Not run on a live server.
+
+Seen in a client (2026-11-26, V18): an Illusionist cast Ward of the Mind and stood among three dragon lords with 400
+mana. Every hit took mana until it was 0, then the next hits took health, while the shield stayed up. Watched on the
+server every 100 ms.
 
 ### Attack kit (owner 2026-10-23: "devem ter a mesma quantidade"; `attack_kit_config.lua`, `attack_kit_core.lua`, `data/spells/chaos/_attackkit.lua`)
 
@@ -2421,6 +2429,10 @@ before and after and the retune proposals: `data/spells/README.md` "Cooldown lad
   data and the `spellfix.lua` cooldowns of the stock entries (`exhaustion`, checked against the csv by
   `spellfix_test.lua`), wiki data regenerated; the cooldowns named in six spell scripts' comments updated.
 * Damage per cast is unchanged. Live server: the `spells` step and a restart; nothing in the database.
+
+Seen in a client (2026-11-26, V18): the Illusionist's attack spells read 2, 4, 6, 7, 8, 9, 10, 11, 12, 13 s in the
+Spellbook, as `rotation_sim.py --ladder` gives them. The ladder lines of docs/CLASSES.md still had the 10 spells of
+before O455; they are copied from the tool again.
 
 ### Class spell factor (owner 2026-10-20: the cooldown ladder's retune proposals applied)
 
@@ -3836,6 +3848,9 @@ What scaled before, and the change:
   (after 0001-0051), rebuild and restart. The client needs its update too (`game_chaosscale`, `spelldata.lua`): an old
   client with the new engine still multiplies the costs on the action bar by the factor while the mana bar no longer
   is, so from level 153 it greys out spells it can cast (casting by words works). Ship the two together.
+
+Seen in a client (2026-11-26, V18): Nightburst read 540 mana in the Spellbook at level 800 and at level 1500, and the
+cast took 540 mana on the server both times.
 
 ## Vigils (`vigils.lua`, `vigils_core.lua`, `vigils_config.lua`, `data/spells/chaos/_vigils.lua`, docs/BUILDS.md "Vigils")
 Auras that reserve mana (2026-10-12), every class: Vigil of Wrath (spell 179, `vigh vyr`, level 60, reserves 35%,
@@ -6108,6 +6123,10 @@ bag opens. A sale stays one chat line and one window state. Measured on the mock
 sale of 255 items, unpatched 255 container + 255 stats packets, patched 1 + 1; gold identical. The client side is cheap
 on its own too (client base patch 0109, `game_lootfilter`, `game_depottabs`: one redraw per container per frame).
 
+Seen in a client (2026-11-26, V18): a Loot Bag of 250 items sold in one press: one chat line, 32,470 gold to the bank,
+the open bag emptied at once. The client drew 2,160 frames in the 6 s round the sale, median gap 2 ms, longest 33 ms,
+none over 50 ms. Idle with the bag open the longest gap was 20 ms.
+
 **Loot burst: one update** (owner 2026-10-23: "o client dá uma travada rápida quando a janela do loot bag está aberta e o auto
 loot pega muita coisa de uma vez"). The stow of one kill was already one held batch (`Chaos.containerBatch`, engine patch 0054),
 but every kill ended its batch with its own full container packet for the open Loot Bag, and the client answers a full packet
@@ -8269,6 +8288,14 @@ Character > Spellbook in the client menu opens the client window `game_spellbook
 - The client window has a second drop-down All types / Attack / Support and an "AoE" tag (pt-BR "Área") on attack spells that hit an area, derived from the spell's `type` (damage = attack; healing, buffs, summons, conjures, utility = support; no type: the XML `group`), `target` (`area` / `front`) and `area` matrix (more than one hit tile): `spellbook_core.lua`, `spellbook_core_test.lua`.
 - `server/tests/spellbook_test.lua` (fixtures in `tests/fixtures/spellbook/`) covers the XML parsing, named, inline and local areas, refusal of unsafe or malformed inline tables, the classification and descriptions, the chunking and the talkaction/opcode flow. Not run on a server.
 - Chaos attack spells (O184, O185, 2026-10-24): a spell of the attack group with a `chaos/` script is always typed damage (the text scan misses helpers such as `ChaosSpell.weaponStrike`, and a spell typed Utility fell out of the client's Attack filter). A scripted pack hit with no `createCombatArea` takes its area from `data/scripts/chaos/spellbook_areas_config.lua` (shape and radius per spell name) or, for the attack kit, from `attack_kit_config.lua`, so its target, centre, grid and AoE tag show the pack. `tests/spellbook_areas_test.lua` checks all 99 Chaos attack spells against `rotation_model.csv` (2+ targets of the pack: an area; one target: none). Client: `game_spellbook/spellbook_classes_test.lua`, Learned + Attack gives each of the 21 classes its 10 attack spells.
+
+Seen in a client (2026-11-26, V18): Phantom Needles, Mirror Shards, Crimson Covenant, Dreamrot and Prismatic Rupture
+read "Element -" and had no "Scales" row. Their scripts only call `AttackKit.cast`, so the script text names no
+`COMBAT_` type and no formula. `Book.buildSpell` now takes the element from the attack kit row (`Book.kitSpec`, `ctype`)
+and the scaling from its hit factors (`Book.kitScaling`: `mMax` magic level, `pMax` the skill of its `power`).
+Bewitching Hex had no "Scales" row either: its formula reads `getMagicLevel` in its own lines since O468, and
+`Book.analyzeScript` reads that as magic level now. `tests/spellbook_areas_test.lua` holds every kit spell to its kit
+element and scaling.
 
 ## Multi-client (`multiclient.lua`)
 
@@ -19262,6 +19289,10 @@ element absorb from the type). They have bases of their own now, server ids **41
   turns; a message asks to put it on again. A full backpack leaves it worn until a later login. Copies in a depot turn
   when moved out.
 
+Seen in a client (2026-11-26, V18): with a test loot row on dragon lords, prismatic rings and necklaces dropped at every
+rarity, with prefixes and suffixes in their names. A Rare ring and a Magic necklace went into the ring and necklace
+slots, and the tooltip listed their prefixes and suffixes, item level, sockets, level 120 / 150 and all classes.
+
 ## Market (`market.lua`, `market_core.lua`, `market_config.lua`, `sql/chaos_market.sql`, `tools/patch_market.py`, engine patch 0017, client `game_market`)
 
 Our own player market (auction house) for **gold** and **Chaos Coins**; the stock 10.98 market is switched off for
@@ -26362,6 +26393,11 @@ floor, second run unchanged), `tests/hunt_teleports_test.lua` (base signs and la
 languages, the top floor "levels 1000+", the quest hall's labels, an exit back in front of its own teleport from the
 places file's `front` or computed for both rows and the end row).
 
+Seen in a client (2026-11-26, V18): on floor 6 the Sunderstone Wastes teleport (levels 800-915) took a level 800
+character to the camp, and the camp portal brought it back in front of the teleport. On floor 5 the Rimecrown Depths
+teleport refused level 800 ("is for level 1000 and above"), took the same character at level 1050, and its camp portal
+led back too.
+
 ### Display monsters face their teleport (O713)
 
 - The spawn block of a display monster had no `direction`, so the engine put it facing north. A monster in a north cell showed its back to the teleport and the player.
@@ -27985,6 +28021,11 @@ again (`C.offers` with a salt, the rerolls used today in storages +1 / +2), the 
 talisman, weekly tasks, task shop) read packets of newer protocols; this 10.98 server sends none and has no prey, so
 they stayed empty. The client leaves Task Hunt out and has no Prey entry (client/BASE.md, patch `0058`). The task
 systems are these kill tasks and the bounty board (opcodes 253 and 223); no server change and no new opcode.
+
+Seen in a client (2026-11-26, V18): at level 800 one Bloodfang Reaver kill opened its entry, the Bestiary offered the
+task (250 kills, 11.1k gold, 2 Orbs of Upheaval, 1.8M experience, 15 points), the task was taken there, and the 250th
+kill paid 11,144 gold, 2 Orbs of Upheaval, 1,669,959 experience and 15 points. The progress notices came at 25, 50 and
+75%.
 
 ## Pack items and monsters (`tools/install_pack_items.py`, `data/lib/chaos_pack_items.lua`, `scripts/chaos/pack_items.lua`)
 
@@ -30782,6 +30823,10 @@ already (the Vigils auras, `vigils*.lua`, `ChaosVigils`, buff keys `vigil_*`; an
   which is nil (the engine sets only direct children as fields): the header showed, the list stayed empty and the
   error was swallowed by `safe()`. It now reads `window.listFrame.list`. `tools/ci/check_modules.py` refuses a
   `window.<id>` whose id is only nested in the module's `.otui` (it also found the Chronicle's tab buttons).
+
+Seen in a client (2026-11-26, V18): Osric the Chandler's list is filled: pocket boss charges, orbs, gems, Hunting
+Supplies I-IV, Supply Crates I-IV, the rerolls and the account cosmetics. The store's Potions page has the packs of 100,
+250 and 500, up to the ultimate mana and spirit and the supreme health potions, on two pages.
 
 ## Conquest Tokens, the Conquest vendor and bad-luck protection (`conquest.lua`, `conquest_core.lua`, `conquest_config.lua`, `sql/chaos_conquest.sql`, `tools/install_conquest.py`, NPC `data/npc/Iselde Varrow.xml`, client `game_conquest`)
 
