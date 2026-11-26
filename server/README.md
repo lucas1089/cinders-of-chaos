@@ -1525,7 +1525,7 @@ Solo dungeons (O147, beta feedback 2026-10-22: "dungeons need two players; my te
   the boss is unlocked anyway (`stallCheck`). Kill credit is not involved; summons are not counted; a monster removed
   without a death is gone from the scan. The real cause on the live map is not confirmed: run dungeon 1 and read the hint
   coordinates, they are the unreachable spawns (fix them with a `patch_*.py`, never by hand).
-- **Placement, one boss, boss level (O183, beta 2026-10-24: "I killed every monster that appeared and the bar did not fill. 2 bosses. Level 2.").** Cause, from the numbers of the screenshot (bar 66% with 57 alive = a total of 168; dungeon 2 keeps 110 after `patch_base_spawns.py`): since O179 `startRun` made the base list (`dg.Monsters`, one entry per species) after the clean-up, on top of the map's record; before, the clean-up always removed it. It was the dungeon a second time (about 58 monsters, unthinned, at base table positions that can be a line of tiles or out of reach) and its boss entry made a second boss next to the map record's boss. The map record's `fillFromMap` also made the boss with every other entry, and every placement was forced (`createMonster` force), which puts a monster on a wall or on another monster. The boss was made without a level, so `monster_levels.lua` showed the estimate of its type (2, 8): display only (`MD.levelOf` reads the engine level; health follows `extra[id].bossHealth` through `scaleMonster`, unchanged). Now: (1) the base list is made only when the dungeon has no start-up record (the old behaviour of every normal start); (2) `placeMonster` makes a monster unforced on its tile if that is walkable and free, else on the nearest such tile of the same floor inside the area within `Chaos.dungeons.placement.radius` (4), else not at all, and a monster not made or placed outside the area is not counted; (3) `settleMonsters` does the same for what stands there at the start (a generated dungeon's points, monsters left standing without a record): moved, or removed; (4) the boss is never in the entry placement or the roster: `placeBoss` makes it once per run (`run.bossSpawned`) at its record tile with `Chaos.createMonsterNamed(..., level)`, the dungeon's `Level`, and the tick removes a second one (`bosses > 1`, base dungeons); (5) the unlock is asked once per run (`fireUnlock`), also when the stall unlock (O180) and the 85% unlock meet; the stall hint lists only roster monsters still standing in the area. **Reachability** is approximated by the tile (ground, no solid item, one monster per tile, inside the boxes of "the area of a run"); a path check from the entry (`Creature:getPathTo`) is not used, because the engine's path search is bounded and would refuse far rooms of the 61,325-tile dungeon 2 (engine behaviour recalled, not measured here). A closed room or a one-way floor that passes that test is still caught by the O180 hint and unlock. Not run live: install `files` and restart, run dungeon 2 and compare the start total with 110. Tests: `tests/dungeons_area_test.lua` block O183.
+- **Placement, one boss, boss level (O183, beta 2026-10-24: "I killed every monster that appeared and the bar did not fill. 2 bosses. Level 2.").** Cause, from the numbers of the screenshot (bar 66% with 57 alive = a total of 168; dungeon 2 keeps 110 after `patch_base_spawns.py`): since O179 `startRun` made the base list (`dg.Monsters`, one entry per species) after the clean-up, on top of the map's record; before, the clean-up always removed it. It was the dungeon's species a second time (unthinned, at base table positions that can be a line of tiles or out of reach; the 58 of the 168 were not this list, see "Hazards out of the count" below) and its boss entry made a second boss next to the map record's boss. The map record's `fillFromMap` also made the boss with every other entry, and every placement was forced (`createMonster` force), which puts a monster on a wall or on another monster. The boss was made without a level, so `monster_levels.lua` showed the estimate of its type (2, 8): display only (`MD.levelOf` reads the engine level; health follows `extra[id].bossHealth` through `scaleMonster`, unchanged). Now: (1) the base list is made only when the dungeon has no start-up record (the old behaviour of every normal start); (2) `placeMonster` makes a monster unforced on its tile if that is walkable and free, else on the nearest such tile of the same floor inside the area within `Chaos.dungeons.placement.radius` (4), else not at all, and a monster not made or placed outside the area is not counted; (3) `settleMonsters` does the same for what stands there at the start (a generated dungeon's points, monsters left standing without a record): moved, or removed; (4) the boss is never in the entry placement or the roster: `placeBoss` makes it once per run (`run.bossSpawned`) at its record tile with `Chaos.createMonsterNamed(..., level)`, the dungeon's `Level`, and the tick removes a second one (`bosses > 1`, base dungeons); (5) the unlock is asked once per run (`fireUnlock`), also when the stall unlock (O180) and the 85% unlock meet; the stall hint lists only roster monsters still standing in the area. **Reachability** is approximated by the tile (ground, no solid item, one monster per tile, inside the boxes of "the area of a run"); a path check from the entry (`Creature:getPathTo`) is not used, because the engine's path search is bounded and would refuse far rooms of the 61,325-tile dungeon 2 (engine behaviour recalled, not measured here). A closed room or a one-way floor that passes that test is still caught by the O180 hint and unlock. Run live 2026-11-26 (V22, V25): see "Hazards out of the count" below. Tests: `tests/dungeons_area_test.lua` block O183.
 - **The stock boss step tile inside a run (O183 seen in a client, 2026-11-26, V22).** Dungeon 2's stock script
   `customs/dungeon/master_of_the_elements/master_of_the_elements.lua` (MoveEvent, aid 63457 at 31715,32543,8) made the
   boss 3 s after a step on the tile, at 0% of the monsters, without a level, and wrote storage 248500 = a time while it
@@ -1538,6 +1538,16 @@ Solo dungeons (O147, beta feedback 2026-10-22: "dungeons need two players; my te
   Outside a run the stock script works as before. The levers of dungeons 1, 3 and 4 ask `ChaosDungeons.bossGate` in
   `instance_limits.lua` `BR.leverUse`: refused before the unlock. Tests: `tests/dungeons_area_test.lua` block "O183 seen
   in a client", `tests/instance_limits_test.lua` (the lever).
+- **Hazards out of the count (V25, run on a live server 2026-11-26).** Dungeon 2 still started with 168 monsters after
+  O183, the thinned spawn file keeps 110. Not the base list, not a second source, not a stale install: the installed spawn
+  file holds 168 live entries in the dungeon's box, 110 hunting monsters (Mega dragon, Wardragon, the Ironhorn line,
+  Sunstone Vanguard) and 58 Tornadoes. A Tornado gives no experience (5,000 health, an energy hazard), so the thinning
+  (`patch_base_spawns.py` `huntable`: experience above 0) never counted or thinned it, and the 110 is right. The run counted
+  every monster, so 85% of 168 needed 33 Tornadoes dead: one cause of the beta "the bar did not fill". Now `startRun` leaves
+  a monster whose type gives no experience (`isHazard`, `MonsterType:experience() == 0`) out of the roster: it stands and
+  fights, it is scaled like the others, it is not in the total, "Monsters Alive", the percent or the stall hint. Dungeon 2
+  counts 110; dungeons 1 and 3 have no such monster (119 and 17 entries). Seen live: before 168, after 110 with 58 Tornadoes
+  still on the map. Tests: `tests/dungeons_area_test.lua` block "V25: hazards do not count".
 
 Seen in a client (2026-11-25): Bones Dungeon queued alone, solo start after the 5 s wait. Monsters killed, boss unlocked, the lever called Prince Skeletal once, run won. No monster and no boss came back before the exit teleport.
 
@@ -33672,6 +33682,17 @@ and the stock functions, kept in step with `map.cpp` by hand. Verified: the chai
 
 Install: apply the patch with the others and build. No key, no config, nothing to turn on; a restart brings it. VPS: no action.
 
+**Run on a live server (2026-11-26, V25).** The released Linux tfs (CindersOfChaos-Server-Linux) carries the patch:
+`ChaosSight::Line<...>::check` is in its symbol table. Local server, private MariaDB, the main client, an Elementalist of
+level 800 at 32311,32293,7. `Position:isSightClear` timed from a test-only Lua script on 200,000 lines of 7-15 tiles
+round the hunt (377 of 400 clear, best of 5 rounds): 491 ns a call, 216 ns for a Lua call of the same shape
+(`Position:getDistance`), so about 276 ns a check with the real tiles and item lists: inside the benchmark's 199-400 ns.
+48 monsters (16 Hunter, 16 Orc Spearman, 16 Troll) round the character, tfs CPU over 20-25 s windows (`/proc/self/stat`):
+alone 3.0% of a core, the pack frozen 3.9%, the pack chasing 4.2%; a chain of 50 ms events fired every 100 ms in every
+window (p99 103-104 ms, max 103-106 ms), so the pack put no delay on the game loop. Not measured: the stock engine side by
+side (not built here) and a profile (no profiler could be run in this sandbox), so the gain itself is still the
+benchmark's.
+
 ## Extended opcode protocol audit (O220) (engine `src-patches/0075-extended-opcode-size-cap.patch`, `chaos_constants.lua`, `tests/opcode_dispatch_test.lua`)
 
 Audit of the server side of the JSON-over-extended-opcode protocol (client to server). Each question and what the code did:
@@ -33689,7 +33710,21 @@ Limits: `Chaos.opcodeRequestMax` 16,384 bytes (the client's largest request, a p
 
 Not done: no element-count limit beyond the byte cap (it would add a scan per request for no gain at 16 KB); the base `json.lua` itself is not edited (the wrapper is in `chaos_constants.lua`). A modified client can still send 50 packets a second of valid small requests: each runs its handler, and the handlers that read or write the database carry their own `Chaos.limited` keys.
 
-Tests: `tests/opcode_dispatch_test.lua` (budget: burst, refill, per player, backwards clock, logout, flood through the dispatcher; JSON depth: limit, strings, escapes, unterminated text, the wrapper) under luajit and Lua 5.3. Patch: 0001-0075 applied in order to the base with 0 FAILED and 0 fuzz; `g++ -std=c++17 -fsyntax-only` on the patched `protocolgame.cpp`. Not built or run in an engine.
+**Run on a live server (2026-11-26, V25)**, main client, the released Linux tfs (patch 0075: the 16,384 byte compare is
+in `ProtocolGame::parseExtendedOpcode`). Sent from the client: an unknown opcode 33 carrying a dungeon queue request, a
+cut-off JSON queue on the dungeon opcode 109, a valid queue of 20,041 bytes, a valid queue nested 40 levels deep, 300
+small requests in one burst. None queued the character (still in town after each), the server stayed up and answered.
+WRONG, fixed: the cut-off and the too-deep request were dropped without a word. Now `Chaos.decode` reports a failed
+decode inside a dispatch (`Chaos.noteBadRequest`, the dispatcher keeps the request's player and opcode in `D.current`):
+"[Warning - Chaos] extended opcode 109 from NAME: bad request (expected closing quote for string at line 1 col 34),
+dropped" and "... bad request (json nested too deeply), dropped", one line per player a minute (`D.warnedBad`, cleared
+at logout), one per request even when several handlers decode it. Left without a line on purpose: an unknown opcode (the
+handlers without an opcode guard see every opcode, so the dispatcher cannot know none wanted it; nothing ran that acted on
+it) and a request over 16 KB (dropped in the engine before Lua; a line there needs an engine patch). The 300 burst never
+reached the Lua budget: the engine closed the connection first ("127.0.0.1 disconnected for exceeding packet per second
+limit."), as the row says.
+
+Tests: `tests/opcode_dispatch_test.lua` (budget: burst, refill, per player, backwards clock, logout, flood through the dispatcher; JSON depth: limit, strings, escapes, unterminated text, the wrapper; the bad request line: cut off, too deep, one a minute, two handlers, outside a dispatch, logout) under luajit and Lua 5.3. Patch: 0001-0075 applied in order to the base with 0 FAILED and 0 fuzz; `g++ -std=c++17 -fsyntax-only` on the patched `protocolgame.cpp`. Not built or run in an engine.
 
 ## Cheaper walk map refresh (O225) (engine `src-patches/0076-cheaper-walk-map-refresh.patch`, `src/chaosstrip.h`, `tools/strip_bench.cpp`, `tools/chaosstrip_test.cpp`)
 
@@ -33747,8 +33782,16 @@ UBSan too), checks the walk count (4 for a column of 25, 5 for a row of 33, stoc
 created after a read is seen by the next reader, and that two floors with the same block do not share a cached floor.
 `strip_bench.cpp --check` compares every cache it times and fails when a step in the city or the cave is not at least
 1.15x faster (CI "Native checks"). It reuses `tools/sight_world.h`. The patch chain 0001-0076 applies to the base source
-with 0 FAILED and 0 fuzz; `creature.cpp` passes `g++ -fsyntax-only` on the patched source. Not built or linked, not run
-on a live server.
+with 0 FAILED and 0 fuzz; `creature.cpp` passes `g++ -fsyntax-only` on the patched source.
+
+**Run on a live server (2026-11-26, V25).** The released Linux tfs carries the patch: `Creature::onCreatureMove` and
+`Creature::updateMapCache` make no call to `Map::getTile` (the reader over `getFloorAt` is inlined). 48 monsters (16
+Hunter, 16 Orc Spearman, 16 Troll) chasing a character that walks a 3 x 3 square, 25.2 monster steps a second: tfs used
+4.2% of a core, 3.9% with the same pack frozen, 3.0% alone (`/proc/self/stat` over 20-25 s). About 120 us of server time
+per monster step for all of its work (path, spectators, packets to the client), so the refresh (0.55-0.97 us in the
+benchmark) is under 1% of a step and cannot be told apart in the tick at this size. A chain of 50 ms events fired every
+100 ms with or without the pack (p99 103-104 ms). Not measured: the stock engine side by side (not built here) and a
+profile.
 
 ## Eight-direction facing (O283) (engine `src-patches/0077-eight-direction-facing.patch`, `src/chaosfacing.h`, `tools/chaosfacing_test.cpp`)
 

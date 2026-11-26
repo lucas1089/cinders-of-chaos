@@ -908,6 +908,58 @@ do
 	ChaosDungeonMapSpawns[2] = nil
 end
 
+-- ------------------------------------------------------------------ V25: hazards do not count (dungeon 2's Tornadoes)
+-- 2026-11-26 on a live server: dungeon 2 started with 168 monsters, the thinned spawn file keeps 110. The other 58 are
+-- Tornadoes (experience 0, 5,000 health): patch_base_spawns.py's thinning counts only types that give experience, the
+-- run counted every one, so 85% needed 33 Tornadoes killed. Now a type with no experience stays and fights but is not
+-- in the roster, the total or the stall hint.
+do
+	for id, cr in pairs(creatures) do
+		if not cr:isPlayer() and id < 100000 then cr:remove() end
+	end
+	advance(3000)
+	Tile = nil
+	local rec = {}
+	ChaosDungeonMapSpawns[2] = rec
+	for i = 1, 10 do rec[#rec + 1] = {name = "Wardragon", pos = {x = 31700 + i, y = 32350, z = 8}} end
+	for i = 1, 6 do rec[#rec + 1] = {name = "Tornado", pos = {x = 31700 + i, y = 32352, z = 8}} end
+	local nextId, made = 8500, {}
+	local expOf = {Wardragon = 9000, Tornado = 0}
+	Game.createMonster = function(name, pos)
+		nextId = nextId + 1
+		local m = newCreature(nextId, name, P(pos.x, pos.y, pos.z), false)
+		local exp = expOf[name]
+		function m:getType() return {experience = function() return exp end} end
+		made[#made + 1] = m
+		return m
+	end
+	local q = newCreature(206, "Gale", P(32369, 32241, 7), true)
+	local from = #sent
+	ext.onExtendedOpcode(q, ChaosOpcodes.dungeons, {action = "queue", data = {id = 2, difficulty = 1}})
+	advance(9000)
+	ok(ChaosDungeonIsInside(q), "V25: the run is on")
+	local st
+	for i = from + 1, #sent do
+		if sent[i].action == "start" then st = sent[i].data end
+	end
+	eq(#made, 16, "V25: the Tornadoes are made too (they stay as a hazard)")
+	eq(st and st.left, 10, "V25: the total counts the 10 monsters with experience, not the 6 Tornadoes")
+	local dragons = {}
+	for _, m in ipairs(made) do
+		if m.name == "Wardragon" then dragons[#dragons + 1] = m end
+	end
+	for i = 1, 9 do dragons[i]:remove() end
+	advance(4000)
+	local last
+	for i = from + 1, #sent do
+		if sent[i].action == "killed" then last = sent[i].data end
+	end
+	ok(last and last.unlocked and last.percent == 90, "V25: 9 of 10 dead = 90% and the boss unlocked, Tornadoes alive")
+	q.pos = P(temple.x, temple.y, temple.z)
+	advance(4000)
+	ChaosDungeonMapSpawns[2] = nil
+end
+
 -- ------------------------------------------------------------------ beta test mode: no dungeon cooldown
 do
 	local before = Chaos.betaMode

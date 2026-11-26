@@ -35,7 +35,9 @@ end
 -- ice, green for earth / poison, red for physical, purple for energy, blue for drowning. So the hue tells the element:
 -- 15-55 degrees fire, 80-160 poison / earth, 165-200 ice; everything else (red, blue, purple, grey, white) none.
 CD.HUE = { fire = { 15, 55 }, poison = { 80, 160 }, ice = { 165, 200 } }
-CD.MIN_SAT = 0.45
+-- Seen in a client 2026-11-26: the server fork gives an ice hit palette 143 (sky blue, 153 / 255 / 255, saturation 0.40),
+-- not the stock cyan 35, so a floor of 0.45 left ice hits without frost. 0.35 takes sky blue in; grey and white stay out.
+CD.MIN_SAT = 0.35
 CD.MIN_VALUE = 90        -- of 255: dark colours say nothing
 
 -- r, g, b (0-255) of a colour as the Lua side gets it: "#rrggbb[aa]", a table {r, g, b} or {r =, g =, b =}

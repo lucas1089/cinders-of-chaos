@@ -151,6 +151,8 @@ jobs:
           /tmp/fxenv/bin/python -I client/tools/sprites/fix_pack_fx_test.py
           # the Bayer dissolve tail cut from the pack effects (O766, pair 85): the tail rule, scan, build, check, the fixed form of fix_pack_fx.py, the committed table
           /tmp/fxenv/bin/python -I client/tools/sprites/fix_dissolve_tail_test.py
+          # the stipple of the pack effects redrawn solid (O769, pair 88): the fill and drop rule, scan, build, check, the fixed forms of fix_pack_fx.py, the committed table
+          /tmp/fxenv/bin/python -I client/tools/sprites/fix_stipple_test.py
           # the bolt from the sky, drawn by code (O614, joins pair 73): the script draws the committed table and sums, ids file, tags; the test holds the drawing to its bar (same bytes twice, alpha, palette, the strike reaches the target tile)
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_lightning_fx.py check
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_lightning_fx_test.py
@@ -2224,7 +2226,7 @@ jobs:
     # forks have no access to it and skip the job
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20  # 5-9 min before O769; the stipple check and the redrawn O735 forms pushed it past 10
     steps:
       - uses: actions/checkout@v4
         with:
@@ -2385,6 +2387,11 @@ jobs:
       - name: Pack effects without the dissolve tail (fix_dissolve_tail.py check, pair 85, O766; pending before)
         run: |
           /tmp/fxenv/bin/python -I chaos/client/tools/sprites/fix_dissolve_tail.py check \
+              "$RUNNER_TEMP/pair/Tibia.dat" "$RUNNER_TEMP/pair/Tibia.spr"
+
+      - name: Pack effects with the stipple redrawn solid (fix_stipple.py check, pair 88, O769; pending before)
+        run: |
+          /tmp/fxenv/bin/python -I chaos/client/tools/sprites/fix_stipple.py check \
               "$RUNNER_TEMP/pair/Tibia.dat" "$RUNNER_TEMP/pair/Tibia.spr"
 
       - name: More purchased effects sit at their ids (gen_wst_more_fx.py live, pair 82, O735)

@@ -127,7 +127,8 @@ base:register()
 
 dofile("data/scripts/chaos/chaos_constants.lua")
 
--- handlers as the modules write them
+-- handlers as the modules write them (decodeIn[name]: the handler decodes its request with Chaos.decode)
+local decodeIn, decoded = {}, {}
 local function module(name, opcode)
 	local OPCODE = opcode
 	local ev = CreatureEvent(name)
@@ -139,6 +140,9 @@ local function module(name, opcode)
 		seen[#seen + 1] = name
 		if buffer == "boom" and name == "Bank" then
 			error("boom")
+		end
+		if decodeIn[name] then
+			decoded[#decoded + 1] = Chaos.decode(buffer) or false
 		end
 	end
 	ev:type("extendedopcode")
@@ -297,6 +301,63 @@ printed = {}
 sendOpcode(p, 60, "boom")
 ok(calls.Notify == 1, "after a failing handler the next one still runs")
 ok(printed[1] and printed[1]:find("Bank", 1, true) and printed[1]:find("boom", 1, true), "the error is reported")
+
+-- a request a handler cannot decode (O220 seen live, V25: dropped without a word): one console line per player a
+-- minute, named by opcode and player; a good request and a decode outside a dispatch print nothing
+do
+	local lim = Chaos.jsonMaxDepth
+	json = {decode = function(text)
+		if text:sub(1, 1) ~= "{" or text:sub(-1) ~= "}" then error("json.lua:42: unexpected end of input") end
+		return {action = "ok"}
+	end}
+	Chaos.jsonGuarded = nil
+	Chaos.guardJson()
+	decodeIn.Dungeons, decodeIn.Bank = true, true
+	local D = Chaos.opcodeDispatch
+	D.warnedBad[p:getId()] = nil
+	local function bad()
+		local n, last = 0, nil
+		for _, line in ipairs(printed) do
+			if line:find("bad request", 1, true) then n, last = n + 1, line end
+		end
+		return n, last or ""
+	end
+	reset(); printed = {}; decoded = {}
+	sendOpcode(p, 109, '{"action":"queue"}')
+	ok(decoded[1] and decoded[1].action == "ok" and bad() == 0, "a good request decodes and prints nothing")
+	sendOpcode(p, 109, '{"action":"queue","data":{"id":2,"diff')
+	local n, line = bad()
+	ok(decoded[2] == false and n == 1, "a cut-off request is dropped with one line: " .. n)
+	ok(line:find("extended opcode 109", 1, true) and line:find("Tester1", 1, true) and line:find("unexpected end", 1, true)
+		and not line:find("json.lua", 1, true), "the line names the opcode, the player and the reason: " .. line)
+	sendOpcode(p, 109, "{" .. string.rep("[", lim + 1) .. "}")
+	sendOpcode(p, 60, "not json")
+	n = bad()
+	ok(n == 1, "one line a minute per player, not one per request: " .. n)
+	local realMtime = os.mtime
+	local t0 = (realMtime and realMtime()) or os.time() * 1000
+	os.mtime = function() return t0 + 61000 end
+	printed = {}; decoded = {}
+	sendOpcode(p, 109, "{" .. string.rep("[", lim + 1) .. "}")
+	n, line = bad()
+	ok(n == 1 and line:find("nested too deeply", 1, true), "a minute later the next one is named (nesting): " .. line)
+	-- two handlers decoding the same bad request: still one line
+	os.mtime = function() return t0 + 200000 end
+	printed = {}
+	module("BankTwin", 60)
+	p:registerEvent("BankTwin")
+	decodeIn.BankTwin = true
+	sendOpcode(p, 60, "nope")
+	ok(bad() == 1, "two handlers of one request: one line")
+	os.mtime = realMtime
+	printed = {}
+	ok(Chaos.decode("nope") == nil and bad() == 0, "a decode outside a dispatch prints nothing")
+	D.forget(p:getId())
+	ok(D.warnedBad[p:getId()] == nil, "logout clears the warning time")
+	decodeIn.Dungeons, decodeIn.Bank, decodeIn.BankTwin = nil, nil, nil
+	json = nil
+	Chaos.jsonGuarded = nil
+end
 
 -- no record of the player's registrations (a reload of the scripts while online): every handler
 local r = newPlayer(3)
