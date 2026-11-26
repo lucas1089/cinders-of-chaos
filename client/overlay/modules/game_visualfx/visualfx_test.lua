@@ -401,6 +401,9 @@ do
   end
   eq(sorted, true, 'the arc ids are ascending')
   eq(seen[2] and seen[3] and seen[1], true, 'bolt, arrow and spear arc')
+  -- seen in a client 2026-11-26: the stock list stopped at 40; the large rock, the ammunition most items shoot
+  -- (crystalline arrow 49, prismatic 48, drill 50, vortex 45), the exercise bow's simple arrow 54 and the pack arrows arc
+  for _, id in ipairs({ 12, 45, 48, 49, 50, 54, 61, 251, 252, 253 }) do eq(seen[id], true, 'missile ' .. id .. ' arcs') end
   for _, spell in ipairs({ 4, 5, 11, 29, 30, 31 }) do eq(seen[spell], nil, 'spell missile ' .. spell .. ' stays straight') end
   local f = io.open(dir .. 'visualfx.lua', 'r')
   local src = f and f:read('*a') or ''

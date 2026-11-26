@@ -33,34 +33,60 @@ L.MOBILE_ROUNDS = {
 }
 
 -- ---------------------------------------------------------------- missile arcs (O230, base patch 0147)
--- Distance effect ids (missiles) that fly in a slight arc: the thrown and shot ones, which are physical. The ids are the
--- ShootType numbers of the base server (TFS 1.4.2 const.h, the dat's missile ids of protocol 10.98; the server tests pin
--- bolt = 2 and arrow = 3, server/tests/archery_test.lua). Spell missiles (fire 4, energy 5, death 11, ice 29, earth 30, holy
--- 31, the whirlwind blades, the Chaos art missiles from id 100 up, ...) are not listed and stay straight. An id that the dat
--- does not have is never drawn, so a longer list costs nothing.
+-- Distance effect ids (missiles) that fly in a slight arc: the thrown and shot ones (ammunition, thrown weapons, stones),
+-- elemental arrows and bolts too. The ids are the ShootType numbers of the base server (TFS 1.4.2 const.h, the dat's missile
+-- ids of protocol 10.98; the server tests pin bolt = 2 and arrow = 3, server/tests/archery_test.lua). Spell missiles (fire 4,
+-- energy 5, death 11, ice 29, earth 30, holy 31, the whirlwind blades, the Chaos art missiles from id 100 up, ...) are not
+-- listed and stay straight. An id that the dat does not have is never drawn, so a longer list costs nothing.
+-- Seen in a client 2026-11-26: the stock list stopped at id 40, so the large rock (12), the snowball, the stars and every
+-- newer ammunition flew straight, among them the crystalline arrow, prismatic, drill and vortex bolts that most bows and
+-- crossbows of the item list shoot, and the exercise bow's simple arrow (54; 53 is the glooth spear). The pack arrows of pair
+-- 41 (251-253, O236) arc too.
 L.ARC_MISSILES = {
-  1,  -- spear
-  2,  -- bolt
-  3,  -- arrow
-  6,  -- poison arrow
-  7,  -- burst arrow
-  8,  -- throwing star
-  9,  -- throwing knife
-  10, -- small stone
-  14, -- power bolt
-  16, -- infernal bolt
-  17, -- hunting spear
-  18, -- enchanted spear
-  21, -- royal spear
-  22, -- sniper arrow
-  23, -- onyx arrow
-  24, -- piercing bolt
-  28, -- ethereal spear
-  33, -- flash arrow
-  34, -- flaming arrow
-  35, -- shiver arrow
-  40, -- earth arrow
-  53, -- simple arrow (exercise bow, server/data/scripts/chaos/exercise_config.lua)
+  1,   -- spear
+  2,   -- bolt
+  3,   -- arrow
+  6,   -- poison arrow
+  7,   -- burst arrow
+  8,   -- throwing star
+  9,   -- throwing knife
+  10,  -- small stone
+  12,  -- large rock (thrown by monsters)
+  13,  -- snowball
+  14,  -- power bolt
+  16,  -- infernal bolt
+  17,  -- hunting spear
+  18,  -- enchanted spear
+  19,  -- red star
+  20,  -- green star
+  21,  -- royal spear
+  22,  -- sniper arrow
+  23,  -- onyx arrow
+  24,  -- piercing bolt
+  28,  -- ethereal spear
+  33,  -- flash arrow
+  34,  -- flaming arrow
+  35,  -- shiver arrow
+  40,  -- earth arrow
+  44,  -- tarsal arrow
+  45,  -- vortex bolt
+  48,  -- prismatic bolt
+  49,  -- crystalline arrow
+  50,  -- drill bolt
+  51,  -- envenomed arrow
+  53,  -- glooth spear
+  54,  -- simple arrow (exercise bow, server/data/scripts/chaos/exercise_config.lua)
+  58,  -- leaf star
+  59,  -- royal star
+  61,  -- diamond arrow
+  89,  -- spectral bolt
+  92,  -- water arrow
+  93,  -- arcane arrow
+  94,  -- water bolt
+  95,  -- arcane bolt
+  251, -- fire arrow (pack, O236)
+  252, -- frost arrow (pack, O236)
+  253, -- holy piercing arrow (pack, O236)
 }
 
 -- ---------------------------------------------------------------- missiles with a baked trail (O526, base patch 0194)
