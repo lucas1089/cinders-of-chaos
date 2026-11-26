@@ -1,0 +1,49 @@
+# Chaos: default ambient light 60 % (client/BASE.md "0214"; mods/client_settings/classes/dataset.lua, settings.lua; after
+# 0001-0213). Lua only, no engine code. Owner 2026-11-26 ("5 sobe 60%"): at the base default of 40 % spell light (0127)
+# looked faint.
+#  * dataset.lua: `ambientLight` default 40 -> 60 (a new install).
+#  * settings.lua: migrateAmbientLightDefault, once per install (flag `chaosAmbientLight60V1`), after the base migrations:
+#    a saved 40 becomes 60. setupStart saves every default, so a saved 40 is the old default for nearly everyone; any
+#    other value is the player's and stays, and a 40 chosen later stays. Test: client/tools/ambient_light_patch_test.py.
+--- a/mods/client_settings/classes/dataset.lua
++++ b/mods/client_settings/classes/dataset.lua
+@@ -334,7 +334,7 @@
+ 	},
+ 
+ 	ambientLight = {
+-		value = 40,
++		value = 60, -- Chaos: 60 % (was 40, owner 2026-11-26; settings.lua migrateAmbientLightDefault moves an old default)
+         apply = function(value)
+             local gameMapPanel = m_interface.getMapPanel()
+             gameMapPanel:setMinimumAmbientLight(value/100)
+--- a/mods/client_settings/settings.lua
++++ b/mods/client_settings/settings.lua
+@@ -239,6 +239,20 @@
+   g_settings.set("astraHdSpriteDefaultOffV1", true)
+ end
+ 
++-- Chaos: the default ambient light is 60 %, it was 40 % (owner 2026-11-26: spell light looked faint at 40).
++-- setupStart writes the defaults into the saved settings, so an old install holds 40 whether the player chose it or
++-- not. Once per install a saved 40 (the old default) becomes 60; any other value is the player's and stays, and a 40
++-- chosen after this ran stays too. A new install already gets 60 from dataset.lua.
++local function migrateAmbientLightDefault()
++  if g_settings.getBoolean("chaosAmbientLight60V1") then
++    return
++  end
++  if g_settings.getNumber("ambientLight") == 40 then
++    g_settings.set("ambientLight", 60)
++  end
++  g_settings.set("chaosAmbientLight60V1", true)
++end
++
+ local keybindOptions = KeyBind:getKeyBind("Dialogs", "Open Options")
+ local keybindCreatureNameBars = KeyBind:getKeyBind("UI", "Show/hide Creature Names and Bars")
+ local keybindFullScreen = KeyBind:getKeyBind("UI", "Toggle Fullscreen")
+@@ -266,6 +280,7 @@
+   GameOptions:setupStart()
+   migrateCacheUIDefaultOn()
+   migrateHdSpriteDefaultOff()
++  migrateAmbientLightDefault()
+ 
+   for i, file in pairs(importFiles) do
+     g_ui.importStyle(file)

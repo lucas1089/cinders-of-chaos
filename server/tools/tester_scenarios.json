@@ -14015,7 +14015,9 @@
    "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
   },
   "star_inlay": {
-   "files": [],
+   "files": [
+    "star_inlay_clean.lua"
+   ],
    "kind": "passive",
    "opcodes": [],
    "talkactions": [],

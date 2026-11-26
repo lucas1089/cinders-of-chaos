@@ -13,6 +13,7 @@ Shader "Chaos/MapGrade"
     float4 _Mood;        // rgb: added to the colour, w: added to the colour kept (saturation)
     float4 _Mood2;       // x: added to the contrast factor
     float4 _Params;      // x: grade on (0 or 1), y: glow strength, z: threshold, w: full
+    float4 _Params2;     // x, y: contrast to the ground from, to; z, w: bright ground from, to (MapGradeFx.BloomContrast*, BloomGround*)
     float4 _Dir;         // blur step in uv (x, y)
 
     struct v2f { float4 pos : SV_POSITION; float2 uv : TEXCOORD0; };
@@ -25,18 +26,28 @@ Shader "Chaos/MapGrade"
         return o;
     }
 
-    float3 Bright (float2 uv)
+    float Luma (float2 uv)
+    {
+        return dot(tex2D(_MainTex, uv).rgb, float3(0.299, 0.587, 0.114));
+    }
+
+    float3 Bright (float2 uv, float ground)
     {
         float3 c = tex2D(_MainTex, uv).rgb;
         float l = dot(c, float3(0.299, 0.587, 0.114));
-        return c * smoothstep(_Params.z, _Params.w, l);
+        return c * smoothstep(_Params.z, _Params.w, l) * smoothstep(_Params2.x, _Params2.y, l - ground);
     }
 
     float4 fragBright (v2f i) : SV_Target
     {
         float2 o = _MainTex_TexelSize.xy * 2.0;   // half a pixel of the quarter size buffer
-        float3 s = Bright(i.uv + float2(-o.x, -o.y)) + Bright(i.uv + float2(o.x, -o.y)) + Bright(i.uv + float2(-o.x, o.y)) + Bright(i.uv + float2(o.x, o.y));
-        return float4(s * 0.25, 1.0);
+        float2 r = o * 12.0;                      // MapGradeFx.BloomRing tap offsets
+        float2 d = o * 8.5;
+        float ground = (Luma(i.uv + float2(r.x, 0.0)) + Luma(i.uv - float2(r.x, 0.0)) + Luma(i.uv + float2(0.0, r.y)) + Luma(i.uv - float2(0.0, r.y))
+                      + Luma(i.uv + d) + Luma(i.uv - d) + Luma(i.uv + float2(d.x, -d.y)) + Luma(i.uv + float2(-d.x, d.y))) * 0.125;
+        float3 s = Bright(i.uv + float2(-o.x, -o.y), ground) + Bright(i.uv + float2(o.x, -o.y), ground)
+                 + Bright(i.uv + float2(-o.x, o.y), ground) + Bright(i.uv + float2(o.x, o.y), ground);
+        return float4(s * (0.25 * (1.0 - smoothstep(_Params2.z, _Params2.w, ground))), 1.0);
     }
 
     float4 fragBlur (v2f i) : SV_Target

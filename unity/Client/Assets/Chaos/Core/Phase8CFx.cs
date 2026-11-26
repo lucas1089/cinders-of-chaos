@@ -123,6 +123,10 @@ namespace Chaos.Core
         public const float VignetteFrom = 0.50f, VignetteTo = 1.28f, VignetteX = 0.88f, VignetteY = 0.95f;
         // soft glow: a pixel glows from this luma, fully from the next; the halo's weight; the blur's taps (offset in small pixels, weight)
         public const float BloomThreshold = 0.80f, BloomFull = 0.96f, BloomStrength = 0.35f, BloomMaxStrength = 0.5f;
+        // a pixel glows only when it stands out from the ground round it (visualfx_logic.lua BLOOM contrast / ground / ring, seen in
+        // a client 2026-11-26: a snow field went pale): its luma over the mean of 8 reads BloomRing taps away ramps over
+        // BloomContrast, and a ring mean over BloomGround turns it off
+        public const float BloomContrastFrom = 0.15f, BloomContrastTo = 0.35f, BloomGroundFrom = 0.50f, BloomGroundTo = 0.70f, BloomRing = 12f;
         public static readonly float[][] BlurTaps = { new[] { 0f, 0.2270270270f }, new[] { 1.3846153846f, 0.3162162162f }, new[] { 3.2307692308f, 0.0702702703f } };
 
         /// <summary>The five values of the mood (r, g, b, sat, con) cut to the engine's limits.</summary>

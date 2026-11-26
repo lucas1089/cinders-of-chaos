@@ -362,6 +362,127 @@ do
 	Chaos = nil
 end
 
+-- 8. the clean-up of pieces from before the V22 fix (owner 2026-11-26, "8 faça a limpeza"): K.cleanText / K.cleanItem
+do
+	eq(K.refinedName("Tier I ( 1 Star )\nRefined by Mr. Aria Jones."), "Mr. Aria Jones", "the refiner's name")
+	eq(K.refinedName("Item Level: 80"), nil, "no refiner")
+	local function clean(text, td)
+		local out, changed = K.cleanText(text, td)
+		return out, changed
+	end
+	-- an empty-star twin the old extractor left: the copied line goes, the attribute with it
+	local out, ch = clean("Tier I ( 3 Star )", "No Tier ( Empty Stars )")
+	eq(out, "", "a stale line alone: the attribute goes")
+	eq(ch, true, "changed")
+	-- a piece stoned again after that: the old tier gives way to the type's
+	out, ch = clean("Tier I ( 3 Star )\nRefined by Aria.", "Tier V ( 3 Star )")
+	eq(out, "Tier V ( 3 Star )\nRefined by Aria.", "the stale tier becomes the current one")
+	eq(ch, true, "changed")
+	-- a piece made after the fix stays as it is
+	out, ch = clean("Tier V ( 3 Star )\nRefined by Aria.", "Tier V ( 3 Star )")
+	eq(ch, false, "the current tier line stays, nothing changes")
+	eq(out, "Tier V ( 3 Star )\nRefined by Aria.", "same text")
+	-- the rolled text stays, the stale line goes, the current one is kept where it was
+	out = clean("Item Level: 80\nTier I ( 3 Star )\nRefined by Aria.", "Tier II ( 2 Star )")
+	eq(out, "Item Level: 80\nRefined by Aria.", "rolled text, stale tier: the rolled text and the refiner stay")
+	out, ch = clean("Item Level: 80\nTier II ( 2 Star )\nRefined by Aria.", "Tier II ( 2 Star )")
+	eq(ch, false, "the current tier line next to a rolled text stays")
+	out = clean("Item Level: 80\nTier II ( 2 Star )\nTier I ( 3 Star )\nTier II ( 2 Star )", "Tier II ( 2 Star )")
+	eq(out, "Item Level: 80\nTier II ( 2 Star )", "a stale line goes, the current one is kept once")
+	-- descriptions with no tier line are never touched
+	out, ch = clean("Item Level: 80\nRefined by Aria.", "Tier II ( 2 Star )")
+	eq(ch, false, "no tier line: untouched")
+	out, ch = clean("Tier list: none", "Tier II ( 2 Star )")
+	eq(ch, false, "a line that only starts with Tier is own text")
+	eq(select(2, clean(nil, "x")), false, "no description")
+	eq(select(2, clean("", "x")), false, "an empty description")
+	-- a second pass changes nothing
+	local once = clean("Tier I ( 3 Star )\nRefined by Aria.", "Tier V ( 3 Star )")
+	eq(select(2, clean(once, "Tier V ( 3 Star )")), false, "idempotent")
+
+	-- K.cleanItem on a mocked item
+	local function mockItem(id, desc)
+		local it = {id = id, attrs = {[ITEM_ATTRIBUTE_DESCRIPTION] = desc}, removed = 0}
+		function it:getId() return self.id end
+		function it:getAttribute(k) return self.attrs[k] end
+		function it:setAttribute(k, v) self.attrs[k] = v end
+		function it:removeAttribute(k) self.attrs[k] = nil; self.removed = self.removed + 1 end
+		function it:isContainer() return self.inner ~= nil end
+		function it:getItems() return self.inner end
+		return it
+	end
+	local it = mockItem(27113, "Tier I ( 3 Star )")
+	eq(K.cleanItem(it, "No Tier ( Empty Stars )"), true, "cleanItem changed the twin")
+	eq(it.attrs[ITEM_ATTRIBUTE_DESCRIPTION], nil, "its attribute is gone")
+	eq(it.removed, 1, "removed once")
+	eq(K.cleanItem(mockItem(1, nil), "x"), false, "an item without a description")
+
+	-- the glue: star_inlay_clean.lua walks a character once (equipment, backpack, inbox, depots) and the stash hook
+	local TYPES = {[27113] = "No Tier ( Empty Stars )", [26900] = "Tier V ( 3 Star )", [2000] = ""}
+	ItemType = function(id) return {getDescription = function() return TYPES[id] or "" end} end
+	local events, storage, logins = {}, {}, {}
+	addEvent = function(fn, ms) events[#events + 1] = fn end
+	CreatureEvent = function(name)
+		local ev = {name = name}
+		function ev:type(t) self.t = t end
+		function ev:register() logins[#logins + 1] = self end
+		return ev
+	end
+	local twin = mockItem(27113, "Tier I ( 3 Star )")
+	local worn = mockItem(26900, "Tier I ( 3 Star )\nRefined by Aria.")
+	local good = mockItem(26900, "Tier V ( 3 Star )\nRefined by Aria.")
+	local bp = mockItem(2000, nil)
+	bp.inner = {twin, good}
+	local depotPiece = mockItem(27113, "Tier II ( 1 Star )")
+	local depot = mockItem(2000, nil)
+	depot.inner = {depotPiece}
+	local player = {id = 77}
+	function player:getId() return self.id end
+	function player:getName() return "Aria" end
+	function player:getSlotItem(slot) return ({[1] = worn, [3] = bp})[slot] end
+	function player:getInbox() return mockItem(2000, nil) end
+	function player:getDepotChest(id) return id == 1 and depot or nil end
+	function player:getStorageValue(k) return storage[k] or -1 end
+	function player:setStorageValue(k, v) storage[k] = v end
+	Player = function(id) return id == 77 and player or nil end
+	Game = {getTowns = function() return {{getId = function() return 1 end}, {getId = function() return 2 end}} end}
+	local oldPrint = print
+	local printed = {}
+	print = function(s) printed[#printed + 1] = s end
+	ChaosStarInlayClean = nil
+	dofile("data/scripts/chaos/star_inlay_clean.lua")
+	local C = ChaosStarInlayClean
+	eq(#logins, 1, "one login event")
+	eq(logins[1].t, "login", "of type login")
+	logins[1].onLogin(player)
+	local guard = 0
+	while #events > 0 and guard < 50 do
+		guard = guard + 1
+		table.remove(events, 1)()
+	end
+	print = oldPrint
+	eq(twin.attrs[ITEM_ATTRIBUTE_DESCRIPTION], nil, "the twin in the backpack is clean")
+	eq(worn.attrs[ITEM_ATTRIBUTE_DESCRIPTION], "Tier V ( 3 Star )\nRefined by Aria.", "the worn piece names its tier")
+	eq(good.attrs[ITEM_ATTRIBUTE_DESCRIPTION], "Tier V ( 3 Star )\nRefined by Aria.", "a good piece stays")
+	eq(depotPiece.attrs[ITEM_ATTRIBUTE_DESCRIPTION], nil, "the depot piece is clean")
+	eq(storage[C.STORAGE], C.VERSION, "the character is marked done")
+	ok(printed[1] and printed[1]:find("3 stale", 1, true) ~= nil, "one log line with the count: " .. tostring(printed[1]))
+	-- once: a second login walks nothing
+	twin.attrs[ITEM_ATTRIBUTE_DESCRIPTION] = "Tier I ( 3 Star )"
+	logins[1].onLogin(player)
+	eq(#events, 0, "a second login schedules nothing")
+	eq(twin.attrs[ITEM_ATTRIBUTE_DESCRIPTION], "Tier I ( 3 Star )", "and changes nothing")
+	-- the stash hook cleans an item on its way out
+	eq(C.cleanItem(twin), true, "cleanItem of the glue (the stash hook)")
+	eq(twin.attrs[ITEM_ATTRIBUTE_DESCRIPTION], nil, "the withdrawn twin is clean")
+	eq(C.cleanItem(nil), false, "no item")
+	local stashSrc = readFile("data/scripts/chaos/stash.lua")
+	ok(stashSrc:find("ChaosStarInlayClean.cleanItem, item", 1, true) ~= nil, "stash.lua cleans a withdrawn item")
+	eq(C.STORAGE, 7103170, "the storage of README Storage keys")
+	ok(readFile("README.md"):find("| 7103170 - 7103179 |", 1, true) ~= nil, "the block is in README Storage keys")
+	ItemType, addEvent, CreatureEvent, Player, Game, ChaosStarInlayClean = nil, nil, nil, nil, nil, nil
+end
+
 os.execute("rm -rf '" .. root .. "'")
 print(string.format("star_inlay_test: %d checks, %d failures", checks, fails))
 if fails > 0 then

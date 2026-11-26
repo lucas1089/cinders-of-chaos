@@ -29,8 +29,9 @@ A.LAYERS = {
   { name = 'dust_near',   kind = 'dust',   image = 'dust_near',  vx = 6,  vy = 4,   sway = 12, swayY = 7, period = 7400, phase = 301, pulse = 0,    pulseMs = 1000, max = 0.9 },
 }
 -- the specks in one tile of each layer (gen_ambient_art.py COUNTS; the test compares them): the cap of the effect
-A.ART = { embers_far = 12, embers_near = 5, motes_far = 9, motes_near = 4, dust_far = 16, dust_near = 6 }
-A.MAX_SPECKS_PER_TILE = 24        -- the most any one kind shows in a tile (its two layers together)
+-- (owner 2026-11-26: 2.5x the specks of before, 12 / 5 / 9 / 4 / 16 / 6, and 1.6x their size; same tiles, same rectangles)
+A.ART = { embers_far = 30, embers_near = 12, motes_far = 22, motes_near = 10, dust_far = 40, dust_near = 15 }
+A.MAX_SPECKS_PER_TILE = 55        -- the most any one kind shows in a tile (its two layers together)
 
 -- the option (Options > Graphics "Ambient particles", dataset.lua `ambientParticles`): on unless it is the boolean false
 function A.optionOn(value)

@@ -161,7 +161,7 @@ table (O312)"), shutdown / restart with
 countdown (dangerous; announces at 60/30/10/5/... marks, saves, then `GAME_STATE_SHUTDOWN` - TFS cannot restart itself,
 use a supervisor), cancel_countdown, set_state (open/close), online, stats.
 
-World: spawn_monster, spawn_npc, create_item, remove_items (movable items on a tile), clean_map, set_time (only if
+World: spawn_monster (paced like a map spawn of its level, pace.lua `ChaosPace.mark`, 2026-11-26), spawn_npc, create_item, remove_items (movable items on a tile), clean_map, set_time (only if
 `Game.setWorldTime` exists), set_weather (rain storage from `customs/globalevents/rain.lua`), town_teleport, list_towns, start_raid.
 
 Economy: give_gold, remove_gold, give_bank, item_price (item info + market table stats), market_offers, market_buy_orders

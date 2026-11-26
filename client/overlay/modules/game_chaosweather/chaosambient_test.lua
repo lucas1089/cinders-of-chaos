@@ -124,8 +124,10 @@ for _, size in ipairs({ { 1, 1 }, { 640, 480 }, { 1228, 790 }, { 3840, 2160 } })
 end
 eq(A.maxQuads(1228, 790) <= 40, true, 'the quads of a game window: ' .. A.maxQuads(1228, 790))
 eq(A.maxQuads(3840, 2160) <= 220, true, 'the quads of a 4K window: ' .. A.maxQuads(3840, 2160))
-eq(A.maxSpecks(1228, 790) <= 400, true, 'the specks of a game window: ' .. A.maxSpecks(1228, 790))
-eq(A.maxSpecks(3840, 2160) <= 1500, true, 'the specks of a 4K window: ' .. A.maxSpecks(3840, 2160))
+-- the specks are pixels of the tiles (no cost of their own); the bound holds the art to what the owner asked (2026-11-26: 2.5x)
+eq(A.maxSpecks(1228, 790) <= 700, true, 'the specks of a game window: ' .. A.maxSpecks(1228, 790))
+eq(A.maxSpecks(1228, 790) >= 600, true, 'dense enough on a game window: ' .. A.maxSpecks(1228, 790))
+eq(A.maxSpecks(3840, 2160) <= 3000, true, 'the specks of a 4K window: ' .. A.maxSpecks(3840, 2160))
 for kind in pairs(A.KINDS) do
   local n = 0
   for _, layer in ipairs(A.LAYERS) do if layer.kind == kind then n = n + A.ART[layer.name] end end

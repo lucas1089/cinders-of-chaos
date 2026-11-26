@@ -91,6 +91,93 @@ function K.unrefineItem(item)
 	return true
 end
 
+-- the clean-up of pieces from before the V22 fix (owner 2026-11-26, "8 faça a limpeza"; star_inlay_clean.lua walks a
+-- character once at login and cleans every item withdrawn from the stash). A piece the old extractor handled keeps the
+-- copied "Tier I ( 3 Star )" line in its own description, and a piece stoned again after that named the old tier.
+
+-- the name of the last "Refined by <name>." line of a description, or nil
+function K.refinedName(text)
+	local name
+	for line in (tostring(text or "") .. "\n"):gmatch("([^\n]*)\n") do
+		local n = line:match("^%s*Refined by (.-)%.?%s*$")
+		if n and n ~= "" then
+			name = n
+		end
+	end
+	return name
+end
+
+local function trim(s)
+	return (tostring(s or ""):gsub("^%s+", ""):gsub("%s+$", ""))
+end
+
+-- the description a piece should carry, from its own description and its item type's description (the current tier
+-- line of a star variant, "No Tier ( Empty Stars )" of an empty-star twin). A tier line that is not the type's goes; the
+-- type's own tier line stays (once). A refined piece left with no text of its own gets the type's text back, as refine()
+-- writes it. Returns the new text ("" = remove the attribute) and whether it changed; a description without a tier
+-- line is never touched.
+function K.cleanText(text, typeDescription)
+	if type(text) ~= "string" or text == "" then
+		return text, false
+	end
+	local any = false
+	for line in (text .. "\n"):gmatch("([^\n]*)\n") do
+		if K.isTierLine(line) then
+			any = true
+			break
+		end
+	end
+	if not any then
+		return text, false
+	end
+	local current = {}
+	for line in (tostring(typeDescription or "") .. "\n"):gmatch("([^\n]*)\n") do
+		if K.isTierLine(line) then
+			current[trim(line)] = true
+		end
+	end
+	local kept, seen = {}, {}
+	for line in (K.stripRefined(text) .. "\n"):gmatch("([^\n]*)\n") do
+		if not K.isTierLine(line) then
+			kept[#kept + 1] = line
+		elseif current[trim(line)] and not seen[trim(line)] then
+			seen[trim(line)] = true
+			kept[#kept + 1] = line
+		end
+	end
+	local body = (table.concat(kept, "\n"):gsub("%s+$", ""))
+	local name = K.refinedName(text)
+	local out = body
+	if name then
+		-- as refine() writes it, but the type's tier line kept above stays where it was
+		if out == "" then
+			out = tostring(typeDescription or "")
+		end
+		local line = K.REFINED .. name .. "."
+		out = out == "" and line or (out .. "\n" .. line)
+	end
+	return out, out ~= text
+end
+
+-- the engine side of cleanText on one item (an item userdata, or a mock with the same methods). Returns true when it
+-- changed the item.
+function K.cleanItem(item, typeDescription)
+	local ok, old = pcall(function() return item:getAttribute(ITEM_ATTRIBUTE_DESCRIPTION) end)
+	if not ok or type(old) ~= "string" then
+		return false
+	end
+	local text, changed = K.cleanText(old, typeDescription)
+	if not changed then
+		return false
+	end
+	if text == "" then
+		item:removeAttribute(ITEM_ATTRIBUTE_DESCRIPTION)
+	else
+		item:setAttribute(ITEM_ATTRIBUTE_DESCRIPTION, text)
+	end
+	return true
+end
+
 -- the refusal for a worn piece, in the player's language when Chaos.t is loaded
 function K.refuseWorn(player)
 	local text = K.WORN_TEXT

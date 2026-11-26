@@ -956,6 +956,7 @@ names it here and in `chaos_constants.lua` (or its own `*_config.lua`).
 | 7103120 - 7103129 | effect owner marks (`Chaos.storage.fxOwner`, `data/lib/chaos_fx_owner.lua`, O567): +0 is 1 while the player's client wants the marks of its own effects (set at the client's `hello`, -1 at login and logout); +1..+9 free |
 | 7103150 - 7103159 | Greater Rift (`rift_config.lua` `greater.key.boughtStorage`, O668): +0 Greater Rift Keys bound with omen fragments today, +1 the day (YYYYMMDD); +2..+9 free |
 | 7103160 - 7103169 | quiet first login and introductions (`intros_config.lua` `storage`, O761): +0 the state (-1 never seen, 0 open: a character from before O761, staff, testers; 1 quiet), +1 the introductions given (bits by index of `intros`); +2..+9 free |
+| 7103170 - 7103179 | star inlay clean-up (`star_inlay_clean.lua` `ChaosStarInlayClean.STORAGE`, O181, owner 2026-11-26): +0 the version of the login walk this character had (1); +1..9 free |
 | 7109990 - 7109992 | spell supports: cast context and Reprisal (`data/lib/chaos_supports_config.lua`) |
 | 7109993 | spell modifier masteries (O451, `data/lib/chaos_spell_masteries_config.lua` `storage`): the id of the held choice, or -1; written by `spell_masteries.lua` |
 | 7110000 - 7111999 | spell supports: sockets per spell id (base + spell id * 4 + 0..3) |
@@ -12869,6 +12870,17 @@ these ids except the price tables, `sell_prices.lua` and `chaos_item_prices_data
   changes nothing. Not run live.
 
 Seen in a client (2026-11-26, V22): the tooltips of the Star Inlay Stone, the Common Three Stars Inlay Stone and the Star Extractor name the five sets and "not worn". Stone, three stars and extractor on Skeletal Boots work, the Look of the star piece names its tier. Found: the extractor left the copied "Tier I ( 3 Star )" line on the empty-star piece, so its Look named the old tier and the next stone kept it as own text. `star_inlay_core.lua` `K.ownText` drops a copied tier line in `refine` and `unrefineItem` (an own text that holds nothing else goes); a piece that already carries a stale line is cleaned at its next stone. Tests: `tests/star_inlay_test.lua` (isTierLine, ownText, block 4b).
+
+Clean-up of the old pieces (owner 2026-11-26, "8 faça a limpeza"). `star_inlay_core.lua` `K.cleanText(text, typeDescription)`:
+a description with a tier line loses every tier line that is not its item type's; the type's own line stays, once. A
+refined piece left with no own text gets the type's text and its "Refined by" line back, as `refine` writes it. A text
+with no tier line is never touched. `K.cleanItem` writes it (an empty result removes the attribute, so the type's
+text shows). `star_inlay_clean.lua` walks each character once at login, one place per tick: worn items and the
+backpack, the purse, the inbox and every loaded depot chest (`getDepotChest(id, false)`), as `rarity_migrate.lua` does.
+Storage 7103170 marks it done ("Storage keys"); a log line counts the items changed. The stash keeps items as saved
+blobs, so `stash.lua` `S.stowWithdrawn` cleans each item on its way out. Anything else (a house floor, the market) is
+cleaned at its next stone. GM rerun: `/lua ChaosStarInlayClean.walk(Player("Name"))`. Tests: `tests/star_inlay_test.lua`
+block 8 (the rules, idempotence, the walk on a mocked engine, once per character, the stash hook). Not run live.
 
 ## Base monster names (`tools/patch_base_monster_names.py`, `data/monster/base_monster_names.csv`, `tests/base_monster_names_patch_test.lua`)
 
@@ -24883,6 +24895,15 @@ hours (8 to 1000 unchanged at 116.4). The display clamp of monster levels (`mons
 Tests: `tests/gamble_test.lua`, `professions_test.lua`, `boss_roulette_test.lua`, `roulette_pools_test.lua`,
 `cursedchest_test.lua`, `embercache_test.lua`, `weeklychest_test.lua`, `respec_test.lua`, `prizes_test.lua`,
 `mainquest_test.lua`, `monster_levels_test.lua`; `tools/loot_bands_test.py` (the `--late` reader on a synthetic tree).
+
+**Bloodfang Reaver checked (owner 2026-11-26, "2 confere").** A client saw its auto loot pay 10k-40k gold a kill. Its
+stock loot is 1-3 crystal coins at 70% (14,000 a kill), 17,780 corpse gold with the junk and gear. A paced kill
+(pool level 409, base set: loot 0.066, coins 0.118) keeps about 446 corpse gold, 668 sale gold. Its hunts (347-471)
+pay 1,356 sale gold a kill on average at 1,236 kills an hour; the Reaver is 26th of 53 there. So the paced monster is
+inside the curve and its loot stays. The 10k-40k were unpaced kills: the full stock roll, about 23x the curve at 409
+(934k an hour). A monster made by a script is not paced unless marked, and the staff tool "Spawn monster" did not mark
+its monsters. It calls `ChaosPace.mark` now (`admin/actions_world.lua`), so a staff test kill pays as a hunt.
+`luajit tools/loot_model.lua --check` is unchanged.
 
 ## Gold faucets against the curve (O754) (`tools/gold_faucets_model.lua`, `gold_faucets_balance_config.lua`)
 
