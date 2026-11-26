@@ -469,5 +469,21 @@ do
   eq(F.pruneRetiredSlots(nil, lookup, set), 0, 'no mappings')
 end
 
+-- V14 (2026-11-25, seen in a client): Lantern and Greater Lantern stood in the hotbar's Assign Spell list of every class.
+-- The server retired them, but the client renames stock words before F.apply ("utevo lux" -> "vael lyss"), so the
+-- retired set must hold the renamed words too
+do
+  local set = F.removedWords(ChaosRemovedSpells, ChaosCappedSpells, ChaosRetiredSpells, ChaosSpellNames)
+  eq(set['utevo lux'], true, 'Lantern stock words gone')
+  eq(set['vael lyss'], true, 'Lantern renamed words gone')
+  eq(set['utevo gran lux'], true, 'Greater Lantern stock words gone')
+  eq(set['vael gal lyss'], true, 'Greater Lantern renamed words gone')
+  eq(set['ash gor'], nil, 'Ghost Rope stays for the classes that keep it')
+  eq(F.removedWords(ChaosRemovedSpells, nil, ChaosRetiredSpells)['vael lyss'], nil, 'no names table: stock words only')
+  local info = { ['Lantern'] = { id = 10, words = 'vael lyss', vocations = { 1, 2 } } }
+  F.apply(info, {}, {}, { ['vael lyss'] = true }, set)
+  eq(info['Lantern'].notOnServer, true, 'a renamed retired spell is off the server even when its words are known')
+end
+
 if fails > 0 then os.exit(1) end
 print('spell fix tests OK')

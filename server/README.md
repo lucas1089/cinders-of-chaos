@@ -8776,6 +8776,10 @@ modifiers for bow and crossbow users. Arrows and bolts are gone from the game. T
 slot until 2026-10-21 ("Second ring slot" below); since src-patch 0058 it takes nothing and the client draws the badge
 slot there ("Badge slot").
 
+Seen in a client (2026-11-25, V14): a Deadeye with a bow and a fire, then an ice quiver, no arrows. The extra shot hops
+to the next monster as the pair 41 fire arrow, then the frost arrow (`weapon_styles.lua` sends it from the target).
+Sunspear lands its holy hit.
+
 **The off-hand quiver** (owner request "Quivers go in the off-hand now"; engine src-patch 0023). Bows and crossbows stay
 two-handed, so the two-handed speed and damage of "Weapon styles", the keystones that ask for a two-handed weapon or no
 shield, and the class kits see them as before; balance does not change. The one exception is the quiver, in
@@ -18432,6 +18436,9 @@ monsters' loot. 52 are removed. **Six stay in their loot** (owner decision 2026-
 
 ## Badge slot (`badges.lua`, `badges_core.lua`, `tools/patch_badges.py`, `src-patches/0058-badge-slot-no-second-ring.patch`, client base patch 0113, client `game_badgeslot`)
 
+Seen in a client (2026-11-25, V14): a Furious Moon Badge moved into slot 13, right column, third row, where the second
+ring slot was. Its tooltip says Badge, armour 3, profession bonuses, weight.
+
 Beta question 2026-10-22: a player found a Moon Amplifier Catalyst [1] and asked what a Moon Badge is. The base engine
 has five extra inventory slots: deck (12), badge (13), ship (14), belt (15), gloves (16). Our client drew slots 1-10
 only, so nothing worn there could be seen or taken off. The first answer (commit bf2919f7) retired the badges. Owner
@@ -27964,6 +27971,10 @@ Art from the October 2026 art sets, converted to our 32 px format once and kept 
 ## Fist weapons (`tools/install_fist_weapons.py`, `data/lib/chaos_fist_weapons.lua`, `scripts/chaos/fist_weapons.lua`)
 The Monk line's fist weapons (docs/CLASSES.md "Monk"). Owner 2026-10-23: "creio que o monk nao tem armas pra ele. se nao
 tiver, faca por favor".
+
+Seen in a client (2026-11-25, V14): a level 800 Shadowfist equips splinter claws and emberhide claws in the shield hand.
+Tooltip: Fist Weapon, attack 41 / 117, DPS ~771 / ~793. The hits land. The small gap is the O472 rule: bare fists at
+level 800 are 115.
 
 * **O472 (2026-11-10): the numbers below are the attack before the weapon growth.** The CSV keeps them; `install_fist_weapons.py`
   installs `grown(CSV attack, level)` (weapon_growth.py: a(level) = 1.31 at 300, 1.49 at 500, 2.41 at 1000, 2.88 from 2000), and

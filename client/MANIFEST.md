@@ -618,6 +618,16 @@ rotation and a potion never for a rune. The test also reads base patch 0062.
   checks: the server vocation id or the base's folded id, never a `notOnServer` entry. Wild Bond (Beastmaster) and
   Moonfang Pack (Illusionist) show; the stock "Summon Paladin / Knight / Sorcerer / Druid Familiar" (not on the server) no
   longer do. Tests: `spellfix_test.lua`.
+- **Seen in a client (2026-11-25, V14).** Four class changes by Info & Services > Change Vocation: Elementalist,
+  Beastmaster, Lich, Shadowfist, Deadeye. Spellbook, Assign Spell lists and Auto setup right per class. Two bugs fixed:
+  - Lantern and Greater Lantern stood in every class's Assign Spell list. The server retired them, but
+    `renameStockSpells` turns "utevo lux" into "vael lyss" before `ChaosSpellFix.apply`, so the retired stock words never
+    matched. `F.removedWords(removed, capped, retired, names)` now also holds each retired spell's renamed words;
+    `hideRemovedSpells` drops them from the spell order too. Test: `spellfix_test.lua` V14 block.
+  - After a class change the old class's hotbar slots stayed lit, the new ones grey, until the next mana tick. The base
+    action bar greys a slot only on a mana, soul or level change, and the server sends the vocation after the mana.
+    `game_chaosspells` now runs `modules.game_actionbar.onUpdateActionBarStatus` on `LocalPlayer.onVocationChange`. The
+    slots stay, as the server message says.
 
 ## Helper auto rotation (new, `game_helperrotation`: `autorotation*.lua`)
 
