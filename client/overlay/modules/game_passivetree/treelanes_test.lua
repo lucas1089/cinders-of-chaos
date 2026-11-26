@@ -153,5 +153,15 @@ for key, list in pairs(icons) do
   end
 end
 
+-- the lane a saved tree keeps (O305, V30): a plain node reads the sent lane, a keystone the own variant
+local plainNode, ksNode = nodes[2], nodes[624]
+eq(T.variantKey(plainNode, 'beastmaster', 'paladin'), 'paladin', 'a plain node reads the kept lane')
+eq(T.variantKey(plainNode, 'beastmaster', nil), 'beastmaster', 'no lane: the own variant')
+eq(T.variantKey(ksNode, 'beastmaster', 'paladin'), 'beastmaster', 'a keystone reads the own variant')
+eq(T.variantKey({customStats = {strength = 1}, masteries = {}}, 'beastmaster', 'paladin'), 'beastmaster',
+  'a mastery reads the own variant')
+ok(plainNode.paladin == nil and plainNode.beastmaster and statText(plainNode.customStats) ~=
+  statText(plainNode.beastmaster.customStats), 'node 2: the Ranger reads its own stats, the Beastmaster lane others')
+
 print(string.format('treelanes_test: %d checks, %d failures', count, fails))
 if fails > 0 then os.exit(1) end

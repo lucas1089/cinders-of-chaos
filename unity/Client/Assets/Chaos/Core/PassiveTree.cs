@@ -155,6 +155,8 @@ namespace Chaos.Core
         public readonly AutoBuild Auto;
         public readonly List<string> PresetNames = new List<string>();
         public string Cls = "", Line = "", Vocation = "";
+        /// <summary>O305 (V30): the lane the saved tree's plain nodes read, kept from the class it was made under (sendNodes / inspect "lane"; "" the own variant).</summary>
+        public string Lane = "";
         public RespecInfo Respec;
         public int BossGot, BossTotal;
         public string BossLabel = "";
@@ -210,7 +212,7 @@ namespace Chaos.Core
             foreach (object o in Json.List(data, "nodes")) if (o is double d) { Allocated.Add((int)d); v.Count++; }
             Masteries.Clear();
             foreach (object o in Json.List(data, "masteries")) Masteries[Json.Int(o, "id")] = Json.Int(o, "choice");
-            Cls = Json.Text(data, "cls"); Line = Json.Text(data, "line"); Vocation = Json.Text(data, "vocation");
+            Cls = Json.Text(data, "cls"); Line = Json.Text(data, "line"); Vocation = Json.Text(data, "vocation"); Lane = Json.Text(data, "lane");
             Viewing = v;
             PreviewNodes = null;
             Touch();
@@ -416,6 +418,7 @@ namespace Chaos.Core
             Masteries.Clear();
             foreach (object o in Json.List(data, "masteries")) Masteries[Json.Int(o, "id")] = Json.Int(o, "choice");
             if (Json.Get(data, "vocation") is string v) Vocation = v;
+            Lane = Json.Get(data, "lane") is string ln ? ln : "";
             if (Json.Get(data, "cls") is string c) Cls = c;
             if (Json.Get(data, "line") is string l) Line = l;
             Preset = Json.Int(data, "preset");
@@ -443,7 +446,8 @@ namespace Chaos.Core
             return false;
         }
 
-        public TreeView View(TreeNode n) => n.For(Vocation.Length > 0 ? Vocation : null);
+        /// <summary>A plain node (own stats, not a mastery) reads the tree's lane; a keystone and the rest the class's own variant (main client TreeLanes.variantKey).</summary>
+        public TreeView View(TreeNode n) => n.For(Lane.Length > 0 && n.Stats.Length > 0 && !n.IsMastery ? Lane : (Vocation.Length > 0 ? Vocation : null));
 
         public string NameOf(int id) => Data != null && Data.Nodes.TryGetValue(id, out var n) ? View(n).Name : "#" + id;
 

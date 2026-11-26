@@ -4771,20 +4771,27 @@ generator `tools/gen_class_lanes.lua` (+ `tools/passivetree_lanes_lib.lua`, clie
   `autobuildview_test.lua`, `autobuild_test.lua` (the window's requests against a mocked client), `statinfoview_test.lua`.
   Not checked in game: the dropdown, the node borders (`setBorderColor`), the
   tree preview of a build, the lane balance (damage and resist caps are reached with fewer points).
-- Ascension refunds the tree once (O305). The plain nodes (shared stats `s`) are read with the character's own lane key, and
-  the ascended lanes differ from the base class's on 289 nodes (Ranger -> Beastmaster turned Vitality / Dexterity nodes into
-  Spirit, tester report), so the lanes stay (Auto build and the presets are built on them) but an ascension no longer
-  changes allocated nodes silently. `ChaosPassiveTree.refundLaneChange(player, live)` (`passivetree.lua`) runs from
-  `ChaosClasses.afterVocationChange` (ascension, `!ascend` switch, store class change) and at every login. Storage
-  `Chaos.storage.passiveLane` (7100029) records the vocation id the tree was made under, -1 = none. When the variant key of
-  the recorded vocation differs from the current one (`Core.laneChangeFrom`), the allocated nodes that give other stats under
-  the new key (`Core.laneDiff`) and the nodes only connected through them are removed from every preset and saved loadout, for
-  free, once, with a message (pt-BR in `i18n_strings.lua`): "Your ascension changed your passive tree to the <Class> lane:
-  your N points were refunded for free. Open the tree to spend them, or use Auto build." A character that ascended before the
-  record existed (-1 and an ascended vocation) is taken to have planned under its base class's lane and is refunded at its
-  next login; an unascended character is only recorded. Mystic / Elementalist share a key and get nothing. Assumption: a
-  pre-fix ascended character that already re-planned under the ascended lane loses the differing nodes too (once; free).
-  Tests: `passivetree_death_test` (login and ascension, once, not for an unascended class), `passivetree_paths_test` "ascension".
+- A saved tree keeps its lane through an ascension (O305; V30 2026-11-26 replaced the refund of the first fix). The plain
+  nodes (shared stats `s`) have a lane per class key, and the ascended lanes differ from the base class's on many nodes
+  (Ranger -> Beastmaster turned Vitality / Dexterity nodes into Spirit, tester report). The owner wants the same nodes to stay
+  allocated with the same stats, so nothing is refunded: the plain nodes of a saved tree are read with the lane it was made
+  under. Storage `Chaos.storage.passiveLane` (7100029) records the vocation id of that lane, -1 = none.
+  `Core.treeLane(tree, ids, stored, vocId, keyOf, baseOf)` (`passivetree_core.lua`) picks the lane: the recorded class's when
+  it is of the same line, has another key and an allocated plain node differs between the two lanes (`Core.laneDiff`),
+  else the own class's (and records it). So an empty tree (a reset, a refund of every node) moves to the own lane, a tree of
+  nodes the two lanes agree on too, and a record of another line (a store class change) never carries over. A character that
+  ascended before the record existed (-1) reads its own lane, as it did. Keystones and masteries always read the own class.
+  `ChaosPassiveTree.laneKey(player, rows)` gives the lane to `getBonuses`, `nodeStats`, `sendNodes` and the inspect view
+  (`lane`); the client (`TreeLanes.variantKey`, `game_passivetree`) and the Unity tree (`PassiveTree.Lane`) read the plain
+  nodes with it. `ChaosPassiveTree.noteLaneChange(player, live)` runs from `ChaosClasses.afterVocationChange` (ascension,
+  `!ascend` switch, store class change) and at login: it refunds nothing; after a live class change that keeps another lane
+  it says so once (pt-BR in `i18n_strings.lua`): "Your passive tree keeps the <Ranger> lane: every node you hold gives what
+  it gave. A reset of the tree (or Auto build, Reset and apply) moves it to the <Beastmaster> lane." Auto build "Reset and
+  apply" calls `ChaosPassiveTree.resetLane` before it saves, so a build made for the class reads the class's lane.
+  Tests: `passivetree_paths_test` (treeLane cases, nodeStats with a lane), `passivetree_death_test` (ascension keeps every
+  node and the plain bonuses, reset moves the lane, a pre-record character), client `treelanes_test.lua`, Unity
+  `ProgressionTests` "kept lane". Seen in a client (2026-11-26, V30): a Ranger with 40 nodes ascended to Beastmaster kept
+  all 40; before this change 37 were refunded.
 
 ## Passive tree pick statistics (`treestats.lua`, `treestats_core.lua`, `treestats_config.lua`)
 Beta telemetry of the tree: how often each node is taken, per class line and level band, read from the saved trees on
@@ -22061,7 +22068,10 @@ storages 7100400-7100409, action ids 47401 (key), 47402 (reward chest) and 47403
     15,200-27,700 -> 12,100-14,500 (band 3); a walk of up to 423 steps from the arrival to the arena (was up to 412, the way is not the problem); the
     hunting areas of item 109 are 66 x 52 to 100 x 80 with 1,000-5,000 walkable tiles.
   - *Size against monsters* (O309; tester report: "mapas absurdamente grandes e com densidade muito baixa pelo tamanho,
-    fiquei 10min so andando", a tier 6 Forsaken Sanctum, 168 of 214 slain, mostly empty floor). The plan grew with the
+    fiquei 10min so andando", a tier 6 Forsaken Sanctum, 168 of 214 slain, mostly empty floor). Seen in a client
+    (2026-11-26, V30): a tier 6 key at level 500 opens an Abyssal Rift cave 176 x 176 with 8424 walkable tiles and 342
+    monsters (about 25 tiles each); other slots built 150 x 150 waste 9618 / 397 and 127 x 127 Obsidian Hall 8773 / 342;
+    packs stand near the arrival and every look is drawn. The plan grew with the
     map only by (walkable / 1081) ^ 0.25, so a bigger map was a thinner one: before, 39-84 walkable tiles a planned
     monster (band 2 at tier 6: 54-65) and 101-140 a live one. Now `density.area.tilesPerMonster` = {33, 27} (tier 1, tier 15, linear) is a floor of the
     plan (`R.densityCount`: at least walkable / that many monsters solo, a party's growth on top; the tier's own count still
@@ -27854,8 +27864,16 @@ died again right after Wild Bond, and was shown at level 12 or 300.
 
 Class total with the change, against before: 1 target +9..+15%, pack of 5 within 1%. Assumptions: contact 0.6 and burst 1.5 are
 fitted to the report (the old model said 6% and 7 s, the tester saw 4% and under 5 s); the model counts the companion's own bites only
-(the spells' mauls are in the rotation model). Needs a live check: the shown level on a spawn, a level-up and Wild Bond
-on a wolf already out; a hunt of 2 attackers at level 400.
+(the spells' mauls are in the rotation model).
+
+Seen in a client (2026-11-26, V30): a level 400 Beastmaster in the Hollow Crypt calls two War Wolves of level 400 and 12800
+health; Wild Bond on wolves already out calls them back and heals them. In 10 s under a pack the wolves took 19 hits
+(8992 damage), none died, and their bites were 2537 of 5926 damage (43%, the model's 51% plain counts a full cycle).
+* **Room round a boxed-in caster (V30).** With a pack on all 8 tiles round the Beastmaster, Wild Bond said "There is not
+  enough room.": it looked at ring 1 only (`ChaosSpell.freeAround`). `ChaosSpell.freeNear(center, ref, reach)` in
+  `data/spells/chaos/_common.lua` takes the nearest ring with a free tile, up to `reach` rings out, and past ring 1 only
+  tiles in sight of the caster (`Position:isSightClear`). Wild Bond calls and brings back its wolves with
+  `CALL_REACH = 3`. Live: 8 rats on ring 1, the cast made the wolf on ring 2. Test: `tests/spell_no_room_test.lua`.
 
 O332 (below, "Wolves as the main damage") changed the numbers of this section: the own bite is `0.75 x level + 1.35 x skill`, every wolf hit
 takes the wolf factor (Pack Alpha, the Trials' minion damage), the share limits are per build (plain, tree, full) and the model
@@ -33913,7 +33931,7 @@ Owner request 2026-10-25: a chest that any monster can leave; opening it wakes 5
 - **Win and loot.** After horde 5 the chest unseals for 120 s. Each participant (by creature id, recorded at the use) takes one roll, delivered to the backpack (inbox when full): gold = 3 minutes of hunting gold at the chest's level (the Respec table, same numbers as `gamble_config.lua`, checked by the test), 1 Orb of Upheaval (+1 per 400 levels, at most 4), 3% Orb of Fate, Rune Shards (4 + level/25, at most 30), 1 crafting orb, 1-2 gear pieces rolled at rarity floors Magic / Rare / Legendary (30 / 50 / 20) with the hunting level's rarity roll and item find x1.5, and the unique roll as a rare kill. A party's rolls are x1.0 / 0.75 / 0.6 / 0.5 / 0.45 by size.
 - **Economy.** About 4-5 chests an hour of hunting (the cooldown caps 10). The gold is about 22% of an hour's, and the fights (about 3 minutes, monsters are husks) cost the same in lost corpse loot, so gold is neutral; orbs are about 5 an hour, against 24-33 from tier 15 rifts. No model config was changed; `store_model`, `roulette_model`, `progression_model`, `skill_model`, `pack_model` pass.
 - **Abuse.** Event monsters are husks (`Monster:setDropLoot(false)`, as rift husks): no corpse loot, so no `onDropLoot` (no chest, blessing, Chaos roll) and they are never treasure goblins (artificial spawns). They are also tagged and refused by the chest roll. One claim per participant (the mark is set before the loot). Everything is checked on the server. Nothing is stored (no storage keys, no table): after a restart or `/reload` no monster remains and a chest item left on the map is unknown to the table and crumbles at its next use.
-- **Outcome messages (O308).** Tester report: chests opened with no loot and no line. Every claim now ends with an event line and a toast (`MESSAGE_LOOT` is kept off the game screen by `game_lootscreen`, so it is not the only line): the loot list, or "held nothing for you". Each part of the roll (gold, orbs, shards, crafting orbs, gear, uniques) is its own step, so one error is logged and the rest is still given; a roll that breaks as a whole gives the claim mark back and tells the player to use the chest again. Backpack full: the inbox, else the ground at the player's feet, and the line says which. A won chest reminds players who have not claimed `event.remindSec` (30) before it crumbles and tells them when it does; a chest item that disappears mid-event fails the event with a line. An error in the use itself is a cancel message, not silence.
+- **Outcome messages (O308).** Tester report: chests opened with no loot and no line. Every claim now ends with an event line and a toast (`MESSAGE_LOOT` is kept off the game screen by `game_lootscreen`, so it is not the only line): the loot list, or "held nothing for you". Each part of the roll (gold, orbs, shards, crafting orbs, gear, uniques) is its own step, so one error is logged and the rest is still given; a roll that breaks as a whole gives the claim mark back and tells the player to use the chest again. Backpack full: the inbox, else the ground at the player's feet, and the line says which. A won chest reminds players who have not claimed `event.remindSec` (30) before it crumbles and tells them when it does; a chest item that disappears mid-event fails the event with a line. An error in the use itself is a cancel message, not silence. Seen in a client (2026-11-26, V30): three chests in a row, five hordes each, each gave its loot and the line "Cursed Chest loot: 19770 gold, Orb of Upheaval, 12x rune shard, ..." (gold 19770, 23098, 22119).
 - **No free win from an empty horde (2026-10-31).** Tester bots (check `cursed_chest`): a horde came with no monster and the
   chest was won without a fight. A horde that made no monster counted as spawned, so 5 empty hordes gave the loot. Cause: the
   14 random tries of `ChaosSpawnTile.find` (2-5 tiles from the chest) all missed in a tight spot (a corridor, the edge of a
@@ -34822,6 +34840,11 @@ Warrior Helmet is worn by every class. Tests: `tests/item_tooltip_test.lua`, `te
 equipment sets, the uniques and the stock equipment of `data/items/base_item_values.csv`; fails when one renders no line). Client spell lists: a Chaos
 spell matches the exact server vocation ids (`ChaosSpellFix.allowsVocation`); `tools/ci/check_rotation_kit.py` compares
 spelldata.lua with the server spell XML.
+
+Seen in a client (2026-11-26, V30): a level 400 Beastmaster's Auto setup picks Blessed Earth, Pack Howl, Sanctum Burst,
+Rending Pounce and Sunspear (heals Lightbearer's Grace, Dawn's Mending, Minor Mending), all its own spells; Assign Spell lists
+its own 36. A Modified Crossbow reads "Level 45, Ranger, Deadeye" in grey; a Crude Umbral Bow reads Ranger, Deadeye,
+Beastmaster.
 
 ## Class access audit: spells and weapons (O329)
 

@@ -778,6 +778,32 @@ function ChaosSpell.freeAround(center, ref, far)
 	return list
 end
 
+-- The free tiles of the nearest ring round `center` that has any, out to `reach` rings (default 1: freeAround), nearest to
+-- `ref` first, and only tiles in sight of `center` past the first ring. V30 (2026-11-26, seen in a client): a Beastmaster
+-- boxed in by a pack got "There is not enough room." for Wild Bond three times in a row, because only the 8 tiles next to
+-- him were tried; a summon now takes the next ring out.
+function ChaosSpell.freeNear(center, ref, reach)
+	for r = 1, math.max(1, tonumber(reach) or 1) do
+		local list = {}
+		for dx = -r, r do
+			for dy = -r, r do
+				if math.max(math.abs(dx), math.abs(dy)) == r then
+					local p = Position(center.x + dx, center.y + dy, center.z)
+					local seen = r == 1 or not center.isSightClear or center:isSightClear(p, true)
+					if seen and ChaosSpell.isFreeTile(p) then
+						list[#list + 1] = {pos = p, dist = (p.x - ref.x) ^ 2 + (p.y - ref.y) ^ 2}
+					end
+				end
+			end
+		end
+		if #list > 0 then
+			table.sort(list, function(a, b) return a.dist < b.dist end)
+			return list
+		end
+	end
+	return {}
+end
+
 -- The refusal when no tile around was free: freeAround never picks a protection zone tile, so a cast in a temple said
 -- "not enough room" (live check of O85, Wild Bond); there it names the protection zone.
 function ChaosSpell.noRoom(creature)

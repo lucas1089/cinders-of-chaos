@@ -2384,10 +2384,8 @@ return {
 		["Your passive tree: %d nodes whose effect changed or that left the tree were refunded for free%s."] =
 			"Sua árvore passiva: %d nós cujo efeito mudou (ou que saíram da árvore) foram devolvidos de graça%s.",
 		["; your saved loadouts lost %d"] = "; seus loadouts salvos perderam %d",
-		["Your ascension changed your passive tree to the %s lane: your %d point was refunded for free. Open the tree to spend it, or use Auto build."] =
-			"Sua ascensão mudou sua árvore passiva para a linha de %s: %d ponto seu foi devolvido de graça. Abra a árvore para gastá-lo, ou use o Auto build.",
-		["Your ascension changed your passive tree to the %s lane: your %d points were refunded for free. Open the tree to spend them, or use Auto build."] =
-			"Sua ascensão mudou sua árvore passiva para a linha de %s: %d pontos seus foram devolvidos de graça. Abra a árvore para gastá-los, ou use o Auto build.",
+		["Your passive tree keeps the %s lane: every node you hold gives what it gave. A reset of the tree (or Auto build, Reset and apply) moves it to the %s lane."] =
+			"Sua árvore passiva mantém a linha de %s: cada nó que você tem dá o que dava. Um reset da árvore (ou Auto build, Resetar e aplicar) a muda para a linha de %s.",
 		["First kill of %s: +1 passive point! %s."] = "Primeira morte de %s: +1 ponto passivo! %s.",
 		["Boss passive points: +%d for bosses you had already slain (%s). %s."] =
 			"Pontos passivos de boss: +%d por bosses que você já tinha matado (%s). %s.",

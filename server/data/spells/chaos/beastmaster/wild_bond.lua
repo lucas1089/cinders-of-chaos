@@ -7,6 +7,9 @@ dofile('data/spells/scripts/chaos/_common.lua')
 ChaosSpell.loadClasses()
 ChaosSpell.loadSummons()
 
+-- the rings round the caster where a companion may appear: a pack all round him leaves the next ring (V30, freeNear)
+local CALL_REACH = 3
+
 local function companionType()
 	for _, name in ipairs(Chaos.classes.companion.monsters) do
 		if MonsterType(name) then
@@ -53,7 +56,7 @@ function onCastSpell(creature, variant, isHotkey)
 	for _, s in ipairs(have) do
 		local spos = s:getPosition()
 		if spos.z ~= pos.z or math.max(math.abs(spos.x - pos.x), math.abs(spos.y - pos.y)) > 1 then
-			local spots = ChaosSpell.freeAround(pos, pos)
+			local spots = ChaosSpell.freeNear(pos, pos, CALL_REACH)
 			if spots[1] then
 				s:teleportTo(spots[1].pos, true)
 			end
@@ -65,7 +68,7 @@ function onCastSpell(creature, variant, isHotkey)
 	local want = C.companionCap(player:getLevel()) - #have
 	local created = 0
 	if want > 0 then
-		for _, spot in ipairs(ChaosSpell.freeAround(pos, pos)) do
+		for _, spot in ipairs(ChaosSpell.freeNear(pos, pos, CALL_REACH)) do
 			if created >= want then
 				break
 			end

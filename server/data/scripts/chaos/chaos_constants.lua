@@ -203,7 +203,7 @@ Chaos.storage = {
 	-- the fix (paragon.lua P.grantLegacy), -1 = not yet; the O135 cut wiped allocations through the login refund
 	paragonLegacy = 7102501,
 	paragonConverted = 7102500, -- free passive tree points the character exchanged for Paragon points (paragon.lua, O146); 7102500 - 7102509 reserved
-	passiveLane = 7100029, -- the vocation id whose class lane the saved passive tree was made under, -1 = not recorded (passivetree.lua refundLaneChange, O305)
+	passiveLane = 7100029, -- the vocation id whose class lane the saved passive tree was made under, -1 = not recorded (passivetree.lua laneKey: the plain nodes keep that lane, O305)
 	archetypeFlags = 7100024, -- the build archetype keystones held, a bit each (archetypes_config.lua storage)
 	vigils = 7100025, -- the vigils switched on, a bit each (vigils_config.lua storage)
 	snareElement = 7100026, -- the element the snares carry, chosen last (snares_config.lua storage.element)

@@ -171,14 +171,12 @@ do
 	assert(ids and #ids == #alloc, "the same tree validates again at the old level")
 end
 
--- O305: the ascended class reads the plain nodes with its own lane; the ascension refunds the differing nodes once
+-- O305 (V30): an ascension keeps the saved tree and the lane it was made under; nothing is refunded
 do
 	local RANGER, BEAST = Chaos.classes.ids.ranger or 3, Chaos.classes.ids.beastmaster or 15
 	local CC = ChaosClasses
 	local drop = Core.laneDiff(tree, CC.keystoneKey(RANGER), CC.keystoneKey(BEAST))
 	local alloc = allocate("beastmaster", 120)
-	-- the Beastmaster's own class section (690-692, O449) is no node a Ranger may hold: the tree of the unascended Ranger below
-	-- keeps every node it may have, so those leave the fixture (the nodes the lane changes are plain nodes, all still there)
 	do
 		local keep = {}
 		for _, id in ipairs(alloc) do
@@ -186,12 +184,9 @@ do
 		end
 		alloc = keep
 	end
-	local function expected()
-		local kept = Core.dropNodes(tree, alloc, drop)
-		return Core.formatAlloc(kept, {}), #alloc - #kept
-	end
-	local keptText, removedCount = expected()
-	assert(removedCount > 5 and removedCount < #alloc, "the test tree has plain lane nodes and others (" .. removedCount .. ")")
+	local differs = 0
+	for _, id in ipairs(alloc) do if drop[id] then differs = differs + 1 end end
+	assert(differs > 5 and differs < #alloc, "the test tree has plain lane nodes and others (" .. differs .. ")")
 	local function player(vocId, marker)
 		local p = mkPlayer(vocId, 1000)
 		p:setStorageValue(Chaos.storage.passiveLane, marker)
@@ -199,35 +194,67 @@ do
 		return p
 	end
 	local saved = Core.formatAlloc(alloc, {})
+	local function plain(b)
+		local out = {}
+		for k, v in pairs(b) do if not k:match("^ks") then out[k] = v end end
+		return out
+	end
+	local function sameTable(a, b)
+		for k, v in pairs(a) do if b[k] ~= v then return false end end
+		for k, v in pairs(b) do if a[k] ~= v then return false end end
+		return true
+	end
 
-	-- a character that ascended before the fix: one refund at the next login, none after
+	-- the Ranger's tree and its bonuses
 	rows = {{preset = 1, name = "Preset 1", nodes = saved}}
-	local p = player(BEAST, -1)
-	login.onLogin(p)
-	eq(rows[1].nodes, keptText, "pre-fix Beastmaster: the nodes the lane changes are refunded at login")
-	eq(p:getStorageValue(Chaos.storage.passiveLane), BEAST, "the lane is recorded")
-	eq(#p.msgs, 1, "one message")
-	assert(p.msgs[1]:find("Voc" .. BEAST, 1, true) and p.msgs[1]:find(tostring(removedCount), 1, true), "message names the class and the count: " .. p.msgs[1])
-	local after = rows[1].nodes
-	local p2 = player(BEAST, p:getStorageValue(Chaos.storage.passiveLane))
-	login.onLogin(p2)
-	eq(rows[1].nodes, after, "the next login refunds nothing")
-	eq(#p2.msgs, 0, "and says nothing")
-
-	-- a Ranger with no record is only recorded, never refunded
-	rows = {{preset = 1, name = "Preset 1", nodes = saved}}
-	p = player(RANGER, -1)
-	login.onLogin(p)
+	local ranger = player(RANGER, -1)
+	login.onLogin(ranger)
 	eq(rows[1].nodes, saved, "unascended Ranger keeps every node")
-	eq(p:getStorageValue(Chaos.storage.passiveLane), RANGER, "its lane is recorded")
+	eq(ranger:getStorageValue(Chaos.storage.passiveLane), RANGER, "its lane is recorded")
+	local before = plain(ChaosPassiveTree.getBonuses(ranger))
 
-	-- the ascension itself (ascension.lua afterVocationChange): refund once, at that moment
+	-- the ascension (ascension.lua afterVocationChange): nothing refunded, the same stats, one message
+	local p = player(BEAST, RANGER)
+	-- the engine's Vocation is a callable table, not a function (V30: the first message said "the old lane")
+	local oldVocation = Vocation
+	Vocation = setmetatable({}, {__call = function(_, id)
+		return {getName = function() return id == RANGER and "Ranger" or "Other" end}
+	end})
+	eq(ChaosPassiveTree.noteLaneChange(p, true), 0, "ascending refunds nothing")
+	Vocation = oldVocation
+	assert(p.msgs[1] and p.msgs[1]:find("keeps the Ranger lane", 1, true), "the message names the kept class: " .. tostring(p.msgs[1]))
+	eq(rows[1].nodes, saved, "the preset keeps every node")
+	eq(ChaosPassiveTree.laneKey(p), CC.keystoneKey(RANGER), "the tree reads the Ranger lane")
+	eq(p:getStorageValue(Chaos.storage.passiveLane), RANGER, "the record stays the Ranger")
+	assert(#p.msgs == 1 and p.msgs[1]:find("keeps the", 1, true), "one message names the kept lane: " .. tostring(p.msgs[1]))
+	local after = plain(ChaosPassiveTree.getBonuses(p))
+	assert(sameTable(before, after), "every plain node gives the same after the ascension (keystones are the class's own)")
+
+	-- the next login changes nothing
+	login.onLogin(p)
+	eq(rows[1].nodes, saved, "the next login refunds nothing")
+	eq(ChaosPassiveTree.laneKey(p), CC.keystoneKey(RANGER), "and keeps the Ranger lane")
+
+	-- a reset empties the tree: the lane moves to the Beastmaster
+	rows = {{preset = 1, name = "Preset 1", nodes = ""}}
+	eq(ChaosPassiveTree.laneKey(p), CC.keystoneKey(BEAST), "an empty tree takes the Beastmaster lane")
+	eq(p:getStorageValue(Chaos.storage.passiveLane), BEAST, "and records it")
 	rows = {{preset = 1, name = "Preset 1", nodes = saved}}
-	p = player(BEAST, RANGER)
-	eq(ChaosPassiveTree.refundLaneChange(p, true), removedCount, "ascending refunds the differing nodes")
-	eq(rows[1].nodes, keptText, "the preset lost exactly those nodes")
-	eq(ChaosPassiveTree.refundLaneChange(p, true), 0, "a second call refunds nothing")
-	eq(rows[1].nodes, keptText, "the preset is unchanged by the second call")
+	eq(ChaosPassiveTree.laneKey(p), CC.keystoneKey(BEAST), "a tree built after the reset reads the Beastmaster lane")
+	assert(not sameTable(plain(ChaosPassiveTree.getBonuses(p)), after), "so the same nodes give the Beastmaster lane's stats now")
+
+	-- Auto build "Reset and apply" builds from nothing in one step: resetLane records the own class first
+	local q = player(BEAST, RANGER)
+	ChaosPassiveTree.resetLane(q)
+	eq(ChaosPassiveTree.laneKey(q), CC.keystoneKey(BEAST), "resetLane: the Beastmaster lane")
+
+	-- a character that ascended before any record: its own class, as it read before
+	local old = player(BEAST, -1)
+	old.msgs = {}
+	login.onLogin(old)
+	eq(rows[1].nodes, saved, "pre-record Beastmaster: nothing refunded at login")
+	eq(old:getStorageValue(Chaos.storage.passiveLane), BEAST, "the own lane is recorded")
+	eq(#old.msgs, 0, "and nothing said")
 end
 
 eq(Core.debt(10, 4), 6, "debt")

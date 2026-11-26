@@ -101,6 +101,17 @@ namespace Chaos.Core.Tests
             var owned = tree.Owned();
             check(owned.Contains(1) && owned.Contains(2), "passive tree: the root and saved nodes are owned");
 
+            // O305 (V30): a Beastmaster whose tree keeps the Ranger lane reads the plain nodes as the Ranger, the keystone as itself
+            Msg(ext, 65, "{\"action\":\"sendNodes\",\"data\":{\"preset\":1,\"presetsTable\":[{\"name\":\"Main\"}],\"nodes\":[2],\"masteries\":[],\"vocation\":\"beastmaster\",\"cls\":\"beastmaster\",\"line\":\"ranger\",\"lane\":\"paladin\"}}");
+            var n2 = tree.Data.Nodes[2];
+            check(tree.Lane == "paladin" && string.Join(",", tree.View(n2).Stats) == string.Join(",", n2.Stats) && string.Join(",", n2.For("beastmaster").Stats) != string.Join(",", n2.Stats),
+                "passive tree: the kept lane gives node 2 its Ranger stats (" + string.Join(",", tree.View(n2).Stats) + ")");
+            var ks = tree.Data.Nodes[624];
+            check(tree.View(ks).Name == ks.For("beastmaster").Name, "passive tree: the keystone reads the own class with a kept lane");
+            Msg(ext, 65, "{\"action\":\"sendNodes\",\"data\":{\"preset\":1,\"presetsTable\":[{\"name\":\"Main\"}],\"nodes\":[2],\"masteries\":[],\"vocation\":\"beastmaster\",\"cls\":\"beastmaster\",\"line\":\"ranger\"}}");
+            check(tree.Lane == "" && string.Join(",", tree.View(n2).Stats) == string.Join(",", n2.For("beastmaster").Stats), "passive tree: no lane reads the own variant");
+            Msg(ext, 65, "{\"action\":\"sendNodes\",\"data\":{\"preset\":1,\"presetsTable\":[{\"name\":\"Main\"}],\"nodes\":[2],\"masteries\":[],\"vocation\":\"knight\",\"cls\":\"warrior\",\"line\":\"warrior\"}}");
+
             // a plain node two steps from what we own
             var adj = tree.Graph();
             int near = adj[2].First(n => n != 1 && !tree.Data.Nodes[n].IsStart && tree.Allowed(tree.Data.Nodes[n]) && !tree.Allocated.Contains(n));
