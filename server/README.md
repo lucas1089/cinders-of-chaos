@@ -3173,6 +3173,8 @@ CREATE TABLE IF NOT EXISTS `chaos_paragon` (
   207 gold to 1035 in 40 dragon corpses (20.0%). Reset (gold), the store reset, the forged requests, relog, restart and the login
   refund were checked too.
 
+Seen in a client (2026-11-26, V21): legacy 500 at login, 40 points spent, the reset gave all 700 back.
+
 ## Soft caps, Paragon Mastery and totals (O146)
 Beta report (level 1500): strength about 280 against a cap of 120, physical damage 300-400 against 150, the Paragon track
 full at level 1100-1200 with about 300 points left, and the gear's critical chance (about 28%) and damage (about 40%) not
@@ -8814,6 +8816,8 @@ hall's and the houses' dummies and the free dummies (5787, 27750, 27757) are as 
 tests mock it): check a Monk with the melee weapon (fist row in the skills window), a Ranger refused with the class list, an old
 exercise axe turning into the melee weapon, a bow from 8 tiles refused.
 
+Seen in a client (2026-11-26, V21): the Exercise Melee Weapon on a dummy, sword on a Warrior, fist on a Monk (the weapon turns into the fist weapon).
+
 ## Attack delay after changing floor (owner debug item 50: "Demora para começar a atacar depois de subir ou descer escada"; fixed by src-patch 0066, not measured in game)
 
 What happens, from the repository's own engine notes (`src-patches/0028`, `0042`; the stock source is not here): taking a
@@ -12155,6 +12159,8 @@ the SQL that moves `players.town_id` (one transaction, the counts first); run it
 `tools/backup.sh`. Positions, houses and depots stay (depots are per town; the stash window shows them all). The beta
 has no characters to move. Test: `tools/migrate_home_town_test.py`.
 
+Seen in a client (2026-11-26, V21): the orange stall names over both rows, every 3 s.
+
 ## Service NPCs (`service_npcs.lua`, `service_npcs_core.lua`, `service_npcs_run.lua`, `service_npcs_config.lua`, `data/npc/scripts/chaos_service_npc.lua`)
 
 Owner decision 2026-10-20 (from the menu / NPC list of 2026-10-20): five NPCs that stand in for menu entries, built in
@@ -12202,6 +12208,8 @@ five has one.
 
 **Install:** step `servicenpcs` (`tools/install_service_npcs.py`, `tools/install_service_npcs_test.py`). **Texts:** English
 keys, pt-BR in `i18n_strings.lua` (`tests/service_npcs_test.lua` checks every line has one).
+
+Seen in a client (2026-11-26, V21): stash, Boss Spawns, balance and bank, free houses by town, the Services page, each from its NPC.
 
 ## Tavern rumours (O394) (`rumours.lua`, `rumours_core.lua`, `rumours_run.lua`, `rumours_config.lua`, NPC Dorrin Alewright)
 
@@ -13485,6 +13493,20 @@ and used to do it to these hits too: a lone soaker in the Last Hymn circle (60%)
 boss's ordinary attacks are still scaled. The soak circle (radius from the profile, Euclidean distance from the centre
 tile, so a radius 2 circle is 13 tiles) is one tile list: the green tiles drawn, the tiles that count and the tiles
 checked at the hit are the same set, on the same floor (`f.soakCircle`).
+
+**The engine's monster level bonus does not scale them either (seen in a client 2026-11-26, V21).** The lone soaker of
+Vaelith's Last Hymn still died in the circle at difficulty 6. Two more multipliers reached the scripted hit: the engine
+adds config.lua `monsterBonusDamage` (0.0015) x the attacker's level to every hit of a monster with a level
+(`Game::combatChangeHealth`, once since patch 0090), x3.55 at level 1700; and `areagen.lua` multiplied the hits of a
+scaled area monster (x1.4). Now `Chaos.shareHitAmount(attacker, amount)` (chaos_constants.lua,
+`Chaos.MONSTER_BONUS_DAMAGE` kept equal to config.lua) divides the bonus out before the call, in every share hit of a
+monster: `boss_mechanics.lua` `hit()`, `uber.lua`, `guildboss.lua`, `raid.lua` `shareHit`, `trials.lua` and
+`ascension_quest.lua` `hurt`. A monster without a level (the world, Ascended and guild bosses) is unchanged.
+`areagen.lua` and `monster_damage.lua` (level, pace, waystone tier, tower floor) leave a `scriptedHit` as it is. The
+player's resistances still apply: a share is "before the resistance", as the models assume. Tests:
+`boss_mechanics_test.lua` (a level 1700 boss through an engine-like mock: the lone soaker takes 60% and lives;
+`shareHitAmount` cases), `monster_damage_test.lua`, `areagen_test.lua`. Re-recorded in the client: 60% before
+resistance, the player lives.
 
 **The kit** (all per profile, all in the core):
 - Telegraphs: circle, cone, line (beam), ring (donut), cross, puddles (on players and at random), follow (a circle that

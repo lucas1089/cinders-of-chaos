@@ -601,6 +601,13 @@ do
 	ok(m1.events.ChaosAreaGenDeath, "the death event is on the monster")
 	local dmg = find("ChaosAreaGenPlayerHit").onHealthChange(nil, m1, -1000, COMBAT_PHYSICALDAMAGE, -100, 0)
 	eq(dmg, math.floor(-1000 * s1.damage), "damage to players scaled")
+	-- a boss mechanic's scripted share hit is not scaled (seen in a client 2026-11-26: the Last Hymn x1.4 here)
+	ChaosBossMech = {scriptedHit = function(a) return a == m1 end}
+	eq(find("ChaosAreaGenPlayerHit").onHealthChange(nil, m1, -1000, COMBAT_HOLYDAMAGE, -100, 0), -1000,
+		"a scripted share hit of a scaled monster: untouched")
+	eq(find("ChaosAreaGenPlayerMana").onManaChange(nil, m1, -1000, COMBAT_HOLYDAMAGE, -100, 0), -1000,
+		"a scripted share hit on the mana: untouched")
+	ChaosBossMech = nil
 	local exp = EventCallback.onGainExperience(nil, m1, 1000, 1000)
 	eq(exp, math.floor(1000 * s1.experience + 1e-9), "experience scaled")
 	local boss

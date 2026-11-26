@@ -942,6 +942,68 @@ do
 	runTo(T + 500)
 end
 
+-- the engine's monster level bonus (seen in a client 2026-11-26): Vaelith the Fallen Seraph, level 1700, at difficulty 3 of
+-- The Fallen Sanctum; the lone soaker of the Last Hymn stood inside and died: the engine adds config.lua
+-- monsterBonusDamage (0.0015) x the level to every hit of a monster with a level, the scripted share too (x3.55). The
+-- hit is now dealt without the bonus (Chaos.shareHitAmount of chaos_constants.lua), so it lands as the share.
+do
+	local mockChaos = Chaos
+	Chaos = nil
+	dofile("data/scripts/chaos/chaos_constants.lua")
+	local shareHitAmount, bonus = Chaos.shareHitAmount, Chaos.MONSTER_BONUS_DAMAGE
+	Chaos = mockChaos
+	eq(bonus, 0.0015, "level bonus: config.lua monsterBonusDamage")
+	Chaos.shareHitAmount = shareHitAmount
+	cfg.profiles["hymn boss"] = {label = "Vaelith", size = 1, element = "holy", difficulty = 0, every = 9000, firstMs = 500,
+		compensate = false,
+		telegraphs = {{key = "slam", label = "Slam", kind = "circle", radius = 1, share = 0.1, hit = "x", fallback = 1,
+			firstMs = 900000}},
+		timed = {{key = "hymn", label = "Last Hymn", kind = "soak", radius = 2, total = 0.6, min = 1, missShare = 0.45,
+			every = 900000, firstMs = 500, below = 1, hit = "x", fallback = 1, text = "%s sings!"}}}
+	for _, c in pairs(creatures) do
+		if c.player then c.pos = {x = 300, y = 300, z = 7} end
+	end
+	local realHit = doTargetCombat
+	-- the engine: Game::combatChangeHealth adds round(value x bonus x level) for a monster attacker with a level
+	doTargetCombat = function(cid, target, ctype, mn, ...)
+		local a = Monster(cid)
+		local lv = a and a.getMonsterLevel and a:getMonsterLevel() or 0
+		if lv > 0 then
+			mn = mn + math.floor(mn * bonus * lv + 0.5)
+		end
+		return realHit(cid, target, ctype, mn, ...)
+	end
+	local vb = make({name = "Hymn Boss", pos = {x = 200, y = 200, z = 7}, hp = 100000})
+	vb.getMonsterLevel = function() return 1700 end
+	local solo = make({name = "Soloist", player = true, pos = {x = 300, y = 300, z = 7}, hp = 10575})
+	hits, effects = {}, {}
+	local vf = M.attach(vb, nil, {center = {x = 200, y = 200, z = 7}, radius = 8})
+	runTo(T + 1500)
+	local vc = vf and vf.soakCircle
+	check(vc ~= nil, "level bonus: the circle is planned")
+	if vc then
+		solo.pos = {x = vc.x, y = vc.y, z = 7}
+		runTo(T + 15000)
+		local total = 0
+		for _, h in ipairs(hits) do
+			if h.target == solo.id then total = total + h.dmg end
+		end
+		check(math.abs(total - 6345) <= 2, "level bonus: the lone soaker of a level 1700 boss takes 60% (" .. total .. " of 10575)")
+		check(solo.hp > 0, "level bonus: and lives")
+	end
+	-- the helper itself: no level, a player, nothing at all
+	eq(shareHitAmount(vb, 3550), 1000, "shareHitAmount: level 1700 deals 1 / 3.55")
+	eq(shareHitAmount({getMonsterLevel = function() return 0 end}, 1234), 1234, "shareHitAmount: level 0 as it is")
+	eq(shareHitAmount({}, 1234), 1234, "shareHitAmount: no level method (a player) as it is")
+	eq(shareHitAmount(nil, 1234), 1234, "shareHitAmount: no attacker as it is")
+	eq(shareHitAmount({getMonsterLevel = function() error("gone") end}, 77), 77, "shareHitAmount: a failing getter as it is")
+	eq(shareHitAmount(vb, 1), 1, "shareHitAmount: at least 1")
+	doTargetCombat = realHit
+	creatures[vb.id] = nil
+	creatures[solo.id] = nil
+	runTo(T + 500)
+end
+
 -- a protection zone is never part of a fight (owner's bug, 2026-10-16: a display Mirecoil Wyrm in its closed cell
 -- of the Cinderhold teleport room killed a level 8 player on the PZ carpet with Mire Spit, 20% of max health = 58)
 local pzTiles = {}

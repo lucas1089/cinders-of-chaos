@@ -122,6 +122,11 @@ local function boost(creature, attacker, primaryDamage, primaryType, secondaryDa
 	if not attacker or not creature:isPlayer() then
 		return primaryDamage, secondaryDamage
 	end
+	-- a boss mechanic's hit is a share of the victim's max health already (boss_mechanics.lua): no level, pace, tier
+	-- or floor factor on top
+	if ChaosBossMech and ChaosBossMech.scriptedHit and ChaosBossMech.scriptedHit(attacker) then
+		return primaryDamage, secondaryDamage
+	end
 	local mult = MD.multiplierOf(attacker)
 	-- pack combat (pace.lua): a paced monster (or its summon) deals x its damage curve, every element and condition
 	local pm = ChaosPace and ChaosPace.damageMultOf and ChaosPace.damageMultOf(attacker) or 1

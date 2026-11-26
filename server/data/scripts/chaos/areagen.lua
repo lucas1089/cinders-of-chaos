@@ -674,7 +674,10 @@ death:register()
 -- ======================================================================== damage and experience of scaled monsters
 local function scaleHit(attacker, primaryDamage, primaryType, secondaryDamage, secondaryType)
 	local sc = attacker and AG.scaled[attacker:getId()]
-	if sc and primaryType ~= COMBAT_HEALING and sc.damage ~= 1 then
+	-- a boss mechanic's hit is a share of the victim's max health: not scaled again (boss_mechanics.lua; seen in a client
+	-- 2026-11-26: Vaelith's Last Hymn x1.4 here on a lone soaker in the circle)
+	if sc and primaryType ~= COMBAT_HEALING and sc.damage ~= 1
+		and not (ChaosBossMech and ChaosBossMech.scriptedHit and ChaosBossMech.scriptedHit(attacker)) then
 		primaryDamage = math.floor(primaryDamage * sc.damage)
 		secondaryDamage = math.floor(secondaryDamage * sc.damage)
 	end

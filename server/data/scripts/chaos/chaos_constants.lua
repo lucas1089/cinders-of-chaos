@@ -1790,6 +1790,28 @@ function Chaos.percentBase(player)
 	return player:getMaxHealth()
 end
 
+-- config.lua monsterBonusDamage: the engine adds this x the monster's level to every hit of a monster with a level
+-- (Game::combatChangeHealth, once per hit since patch 0090). Lua cannot read that float: keep the two equal.
+local MONSTER_BONUS_DAMAGE = 0.0015
+Chaos.MONSTER_BONUS_DAMAGE = MONSTER_BONUS_DAMAGE
+
+-- The amount to deal so that a monster's "share of the maximum health" hit lands as `amount`. The engine's level bonus
+-- reaches a scripted hit too (doTargetCombat with the boss as attacker): seen in a client 2026-11-26, Vaelith the Fallen
+-- Seraph (level 1700, x3.55) took a lone soaker of the Last Hymn for 213% of his health instead of 60%. No attacker, a
+-- player or a monster without a level: the amount as it is.
+function Chaos.shareHitAmount(attacker, amount)
+	local level = 0
+	if attacker and attacker.getMonsterLevel then
+		local ok, v = pcall(attacker.getMonsterLevel, attacker)
+		level = ok and tonumber(v) or 0
+	end
+	local f = 1 + MONSTER_BONUS_DAMAGE * math.max(0, level)
+	if f <= 1 then
+		return amount
+	end
+	return math.max(1, math.floor(amount / f + 0.5))
+end
+
 -- ---------------------------------------------------------------------------
 -- Monster names
 -- ---------------------------------------------------------------------------
