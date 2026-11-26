@@ -24,7 +24,7 @@ if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
 if not ChaosMetrics or not ChaosMetrics.areaFor or not ChaosMetrics.returnCheck or not ChaosMetrics.systemIndex
-	or not ChaosMetrics.retainCheck then
+	or not ChaosMetrics.retainCheck or not ChaosMetrics.onlineBase then
 	dofile("data/scripts/chaos/metrics_core.lua")
 end
 if not (ChaosWrapChain and ChaosWrapChain.wrap) then
@@ -149,6 +149,21 @@ local function mask(player)
 	return (v and v > 0) and v or 0
 end
 
+-- played seconds before this session (players.onlinetime), nil when the row holds a clock value
+function X.readOnline(guid)
+	local row = Chaos.select(string.format("SELECT `onlinetime` AS `t` FROM `players` WHERE `id` = %d", guid),
+		{{"t", "n"}})[1]
+	return X.onlineBase(row and row.t or 0, cfg)
+end
+
+-- whole minutes played up to now: the base read at the login plus this session; nil when the base is unknown
+function X.playedMinutes(s)
+	if not s or not s.base then
+		return nil
+	end
+	return X.sessionMinutes(s.base + (os.time() - s.at))
+end
+
 function X.onLogin(player)
 	player:registerEvent("ChaosMetricsDeath")
 	player:registerEvent("ChaosMetricsLogout")
@@ -166,6 +181,14 @@ function X.onLogin(player)
 	local first = player:getLastLoginSaved() == 0
 	local hunt = player:getStorageValue(cfg.huntStorage)
 	X.sessions[player:getId()] = {at = os.time(), first = first, guid = player:getGuid(), hunt = hunt > 0 and hunt or nil}
+	-- the played seconds before this session, read once here: a save inside the session (advance_save on every level,
+	-- the server save) adds to onlinetime, and base + (now - at) would count that part twice. A first login has played
+	-- nothing; a clock value (X.onlineBase) leaves the base unknown and the session gives no time bucket
+	if first then
+		X.sessions[player:getId()].base = 0
+	else
+		X.sessions[player:getId()].base = try("base", X.readOnline, X.sessions[player:getId()].guid) or false
+	end
 	try("return", X.countReturn, player, first)
 	try("retain", X.countRetain, player)
 	-- already in a guild at login: not a first use (a join during the session is found by memberCheck)
@@ -255,13 +278,9 @@ function X.firstUse(player, key)
 		return false
 	end
 	player:setStorageValue(cfg.firstStorage, newMask)
-	if s.base == nil then
-		local row = Chaos.select(string.format("SELECT `onlinetime` AS `t` FROM `players` WHERE `id` = %d", s.guid),
-			{{"t", "n"}})[1]
-		s.base = row and row.t or 0
-	end
-	local minutes = X.sessionMinutes(s.base + (os.time() - s.at))
-	X.add(X.state, "first", key, X.bandOf(player:getLevel(), cfg.bands) .. "|" .. X.playedBucket(minutes, cfg), 1, cfg)
+	local minutes = X.playedMinutes(s)
+	X.add(X.state, "first", key, X.bandOf(player:getLevel(), cfg.bands) .. "|"
+		.. (minutes and X.playedBucket(minutes, cfg) or "?"), 1, cfg)
 	return true
 end
 
@@ -383,9 +402,10 @@ function X.onAdvance(player, oldLevel, newLevel)
 		return
 	end
 	player:setStorageValue(cfg.storage, newMask)
-	local base = Chaos.select(string.format("SELECT `onlinetime` AS `t` FROM `players` WHERE `id` = %d", s.guid),
-		{{"t", "n"}})[1]
-	local minutes = X.sessionMinutes((base and base.t or 0) + (os.time() - s.at))
+	local minutes = X.playedMinutes(s)
+	if not minutes then
+		return -- played time unknown (a clock value in onlinetime): the milestone is marked, no bucket is guessed
+	end
 	for _, m in ipairs(crossed) do
 		X.add(X.state, "ttl", tostring(m), X.bucketLabel(minutes, cfg.timeBuckets), 1, cfg)
 	end
@@ -514,6 +534,11 @@ logout:register()
 -- ---------------------------------------------------------------- global events
 local startup = GlobalEvent("ChaosMetricsStartup")
 function startup.onStartup()
+	-- onlinetime rows the stock engine filled with the clock (see X.onlineBase): one UPDATE, a no-op once repaired
+	local repair = X.repairOnlineSql(cfg)
+	if repair then
+		db.asyncQuery(repair)
+	end
 	if ensureTable() then
 		-- O437: the first start with the retention counters keeps its day (INSERT IGNORE); the report gives no percent to
 		-- a cohort day before it

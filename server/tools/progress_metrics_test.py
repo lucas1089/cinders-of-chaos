@@ -194,6 +194,10 @@ def main():
     rf = [e for e in fu if e['system'] == 'rift'][0]
     check(rf['characters'] == '<5' and rf['pct'] is None and rf['medianMinutes'] is None and rf['topBand'] == '', 'rift of 4 hidden')
     check(pm.first_use(ff, 0)[0]['pct'] is None, 'no population: no share')
+    # a '?' bucket (played time unknown: onlinetime held a clock value) counts the character, not the median
+    fq = pm.first_use([('first', 'dungeon', '11-15|60', 30), ('first', 'dungeon', '11-15|?', 40)], 200)[0]
+    check(fq['characters'] == 70 and fq['medianMinutes'] is not None and fq['medianMinutes'] <= 60,
+          'unknown time bucket left out of the median: %r' % (fq,))
 
     sr2 = pm.report([('stop', 'Ember Caves', '1-5', 12), ('stop', 'Ember Caves', '6-10', 30), ('stop', 'Marsh', '1-5', 4),
                      ('stop', 'Cave', '1-5', 0), ('churn', '1-5', 'gone', 46), ('churn', '1-5', 'active', 154),

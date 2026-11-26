@@ -33,6 +33,11 @@ return {
 	-- buckets are finer where most characters are (an hour or two) and coarser later
 	timeBuckets = {5, 10, 15, 20, 30, 45, 60, 90, 120, 180, 240, 360, 480, 720, 960, 1440, 2160, 2880, 4320, 5760,
 		8640, 11520, 17280, 23040, 34560, 57600, 86400, 129600, 172800, 259200},
+	-- players.onlinetime at or above this is the Unix clock the stock engine added, not seconds played (2000-01-01:
+	-- 30 years of play). Such a value gives no time bucket, and every startup repairs such rows (repairOnline; the
+	-- engine counts right with src-patch 0095). Seen in a client 2026-11-26: a 258 s session read 1795718727 s
+	onlineSane = 946684800,
+	repairOnline = true,
 
 	-- where a death happened: the instance (Chaos.registerInstance label) when the character stood in one, else the
 	-- nearest hunt (data/lib/chaos_hunt_places.lua: a hunt's arrival tile) on the same floor within this many tiles

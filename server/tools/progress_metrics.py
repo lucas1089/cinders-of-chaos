@@ -237,7 +237,8 @@ def first_use(rows, population):
     out = []
     for system, e in by.items():
         small = hide(e['total']) == SMALL
-        med, _ = median([(bucket_limit(b), c) for b, c in e['buckets'].items()])
+        # '?': played time unknown (onlinetime held a clock value, metrics.lua before src-patch 0095); counted, no median
+        med, _ = median([(bucket_limit(b), c) for b, c in e['buckets'].items() if b != '?'])
         band = sorted(e['bands'].items(), key=lambda kv: (-kv[1], band_start(kv[0])))[0][0]
         out.append({'system': system, 'characters': hide(e['total']),
                     'pct': None if small or not population else round(100.0 * e['total'] / population, 1),
