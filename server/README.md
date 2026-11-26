@@ -7222,6 +7222,9 @@ autoloot list is needed.
   the Loot Bag; with the Orbs Pouch full a new orb overflowed into the Loot Bag ("Orbs Pouch is full; 3 to your Loot Bag");
   with overflow off the next orb went to the backpack; click-to-loot (`ChaosPouches.stow`) refused the Loot Bag with overflow off
   and used it with overflow on; the overflow checkbox saved on the server both ways.
+- Seen in a client (2026-11-26, V29): the Gem Pouch bought in Convenience for 150 coins, delivered to the purse. Capacities:
+  Loot Bag 500, Orbs Pouch 100, Rift Key Pouch 100, Gem Pouch 100. A Troll kill with a gem, an orb and a Rift Key: the gem
+  went to the Gem Pouch, the orb to the Orbs Pouch, the key to the Rift Key Pouch.
 
 ## Store pouches and the Everfull Ration (`store_food.lua`, `store_food_core.lua`, `store_food_config.lua`, `tools/install_store_food.py`)
 
@@ -8873,6 +8876,9 @@ exercise axe turning into the melee weapon, a bow from 8 tiles refused.
 
 Seen in a client (2026-11-26, V21): the Exercise Melee Weapon on a dummy, sword on a Warrior, fist on a Monk (the weapon turns into the fist weapon).
 
+Seen in a client (2026-11-26, V29): the Monk sees Exercise Fist Weapon (500) for 25 coins in Store > Consumables > Training,
+beside the melee weapon. Bought, it went to the purse; on a dummy "You started training", fist fighting 10 to 45 in about 17 s.
+
 ## Attack delay after changing floor (owner debug item 50: "Demora para começar a atacar depois de subir ou descer escada"; fixed by src-patch 0066, not measured in game)
 
 What happens, from the repository's own engine notes (`src-patches/0028`, `0042`; the stock source is not here): taking a
@@ -9837,6 +9843,9 @@ full health" anomalies. Causes found:
   dying and kept failing its own spawn. `setup` also keeps testers off the waystone tier maps (`LT.waystone_areas` of
   `waystone_tiers_config.lua`): their monsters count at the run tier (1100+), not at the pool level, and two level 600
   testers stood next to level 1600 and 2100 monsters.
+  Seen in a client (2026-11-26, V29): a level 40 tester died to 6 Cyclops Smiths. The client death recap read damage 495,
+  11 hits, a biggest hit of 165. The helper line read hits 11, damage 582 (117%), biggest 165 by Cyclops Smith. The helper
+  counts the raw hit, before the player defence layer and the clamp to the health left, so its total runs higher.
 - Live run 2026-11-15 (O580 part B, 100 bots, 1 hour, 3241 deaths). Found in the code and fixed in the helper (v10) and the checks:
   * `dual_fists` "weapon hand code 33, shield hand code 33": 33 is `RETURNVALUE_NOTENOUGHLEVEL`. The probe always wore the pair of ember
     knuckles (level 150) and the ossuary gauntlet (level 300), and the engine refuses a fist weapon below its level. Level 30 to 149:
@@ -9973,6 +9982,9 @@ systems that never answered, with no refusal and no log error, on one line "no a
   `patch_shop_prices_test.py`) makes `ShopModule.requestTrade` send 0 for a negative price (a copy; the shop list and
   `getShopItem` keep -1). The bot treats 4294967295 as no price, never trades on it and counts one failure
   `shop: the trade window prices an item ...` per visit while the server is not patched.
+  Seen in a client (2026-11-26, V29): Perara's Sell tab listed only Black Pearl and Blue Crystal Shard of a mixed backpack.
+  A search for "goblet" or "amulet" showed "Nothing matches". Sell all paid 4400 gold; goblet, amulet and sword stayed.
+  The server log held no "non-sellable" or "non-buyable" line.
 - *Connection closed without a message (65).* The engine logs a player out without a message 60 s after its last ping
   answer (`Player::sendPing`, see src-patch 0034). The bot pinged in its behaviour loop, which stops while the keystone
   scenario waits for minutes. The ping now runs in the always-on guard task as well.
@@ -15518,6 +15530,9 @@ Rift; then two hunt monsters that fit the game. All three live in the Embergut R
 - **Tests.** `tests/autosprite_art_test.lua` (luajit and lua5.3): the picks rows in look order, the switch against picks.csv and
   each file's look, `lookOf` on and off, the boss flag, the boss room and both hunt monsters in the plan; `tests/bossspawns_test.lua`
   covers the new row. Not run live.
+- **Seen in a client (2026-11-26, V29).** Vharzul the Verdant Eye in the Embergut Rift (16542,14381,10): 4x4 look 3361, level
+  700 nameplate. It walks and faces each way and hits for 2900-4300. Facing west the body sits about 3 tiles left of its name
+  and health bar: the pair 54 art is not placed by the dat displacement like the O616 bosses. Not fixed here: it needs pair work.
 
 ## AI Sprite Studio monsters (pair 57) (`data/lib/chaos_aiss_art.lua`, switch `ChaosAissArt.PAIR57`, on)
 
@@ -17257,6 +17272,8 @@ sell list with the rarity opt-in: the unlocked one sold (4000 gold to the bank),
 locked sword (new copy, still locked). Unit tests: yields, orb roll, checks, the lock, batch cap and skips, signature,
 combine, the economy average, and `salvage.lua` single / batch / lock / combine / full backpack / look text against
 mocks; `tests/shop_services_test.lua`: the auto seller keeps a locked item.
+Seen in a client (2026-11-26, V29): Salvage All on the Loot Bag held 3 Common, 3 Uncommon, 2 Magic, 2 Rare and 1 Legendary.
+"Up to Uncommon" took the 6 lowest for 12 rune shards. "Up to Rare" then took the 4 others for 25. The Legendary stayed.
 
 ## Item attributes in packets and rich tooltips (`src-patches/0003-item-custom-attributes.patch`, `item_tooltip.lua`, `item_tooltip_core.lua`, client `game_itemrarity`, `game_itemtooltip`)
 

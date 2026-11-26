@@ -3863,6 +3863,9 @@ Output **pair 54** (8 directions; rebuilt 2026-10-28): dat bd8d87f8b4950e01e65ee
   `monster_looks/autosprite_picks.csv` appended to `picks.csv` and `server/tools/apply_monster_looks.py` run (looks 3361-3363 into
   the three files), `tools/ci/check_content.py` `PAIR_NAME, PAIR_OUTFITS` to pair 54 / 3363, `outfit_anchors.lua` and
   `info_lifts.lua` regenerated from pair 54. Until then the three wear stock looks and a client on pair 53 needs nothing new.
+- **Seen in a client (2026-11-26, V29, pair 88).** Vharzul the Verdant Eye (look 3361, 4x4) walks, turns and attacks in the Embergut
+  Rift. Facing west its body is drawn about 3 tiles left of its name and health bar: the art is not placed by the dat
+  displacement like the O616 boss outfits. Open, needs pair work.
 
 ### Pair 55: pair 54 with the pickup looks, Ember portal and health / mana globes (`gen_portal_art.py`; built 2026-10-28, shipped inside pair 56)
 Owner requests 2026-10-28: the Ember Blessing ground pickup (server 32090) wore the Ember Orb sprite (client id 25045); it gets a
