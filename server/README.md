@@ -4924,6 +4924,11 @@ The tower exists now. The Enter Tower button of the client window (action `enter
 - `server/tests/infinitytower_run_test.lua` covers the floor planner, entering, clearing floors, dying, leaving, the time limit, logout and login with a mocked engine; CI runs it with LuaJIT and Lua 5.3. The real `Game.createTile`, `Tile:addItem`, `Game.createMonster` and teleport calls are assumed from the engine sources, not run.
 - **Next floor now and the tower panel (O274).** Floors have no waves (all monsters of a floor appear together), so there is no "call next wave"; the button skips the wait. Opcode 214 got three actions, no new opcode: client `{"action":"skip"}` starts the next floor at once, `{"action":"state"}` asks for the state; the server pushes `{"action":"state", inRun, canSkip, isLeader, floor, nextBoss, boss, cleared, waiting, remaining, total, nextIn | floorLeft}` on entry, floor start, every kill, floor cleared and leaving (the client counts the countdowns on its own clock). `ChaosTowerRun.skip` (`infinitytower_run.lua`, config `ChaosTowerRunConfig.skip`) refuses unless: the player is in an active run and inside the arena; the run is waiting (start delay or pause, so the floor is cleared: never two floors alive, no kill skipped, nothing stacks); the player is the run leader (any member once the leader died or left, so a member cannot rush a group); the next floor is not a boss floor (`intoBoss = false`: the pause before a boss is kept); and `minInterval` (2 s) since the last press, on top of the 300 ms per-action limit of `infinitytower.lua`. A timer sequence number makes the skipped pause timer do nothing. Records and rewards: floor gold, rewards, the heal and `ChaosRecords.towerFloor` all run when a floor is cleared, before the pause, so a skip only drops the 6 s of regeneration; the run clock is real time, so a fast climb is faster by at most 6 s a floor, the same for everyone, and `tower_model.py` (which models the fight, not the pause) is unchanged and passes. Tests: `tests/infinitytower_run_test.lua` ("Next floor now"). Client: see `client/MANIFEST.md` game_infinitytower.
 - **Walls (2026-11-02).** The tower walls are built wall pieces now: dark stone bricks, the `darkstone` brush of the generated areas (`arenalook_core.lua` `A.WALL_SETS`, ids 25200-25205, the same as `areagen_config.lua` `walls.darkstone`). Each wall tile gets its piece from its neighbours (`A.wallPieceId`, the rules of `ChaosAreaGenCore.wallPiece`): rows on the north and south walls, columns on the west and east, a pole in the north-west corner, the corner piece in the south-east. Before, the ember, stone and crypt themes put the single "stone wall" 5648 on every wall tile. That id is a cave rock piece (grey rock in red earth, one corner of a cave edge): tile by tile it drew rock lumps with earth seams. The pieces are 2x2 sprites, so the tower look keeps lights and decoration off the floor row and column under the south and east walls (`wallSize = 2`). The dark theme keeps its obsidian wall. Checked in the installed items.otb and the client pair. Tests: `tests/arenalook_test.lua` (set = areagen brush, piece per frame tile), `tests/infinitytower_run_test.lua` (the built walls). Every other runtime room got the same fix: see "Arena looks", "Built walls".
+- Seen in a client (2026-11-26, V27): entering showed "Get ready | Next floor in 4s" with the button on; a press started
+  floor 1 at once; after each clear "Floors cleared N | Next floor in 6s" and a press called the next floor; floor 3 came
+  alone after the 6 s pause; Ctrl+Shift+N started floor 5; Leave took the character to the temple and hid the panel.
+  Fixed: the panel's default spot (top 40) lay under the menu bar (bottom at 50), which hid the "Floor N" line. The default
+  is top 54 now, 68 on mobile (client/MANIFEST.md game_infinitytower).
 - Not done: a visible ladder of floors in the client window (since O144 it shows the next reward, see "Infinity Tower balance and floor rewards"). Check that x 2000..2700, y 2000..2020, z 7 is really empty in your map (it is in the map analysed: the content starts at x 18992).
 
 ### Infinity Tower: two clocks, shown and named (O484)
@@ -7243,6 +7248,11 @@ The store's infinite food (Convenience, "Everfull Ration", 100 coins, decided 20
 ## Potions (`potions.lua`, `potions_core.lua`, `potions_config.lua`, `data/lib/chaos_potions.lua`, `tools/install_potions.py`)
 
 Seen in a client (2026-11-25): an Everfull drink at 10% health raised health and mana; the potion stayed (no charges since O273).
+Seen in a client (2026-11-26, V27): Veyra's trade list had 30 goods and no Everfull potion. The look text had no charges line.
+Nine drinks took health 90 to 300 and mana 180 to 586; both flasks stayed. Fixed: `heldView` counted with `getItemCount(id)`.
+Every Everfull flask is locked, so the count was 0 and the helper was never told a flask. Now it counts with `includeLocked`;
+after the fix the server sent health look 38645 and mana look 38649, and the client's `ChaosEverfullHeld` held the same.
+The test mock models patch 0009 (`tests/potions_helper_test.lua`).
 
 Owner request 2026-10-16: "Remove the potion flasks and make the first pots infinite."
 
@@ -7420,8 +7430,9 @@ Owner request 2026-10-16: "Remove the potion flasks and make the first pots infi
     (and Auto setup's fallback) drank stock potions or got "Sorry, not possible.", and the flask was never used. The client cannot
     see the tier (a closed backpack is not counted, and the look is the stock potion's), so the server tells it:
     `ChaosPotions.heldView` (`potions_core.lua` `heldView`/`heldKey`/`heldPayload`, tested in `tests/potions_helper_test.lua`)
-    reads `Player:getItemCount` of the nine ids (inventory and backpacks, the places the use by look searches; not the inbox, the
-    purse or the depots) and `ItemType:getClientId`, and `potions_helper.lua` sends opcode **116** (`held`, per
+    reads `Player:getItemCount(id, -1, true)` of the nine ids (inventory and backpacks, the places the use by look searches; not the inbox, the
+    purse or the depots; the third argument counts locked items: every Everfull flask is locked and engine patch 0009 leaves a
+    locked item out otherwise) and `ItemType:getClientId`, and `potions_helper.lua` sends opcode **116** (`held`, per
     slot `{look, tier, level, line, ready}`; free in the "Opcode collision check", listed in the opcode table) at login (after 1.5 s),
     after an upgrade, on the client's `sync` (one a second) and from a 3 s think when the view changed (an item moved), never otherwise. `ready` is always true since O273 (it was false for an empty flask). The client (`helper_potions.lua` `P.resolve`) lets a Health / Mana Potion row follow a ready, plain, allowed
     Everfull of its slot; any other row keeps its look (the engine prefers the Everfull of that look). Spirit
@@ -27135,6 +27146,10 @@ Seen in a client (2026-11-26, V22): Kaelgor the Infernal Warlord opened from the
 
 Tests: `tests/monster_levels_test.lua`.
 
+Seen in a client (2026-11-26, V27): a level 30 character at the Cyclops hunt (map mark "Hunting: Cyclops, Cyclops Drone
+(level 20-30)") saw "Cyclops [20]" on the nameplate and the monster bar, look text "You see a cyclops, it is level 20.";
+a Cyclops Smith showed [26]. Nothing to fix.
+
 Seen in a client (2026-11-25, V12): Grimeleech [158], Giant Hornet [192], Reflect Spider [167] next to Orc Warrior [11] and Dragon [42] at Mirewake; health and experience follow the level (O163).
 
 ## Stop request file (`stop_request.lua`, `stop_request_core.lua`, `stop_request_config.lua`)
@@ -34447,6 +34462,9 @@ damage"). Same percentages.
   `chaos_supports_config.lua` if hunts speed up.
 - Texts changed (item description, tooltip, supports window, codex, wiki): `pt_br.lua` keys, `gen_codex_data.lua`,
   `gen_wiki_data.lua` regenerated. Tests: `tests/supports_test.lua`.
+- Seen in a client (2026-11-26, V27): Rime Bloom on a Troll dummy, three casts without a rune: ice 1253, health lost 1253.
+  With a Mythic Emberbrand (20%) socketed and shown in the supports window: ice 1231 + fire 245 (19.9%), health lost 1476.
+  The fire is added; the ice hit is not converted. Nothing to fix.
 
 ## Client pair guard (`config.lua` `chaosClientPair`, `tools/client_pair.py`, `chaos-ctl.sh client-pair`)
 

@@ -152,7 +152,7 @@ local function anchorDefault()
   skipPanel:breakAnchors()
   skipPanel:addAnchor(AnchorTop, 'parent', AnchorTop)
   skipPanel:addAnchor(AnchorHorizontalCenter, 'parent', AnchorHorizontalCenter)
-  skipPanel:setMarginTop(P.DEFAULT_TOP)
+  skipPanel:setMarginTop(P.defaultTop(g_app and g_app.isMobile and g_app.isMobile() == true))
   skipPanel:setMarginLeft(0)
 end
 

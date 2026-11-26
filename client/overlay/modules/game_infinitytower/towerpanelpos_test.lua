@@ -51,6 +51,12 @@ eq(x, 0, 'parent too narrow: left'); eq(y, 0, 'parent too low: top')
 -- default place
 x, y = M.default(290, 108, 1000, 600)
 eq(x, 355, 'default centred'); eq(y, M.DEFAULT_TOP, 'default top')
+-- below the menu bar of client_chaos_topbar (2 + 36 px, badges to about 46; phone 2 + 52): the bar covered the Floor line
+-- at 40 (V27, 2026-11-26)
+eq(M.DEFAULT_TOP >= 50, true, 'the default top clears the menu bar')
+x, y = M.default(290, 108, 1000, 600, true)
+eq(y, M.DEFAULT_TOP_MOBILE, 'a phone: the default top under the taller bar')
+eq(M.DEFAULT_TOP_MOBILE >= 2 + 52 + 10, true, 'the phone default clears the 52 px bar')
 
 -- place: nothing saved keeps the default anchors; a saved spot off screen after a resize is pulled in
 eq(M.place(nil, 290, 108, 1000, 600), nil, 'nothing saved: default anchors')

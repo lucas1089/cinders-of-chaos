@@ -6,7 +6,11 @@ TowerPanelPos = {}
 local M = TowerPanelPos
 
 M.NODE = 'chaosTowerPanel'
-M.DEFAULT_TOP = 40      -- margin-top of TowerPanel in towerpanel.otui
+-- margin-top of TowerPanel in towerpanel.otui: below the menu bar of client_chaos_topbar (2 + 36 px, its badges reach
+-- about 46; on a phone 2 + 52), where the hub window opens too (margin-top 54). It was 40: the bar covered the Floor
+-- line (seen in a client 2026-11-26, V27)
+M.DEFAULT_TOP = 54
+M.DEFAULT_TOP_MOBILE = 68
 M.DRAG_MIN = 3          -- pixels the panel must move before a release saves the spot
 M.MIN_WIDTH = 290       -- width of TowerPanel in towerpanel.otui
 M.EDGE = 6              -- panel edge and gap between the button and the box
@@ -63,9 +67,14 @@ function M.clamp(x, y, w, h, pw, ph)
     math.floor(clamp(y, 0, math.max(0, (ph or 0) - (h or 0))))
 end
 
--- the default place, relative to the parent: centred, DEFAULT_TOP down
-function M.default(w, h, pw, ph)
-  return M.clamp(math.floor(((pw or 0) - (w or 0)) / 2), M.DEFAULT_TOP, w, h, pw, ph)
+-- the margin-top of the default place (a phone has the taller menu bar)
+function M.defaultTop(mobile)
+  return mobile and M.DEFAULT_TOP_MOBILE or M.DEFAULT_TOP
+end
+
+-- the default place, relative to the parent: centred, defaultTop(mobile) down
+function M.default(w, h, pw, ph, mobile)
+  return M.clamp(math.floor(((pw or 0) - (w or 0)) / 2), M.defaultTop(mobile), w, h, pw, ph)
 end
 
 -- where the panel goes: nil when nothing is saved (keep the default anchors), else the clamped saved spot

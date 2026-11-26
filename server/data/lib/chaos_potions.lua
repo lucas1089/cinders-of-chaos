@@ -412,13 +412,15 @@ end
 -- Great Health Potion. Per slot the server sends the carried Everfull's look, tier, level, line and `ready` (always true
 -- since O273: the flasks never empty) on ChaosOpcodes.everfull; the helper uses it to follow an upgrade (its Health / Mana Potion rows
 -- become the carried tier) and Auto setup to pick it. Carried = inventory and backpacks (Player:getItemCount), as the
--- engine's use by look finds it; the inbox, the purse and the depots do not count.
+-- engine's use by look finds it; the inbox, the purse and the depots do not count. Every Everfull flask is locked, and
+-- engine patch 0009 leaves a locked item out of getItemCount unless its third argument asks for it: without `true` the
+-- count was always 0 and no flask was ever told (seen in a client 2026-11-26, V27).
 function PT.heldView(player)
 	local c = PT.cfg()
 	local counts = {}
 	for _, e in ipairs(c.everfull) do
 		if PT.installed(e.id) then
-			counts[e.id] = player:getItemCount(e.id)
+			counts[e.id] = player:getItemCount(e.id, -1, true)
 		end
 	end
 	return K.heldView(c, {counts = counts, clientId = function(id)

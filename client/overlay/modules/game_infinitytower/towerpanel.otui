@@ -7,7 +7,7 @@ TowerPanel < UIWidget
   height: 124
   anchors.top: parent.top
   anchors.horizontalCenter: parent.horizontalCenter
-  margin-top: 40
+  margin-top: 54
   background-color: #0d0b0ee0
   border-width: 1
   border-color: #7d7176
