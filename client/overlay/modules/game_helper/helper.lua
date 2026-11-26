@@ -650,8 +650,10 @@ local function allyOptions(list, current)
   end
   current = tonumber(current) or 0
   if current > 0 and not seen[current] then
+    -- the saved choice the class cannot cast now: its entry's name (an old id may belong to another spell today)
+    local e = Ally.single(current) or Ally.group(current)
     local sp = spellById(current)
-    o[#o + 1] = { text = sp and sp.name or tostring(current), data = current }
+    o[#o + 1] = { text = (e and e.name) or (sp and sp.name) or tostring(current), data = current }
   end
   return o
 end

@@ -27,14 +27,19 @@ so a server patched by part 1 only gets it on the next run):
 Part 3 (owner 2026-10-23: 15 tiers from level 1100 to 2500, 2-3 scenarios for the low, middle and high levels; its own
 marker): the device reads data/scripts/chaos/waystone_tiers.lua (ChaosWaystoneTiers; each call guarded, so without it the
 base behaviour stays):
-  * the tier items VII-XV (tools/install_waystone_items.py) join clientToServer (WT.tablets, keyed by their server id),
-    so the window lists them and "teleport" takes them; their action is the tier items' action;
+  * the tier items VII-XXV (tools/install_waystone_items.py) join clientToServer (WT.tablets, keyed by their server id),
+    so the window lists them and "teleport" takes them; their action is the tier items' action (an install from before
+    O666 registered VII-XV only: the next run adds XVI-XXV to that line);
   * a tier opens one of the maps of its band (WT.optionsFor: the base mapping's entries of the band's base tiers);
   * the window rows carry the tier's monster level (WT.tierLevel);
   * when the pads open, WT.startRun(finalArea, serverTypeId) sets the map to the run's tier.
 Part 4 (owner 2026-10-23: waystones with modifiers, the maps of an ARPG; its own marker): the device takes the
 waystone that was used on it (data/scripts/chaos/waystone_mods.lua ChaosWaystoneMods.choose / take; else the one of that
 tier with the fewest modifiers) instead of any one of the id, and passes its modifiers to WT.startRun.
+Part 5 (seen in a client 2026-11-26: a waystone used in the hideout opened nothing; its own marker): the tier items'
+action called showTabletUI.onUse(...), but on an engine Action that name reads back the engine's setter, not the Lua
+function, so the call did nothing (the console said "Event::loadCallback scriptInterface == nullptr"). The device's onUse
+now hands over to a local function chaosShowTablet, and the tier items call that.
 And in data/items/items.xml the descriptions of the six Waystone Tier items ("... on waystone device at house ...")
 say "... on the waystone device in your hideout or house ...". The portal kit (29628) stays "in your house": building a
 device from a kit needs a house, the hideout has its own device built in. Every change is made once (a second run changes
@@ -78,8 +83,10 @@ SHOW_ANCHOR = re.compile(r'^local showTabletUI = Action\(\)[ \t]*\r?$', re.M)
 REGISTER_ANCHOR = re.compile(r'^showTabletUI:register\(\)[ \t]*\r?$', re.M)
 CENTER_ANCHOR = re.compile(r'^([ \t]*)local center = pendingCenter\[guid\][ \t]*\r?$', re.M)
 TIER_IDS = (29845, 29846, 29847, 29848, 29849, 29850)
-# the tier items VII-XV (install_waystone_items.py NEW_IDS; waystone_tiers_config.lua tiers)
-NEW_TIER_IDS = tuple(range(41951, 41960))
+# the tier items VII-XXV (install_waystone_items.py NEW_IDS; waystone_tiers_config.lua tiers). O666 added XVI-XXV
+# (41960-41969); an install of part 3 from before them registered VII-XV only, so a deep waystone used on the device
+# did nothing (seen in a client 2026-11-26): P3_IDS_FIFTEEN is that line, moved on to P3_IDS_NEW
+NEW_TIER_IDS = tuple(range(41951, 41970))
 
 MARK3 = '-- Chaos: waystone tiers VII-XV and the level bands (patch_waystone_hideout.py part 3)'
 HELPER3 = [
@@ -120,6 +127,7 @@ P3_DONE = 'player:sendExtendedOpcode(OPCODE, json.encode{ action = "teleport_don
 P3_USE_OLD = 'function chaosTierUse.onUse(player, item, fromPosition, target, toPosition, isHotkey)'
 P3_IDS_OLD = 'chaosTierUse:id(%s)' % ', '.join(str(i) for i in TIER_IDS)
 P3_IDS_NEW = 'chaosTierUse:id(%s)' % ', '.join(str(i) for i in TIER_IDS + NEW_TIER_IDS)
+P3_IDS_FIFTEEN = 'chaosTierUse:id(%s)' % ', '.join(str(i) for i in TIER_IDS + tuple(range(41951, 41960)))
 
 MARK4 = '-- Chaos: waystone modifiers, the used waystone is the one taken (patch_waystone_hideout.py part 4)'
 HELPER4 = [
@@ -138,6 +146,20 @@ P4_START_OLD = 'pcall(ChaosWaystoneTiers.startRun, finalArea, serverTypeId)'
 P4_START_NEW = 'pcall(ChaosWaystoneTiers.startRun, finalArea, serverTypeId, chaosMods)'
 P4_POS = re.compile(r'^([ \t]*)local pos = device:getPosition\(\)', re.M)
 P4_CHOOSE = 'if ChaosWaystoneMods and ChaosWaystoneMods.choose then pcall(ChaosWaystoneMods.choose, player, item) end'
+
+MARK5 = '-- Chaos: the device\'s use as a plain function (patch_waystone_hideout.py part 5)'
+P5_DEF_OLD = 'function showTabletUI.onUse(player, runeItem, fromPosition, target, toPosition, isHotkey)'
+P5_DEF_NEW = [
+    MARK5,
+    '-- an Action\'s onUse read back is the engine\'s setter, not this function: the tier items call chaosShowTablet',
+    'local chaosShowTablet',
+    P5_DEF_OLD,
+    '  return chaosShowTablet(player, runeItem, fromPosition, target, toPosition, isHotkey)',
+    'end',
+    'chaosShowTablet = function(player, runeItem, fromPosition, target, toPosition, isHotkey)',
+]
+P5_CALL_OLD = 'showTabletUI.onUse(player, device, pos, nil, pos, isHotkey)'
+P5_CALL_NEW = 'chaosShowTablet(player, device, pos, nil, pos, isHotkey)'
 
 HELPER2 = [
     MARK2,
@@ -215,7 +237,24 @@ def patch_lua(text):
     new, changes4, err = patch_lua_part4(new)
     if err:
         return text, [], err
-    return new, changes + changes2 + changes3 + changes4, None
+    new, changes5, err = patch_lua_part5(new)
+    if err:
+        return text, [], err
+    return new, changes + changes2 + changes3 + changes4 + changes5, None
+
+
+def patch_lua_part5(text):
+    """-> (new text, changes, error): the tier items reach the device's window through a plain Lua function"""
+    if MARK5 in text:
+        if P5_CALL_NEW not in text or P5_CALL_OLD in text:
+            return text, [], 'part 5 marker present but the tier items do not call chaosShowTablet'
+        return text, [], None
+    nl = nl_of(text)
+    if text.count(P5_DEF_OLD) != 1 or text.count(P5_CALL_OLD) != 1 or text.index(P5_DEF_OLD) > text.index(P5_CALL_OLD):
+        return text, [], 'the device\'s onUse or the tier items\' call of it not as expected (part 2 first)'
+    new = text.replace(P5_DEF_OLD, nl.join(P5_DEF_NEW), 1)
+    new = new.replace(P5_CALL_OLD, P5_CALL_NEW, 1)
+    return new, ['a waystone used in the hideout opens the window'], None
 
 
 def patch_lua_part4(text):
@@ -242,10 +281,14 @@ def patch_lua_part3(text):
     """-> (new text, changes, error): the tier items VII-XV, the band's maps, the level in the window, the run's tier"""
     done = ('chaosWaystoneMerge()', P3_TIER_NEW, P3_OPTIONS_NEW, 'ChaosWaystoneTiers.startRun', P3_IDS_NEW)
     if MARK3 in text:
+        changes = []
+        if P3_IDS_NEW not in text and text.count(P3_IDS_FIFTEEN) == 1:
+            text = text.replace(P3_IDS_FIFTEEN, P3_IDS_NEW, 1)
+            changes = ['tier items XVI-XXV']
         for need in done:
             if need not in text:
                 return text, [], 'part 3 marker present but "%s" is missing' % need
-        return text, [], None
+        return text, changes, None
     nl = nl_of(text)
     list_old = P3_LIST_OLD % (nl, nl)
     for old, what in ((P3_PICK, 'the part 2 helpers'), (list_old, 'the window list (chaosWaystoneTiers)'),
@@ -270,7 +313,7 @@ def patch_lua_part3(text):
         m.group(1), P3_DONE, nl, m.group(1), nl, m.group(1), nl, m.group(1)), new, count=1, flags=re.M)
     new = new.replace(P3_USE_OLD, P3_USE_OLD + nl + '  chaosWaystoneMerge()', 1)
     new = new.replace(P3_IDS_OLD, P3_IDS_NEW, 1)
-    return new, ['tier items VII-XV', 'maps of the band', 'level in the window', 'run tier at the pads'], None
+    return new, ['tier items VII-XXV', 'maps of the band', 'level in the window', 'run tier at the pads'], None
 
 
 def patch_lua_part2(text):
