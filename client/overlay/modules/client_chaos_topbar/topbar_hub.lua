@@ -210,6 +210,7 @@ local function pinCard(card)
 end
 
 local fillSearch
+local helpSearch -- set below (the Help search module, game_helpsearch)
 
 -- redraws what is open after a favourite changed
 local function redrawOpen()
@@ -496,7 +497,8 @@ fillSearch = function()
   if #F.words(searchQuery) == 0 then
     hint:setText(tx('Type a name, a word or a hotkey. Enter opens the first result.'))
   elseif #list == 0 then
-    hint:setText(tx('Nothing found. Try another word.'))
+    -- a question finds no window here: Enter hands it to the Help search (O373), which answers questions (V34)
+    hint:setText(helpSearch() and tx('Nothing found. Enter asks the Help search.') or tx('Nothing found. Try another word.'))
   elseif total > #list then
     hint:setText(tx('These are the best results. Type more to narrow it.'))
   else
@@ -504,9 +506,28 @@ fillSearch = function()
   end
 end
 
+-- the Help search module (game_helpsearch, O373) when it is loaded
+helpSearch = function()
+  local mods = rawget(_G, 'modules')
+  local m = type(mods) == 'table' and mods.game_helpsearch or nil
+  if type(m) == 'table' and type(m.show) == 'function' and type(m.search) == 'function' then return m end
+  return nil
+end
+
 local function openFirstResult()
   local card = searchFirst
-  if card then clickCard(card, false) end
+  if card then
+    clickCard(card, false)
+    return
+  end
+  -- nothing matched: the typed words go to the Help search, which answers questions ("how do I get a mount")
+  local m = helpSearch()
+  local text = searchQuery
+  if m and #F.words(text) > 0 then
+    closeHub()
+    m.show()
+    m.search(text)
+  end
 end
 
 local function ensureSearchWindow()

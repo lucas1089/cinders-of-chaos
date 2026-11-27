@@ -211,7 +211,16 @@ end
 -- without Alt the tooltip is name, stacks and time, and a hint line when there is a description
 function BuffMath.tooltip(entry, now, altDown)
   local lines = { entry.name .. (entry.debuff and tr('  (debuff)') or '') }
-  if altDown and entry.desc ~= '' then lines[#lines + 1] = entry.desc end
+  if altDown and entry.desc ~= '' then
+    -- a long description broken at spaces (ChaosAltHelp.wrap): the bar sets this text straight on the icon, so the
+    -- shared poll's wrap does not reach it; one line ran off the tooltip (seen in a client 2026-11-27, V34, Newcomer)
+    local A = rawget(_G, 'ChaosAltHelp')
+    if A and A.wrap then
+      for _, part in ipairs(A.wrap(entry.desc)) do lines[#lines + 1] = part end
+    else
+      lines[#lines + 1] = entry.desc
+    end
+  end
   if entry.stacks and entry.stacks > 0 then lines[#lines + 1] = tr('Stacks: %d', math.floor(entry.stacks)) end
   local left = BuffMath.remaining(entry, now)
   lines[#lines + 1] = left and (tr('Time left: %s', BuffMath.formatLong(left))) or tr('No time limit')

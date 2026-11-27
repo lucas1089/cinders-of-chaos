@@ -163,6 +163,11 @@ end
 local function adopt()
   local found, list, index = findBar()
   if not found then return false end
+  -- slot order by the ids: the children are in the order a previous adopt moved them to (L.sortSlots)
+  list = L.sortSlots(list, function(b)
+    local ok, id = pcall(function() return b:getId() end)
+    return ok and id or nil
+  end)
   bar, buttons, barIndex = found, list, index
   slotParent = buttons[1]:getParent()
   return true

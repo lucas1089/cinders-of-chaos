@@ -13,6 +13,9 @@ if rawget(_G, 'ChaosAltHelp') ~= A then _G.ChaosAltHelp = A end
 
 A.POLL_MS = 100
 A.PARENT_DEPTH = 4 -- how far up from the hovered widget an altTip is looked for (a row's label is hovered, not the row)
+-- a help line longer than this many bytes is broken at spaces. A tooltip is as wide as its longest line: one long
+-- explanation ran off the left of the screen (seen in a client 2026-11-27, V34, a passive node with Alt held)
+A.WRAP = 72
 
 local function translate(tr)
   if type(tr) == 'function' then return tr end
@@ -30,7 +33,39 @@ function A.hint(tr)
   return tr('Hold Alt for what each line does.')
 end
 
--- texts: the short lines; extra: the help lines (may be empty or nil); altDown: Alt held now
+-- one line in lines of at most `width` bytes (A.WRAP), broken at spaces; the leading indent is kept on every part and
+-- a word longer than the width keeps its own line
+function A.wrap(line, width)
+  line = tostring(line or '')
+  width = width or A.WRAP
+  if #line <= width then return { line } end
+  local indent, rest = line:match('^(%s*)(.*)$')
+  local out, cur = {}, ''
+  for word in rest:gmatch('%S+') do
+    if cur == '' then
+      cur = indent .. word
+    elseif #cur + 1 + #word <= width then
+      cur = cur .. ' ' .. word
+    else
+      out[#out + 1] = cur
+      cur = indent .. word
+    end
+  end
+  if cur ~= '' then out[#out + 1] = cur end
+  if #out == 0 then out[1] = line end
+  return out
+end
+
+-- every line of a text (newlines kept) wrapped by A.wrap
+function A.wrapText(text, width)
+  local out = {}
+  for line in (tostring(text or '') .. '\n'):gmatch('(.-)\n') do
+    for _, part in ipairs(A.wrap(line, width)) do out[#out + 1] = part end
+  end
+  return table.concat(out, '\n')
+end
+
+-- texts: the short lines; extra: the help lines (may be empty or nil, each wrapped by A.wrap); altDown: Alt held now
 -- hint: the hint line (nil: A.hint). Returns a new list: texts, then extra with Alt or the hint without it.
 -- No help lines: no hint either.
 function A.lines(texts, extra, altDown, tr, hint)
@@ -41,7 +76,7 @@ function A.lines(texts, extra, altDown, tr, hint)
   if extra and #extra > 0 then
     if altDown then
       for _, line in ipairs(extra) do
-        out[#out + 1] = line
+        for _, part in ipairs(A.wrap(line)) do out[#out + 1] = part end
       end
     else
       out[#out + 1] = hint or A.hint(tr)
@@ -137,6 +172,7 @@ end
 local function setTip(w, down)
   local ok, text = pcall(w.altTip, down)
   if ok and type(text) == 'string' then
+    text = A.wrapText(text)
     w:setTooltip(text)
     return text
   end

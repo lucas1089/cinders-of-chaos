@@ -115,12 +115,19 @@ end
 
 -- the `state` message: the whole table (the client filters its menu by it), what is unlocked and seen, the next one.
 -- all = true: the whole menu (staff, or the module off)
+-- `unlocked` is what the menu opens: the entries announced (the mask) and the ones whose level the character has reached
+-- and that still wait for their "New" callout (V34: the quiet first login of O761 holds the callouts until level 11 or a
+-- main quest step, then one every 75 s; the menu kept them hidden all that time, so the Season Pass a level 8 character saw
+-- grey "Unlocks at level 10" vanished at level 10). A waiting one is never seen yet, so it shows its "New" badge.
 function M.state(unlockedMask, seenMask, level, all)
 	local c = M.cfg()
 	local entries, unlocked, seen = {}, {}, {}
+	level = tonumber(level) or 0
 	for i, e in ipairs(c.entries) do
 		entries[i] = {key = e.key, level = e.level, menu = e.menu}
-		if M.has(unlockedMask, i) then
+		if not M.has(unlockedMask, i) and e.level <= level then
+			unlocked[#unlocked + 1] = e.key
+		elseif M.has(unlockedMask, i) then
 			unlocked[#unlocked + 1] = e.key
 			if M.has(seenMask, i) then
 				seen[#seen + 1] = e.key

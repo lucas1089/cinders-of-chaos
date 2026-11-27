@@ -71,6 +71,16 @@ x, lift = L.snap(p)
 eq(x, 40, 'far from the centre stays'); eq(lift, 60, 'far from the bottom stays')
 
 -- slots of the first bar
+-- V34: after a death the base buttons come back in the order the hotbar moved them to; the adopt sorts them by slot
+local function btn(id) return { id = id } end
+local moved = { btn('1.13'), btn('1.1'), btn('1.2'), btn('1.14'), btn('1.3'), btn('1.10'), btn('1.11'), btn('1.12') }
+local sorted = L.sortSlots(moved, function(b) return b.id end)
+local ids = {}
+for _, b in ipairs(sorted) do ids[#ids + 1] = b.id end
+eq(table.concat(ids, ' '), '1.1 1.2 1.3 1.10 1.11 1.12 1.13 1.14', 'slots sorted by the number after the bar')
+local odd = { btn('x'), btn('1.2') }
+eq(L.sortSlots(odd, function(b) return b.id end), odd, 'an id of another form: the list as it was')
+eq(#L.sortSlots({}, function(b) return b.id end), 0, 'empty list')
 local plan = L.slotPlan(50, 8)
 eq(#plan.shown, 8, '8 shown'); eq(plan.potion, 13, 'potion socket'); eq(plan.utility, 14, 'utility socket')
 eq(#plan.hidden, 50 - 8 - 2, 'the rest is hidden')

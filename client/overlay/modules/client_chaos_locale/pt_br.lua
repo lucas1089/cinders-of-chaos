@@ -7221,6 +7221,7 @@ ChaosLocaleStrings['pt-BR'] = {
   ["No favourites yet. Click the star on a card to add it here."] = "Nenhum favorito ainda. Clique na estrela de um card para adicioná-lo aqui.",
   ["Type a name, a word or a hotkey. Enter opens the first result."] = "Digite um nome, uma palavra ou um atalho. Enter abre o primeiro resultado.",
   ["Enter opens the first result."] = "Enter abre o primeiro resultado.",
+  ["Nothing found. Enter asks the Help search."] = "Nada encontrado. Enter pergunta à Ajuda.",
   ["These are the best results. Type more to narrow it."] = "Estes são os melhores resultados. Digite mais para filtrar.",
   ["Menu Style"] = "Estilo do menu",
   -- base patch 0199: Options > Graphics, the menu style

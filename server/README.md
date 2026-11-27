@@ -20800,10 +20800,12 @@ window's `open` / `get`, another character's id refused, bad input. Client: `gam
 ### Death advice (O371) (`deathadvice_core.lua`, `deathrecap_config.lua` `advice`, client `game_deathrecap`)
 
 Owner request (new player experience): after a death, say in plain words why and what to do.
+
+Seen in a client (2026-11-27, V34): a level 12 character killed by Dragon Lords [73] got no tip. Root cause: the advice read `getMonsterLevel()`, which is 0 for a stock monster (only a display level, "Monster levels in the name"). Now "These monsters are 61 levels above you" and the pack tip show. `tests/deathadvice_test.lua`. The client's Daily Reward now waits while the recap is open (client/MANIFEST.md V34).
 - **Where.** Each recap gets `tips`: 1-3 short tips, rule order, at most `advice.max` (3). The client words them under
   the last hits, in a "What to do" panel (`deathrecaplogic.lua` `L.tips`, English and pt-BR). An older recap has none.
-- **Facts** (`ChaosDeathAdvice.facts`, from the same rolling log): the level of each monster attacker (`getMonsterLevel`,
-  taken once per attacker), distinct monster creatures (their ids), healing received in the window (`combatlog.lua`
+- **Facts** (`ChaosDeathAdvice.facts`, from the same rolling log): the level of each monster attacker (`R.monsterLevel`:
+  the shown level `getDisplayLevel`, then `getMonsterLevel`, then `ChaosLoot.baseMonsterLevel`; taken once per attacker), distinct monster creatures (their ids), healing received in the window (`combatlog.lua`
   `ChaosCombatLog.healHook`, the part that filled missing health), Everfull potions drunk in the window (`potions.lua`
   calls `ChaosDeathRecap.onPotion`), and the character's resistance to the element that dealt the most.
 - **Resistance** (`ChaosDeathRecap.resistOf`, an estimate): worn items' protection of that combat type
@@ -34318,6 +34320,8 @@ Data starts at the O397 / O398 update.
 the level where that system opens, announces it, and hides the rest.
 
 Seen in a client (2026-11-26, V26, pair 88): see client/MANIFEST.md "Level-gated top menu". Crafting Bench was locked at 20 and Pets at 25 (O262). Pace 3 s in the test (in memory only).
+
+Seen in a client (2026-11-27, V34): a fresh level 8 character. The Season Pass vanished at level 10: its callout waits for the O761 quiet first login (intro `unlocks`), and `M.state` listed only announced entries as unlocked. Now `M.state` lists every entry whose level the character has reached, so a reached entry shows open with its NEW badge while the callout waits. The client's `seen` for a reached entry sets its unlocked bit too, so no late callout comes for it. `tests/unlocks_test.lua`.
 
 **One table.** `unlocks_config.lua` `entries`: `{key, level, menu, source, title, why, go}`. `menu` is the English text of the
 entry in the client's top menu; `title` and the two `why` lines are English and pt-BR; `go = {open = <client module>}` (the

@@ -370,9 +370,19 @@ function claimAll()
   send('claimAll')
 end
 
+-- game_howitworks: the ? button and the first-open card. This module is a load-later module of the base's game_interface,
+-- which loads before game_howitworks (priority 900), so the attach in init() finds no module: it is tried again when the
+-- window shows (V34: the Season Pass had neither)
+local function attachHow()
+  if window and not window.howKey then
+    pcall(function() modules.game_howitworks.attach(window, 'seasonpass') end)
+  end
+end
+
 function show()
   if not window then return end
   window:show()
+  attachHow()
   window:raise()
   window:focus()
   if rowsStale then
@@ -410,7 +420,7 @@ end
 
 function init()
   window = g_ui.displayUI('battlepass')
-  pcall(function() modules.game_howitworks.attach(window, 'seasonpass') end) -- game_howitworks: the ? button
+  attachHow()
   window:hide()
   local names = { { 'rewards', tr('Rewards') }, { 'challenges', tr('Challenges') }, { 'packs', tr('Packs') } }
   for _, n in ipairs(names) do

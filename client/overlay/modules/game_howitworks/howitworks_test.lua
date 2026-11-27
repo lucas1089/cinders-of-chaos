@@ -215,5 +215,30 @@ daily:hide(); daily:show(); handlers[daily].onVisibilityChange(daily, true)
 eq(root.visible, true, 'the player opens it: the card, the first time')
 hide()
 
+-- V34: a window loaded visible and hidden by its module in the same call (the passive tree at login) brings no card;
+-- the look at attach time runs one event later, the card stays due for the player's own opening
+g_game = { getCharacterName = function() return 'Ev' end }
+local queue = {}
+scheduleEvent = function(fn) queue[#queue + 1] = fn end
+local function run() local q = queue queue = {} for _, fn in ipairs(q) do fn() end end
+hide()
+local tree = widget('PassiveTreeWindow')
+attach(tree, 'passive')
+tree:hide()
+run()
+run()
+eq(root.visible, false, 'built at login and hidden at once: no card')
+tree:show(); handlers[tree].onVisibilityChange(tree, true)
+run()
+eq(root.visible, true, 'the player opens it: the card, the first time')
+hide()
+local open = widget('TowerWindow')
+attach(open, 'tower')
+run()
+run()
+eq(root.visible, true, 'a window still shown after the event: the card')
+hide()
+scheduleEvent = nil
+
 print(string.format('howitworks: %d checks, %d failed', count, fails))
 if fails > 0 then os.exit(1) end

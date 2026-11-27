@@ -157,7 +157,10 @@ local function watch(target)
     target.howWatched = true
     connect(target, { onVisibilityChange = function(_, shown) if shown then check() end end })
   end
-  check()
+  -- the look at attach time waits one event: a window loaded visible and hidden by its module in the same call (the
+  -- passive tree builds itself at login and hides at the end) was never opened by the player, so no card then (V34)
+  local later = rawget(_G, 'scheduleEvent')
+  if later then later(check, 0) else check() end
 end
 
 -- ---------------------------------------------------------------- the "?" buttons
