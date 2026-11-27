@@ -45,5 +45,34 @@ bad = W.compare([(9, 999, 0, 0)], things)
 check(bad == [(9, 999, 'no client thing')], 'a look the pair lacks')
 check(W.compare([(None, 100, 0, 0), (10, None, 0, 0)], things) == [], 'nodes without ids are skipped')
 
+# --table-check also checks our item manifests (V43, 2026-11-27): the temple torch 44544 / 48544 of temple_art.csv got 12 phases
+# in pair 74 while its node kept no FLAG_ANIMATION and item_wire.csv had no row for it, so the table check passed and one torch
+# on screen cut the map packet short. A missing table row is found from the manifest row.
+import tempfile  # noqa: E402
+
+things[44544] = (False, False, False, None, 12)   # the torch, animated in place
+things[44560] = (False, False, False, None, 12)   # a flame whose manifest has the ANIM bit
+HEAD = 'client_id,server_id,key,kind,mode,name,size,otb_group,otb_flags,top_order,speed,light_level,light_color,extra\n'
+with tempfile.TemporaryDirectory() as d:
+    with open(os.path.join(d, 'temple_art.csv'), 'w') as fh:
+        fh.write(HEAD + '44544,48544,torch,stump,new,temple torch,2x2,0,8193,2,0,6,206,family=temple\n'
+                 '44511,48511,floor,ground,new,temple floor,1x1,1,0,0,100,0,0,family=temple\n'
+                 '44999,48999,later,decor,new,temple later,1x1,0,0,0,0,0,0,family=temple\n'
+                 '100,4100,swap,decor,replace,temple swap,1x1,0,0,0,0,0,0,family=temple\n')
+    with open(os.path.join(d, 'decor_flames.csv'), 'w') as fh:
+        fh.write(HEAD + '44560,48560,brazier,stump,new,flame brazier,2x2,0,16785409,2,0,7,206,family=flame\n')
+    with open(os.path.join(d, 'item_wire.csv'), 'w') as fh:
+        fh.write('server,client,animation,group\n6651,6651,0,\n')   # not a manifest (no client_id column)
+    paths = W.manifest_paths(d)
+    check([os.path.basename(p) for p in paths] == ['decor_flames.csv', 'temple_art.csv'], 'manifests found by their header only')
+    things[44511] = (False, False, False, None, 1)
+    bad, n, missing = W.manifest_check(paths, things, {})
+    check(len(bad) == 1 and '48544' in bad[0] and 'temple_art.csv' in bad[0], 'torch without FLAG_ANIMATION found: %r' % (bad,))
+    check(n == 3 and missing == 1, 'three rows checked, the client id the pair lacks counted, the replace row skipped: %d %d' % (n, missing))
+    bad, n, missing = W.manifest_check(paths, things, {48544: (44544, 1, None)})
+    check(bad == [], 'the table row fixes the torch, as the installer applies it: %r' % (bad,))
+    bad, _n, _m = W.manifest_check(paths, things, {48544: (49999, 1, None)})
+    check(len(bad) == 1, 'a table row for another client id does not apply')
+
 print('check_item_wire_test: %s' % ('OK' if not failed else '%d FAILED' % failed))
 sys.exit(1 if failed else 0)

@@ -2,7 +2,7 @@
 """Check that the server and the client agree on how many bytes every item takes in a game packet.
 
 usage: python3 -I server/tools/check_item_wire.py ITEMS_OTB TIBIA_DAT [--examples N] [--write-table [CSV]]
-       python3 -I server/tools/check_item_wire.py --table-check TIBIA_DAT [CSV]
+       python3 -I server/tools/check_item_wire.py --table-check TIBIA_DAT [CSV] [--manifests DIR]
 
 The server writes an item as client id, mark, then a count byte when its items.otb node is stackable (else a fluid
 byte for a splash or fluid container), then a phase byte when the node has FLAG_ANIMATION
@@ -22,8 +22,15 @@ the dat's flag. `--write-table` writes it from an installed items.otb and the pa
 their values worked out again; a node it cannot fix with the table, a stackable or quiver mismatch, is listed and exit 1).
 Run it after a new pair, a prune / restore or a new item block, then commit the file. `--table-check` needs only the dat
 (CI, live-pair job): every row is a pure function of the dat thing, so a stale row is found without a server.
+A missing row is not stale, so `--table-check` also checks the `new` rows of our item manifests (data/items/*.csv with
+client_id, server_id, otb_group, otb_flags, mode and extra: what install_temple_art.py, install_decor_flames.py and the
+other item installers write) with the table applied, as the installers apply it (V43, 2026-11-27: the temple torch
+44544 / 48544 has 12 phases since pair 74 and its node no FLAG_ANIMATION; one torch on screen cut the map packet short
+and the client drew the rest of the screen black). A manifest client id the dat lacks is counted, not failed.
 """
 import argparse
+import csv
+import glob
 import os
 import sys
 
@@ -31,7 +38,10 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 sys.path.insert(0, os.path.join(HERE, '..', '..', 'client', 'tools', 'sprites'))
 
-from item_wire_table import FLAG_ANIMATION, GROUP_SPLASH, GROUP_FLUID, TABLE, read_table, table_text  # noqa: E402
+from item_wire_table import FLAG_ANIMATION, GROUP_SPLASH, GROUP_FLUID, TABLE, adjust_rows, read_table, table_text  # noqa: E402
+
+MANIFEST_DIR = os.path.join(os.path.dirname(HERE), 'data', 'items')
+MANIFEST_COLUMNS = ('client_id', 'server_id', 'otb_group', 'otb_flags', 'mode', 'extra')
 
 FLAG_STACKABLE = 1 << 7
 QUIVER_CATEGORY = 25   # the client's ItemQuiversMarketCategory
@@ -114,6 +124,44 @@ def table_check(rows, things):
     return bad
 
 
+def manifest_paths(folder=MANIFEST_DIR):
+    """the item manifests of the installers: CSV files of `folder` whose header has every MANIFEST_COLUMNS name"""
+    out = []
+    for path in sorted(glob.glob(os.path.join(folder, '*.csv'))):
+        with open(path, newline='') as fh:
+            head = next(csv.reader(fh), [])
+        if all(c in head for c in MANIFEST_COLUMNS):
+            out.append(path)
+    return out
+
+
+def manifest_check(paths, things, table):
+    """(problems, rows checked, client ids the dat lacks) of the `new` rows of the manifests at `paths`, with `table`
+    (item_wire_table.read_table) applied the way the installers apply it (read_manifest -> adjust_rows)"""
+    from install_pack_items import read_manifest
+    bad, n, missing = [], 0, 0
+    for path in paths:
+        rows = read_manifest(path)
+        for r in rows:   # read_manifest applied the default table: start again from the manifest's own bytes
+            r['otb_group'], r['otb_flags'] = r['otb_group_manifest'], r['otb_flags_manifest']
+        adjust_rows(rows, table)
+        for r in rows:
+            if r['mode'] != 'new' or r['otb_flags'] is None:
+                continue
+            t = things.get(r['client_id'])
+            if t is None:
+                missing += 1
+                continue
+            n += 1
+            s = server_bytes(r['otb_group'], r['otb_flags'])
+            c = client_bytes(r['client_id'], *t)
+            if s != c:
+                bad.append('%s: server %d / client %d (%s): server sends %s, the client reads %s (count or fluid byte, phase byte);'
+                           ' add the node to item_wire.csv (--write-table on an installed server)'
+                           % (os.path.basename(path), r['server_id'], r['client_id'], r.get('key', ''), s, c))
+    return bad, n, missing
+
+
 def load_dat(dat_path):
     from check_pair import parse_dat
     _sig, _counts, things, _end = parse_dat(open(dat_path, 'rb').read())
@@ -139,17 +187,24 @@ def main(argv=None):
     ap.add_argument('--examples', type=int, default=40)
     ap.add_argument('--write-table', nargs='?', const=TABLE, metavar='CSV')
     ap.add_argument('--table-check', action='store_true')
+    ap.add_argument('--manifests', default=MANIFEST_DIR, metavar='DIR', help='with --table-check: the folder of the item manifests')
     a = ap.parse_args(argv)
     if a.table_check:
         if not 1 <= len(a.files) <= 2:
             ap.error('--table-check needs TIBIA_DAT [CSV]')
         path = a.files[1] if len(a.files) == 2 else TABLE
         table = read_table(path)
-        bad = table_check([(s, c, an, g) for s, (c, an, g) in sorted(table.items())], load_dat(a.files[0]))
+        things = load_dat(a.files[0])
+        bad = table_check([(s, c, an, g) for s, (c, an, g) in sorted(table.items())], things)
         for line in bad[:a.examples]:
             print(line)
         print('check_item_wire --table-check: %d rows, %d stale' % (len(table), len(bad)))
-        return 1 if bad else 0
+        mbad, n, missing = manifest_check(manifest_paths(a.manifests), things, table)
+        for line in mbad[:a.examples]:
+            print(line)
+        print('check_item_wire --table-check: %d manifest rows, %d disagree, %d client ids not in this pair'
+              % (n, len(mbad), missing))
+        return 1 if bad or mbad else 0
     if len(a.files) != 2:
         ap.error('needs ITEMS_OTB TIBIA_DAT')
     nodes, things = load(*a.files)
