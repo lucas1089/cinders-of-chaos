@@ -30,7 +30,9 @@ Where:
    file; <map>.otbm.bak keeps the original the first time (unless --no-backup).
 Not touched: data/world (the spawn and house files: patch_base_npc_names.py and patch_base_houses.py), the repository's
 own files (data/scripts/chaos, data/spells/chaos, data/lib/chaos_*.lua, the Chaos monster folders, the NPCs of
-server/data/npc), and any name of an
+server/data/npc), the marked Chaos blocks our installers write into base XML files (`<!-- Chaos wings (...) -->` to
+`<!-- end of the Chaos wings -->` in wings.xml, auras.xml, outfits.xml, mounts.xml, shaders.xml: store names such as
+"Rose Window Wings" and "Reed Pipe Wings" are ours; V44), and any name of an
 item, monster or NPC the data still uses (a whole item name that contains an old word keeps it, so a lookup by name
 still finds the item).
 
@@ -205,6 +207,22 @@ def merged_rows(world, npc, monster):
 
 
 LOOK_FILES = (os.path.join('XML', 'outfits.xml'), os.path.join('XML', 'mounts.xml'))
+# a block one of our installers writes into a base XML file (install_outfits.py, install_auras.py: wings, auras, outfits,
+# mounts, shaders); its names are ours and stay. Seen in a client (V44, 2026-11-27): the store sold "Ananne Window Wings"
+# and "Rednath Pipe Wings" (old NPC and place names inside our wings and auras names); install_all runs these
+# installers before worldtexts, so a rerun writes the blocks back and this step leaves them.
+OWN_BLOCK = re.compile(r'<!-- Chaos [^\n]*?\(server/tools/[^\n]*?-->.*?<!-- end of the Chaos [^\n]*?-->', re.S)
+
+
+def outside_own_blocks(text, fn):
+    """fn(part) on every part of an XML text outside the marked Chaos blocks; the blocks as they are"""
+    out, at = [], 0
+    for m in OWN_BLOCK.finditer(text):
+        out.append(fn(text[at:m.start()]))
+        out.append(m.group(0))
+        at = m.end()
+    out.append(fn(text[at:]))
+    return ''.join(out)
 
 
 def patch_files(data, ren, titles=None):
@@ -218,8 +236,10 @@ def patch_files(data, ren, titles=None):
             if is_raid_file(data, p):
                 def skip(tag):
                     return bool(EFFECT_KEY.search(tag) or RAID_SPAWN_TAG.match(tag))
-            new = L.patch_xml(t, titles if (titles and p in looks) else ren, skip_attrs=(ITEM_OWN_ATTRS if p == ixml else ()) + ('words',),
-                              skip_tag=skip)
+            fn = titles if (titles and p in looks) else ren
+            attrs = (ITEM_OWN_ATTRS if p == ixml else ()) + ('words',)
+            new = outside_own_blocks(t, lambda part, fn=fn, attrs=attrs, skip=skip:
+                                     L.patch_xml(part, fn, skip_attrs=attrs, skip_tag=skip))
         else:
             new = L.patch_lua(t, ren, skip_words=True, skip_monsters=True)
         if new != t:
