@@ -798,4 +798,23 @@ do
   eq(select(1, P.killExtent(nil, nil, nil, nil, scene, troll)), nil, 'no extent, none made')
 end
 
+-- V41 (seen in a client): compact controls for a short window (the Customise window at 1280 x 720)
+do
+  local widths = { 22 + 79 + 2, 22 + 33 + 2, 22 + 89 + 2 } -- Turn slowly, Walk, Simple figure in the panel's font
+  eq(P.compactFits(widths, 318), true, 'the three boxes fit across the Customise panel (318 px)')
+  eq(P.compactFits(widths, 250), false, 'not across 250 px: the panel keeps the full form')
+  eq(P.compactFits({}, 318), false, 'no boxes, nothing to fit')
+  eq(P.controlsHeight(false, false), P.CONTROLS_FULL, 'full form: the style height')
+  eq(P.CONTROLS_FULL, 106, 'the style height of lookpreview.otui controls')
+  eq(P.controlsHeight(true, false), 44, 'compact: the turn row and one row of boxes')
+  eq(P.controlsHeight(true, true), 64, 'and the Compare box under them when it shows')
+  eq(P.CONTROLS_FULL - P.controlsHeight(true, false) >= 60, true, 'the stage gains 60 px or more')
+  local f = io.open('client/overlay/modules/game_lookpreview/lookpreview.otui') or io.open('lookpreview.otui')
+  if f then
+    local otui = f:read('*a') f:close()
+    local controls = otui:match('id: controls.-height: (%d+)')
+    eq(tonumber(controls), P.CONTROLS_FULL, 'the .otui controls height is P.CONTROLS_FULL')
+  end
+end
+
 print('lookpreview_core_test: ' .. n .. ' checks OK')

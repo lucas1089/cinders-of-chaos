@@ -26,7 +26,7 @@
 -- Protocol (JSON {action, data}):
 --   client -> server  open {board?} | get {board, group?}
 --   server -> client  meta {open, boards = [{key, name, weekly, value, count, title, info, byClass, format,
---                            classAwards}], groups = [{key, name}]}   byClass: class tabs (LB.hasClassTabs, O409)
+--                            classAwards, noReward}], groups = [{key, name}]}   byClass: class tabs (LB.hasClassTabs, O409)
 --                     board {key, group, week, resetIn, rows = [{rank, name, value, count, level, vocation, title}],
 --                            own = {rank, value, count} | nil, champions = [{rank, rankName, name, value, title}],
 --                            championGroup (classAwards: the class whose podium champions is), total}
@@ -446,7 +446,7 @@ local function sendMeta(player, open)
 		-- byClass: the client draws class tabs for it (every board with LB.hasClassTabs, O409)
 		boards[#boards + 1] = {key = b.key, name = b.name, weekly = true, value = b.value, count = b.count,
 			title = not b.classAwards and b.title or nil, info = b.info, byClass = LB.hasClassTabs(cfg, b) or nil,
-			format = b.format, classAwards = b.classAwards or nil}
+			format = b.format, classAwards = b.classAwards or nil, noReward = b.noReward or nil}
 	end
 	boards[#boards + 1] = {key = cfg.ladder.key, name = cfg.ladder.name, weekly = false, value = "Level",
 		info = "Highest level per class, all time."}

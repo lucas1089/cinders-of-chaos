@@ -300,7 +300,8 @@ local function showBoard()
   end
 
   if b.weekly then
-    window.hintLabel:setText(tr('Top 3 on Monday: the title %s for a week, orbs to the inbox.', b.title or ''))
+    local hint, arg = BoardPick.hint(b) -- V41: per kind of award, never an empty title
+    window.hintLabel:setText(arg and tr(hint, arg) or tr(hint))
   else
     window.hintLabel:setText(tr('Levels are read from the saved characters.'))
   end

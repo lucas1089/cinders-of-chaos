@@ -614,6 +614,33 @@ function P.layout(box, w, h)
     feetY = math.floor(y + (fy + 32) * s + 0.5) }
 end
 
+-- ---------------------------------------------------------------- compact controls (V41)
+-- The controls under the stage take P.CONTROLS_FULL px: the turn row and the boxes one under the other. A window that
+-- fits a short screen (the Customise window at 1280 x 720: a stage of 99 px, the Rune Seal ring and a hood cut off; seen
+-- in a client, V41) asks for the compact form: the boxes in one row under the turn row, the Compare box under them when it
+-- shows. `widths`: each box's width (box and text). Returns whether they fit in `avail` px, `gap` px apart.
+P.CONTROLS_FULL = 106
+P.CONTROLS_TURN_ROW = 22
+P.CONTROLS_BOX_ROW = 16
+P.CONTROLS_ROW_GAP = 6
+P.COMPACT_GAP = 10
+function P.compactFits(widths, avail, gap)
+  gap = gap or P.COMPACT_GAP
+  local total = 0
+  for i, w in ipairs(widths or {}) do
+    total = total + (tonumber(w) or 0) + (i > 1 and gap or 0)
+  end
+  return total > 0 and total <= (tonumber(avail) or 0)
+end
+
+-- the height of the controls: compact (the turn row, one row of boxes, the Compare box under it when it shows) or full
+function P.controlsHeight(compact, compareShown)
+  if not compact then return P.CONTROLS_FULL end
+  local h = P.CONTROLS_TURN_ROW + P.CONTROLS_ROW_GAP + P.CONTROLS_BOX_ROW
+  if compareShown then h = h + 4 + P.CONTROLS_BOX_ROW end
+  return h
+end
+
 -- the soft shadow under the feet (the character select's hover_shadow art): as wide as 60% of the body, 22 to 60
 -- sprite px, 22 x 8 in shape. Returns x, y, w, h in stage px
 P.SHADOW_MIN, P.SHADOW_MAX = 22, 60

@@ -62,6 +62,11 @@ eq(L.buttons({ 'Do you want {yes} or {no}' }).yes, true, 'offered yes')
 eq(L.buttons({ 'Look at my offers.' }).trade, true, 'offers')
 eq(L.buttons({ 'A trader.' }).trade, false, 'trader is not trade')
 eq(L.buttons({}, {}, true).trade, true, 'trade window open')
+-- V41: a shop NPC of the base map greets with what it sells and never says "trade"
+eq(L.buttons({ 'Welcome Tester Aka! See the fine {weapons} I sell.' }).trade, true, 'a greeting that sells is a shop')
+eq(L.buttons({ 'I buy {rope} and other {goods}.' }).trade, true, 'one that buys too')
+eq(L.buttons({ 'A seller of tales.' }).trade, false, 'seller is not sell')
+eq(L.role({ 'See the fine {weapons} I sell.' }, false), 'trade', 'and its title says Trader')
 
 -- chips
 eq(join(L.chips({ 'Ask me for a {trade}, {mail} or {Yes}.' }, { trade = true, yes = true })), 'mail', 'chips without buttons')

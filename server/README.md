@@ -14640,6 +14640,8 @@ A weekly board of the experience gained from monsters, ranked per class. Board `
 SQL file, the mocked engine: monster kills only, flush, logout, the week end, no double pay);
 `website/tests/chaos_leaderboards_page_test.php`.
 
+Meta flags (V41): the board list sends `classAwards`, `title` and `noReward`; the client hint names Conquest Tokens for the class board, the title for a title board, nothing for a board without a prize.
+
 ## Competitive records (`records.lua`, `records_core.lua`, `records_config.lua`, `sql/chaos_records.sql`)
 
 Fastest kills and best results of every competitive system, beside the weekly boards (owner request: "Faça uma
@@ -35596,6 +35598,8 @@ the ground around the death tile. `enabled = false` in `loot_explosion_config.lu
   piece; the kill beam (opcode 238) listed only the unique, the set piece, Divine and Legendary of eight injected items. Check `loot_burst`, helper v29 `explode set | bag`. **Not run:** the
   client's drawing (no client in that run). One gold drop is one flight with the count of its first coin (50 of 100 + 50 gold; two stacks lie there): left as it is.
 
+
+Refusal text (V41): the engine sends its own cancel ("Sorry, not possible.") for any refused move after `Player:onMoveItem`, which overwrote ours. The ownership refusal is sent as `MESSAGE_STATUS_WARNING`, like depot.lua, so "That loot belongs to someone else for N more seconds." stays on screen.
 
 ## Hybrid loot (O749) (`loot_explosion_config.lua` `alwaysExplode`, `loot_explosion_core.lua` `X.mustExplode`, `loot_explosion.lua` `X.mustExplodeItem`)
 

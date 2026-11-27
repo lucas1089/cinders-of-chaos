@@ -111,7 +111,9 @@ function L.isFarewell(text)
 end
 
 -- ---------------------------------------------------------------- quick buttons and keyword chips
-local TRADE_WORDS = { 'trade', 'offer', 'offers', 'wares' }
+-- V41 (seen in a client): the shop NPCs of the base map greet with "See the fine {weapons} I sell." and never say "trade",
+-- so their window had no Trade button. A greeting that speaks of buying or selling is a shop too.
+local TRADE_WORDS = { 'trade', 'offer', 'offers', 'wares', 'sell', 'buy', 'shop', 'goods', 'barter' }
 
 local function mentions(texts, words)
   for _, text in ipairs(texts or {}) do

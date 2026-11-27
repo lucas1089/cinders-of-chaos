@@ -65,8 +65,12 @@ local function constant(name)
 	return _G["CONST_" .. name]
 end
 
+-- a refusal of Player:onMoveItem: a warning line, not a cancel message. The engine sends its own cancel text for the
+-- returned value ("Sorry, not possible.") right after the event, into the same status line, so a cancel message of ours
+-- was overwritten at once and the seconds left were never read (seen in a client, 2026-11-27, V41)
+local WARN = MESSAGE_STATUS_WARNING or MESSAGE_INFO_DESCR
 local function say(player, text)
-	player:sendCancelMessage(Chaos.tx and Chaos.tx(player, text) or text)
+	player:sendTextMessage(WARN, Chaos.tx and Chaos.tx(player, text) or text)
 end
 
 -- the engine is not asked about the corpse again once the config is wrong: one line in the log, the bag stays

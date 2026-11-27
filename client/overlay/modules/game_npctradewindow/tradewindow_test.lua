@@ -143,7 +143,8 @@ local rows = { row(potion, 'strong health potion', 3.5, 100, 40), row(mana, 'man
 open(rows, 1000, { { potion, 5 }, { blade, 2 }, { arrow, 250 } })
 eq(win.visible, true, 'the window opens'); eq(trade.isTrading(), true, 'a shop is open')
 eq(win.size.width, 720, 'its size'); eq(win.size.height, 480, 'its height'); eq(win.position.x, 600, 'centred in x'); eq(win.position.y, 300, 'and in y')
-eq(find('buyTab').text, 'Buy (3)', 'three things to buy'); eq(find('sellTab').text, 'Sell (4)', 'four to sell')
+eq(find('buyTab').text, 'Buy (3)', 'three things to buy'); eq(find('sellTab').text, 'Sell (3)', 'V41: three to sell (the seller buys four, the player carries three)')
+eq(find('sellTab').enabled ~= false, true, 'the Sell tab is on')
 eq(find('buyTab').checked, true, 'the Buy tab first')
 eq(find('currencyLabel').text, 'Currency: Gold Coin', 'the currency line')
 eq(find('balanceLabel').text, 'Gold: 1.0k', 'the gold'); eq(find('balanceLabel').tooltip, '1,000', 'the exact gold')
@@ -211,7 +212,7 @@ local trEn = tr
 local PT = { Buy = 'Comprar', Sell = 'Vender', Name = 'Nome', ['Sort: %s'] = 'Ordem: %s', Currency = 'Moeda', Gold = 'Ouro', ['Gold Coin'] = 'Moeda de Ouro' }
 tr = function(k, ...) return trEn(PT[k] or k, ...) end
 relabelShop('pt-BR')
-eq(find('buyTab').text, 'Comprar (3)', 'the Buy tab in pt-BR'); eq(find('sellTab').text, 'Vender (4)', 'the Sell tab')
+eq(find('buyTab').text, 'Comprar (3)', 'the Buy tab in pt-BR'); eq(find('sellTab').text, 'Vender (3)', 'the Sell tab')
 eq(find('sortButton').text, 'Ordem: Nome', 'the sort button'); eq(find('currencyLabel').text, 'Moeda: Moeda de Ouro', 'the currency line')
 eq(find('balanceLabel').text, 'Ouro: 1.0k', 'the balance caption'); eq(find('buyTab').checked, true, 'the tab kept')
 tr = trEn
