@@ -124,6 +124,18 @@ local chipWords = {}
 for _, k in ipairs(find('chips').kids) do if k.word then chipWords[#chipWords + 1] = k.word end end
 eq(table.concat(chipWords, ','), 'ledger,tales,portugues', 'the chips of the reply, the pt-BR switch last')
 eq(find('status').text, '', 'the hint comes with the tick')
+events.tick()
+eq(find('status').text, 'Click a gold word to say it.', 'the tick shows the hint')
+-- V39 (seen in a client): a language switch in game; the tick words the hint in the language of now, it does not put
+-- back the text of the language the reply came in
+local trBefore = tr
+tr = function(k, ...) if k == 'Click a gold word to say it.' then return 'Clique em uma palavra dourada.' end return trBefore(k, ...) end
+find('status'):setText('Clique em uma palavra dourada.') -- what ChaosLocale.relabel does to the open window
+events.tick()
+eq(find('status').text, 'Clique em uma palavra dourada.', 'the hint stays in the new language')
+tr = trBefore
+events.tick()
+eq(find('status').text, 'Click a gold word to say it.', 'and follows a switch back')
 -- a chip says its word
 for _, k in ipairs(find('chips').kids) do if k.word == 'portugues' then k.onClick() end end
 eq(sent[#sent][1], 'private', 'a keyword goes out as private NPC talk'); eq(sent[#sent][2], 'portugues', 'the word')

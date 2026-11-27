@@ -136,6 +136,8 @@ do
   local r = L.relabelMap(tbl, 'pt-BR', 'en')
   eq(r.Fechar, 'Close', 'relabel pt -> en: Fechar')
   eq(r.Buscar, nil, 'relabel pt -> en: a text of two keys is left out')
+  local c = L.relabelMap({ ['Apply plan'] = 'Aplicar plano', ['Apply Plan'] = 'Aplicar plano' }, 'pt-BR', 'en')
+  eq(c['Aplicar plano'], 'Apply Plan', 'relabel pt -> en: two keys that differ only in case give one of them (V39)')
   eq(next(L.relabelMap(tbl, 'en', 'en')), nil, 'relabel: same language, nothing')
   eq(next(L.relabelMap(nil, 'en', 'pt-BR')), nil, 'relabel: no table, nothing')
 end

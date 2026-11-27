@@ -286,6 +286,7 @@ python3 -I server/tools/wide_missile_patch_test.py && python3 -I client/tools/wi
 python3 -I client/tools/toolscan_patch_test.py && python3 -I client/tools/gen_module_hashes_test.py   # bot detection (O722), client base patch 0207 (known-tool scan, Windows only, answers short codes only, never a process or window name; the header: g++ -std=c++17 -I DIR client/tools/chaostoolscan_test.cpp, CI cuts it from the patch) and the module digest list the server compares at login (client/tools/gen_module_hashes.py CLIENT_DIR at release writes server/data/lib/chaos_module_hashes.lua, same rule as client game_chaosguard/integrity.lua, whose integrity_test.lua runs in the client loop)
 python3 -I client/tools/ambient_light_patch_test.py   # default ambient light 60 % (owner 2026-11-26), client base patch 0214: dataset.lua default 40 -> 60, settings.lua moves a saved 40 to 60 once per install (flag chaosAmbientLight60V1), a player's own value stays; the migration runs in Lua on a fake g_settings
 python3 -I client/tools/modal_choices_patch_test.py   # modal dialog choices keep 44 characters and the dialog grows to the widest (V35), client base patch 0215: the story chapter's "(new)" in the Archivist's list; the width rule runs in Lua on fake widgets
+python3 -I client/tools/tooltip_clamp_patch_test.py   # a tooltip flipped left or up stays on the screen (V39), client base patch 0216: the passive tree mastery tooltip lost its left part; the clamp runs in Lua after the base flip rule
 ```
 
 Every `.lua` must parse in Lua 5.3 and LuaJIT. Run Python tools with `-I`.

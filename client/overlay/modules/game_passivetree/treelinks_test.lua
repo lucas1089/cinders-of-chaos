@@ -249,5 +249,19 @@ eq(#P.findPath(adj, ownedDeep, 366, function(id) return map[id] ~= nil and not o
 eq(next(P.ownedIds(nil, nil)), nil, 'nothing owned')
 eq(P.ownedIds(nil, {[5] = false})[5], nil, 'a false entry is not owned')
 
+-- every node of nodes.lua is built (TreePlan.buildIds), the masteries 703-705 of O451 above the old cap of 700 too
+local built = {}
+for _, id in ipairs(P.buildIds(nodes)) do built[id] = true end
+for id in pairs(nodes) do eq(built[id], true, 'node ' .. id .. ' is built') end
+for _, id in ipairs({703, 704, 705}) do eq(built[id] and nodes[id] ~= nil, true, 'mastery ' .. id .. ' built') end
+local few = P.buildIds({[3] = {}, [1] = {}, [2] = {skip = true}}, function(n) return not n.skip end)
+eq(table.concat(few, ','), '1,3', 'shown nodes in id order')
+-- the mastery choice buttons grow to their wrapped text (TreePlan.choiceHeights): never shrink, nil text keeps the base
+local hs, total = P.choiceHeights({46, 46, 34}, {28, 56, 42}, 10, 6, 130)
+eq(table.concat(hs, ','), '46,66,52', 'a button grows to its text plus pad')
+eq(total, 130 + 46 + 66 + 52 + 18, 'the window holds every button')
+hs, total = P.choiceHeights({46, 34}, {}, 10, 6, 130)
+eq(table.concat(hs, ','), '46,34', 'before the layout the base heights stay')
+eq(total, 130 + 46 + 34 + 12, 'base window height')
 print(string.format('treelinks_test: %d checks, %d failures', count, fails))
 if fails > 0 then os.exit(1) end

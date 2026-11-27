@@ -214,7 +214,13 @@ function L.relabelMap(tbl, from, to)
       if from == 'en' then
         map[k] = v
       elseif map[v] ~= nil and map[v] ~= k then
-        dup[v] = true
+        if map[v]:lower() == k:lower() then
+          -- the same words in another case ('Apply Plan', 'Apply plan', V39: seen left in pt-BR after a switch back): one of
+          -- them, the same one every time
+          if k < map[v] then map[v] = k end
+        else
+          dup[v] = true
+        end
       else
         map[v] = k
       end

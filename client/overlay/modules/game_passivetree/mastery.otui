@@ -9,7 +9,7 @@ MasteryEffectButton < ChaosButton
 
 ChaosWindow
   id: masteryWindow
-  size: 380 250
+  size: 460 250
   anchors.centerIn: parent
   @onEscape: modules.game_passivetree.closeMasteryChoice()
 

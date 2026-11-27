@@ -920,6 +920,9 @@ jobs:
       - name: Modal dialog choices wider (base patch 0215)
         run: python3 -I client/tools/modal_choices_patch_test.py
 
+      - name: Tooltips stay on the screen (base patch 0216)
+        run: python3 -I client/tools/tooltip_clamp_patch_test.py
+
       - name: HD sprite overlay maths (C++; header from base patch 0196)
         run: |
           d=$(mktemp -d)

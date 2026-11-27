@@ -211,7 +211,8 @@ local function refreshChipsAndButtons()
   for _, id in ipairs(L.BUTTONS) do if shown[id] then offered[id] = true end end
   view:setButtons(shown)
   view:setChips(L.groups(L.chips(conv.turn, offered)))
-  conv.hint = #L.keywords(conv.turn) > 0 and tr('Click a gold word to say it.') or nil
+  -- a flag, worded when shown: the tick below writes the status again and a cached text kept the old language (V39)
+  conv.hint = #L.keywords(conv.turn) > 0 or nil
   layoutContent()
 end
 
@@ -509,7 +510,8 @@ local function tick()
       closeConversation(true)
     elseif alive(window) and window:isVisible() then
       -- an NPC that already counts the player as its guest does not greet again: say so instead of waiting forever
-      local status = (#conv.turn == 0 and now() - conv.lastActivity > 4000) and tr('No answer yet.') or conv.hint or ''
+      local status = (#conv.turn == 0 and now() - conv.lastActivity > 4000) and tr('No answer yet.')
+        or (conv.hint and tr('Click a gold word to say it.')) or ''
       if view:status() ~= status then setStatus(status) end
     end
   end

@@ -1,0 +1,18 @@
+# Chaos: a tooltip flipped left or up stays on the screen (client/BASE.md "0216"; modules/corelib/ui/tooltip.lua;
+# after 0001-0215). Lua only, no engine code. V39, seen in a client 2026-11-27: a passive tree mastery tooltip is
+# about 640 px wide; hovered at the middle of a 1280 px screen it flipped left of the mouse and its left part ran off
+# the screen, cutting the first letters of every line. moveToolTip now keeps the label inside the window after the
+# flip (x and y from 0 to the window size less the label size). Test: client/tools/tooltip_clamp_patch_test.py.
+--- a/modules/corelib/ui/tooltip.lua
++++ b/modules/corelib/ui/tooltip.lua
+@@ -39,6 +39,10 @@
+     pos.y = pos.y + 10
+   end
+ 
++  -- Chaos: a tooltip flipped left or up stays on the screen (a wide passive tree tooltip lost its left part, V39)
++  pos.x = math.max(0, math.min(pos.x, windowSize.width - labelSize.width))
++  pos.y = math.max(0, math.min(pos.y, windowSize.height - labelSize.height))
++
+   toolTipLabel:setPosition(pos)
+ end
+ 

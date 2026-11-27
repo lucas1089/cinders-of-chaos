@@ -541,6 +541,18 @@ local function showShop()
   refresh(true)
 end
 
+-- V39 (seen in a client): a language switch in game (ChaosLocale.watch). ChaosLocale.relabel swaps the plain texts;
+-- the ones this window formats itself ('Buy (3)', 'Sort: Name', the currency line, the chips, the cards) are drawn again
+local function relabelShop()
+  if not (st and alive(window) and window:isVisible()) then return end
+  view:setHeader(headerSpec())
+  view:setSort(prefs.sort)
+  view:setTabCounts(#st.items[M.BUY], #st.items[M.SELL])
+  view:setTab(st.tab)
+  st.chipSig = nil
+  refresh(true)
+end
+
 local function onOpenNpcTrade(items)
   hideShop()
   session:begin()
@@ -733,10 +745,12 @@ function init()
     onGameEnd = hideShop, onTalk = onTalk })
   connect(LocalPlayer, { onFreeCapacityChange = onFreeCapacityChange, onInventoryChange = onInventoryChange })
   ProtocolGame.registerExtendedOpcode(OPCODE, onCurrency)
+  if ChaosLocale and ChaosLocale.watch then ChaosLocale.watch('game_npctradewindow', relabelShop) end
 end
 
 function terminate()
   pcall(ProtocolGame.unregisterExtendedOpcode, OPCODE)
+  if ChaosLocale and ChaosLocale.watch then ChaosLocale.watch('game_npctradewindow', nil) end
   pcall(disconnect, g_game, { onOpenNpcTrade = onOpenNpcTrade, onCloseNpcTrade = onCloseNpcTrade,
     onPlayerGoods = onPlayerGoods, onGameEnd = hideShop, onTalk = onTalk })
   pcall(disconnect, LocalPlayer, { onFreeCapacityChange = onFreeCapacityChange, onInventoryChange = onInventoryChange })

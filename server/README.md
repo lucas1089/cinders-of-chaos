@@ -2348,6 +2348,8 @@ split (`Game::combatChangeHealth`); no Chaos patch changes it.
   and the marker beside it; the buff bar hides the plain row while it ends with the marker. Test:
   `tests/soulward_shield_test.lua`. No engine change; reload spells (or restart), no client change.
   Seen in a client (2026-11-25, V12): Soulward up, a 1,550 Orcaruz hit took mana only, health stayed full.
+  Seen in a client (2026-11-27, V39): "tor anh" put the mana shield on a Beastmaster (Ranger line); set to Warrior (vocation 4), the
+  same words put none. "utevo lux", "utevo gran lux" and "utevo vis lux" gave no light condition (O304).
 * **Orcaruz (O162).** An imported level 200 monster (Azuregate Reliquary, hunt 180-220) never got the hit rule: strongest
   hit 2,500 (78% of a level 200 knight's 3,185 health; Fenmaw, same level, 1,100). A level 230 Mystic line character has
   about 1,295 health (150 + 5 per level). With the engine level bonus (x1.30), the late boost (+4.7%) and the pack curve
@@ -3599,6 +3601,11 @@ Nothing was run on a live server; every number is computed, not measured. Player
   plain text line, the server applies the effect as for any player; the Unity effect list was not run with 7 entries.
 - **Not changed.** No support rune, mastery effect, keystone, spell, rotation, card, weapon, loadout or balance limit moved. The
   Recommended builds pick no spell modifier (`gen_passive_builds.lua` ties go to the first effect), so `passive_builds_data.lua` is the same.
+
+Seen in a client (2026-11-27, V39): a level 1500 Beastmaster planned Hunter's Discipline (node 704), picked Splintering Spear and
+applied the plan; Sunspear ("kah aur lanc") on a plus of five rats then took 36 from each neighbour of a 302 hit (the 15% Shatter
+share, measured apart from the bow splash). Fixed in the client first: the tree never built nodes above id 700, so the three
+masteries 703-705 (Warrior, Ranger and Mystic lines) were missing (client/MANIFEST.md, V39).
 
 ## Passive tree: keystone cap (O447) (`passivetree_core.lua`, `passivetree_config.lua` `keystoneMax`)
 Owner decision of 2026-11-09: a character holds at most 3 keystones. Nothing in the tree, no node, number or position changed.
@@ -15617,6 +15624,10 @@ windows-assets 1ecba64), outfits 3364-3370. The pack's eighth sheet is not used 
   look, `lookOf` on and off, each file's level band, health and experience, loot and attacks. `client/tools/sprites/gen_aiss_art.py
   build --check` checks the sheets against the spec. `tune_monsters.py --check`, `check_content.py`, `apply_monster_looks.py --check`,
   `loot_model.lua --check`, `progression_model.lua --check` and `pack_model.py --check` pass. Not run live.
+
+Seen in a client (2026-11-27, V39): the seven monsters spawned one by one by a staff character on a local server at pair 88, each on its
+own outfit (3364-3370), name and level shown: Bogtusk Cleaver 400, Wickstaff Hexmage 650, Coralcrown Brinecaller 930, Gloamgeode
+Shellback 1150, Marshlight Hollowseer 1350, Redmane Anvilbreaker 1550, Gravecrown Oathbreaker 1850.
 
 ## Themed sets, auras and grounds (`data/lib/chaos_theme_art.lua`, `data/lib/chaos_theme_items.lua`, `tools/install_theme_items.py`)
 
@@ -34133,6 +34144,8 @@ Owner decision 2026-10-29: "Pode limitar a fusão a uma lista de ids". The base 
   - **Tests.** `server/tests/item_fusion_test.lua` (server loop, both interpreters): every mark with the real crafting rules, the unique before, between and worn next to plain copies, the engine's order, stacks, bad input, a refused removal, fail closed. `python3 -I server/tools/patch_base_fusion_plain_test.py`: the tool on a stock excerpt, alone and with the other two steps in both orders, refusals, and a Lua run of the patched excerpt with the real core: `uppp` leaves the unique, `pup` removes nothing, an unlisted id is still refused, no core fuses nothing.
   - **Not done.** No message tells the player why a special copy did not count. The reward and the list are unchanged.
 - **Install.** Step `fusionlist` (right after `opcodeinputs`, whose entry check it needs: it refuses a file without it). Idempotent, marker line, CRLF kept, unknown text refused. Test: `python3 -I server/tools/patch_base_fusion_allowlist_test.py` (stock excerpt, and a LuaJIT run: a listed id fuses and takes 3, a cheap id, a mixed list and the mapped server id are refused, a missing or broken list refuses all).
+- Seen in a client (2026-11-27, V39): three Giant Swords (on the list) fused into the reward (`fused_success`); three Short Swords (off
+  the list) were refused with "This item cannot be fused." (`invalid_item`).
 
 ## Funnel metrics (O258) (`metrics.lua`, `metrics_core.lua`, `metrics_config.lua`, `tools/progress_metrics.py`)
 
@@ -34826,6 +34839,10 @@ curves, class lists, loot rules, set bonuses at 2, 4 and 6 pieces, audits and te
   states of the switch, transmog, the startup script), `tests/gear_sets_test.lua`, `tests/itemsets_test.lua` (the five sets as open item
   sets), `tests/gamble_test.lua`, `client/tools/sprites/gen_relic_sets_art_test.py`. Not tested live: the looks in a client (pair 58 is
   not shipped), the drops.
+
+Seen in a client (2026-11-27, V39): seven Kilnforged pieces (helm, cuirass, greaves, boots, bow, ring, amulet) given to a level 1500
+Beastmaster and worn; each tooltip names the kind, armour or bow numbers, fire protection, "Part of the Kilnforged set (level 1400)",
+level 1400 and the classes. No set bonus line: `ChaosGearSets.PAIR58` is still off (owner step above), so no drops and no set bonuses.
 
 ## Base raid fixes (`tools/patch_base_raids.py`, install step `baseraids`)
 

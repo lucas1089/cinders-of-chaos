@@ -112,6 +112,8 @@ connected[g_game] = { onOpenNpcTrade = baseOpen, onCloseNpcTrade = trade.onClose
 connected[LocalPlayer] = { onFreeCapacityChange = trade.onFreeCapacityChange, onInventoryChange = trade.onInventoryChange }
 
 for _, f in ipairs({ 'tradewindowlogic', 'trademodel', 'tradeview' }) do dofile(here .. f .. '.lua') end
+-- V39: the language switch in game calls the window back (client_chaos_locale ChaosLocale.watch)
+ChaosLocale = { watchers = {}, watch = function(k, fn) ChaosLocale.watchers[k] = fn end }
 local env = setmetatable({}, { __index = _G })
 local chunk = assert(loadfile(here .. 'tradewindow.lua', 't', env))
 chunk()
@@ -202,6 +204,19 @@ eq(shown, 1, 'a category chip narrows it'); find('chips').kids[1].onClick()
 find('sortButton').onClick(); eq(find('sortButton').text, 'Sort: Price', 'the sort cycles')
 find('sortButton').onClick(); find('sortButton').onClick()
 eq(find('sortButton').text, 'Sort: Name', 'and comes round')
+-- V39 (seen in a client): a switch to pt-BR in game draws the texts the window formats itself again
+local relabelShop = ChaosLocale.watchers.game_npctradewindow
+eq(type(relabelShop), 'function', 'the window watches the language')
+local trEn = tr
+local PT = { Buy = 'Comprar', Sell = 'Vender', Name = 'Nome', ['Sort: %s'] = 'Ordem: %s', Currency = 'Moeda', Gold = 'Ouro', ['Gold Coin'] = 'Moeda de Ouro' }
+tr = function(k, ...) return trEn(PT[k] or k, ...) end
+relabelShop('pt-BR')
+eq(find('buyTab').text, 'Comprar (3)', 'the Buy tab in pt-BR'); eq(find('sellTab').text, 'Vender (4)', 'the Sell tab')
+eq(find('sortButton').text, 'Ordem: Nome', 'the sort button'); eq(find('currencyLabel').text, 'Moeda: Moeda de Ouro', 'the currency line')
+eq(find('balanceLabel').text, 'Ouro: 1.0k', 'the balance caption'); eq(find('buyTab').checked, true, 'the tab kept')
+tr = trEn
+relabelShop('en')
+eq(find('buyTab').text, 'Buy (3)', 'and back to English')
 
 -- right click: Look and Inspect
 card('Mana Potion').onMouseRelease(nil, { x = 0, y = 0 }, MouseRightButton)
@@ -321,7 +336,7 @@ press(win, 'Escape')
 -- unloading gives everything back
 terminate()
 eq(trade.show, baseShow, 'show is the base\'s again'); eq(connected[g_game].onOpenNpcTrade, baseOpen, 'its handlers are connected again')
-eq(opcodes[113], nil, 'opcode 113 is free'); eq(win.destroyed, true, 'the window is gone')
+eq(ChaosLocale.watchers.game_npctradewindow, nil, 'the language watch is dropped'); eq(opcodes[113], nil, 'opcode 113 is free'); eq(win.destroyed, true, 'the window is gone')
 eq(#logs, 0, 'nothing was logged: ' .. tostring(logs[1]))
 
 print(string.format('tradewindow_test: %d checks OK', n))
