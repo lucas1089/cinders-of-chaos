@@ -636,7 +636,13 @@ local function newPlayer(guid, level, x, y)
 	function p:getPosition() return Position(self.pos.x, self.pos.y, self.pos.z) end
 	function p:getTarget() return self.target end
 	function p:getItemCount(id) return self.inv[id] or 0 end
-	function p:addItem(id, n) self.inv[id] = (self.inv[id] or 0) + n return true end
+	function p:addItem(id, n)
+		if self.bagFull and not self.inv[id] then
+			return nil -- the engine: a full backpack takes no new stack
+		end
+		self.inv[id] = (self.inv[id] or 0) + n
+		return true
+	end
 	function p:removeItem(id, n)
 		if (self.inv[id] or 0) < n then
 			return false
@@ -644,7 +650,16 @@ local function newPlayer(guid, level, x, y)
 		self.inv[id] = self.inv[id] - n
 		return true
 	end
-	function p:getInbox() return {addItem = function(_, id, n) p.inbox[id] = (p.inbox[id] or 0) + n end} end
+	-- the engine's inbox (Inbox::queryAdd) takes nothing without FLAG_NOLIMIT (V36)
+	function p:getInbox()
+		return {addItem = function(_, id, n, index, flags)
+			if flags ~= (FLAG_NOLIMIT or 1) then
+				return nil
+			end
+			p.inbox[id] = (p.inbox[id] or 0) + n
+			return {}
+		end}
+	end
 	function p:getBankBalance() return self.bank end
 	function p:setBankBalance(v) self.bank = v end
 	function p:sendTextMessage(t, text) self.messages[#self.messages + 1] = text end
@@ -737,6 +752,22 @@ check(player:getItemCount(32351) >= 1, "an ashstone ore after the channel")
 eq(player:getItemCount(32352), 0, "no bloodiron below Delving 20")
 eq(P.players[7].levels.delving.xp, 10, "10 profession experience")
 check(player.exp > 0, "a little character experience")
+-- V36: a full backpack sends the gather to the inbox (with FLAG_NOLIMIT), it is never lost
+do
+	local fullBag = newPlayer(19, 150, 500, 501)
+	events.ChaosProfessionsLogin.onLogin(fullBag)
+	fullBag.inv[2553] = 1
+	fullBag.bagFull = true
+	nodeAct.onUse(fullBag, nodeOnMap, {x = 501, y = 500, z = 7})
+	run(3500)
+	eq(fullBag:getItemCount(32351), 0, "V36: a full backpack takes no ore")
+	check((fullBag.inbox[32351] or 0) >= 1, "V36: the ore went to the inbox")
+	local inboxMsg = false
+	for _, m in ipairs(fullBag.messages) do
+		if m:find("inbox", 1, true) then inboxMsg = true end
+	end
+	check(inboxMsg, "V36: the player is told it went to the inbox")
+end
 -- the same node again: the per-player cooldown
 nodeAct.onUse(player, nodeOnMap, {x = 501, y = 500, z = 7})
 -- the cooldown is counted on the wall clock: a second may tick between the gather and this use (CI read 5:59)
@@ -1099,9 +1130,18 @@ do
 	local realIT = ItemType
 	ItemType = function(id)
 		local t = realIT(id)
-		t.getFluidSource = function() return id == 4608 and 1 or 0 end
+		t.getFluidSource = function() return (id == 4608 or id == 4820) and 1 or (id == 355 and 19 or 0) end
 		return t
 	end
+	-- V36: a muddy floor (fluid 19) and a coast of water (4820, fluid 1 but not a stock cast ground) nearer than the
+	-- water are not offered: only cfg.angling.castIds, also when the engine has no FLUID_WATER
+	local savedFW = FLUID_WATER
+	FLUID_WATER = nil
+	local mud = newItem(355, {x = 502, y = 500, z = 7})
+	Tile({x = 502, y = 500, z = 7}).getGround = function() return mud end
+	local coast = newItem(4820, {x = 500, y = 503, z = 7})
+	Tile({x = 500, y = 503, z = 7}).getGround = function() return coast end
+	check(P.cfg.angling.castIds ~= nil and #P.cfg.angling.castIds > 0, "V36: the stock cast grounds are listed")
 	local ground = newItem(4608, {x = 506, y = 500, z = 7})
 	Tile({x = 506, y = 500, z = 7}).getGround = function() return ground end
 	pr = P.probe(g)
@@ -1111,6 +1151,7 @@ do
 	eq(pr.angleGuide.mode, "walk", "O657 probe: walk to the water"); eq(pr.angleGuide.reach[2], 2, "O657 probe: within two tiles")
 	g.pos = {x = 504, y = 500, z = 7}
 	eq(P.probe(g).angleGuide.mode, "use", "O657 probe: at the water: cast")
+	FLUID_WATER = savedFW
 	ItemType = realIT
 end
 

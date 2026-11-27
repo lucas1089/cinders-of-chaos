@@ -504,9 +504,10 @@ local function giveMaterial(player, id, count)
 	local got = player:getItemCount(id) - before
 	local rest = count - got
 	if rest > 0 then
+		-- the engine's inbox takes nothing without FLAG_NOLIMIT: a plain addItem returned nil and a full backpack lost the
+		-- gathered material (seen in a client 2026-11-27, V36)
 		local inbox = player:getInbox()
-		if inbox then
-			inbox:addItem(id, rest)
+		if inbox and inbox:addItem(id, rest, INDEX_WHEREEVER or -1, FLAG_NOLIMIT or 1) then
 			msg(player, ChaosI18n.msg("Your backpack is full: %s went to your inbox.", rest), MESSAGE_STATUS_SMALL)
 		end
 	end
@@ -1184,21 +1185,27 @@ function P.nearestCorpse(player, pos)
 	return nil
 end
 
--- the nearest water tile the stock cast can fish (its ground's fluid source is water) within WATER_REACH tiles: {pos, clientId, stackpos (the ground: 0), d}
+-- the nearest water tile the stock cast can fish within WATER_REACH tiles: {pos, clientId, stackpos (the ground: 0), d}.
+-- Fishable = the ground id is one the stock cast reaches the Angling roll with (cfg.angling.castIds). Before V36 it was
+-- "the ground's fluid source is water", but this engine registers no FLUID_WATER, so any fluid ground passed (a muddy
+-- floor, fluid 19) and a coast ground of water (4820) is no stock water either: the bot cast at nothing (seen in a client
+-- 2026-11-27, V36).
+local castSet
 function P.nearestWater(pos)
-	local water = FLUID_WATER
+	if not castSet then
+		castSet = {}
+		for _, id in ipairs(cfg.angling.castIds or {}) do
+			castSet[id] = true
+		end
+	end
 	for d = 0, P.WATER_REACH do
 		for dx = -d, d do
 			for dy = -d, d do
 				if math.max(math.abs(dx), math.abs(dy)) == d then
 					local tile = Tile(Position(pos.x + dx, pos.y + dy, pos.z))
 					local okG, gid = pcall(function() return tile:getGround():getId() end)
-					if okG and gid then
-						local ct = ItemType(gid)
-						local okS, src = pcall(function() return ct:getFluidSource() end)
-						if okS and tonumber(src) and tonumber(src) ~= 0 and (water == nil or tonumber(src) == water) then
-							return {pos = {x = pos.x + dx, y = pos.y + dy, z = pos.z}, d = d, clientId = ct:getClientId(), stackpos = 0}
-						end
+					if okG and gid and castSet[gid] then
+						return {pos = {x = pos.x + dx, y = pos.y + dy, z = pos.z}, d = d, clientId = ItemType(gid):getClientId(), stackpos = 0}
 					end
 				end
 			end

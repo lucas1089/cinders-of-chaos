@@ -95,11 +95,10 @@ end
 -- { { widget = w, siblings = { {widget, visible}, ... } }, ... } and the map's own children (mapChildren, the HUD on the
 -- map). Every visible widget that is not on the chain is hidden. Returns the list of widgets, in order.
 function C.cinemaPick(chain, mapChildren)
-  local out, onChain = {}, {}
-  for _, level in ipairs(chain or {}) do onChain[level.widget] = true end
+  local out = {}
   for _, level in ipairs(chain or {}) do
     for _, s in ipairs(level.siblings or {}) do
-      if s.visible and not onChain[s.widget] then out[#out + 1] = s.widget end
+      if s.visible and not C.has(chain, s.widget, 'widget') then out[#out + 1] = s.widget end
     end
   end
   for _, c in ipairs(mapChildren or {}) do
@@ -108,13 +107,22 @@ function C.cinemaPick(chain, mapChildren)
   return out
 end
 
+-- Is `w` in `list` (list[i], or list[i][field] when a field is named)? Compared with ==, never as a table key: the engine
+-- hands out a new userdata for the same widget on every call (getParent, getChildren), equal by its __eq only, so a
+-- widget-keyed table never found the map and cinema mode hid the map and the game root too (a black screen; seen in a
+-- client 2026-11-27, V36).
+function C.has(list, w, field)
+  for _, x in ipairs(list or {}) do
+    if (field and x[field] or x) == w then return true end
+  end
+  return false
+end
+
 -- add the widgets of `found` not yet in `hidden` (a widget that showed up during cinema mode); returns the new ones
 function C.addNew(hidden, found)
-  local seen, added = {}, {}
-  for _, w in ipairs(hidden) do seen[w] = true end
+  local added = {}
   for _, w in ipairs(found or {}) do
-    if not seen[w] then
-      seen[w] = true
+    if not C.has(hidden, w) then
       hidden[#hidden + 1] = w
       added[#added + 1] = w
     end

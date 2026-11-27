@@ -278,6 +278,11 @@ local tabW = panel:getChildById('tabs').children[1].width
 eq(tabW, L.share(5, 178 - 2 * L.PAD), 'the tabs share the column')
 local h = D.held()
 eq(#h, 1, 'held'); eq(h[1].home, container, 'home kept'); eq(h[1].index, 3, 'index kept'); eq(h[1].height, 400, 'height kept')
+-- V36: the engine also tells a child when an ancestor hides (cinema mode hides the dock panel); the window stays
+-- explicitly visible, so the dock must not close
+for _, hd in ipairs(bag.handlers) do if hd.onVisibilityChange then hd.onVisibilityChange(bag, false) end end
+runEvents()
+eq(D.isOpen(), true, 'V36: an ancestor hidden is no close'); eq(bag.parent, scroller, 'V36: the bag stays in the dock')
 eq(D.route('Inventory'), true, 'second press'); runEvents()
 eq(panel:isExplicitlyVisible(), false, 'dock hidden'); eq(bag.parent, container, 'bag back home')
 eq(store[key(L.SETTING_OPEN)], 'false', 'closed saved')

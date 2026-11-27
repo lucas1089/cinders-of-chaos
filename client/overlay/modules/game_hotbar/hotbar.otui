@@ -121,7 +121,7 @@ ChaosHotbar < UIWidget
 ChaosLayoutOptionsWindow < ChaosMainWindow
   id: chaosLayoutOptions
   !text: tr('Layout options')
-  size: 400 522
+  size: 500 522
   @onEscape: modules.game_hotbar.closeOptions()
 
   ChaosLabel

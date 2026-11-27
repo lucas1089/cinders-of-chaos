@@ -217,7 +217,8 @@ local function refresh()
   else
     setText('fpsLabel', tr('FPS: %d', o.fps))
   end
-  setText('frameLabel', tr('Frame time: %.1f ms avg, %d ms worst (last %d s)', o.frameAvgMs, math.floor(o.frameWorstMs + 0.5), o.seconds))
+  -- avg comes from the FPS; the stall is the longest gap of the 10 ms probe timer, so it can be below the avg (seen in a client 2026-11-27, V36)
+  setText('frameLabel', tr('Frame: %.1f ms avg, longest stall %d ms (%d s)', o.frameAvgMs, math.floor(o.frameWorstMs + 0.5), o.seconds))
   setText('luaLabel', tr('Lua memory: %d KB', math.floor(collectgarbage('count'))))
   local total, chaos = moduleCounts()
   setText('modulesLabel', tr('Modules loaded: %d (%d Chaos)', total, chaos))

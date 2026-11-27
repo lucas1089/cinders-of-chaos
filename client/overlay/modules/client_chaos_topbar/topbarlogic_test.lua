@@ -57,4 +57,11 @@ eq(T.coveredByWindow(barRect, {}), false, 'nothing above')
 eq(T.coveredByWindow(nil, { win() }), false, 'no bar rect: raise as before')
 eq(T.coveredByWindow({ x = 0, y = 0, width = 0, height = 0 }, { win() }), false, 'an empty bar rect: raise as before')
 
+-- O411 badges sit left of the bar (the Candlemarks counter owns its right side): the first by the bar, the rest further left
+local b1, b2 = T.badgeAnchor(1), T.badgeAnchor(2)
+eq(b1.edge .. '>' .. b1.target .. '.' .. b1.targetEdge, 'right>bar.left', 'first badge left of the bar')
+eq(b1.margin, 6, 'first badge margin')
+eq(b2.edge .. '>' .. b2.target .. '.' .. b2.targetEdge, 'right>prev.left', 'second badge left of the first')
+eq(b2.margin, 4, 'second badge margin')
+
 print('topbarlogic_test: ' .. n .. ' checks ok')

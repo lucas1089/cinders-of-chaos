@@ -102,4 +102,14 @@ function T.coveredByWindow(bar, above)
   return false
 end
 
+-- O411 badges (STREAMER): where badge number i sits. Left of the bar, the first one next to it and each next one further
+-- left: the right side of the bar belongs to the Candlemarks counter (game_candlemarks), which covered the badge there
+-- (seen in a client 2026-11-27, V36). {edge, target ('bar' = the menu bar, 'prev' = the badge before), targetEdge, margin}
+function T.badgeAnchor(i)
+  if i <= 1 then
+    return { edge = 'right', target = 'bar', targetEdge = 'left', margin = 6 }
+  end
+  return { edge = 'right', target = 'prev', targetEdge = 'left', margin = 4 }
+end
+
 return T
