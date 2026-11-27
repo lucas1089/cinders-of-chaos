@@ -241,7 +241,7 @@ local function giveItem(player, id, count)
 	end
 	local okI, inbox = pcall(function() return player:getInbox() end)
 	if okI and inbox then
-		return inbox:addItem(id, count)
+		return inbox:addItem(id, count, INDEX_WHEREEVER or -1, FLAG_NOLIMIT or 1) -- refused without the flag (F47)
 	end
 	return nil
 end

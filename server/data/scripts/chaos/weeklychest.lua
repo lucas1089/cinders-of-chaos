@@ -93,18 +93,17 @@ local function itemText(list)
 	return table.concat(parts, ", ")
 end
 
+-- backpack first, the rest to the inbox (Chaos.giveOrInbox, FLAG_NOLIMIT: the engine refuses a plain inbox:addItem and
+-- the pcall around it still said yes, so the item was lost; F47); returns the number of stacks that went to the inbox
 local function giveItems(player, list)
 	local inbox = 0
 	for _, it in ipairs(list or {}) do
-		local ok, item = pcall(function() return player:addItem(it.id, it.count, false) end)
-		if not ok or not item then
-			local box = player:getInbox()
-			local okBox = box and pcall(function() return box:addItem(it.id, it.count) end)
-			if okBox then
-				inbox = inbox + 1
-			else
-				log("could not give " .. it.count .. "x " .. it.id .. " to " .. player:getName())
-			end
+		local given, boxed = Chaos.giveOrInbox(player, it.id, it.count)
+		if boxed > 0 then
+			inbox = inbox + 1
+		end
+		if given + boxed < it.count then
+			log("could not give " .. (it.count - given - boxed) .. "x " .. it.id .. " to " .. player:getName())
 		end
 	end
 	return inbox

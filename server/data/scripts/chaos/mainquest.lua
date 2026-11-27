@@ -372,15 +372,9 @@ local function itemName(id)
 	return ok and name and name ~= "" and name or ("item " .. tostring(id))
 end
 
+-- backpack first, the rest to the inbox with FLAG_NOLIMIT (Chaos.giveOrInbox: a plain inbox:addItem is refused, F47)
 local function giveItems(player, id, count)
-	local given = Chaos.giveItem and Chaos.giveItem(player, id, count) or 0
-	local left = count - (tonumber(given) or 0)
-	if left > 0 then
-		local ok, inbox = pcall(function() return player:getInbox() end)
-		if ok and inbox then
-			inbox:addItem(id, left)
-		end
-	end
+	Chaos.giveOrInbox(player, id, count)
 end
 
 local function income()

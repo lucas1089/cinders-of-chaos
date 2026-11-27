@@ -189,6 +189,8 @@ end
 CHOICE_CHROME, CHOICE_SPACING, CHOICE_PAD = 130, 6, 10
 -- F46: the room kept free above and below the window, its lowest height, and the list's gap for its scroll bar
 CHOICE_MARGIN, CHOICE_MIN, CHOICE_BAR = 16, 250, 16
+-- F47: the last effect button's margin-bottom, so the list's content (its scroll range) ends one gap below it
+CHOICE_TAIL = CHOICE_SPACING
 
 -- the height the choice window may take: the smaller of the tree window and the interface (540 on a phone)
 local function choiceRoom(win)
@@ -246,6 +248,11 @@ function openMasteryChoice(node, saved)
         openMasteryChoice(nodes()[missing[1]], false)
       end
     end
+  end
+  -- F47: scrolled to the end, the last button sat on the list's bottom edge and lost its border: its margin-bottom is
+  -- part of the list's children rect, so the scroll range ends a gap below it (TreePlan.choiceContent)
+  if #buttons > 0 then
+    buttons[#buttons]:setMarginBottom(CHOICE_TAIL)
   end
   fitChoice(choiceWindow, rows) -- up to 7 effects of three lines since O451, and a low combo mastery button since O686 phase 6b
   local remove = choiceWindow.removeButton

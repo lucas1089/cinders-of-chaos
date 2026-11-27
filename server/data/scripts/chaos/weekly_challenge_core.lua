@@ -13,6 +13,8 @@
 --   W.boardOf(cfg, size)               -> the board key of a clear by party size
 --   W.seconds(ms)                      -> whole seconds of a clear (at least 1)
 --   W.entryProblem(built, current)     -> nil, or a reason text: no layout built, or built for another week
+--   W.minSeconds(cfg, walk)            -> the least time a clear can take (walk: the run model's walk, seconds)
+--   W.rankProblem(cfg, secs, total, walk) -> nil, or why a clear is not ranked (too fast, the roster was empty)
 --   W.classTop(ranked, groups, n, filter) -> {{key, name, rows = {{rank, guid, name, value}}}} per class group
 --   W.awards(cfg, tops)                -> token grants {board, group, groupName, rank, guid, name, value, tokens}
 --   W.clock(secs)                      -> "m:ss" / "h:mm:ss"
@@ -165,6 +167,29 @@ end
 function W.seconds(ms)
 	local s = math.ceil((tonumber(ms) or 0) / 1000)
 	return s < 1 and 1 or s
+end
+
+-- F47 (O773): a 9 s clear reached the weekly board. The least possible time comes from the content: the run model's walk
+-- to the gate and the boss with no fighting (dungeons_difficulty.lua D.model.walk) times cfg.valid.walkShare; never under
+-- 1 s. walk nil: 90 s (the model's number when the model file is not loaded).
+function W.minSeconds(cfg, walk)
+	local v = cfg and cfg.valid or {}
+	local w = tonumber(walk) or 90
+	local s = math.ceil(w * (tonumber(v.walkShare) or 0.5))
+	return s < 1 and 1 or s
+end
+
+-- secs = the clear in whole seconds (W.seconds), total = the monsters the run counted at its start (nil: not told)
+function W.rankProblem(cfg, secs, total, walk)
+	local v = cfg and cfg.valid or {}
+	local min = W.minSeconds(cfg, walk)
+	if (tonumber(secs) or 0) < min then
+		return string.format("cleared in %d s, under the least possible %d s", tonumber(secs) or 0, min)
+	end
+	if total ~= nil and (tonumber(total) or 0) < (tonumber(v.minRoster) or 0) then
+		return string.format("the run counted %d monsters, fewer than %d", tonumber(total) or 0, tonumber(v.minRoster) or 0)
+	end
+	return nil
 end
 
 -- built = the leaderboard week key the layout was built for (nil: not built), current = the week key now

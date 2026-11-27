@@ -29184,6 +29184,14 @@ grants, the Discord event; `weekly_challenge.lua` against a mocked engine: area,
 board, a stale layout, the week's end), `dungeonsview_test.lua` (the window line and banner). Not run on a live
 server.
 
+**Least possible time (F47, O773).** A 9 s clear (monsters thinned by a staff command) reached the weekly board: the run
+time is the teleport in to the boss kill (`dungeons.lua` `endRun`, passed to `extra.onClear` with the run's roster `total`)
+and nothing held it (the records' `valid.minSeconds` does not cover this board). `W.rankProblem(cfg, secs, total, walk)`
+refuses a clear under `W.minSeconds` (the run model's walk to the gate and the boss, `dungeons_difficulty.lua`
+`D.model.walk` 90 s, times `valid.walkShare` 0.5: 45 s) or a run whose roster had fewer than `valid.minRoster` (50)
+monsters (a failed populate opens the boss at once). The player reads "not ranked, no real run is that fast (at least
+0:45)"; the server log names the reason. `tests/weekly_challenge_test.lua`.
+
 ## Party Finder (`party_finder.lua`, `party_finder_core.lua`, `party_finder_config.lua`, client `game_partyfinder`)
 
 Looking-for-group window, Social > Party Finder (opcode **208**). A leader posts a listing; others browse it, apply with
@@ -39675,3 +39683,35 @@ Linux main client from this branch, pair 88, a local server, two testers and one
 - Tavern rumours (O394): Dorrin Alewright sells the rumour of the hour for gold (the world boss portals by the temples between two times, server time); the portals opened by the temple at the hour he said. Dorrin stands half hidden behind a pillar at 32364,32238 (map, not changed).
 - Wandering Merchant (O399): the trade line says "One of each per customer" (`data/npc/Wandering Merchant.xml`, pt-BR in `i18n_strings.lua`), and a refused buy also goes to the status line (`wandering_merchant.lua` `overLimit`; `tests/wandering_merchant_test.lua`). The XML's comment named the old 20-minute event. Seen: prices about 2.5 times the old ones, a second buy of one item refused with the minutes left. World events (`worldevents.lua` `announce`) sent their toast through `ChaosInvasion.announce`, titled INVASION; they keep its chat line and send their own toast kind `worldevent` (client WORLD EVENT; `tests/invasion_test.lua`). He stood in Thornmere and, after a server restart in the same 3-hour stop, in Cinderhold; `merchantArea` promises the same area after a restart, so this may have been an earlier staff move in the session. Not chased here.
 - Tales (O415): the story saga sorts first in the Tales list (`tales_core.lua`). Seen on a fresh character: the quiet first login (O761) opens the Daily Reward only, then the main quest's first step; Archivist Maelis carries the gold !.
+
+## F47 fixes (O773)
+
+Six faults seen in a client; the client ones are in client/MANIFEST.md "F47 fixes (O773)". Seen in the Linux main
+client on a local server (video in the task report, not committed).
+
+- **Weekly Challenge, a 9 s clear ranked.** See "The Weekly Challenge (O390)", Least possible time.
+- **Items to the inbox.** A reward given at login with a full backpack was lost. The engine's Inbox refuses every add
+  without `FLAG_NOLIMIT` (`inbox.cpp` `Inbox::queryAdd`: "not enough room"), and `Container:addItem` makes at most 100 of
+  a stackable, so a plain `inbox:addItem(id, n)` deleted the item: the community goal token at login (`community.lua`
+  `X.deliverRewards`, now with the "(your backpack was full: see your inbox)" line), the welcome path and main quest
+  rewards, Vael's reward, the Tales book, the Ember Cache and the weekly chest (their `pcall` still counted the stack as
+  delivered) and the restock purchase. `chaos_constants.lua` `Chaos.giveToInbox(player, id, count, subType)` (stacks of 100
+  with the flag, one call per item for the rest) and `Chaos.giveOrInbox(player, id, count)` (backpack first, the rest to
+  the inbox; returns both counts) carry the pattern of `professions.lua` `giveMaterial` and the achievement rewards, which
+  already had it. `tests/inbox_flag_test.lua` runs the helpers on a mock with the engine's rules and fails on any server
+  script that adds to an inbox without the flag (a flags variable only where it is built with it: `market.lua`,
+  `store_delivery.lua`); `community_test.lua` has the full backpack login; the mocks of `embercache_test.lua`,
+  `weeklychest_test.lua` and `restock_test.lua` refuse an add without the flag.
+- **Wandering Merchant in another town after a restart: by design, not changed.** The stop's area comes from the time
+  slot alone (`invasion_core.lua` `I.merchantSlot` / `I.merchantArea` over the static candidate list), so a restart puts
+  him in the slot's area. He leaves it only for an invasion of that area (`worldevents.lua` `W.placeMerchant(nil,
+  areaKey)`, the next free area) or a staff move; neither survives a restart, so he goes back to the slot's area. This
+  matches the V35 note under "Seen in a client (2026-11-27, V35 ...)".
+- **Death Mage.** It spawns nowhere (no world spawn, not in the bounty pool), but a staff spawn killed a level 1500 tester
+  in about 4 s: no `<level>` and its donor numbers (melee 2,300-4,800 a second, 250k health) gave 5,800 damage a second at
+  the player, 6.6 times the mean monster of the 1000 hunt band of `tools/survival_model.py` (887, the strongest 1,110) and
+  more than a pack of 7 (6,210). `tools/tune_monsters.py` gives it the late-game curves of level 1020 (`late_targets`,
+  level 1000-1040, the strongest hit 900 for its five attacks a turn): 1,090 a second, under the band's strongest, health
+  22,900, experience 16,100. `tune_monsters.py` now adds a missing `<level>` after `<look>`. `survival_model.py` and
+  `pack_model.py` pass `--check` and `--today`. Seen: the same level 1500 tester (12,000 health, no gear) lost 8,000
+  health to the Death Mage in 4 s and died to a Bloom Husk of the band in 3 s.

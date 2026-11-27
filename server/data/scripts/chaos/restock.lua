@@ -131,22 +131,22 @@ end
 local function give(player, r)
 	local t = RS.info(r.id)
 	local toInbox = 0
+	-- the inbox part with FLAG_NOLIMIT (Chaos.giveToInbox / giveOrInbox): the engine refuses a plain inbox:addItem and the
+	-- pcall around it still said yes, so the item was lost (F47)
 	local function add(count, subType)
-		local ok, item = pcall(function()
-			if subType then
-				return player:addItem(r.id, 1, false, subType)
-			end
-			return player:addItem(r.id, count, false)
-		end)
-		if ok and item then
-			return
-		end
-		local box = player:getInbox()
-		local okBox = box and pcall(function() return box:addItem(r.id, subType or count) end)
-		if okBox then
-			toInbox = toInbox + 1
+		local given, boxed
+		if subType then
+			local ok, item = pcall(function() return player:addItem(r.id, 1, false, subType) end)
+			given = (ok and item) and 1 or 0
+			boxed = given == 0 and Chaos.giveToInbox(player, r.id, 1, subType) or 0
 		else
-			log("could not give " .. count .. "x " .. r.id .. " to " .. player:getName())
+			given, boxed = Chaos.giveOrInbox(player, r.id, count)
+		end
+		if boxed > 0 then
+			toInbox = toInbox + 1
+		end
+		if given + boxed < count then
+			log("could not give " .. (count - given - boxed) .. "x " .. r.id .. " to " .. player:getName())
 		end
 	end
 	if t.stack then

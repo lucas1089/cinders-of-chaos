@@ -12,7 +12,7 @@ Row keys:
   name, desc        <monster name>, nameDescription
   experience, speed <monster> attributes
   health            <health now max> (both)
-  level             (min, max) of <level>
+  level             (min, max) of <level> (added after <look> when missing)
   flags             {flag: value} (existing <flag> lines)
   elements          [(key, value)]: the whole <elements> block (added after </defenses> when missing)
   attack            {n: {attr: value}}: attributes of the n-th <attack> (0-based)
@@ -198,6 +198,14 @@ for _i, _f in enumerate(DORMANT):
     _row.update(late_targets(_L))
     _row['level'] = (_L - 20, _L + 20)
 
+# F47 (O773): the Death Mage spawns nowhere (no spawn in the world map, not in the bounty pool), but a staff spawn of one at
+# level 1018 killed a level 1500 tester in about 4 s: no <level>, its donor numbers (melee 2,300-4,800 a second, 250k
+# health) gave 5,800 damage a second at the player, 6.6 times the mean monster of the 1000 hunt band of
+# tools/survival_model.py (887 a second, the strongest 1,110) and a whole pack of 7 (6,210). It takes the late-game curves
+# of its level as the dormant imports do; its five attacks a turn (most monsters of the band have two or three) take the
+# strongest hit to 900 instead of the curve's 1,100: 1,090 a second, under the band's strongest.
+TUNING['death_mage.xml'] = dict(late_targets(1020), level=(1000, 1040), hit=900)
+
 # our own hunting monsters of levels 1300-2000 (2026-10-14, owner approved): the same late-game curves carried on
 # from Facetis (1280) to 2000, one every 100 levels (server/README.md "Late game", The 1300-2000 set). The speed of
 # each is the curve's plus its own step (a fast hunter, a slow juggernaut); attacks and elements are in the files.
@@ -352,6 +360,12 @@ def apply(t, row):
     if 'health' in row:
         t = _tag(t, r'<health\s[^>]*>', {'now': row['health'], 'max': row['health']})
     if 'level' in row:
+        if not re.search(r'<level\s[^>]*>', t):
+            # a file without <level> (the Death Mage, F47): the tag goes after <look> (engine patch 0082 reads it)
+            m = re.search(r'\n([ \t]*)<look\b[^>]*>', t)
+            if not m:
+                raise SystemExit('no <look> to put <level> after')
+            t = t[:m.end()] + '\n%s<level min="0" max="0"/>' % m.group(1) + t[m.end():]
         t = _tag(t, r'<level\s[^>]*>', {'min': row['level'][0], 'max': row['level'][1]})
     for flag, v in row.get('flags', {}).items():
         t = re.sub(r'(<flag\s+%s\s*=\s*")[^"]*(")' % flag, r'\g<1>%s\2' % v, t, flags=re.I)

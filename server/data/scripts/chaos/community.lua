@@ -547,16 +547,15 @@ end
 X.titles = X.titles or {} -- guid -> {place, periodEnd} of the newest top place
 
 -- ---------------------------------------------------------------- rewards at login
+-- backpack first, the rest to the inbox (Chaos.giveOrInbox, FLAG_NOLIMIT: a plain inbox:addItem is refused by the
+-- engine and the item was lost, F47); true when the inbox was used
 local function giveItems(player, items)
+	local inbox = false
 	for _, it in ipairs(items or {}) do
-		local got = Chaos.giveItem(player, it.id, it.count)
-		if got < it.count then
-			local inbox = player:getInbox()
-			if inbox then
-				inbox:addItem(it.id, it.count - got)
-			end
-		end
+		local _, boxed = Chaos.giveOrInbox(player, it.id, it.count)
+		inbox = inbox or boxed > 0
 	end
+	return inbox
 end
 
 function X.deliverRewards(player)
@@ -569,8 +568,8 @@ function X.deliverRewards(player)
 		db.query(string.format("UPDATE `%s` SET `rewarded` = 1 WHERE `period` = %d AND `player_id` = %d", T.contrib, row.period, guid))
 		local parts = {}
 		if row.token == 1 and r.token then
-			giveItems(player, r.token.items)
-			parts[#parts + 1] = Chaos.t(player, r.token.text)
+			local boxed = giveItems(player, r.token.items)
+			parts[#parts + 1] = Chaos.t(player, r.token.text) .. (boxed and Chaos.t(player, " (your backpack was full: see your inbox)") or "")
 		end
 		if row.place > 0 and r.title then
 			parts[#parts + 1] = Chaos.t(player, "the title %s for %d days (place %d)", r.title, r.titleDays or 7, row.place)

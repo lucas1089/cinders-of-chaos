@@ -490,11 +490,29 @@ function U.onLevelUp()
       for _, id in ipairs(newIds) do q.ignored[id] = true end
       savePrefs(q)
     end
-    box = displayGeneralBox(tr('New spell available'), tr('New spell available: %s.\nAdd to rotation?', list),
-      { { text = tr('Add'), callback = add }, { text = tr('Ignore'), callback = ignore },
-        anchor = AnchorHorizontalCenter }, add, ignore)
+    local open = function()
+      closeBox()
+      box = displayGeneralBox(tr('New spell available'), tr('New spell available: %s.\nAdd to rotation?', list),
+        { { text = tr('Add'), callback = add }, { text = tr('Ignore'), callback = ignore },
+          anchor = AnchorHorizontalCenter }, add, ignore)
+    end
+    -- one popup at a time (F47, O773): at a level jump the box waits in the popup queue like the mentor offer and the
+    -- level survey; it used to open at once over them. A later level-up before its turn takes its place (same key).
+    local queue = rawget(_G, 'ChaosPopupQueue')
+    if queue then
+      queue.request(U.NOTICE_KEY, open, U.noticeShown)
+    else
+      open()
+    end
   end
   return action
+end
+
+U.NOTICE_KEY = 'helperNewSpell'
+
+-- the Helper's own box is on screen (the popup queue asks it while the box holds the screen)
+function U.noticeShown()
+  return box ~= nil and not box:isDestroyed() and box:isVisible()
 end
 
 local loginAt -- g_clock.millis() of the game start
@@ -596,6 +614,8 @@ function U.terminate()
     removeEvent(pollEvent)
     pollEvent = nil
   end
+  local queue = rawget(_G, 'ChaosPopupQueue')
+  if queue then queue.cancel(U.NOTICE_KEY) end
   closeBox()
   if ChaosAutoSetupUI and ChaosAutoSetupUI.terminate then ChaosAutoSetupUI.terminate() end
   local root = g_ui.getRootWidget()

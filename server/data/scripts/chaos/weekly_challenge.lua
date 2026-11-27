@@ -124,6 +124,17 @@ function WC.onClear(player, info)
 		return -- a run that crossed the week's end: the layout belongs to the week that ended
 	end
 	local secs = W.seconds(info and info.ms)
+	-- a clear no real player can make is not ranked (F47, O773): under the content's least possible time, or a run whose
+	-- roster was empty (its boss opened at once)
+	local DD = ChaosDungeonDifficulty
+	local why = W.rankProblem(C(), secs, info and info.total, DD and DD.model and DD.model.walk)
+	if why then
+		log(string.format("not ranked: %s, %s", player:getName(), why))
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player,
+			"Weekly Challenge %s cleared in %s: not ranked, no real run is that fast (at least %s).", b.label,
+			W.clock(secs), W.clock(W.minSeconds(C(), DD and DD.model and DD.model.walk))))
+		return
+	end
 	local board = W.boardOf(C(), info and info.size)
 	local e = ChaosLeaderboard.record(board, player, secs)
 	local best = e and e.value or secs

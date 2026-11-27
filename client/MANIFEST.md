@@ -8760,3 +8760,18 @@ the task report, not committed).
   never leaves one word alone on the last line; `TooltipLogic.helpRows` builds the rows. `tooltiplogic_test.lua`. Unity:
   `TipLines.WrapText(text, n, phrase)` in `ItemInfo.cs`, used by `ItemCompare.cs`; `ItemTests.cs` "tooltip: helpers"
   (same check count).
+
+## F47 fixes (O773)
+
+Faults seen in a client, each fixed at its cause and seen again in the Linux main client on a local server (video in the
+task report, not committed). The server ones are in server/README.md "F47 fixes (O773)".
+
+- `game_helperrotation`: the Helper's "New spell available" box opened at once, over the mentor offer or the patch
+  notes. `autorotation_ui.lua` `U.onLevelUp` asks `ChaosPopupQueue.request(U.NOTICE_KEY, open, U.noticeShown)` like the
+  mentor offer and the level survey; a second level-up keeps one box, and `U.terminate` cancels the request. Without the
+  queue module it opens at once. `autorotation_notice_test.lua` (fake engine, the real queue).
+- `game_passivetree`: with 8 effects at 960x540, scrolled to the end, the last effect button sat on the list's bottom
+  clip line and lost its border row. The last button has a margin-bottom of one gap (`CHOICE_TAIL`), which is part of the
+  list's children rect, so the scroll range ends a gap below it; `TreePlan.choiceContent(heights, spacing, tail)` is the
+  list's content, and with the tail the content plus the chrome is `TreePlan.choiceHeights`' total. Measured: bar 30 -> 36,
+  last button bottom 485 -> 479 against the list's 485. `treelinks_test.lua`.

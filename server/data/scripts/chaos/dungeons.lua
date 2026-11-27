@@ -823,7 +823,8 @@ local function endRun(run, success, reason)
 		end
 		-- a generated dungeon's boss chest and achievement counters (areagen.lua registerDungeon)
 		if extra.onClear then
-			pcall(extra.onClear, p, {difficulty = run.difficulty, ms = elapsed, deaths = run.deaths, size = run.size or #memberInfo})
+			pcall(extra.onClear, p, {difficulty = run.difficulty, ms = elapsed, deaths = run.deaths, size = run.size or #memberInfo,
+				total = run.total})
 		end
 	end
 

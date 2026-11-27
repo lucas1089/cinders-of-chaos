@@ -145,6 +145,17 @@ function TreePlan.choiceHeights(bases, textHeights, pad, spacing, chrome)
   return heights, total
 end
 
+-- the content height of the effect list (its scroll range): the buttons, the gaps between them and the last button's
+-- margin-bottom `tail` (F47: the verticalBox ended the content at the last button's edge, so scrolled to the end the
+-- button's bottom border sat on the list's clip line and lost its last pixel row). With tail = spacing the list content
+-- plus the chrome is choiceHeights' total, so the window that fits it shows the whole last button.
+function TreePlan.choiceContent(heights, spacing, tail)
+  local n, sum = #(heights or {}), 0
+  for _, h in ipairs(heights or {}) do sum = sum + h end
+  if n == 0 then return 0 end
+  return sum + (n - 1) * (spacing or 0) + (tail or 0)
+end
+
 -- the height of the mastery choice window on a screen (F46): the wanted total, cut to the room it has (screenH, the
 -- smaller of the tree window and the interface, less margin) and never under minH. Returns the height and whether it was
 -- cut (the effect list then scrolls). Eight long effects wanted about 580 px on the 540 px phone interface.

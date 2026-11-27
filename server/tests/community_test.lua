@@ -649,6 +649,20 @@ check(queried("SET `rewarded` = 1 WHERE `period` = 20261005 AND `player_id` = 50
 local tt = titleSources.community(bryn)
 check(tt and tt.text == cfg.goal.rewards.title, "the title on the name plate")
 check(titleSources.community(hero) == nil, "no title for Hero (not logged in again)")
+-- F47 (O773): a full backpack at that login: the token goes to the inbox with FLAG_NOLIMIT (the engine's Inbox refuses
+-- a plain add, and the orbs were lost) and the line says so
+local cara = mkPlayer("Cara", 504, 1)
+cara.inbox = {}
+function cara:addItem() return nil end
+function cara:getInbox() local me = self return {addItem = function(_, id, nn, _, flags)
+	if flags ~= (FLAG_NOLIMIT or 1) then return nil end
+	me.inbox[id] = (me.inbox[id] or 0) + nn return {} end} end
+registry.ChaosCommunityLogin.onLogin(cara)
+eq(cara.inbox[29856], 2, "full backpack: the 2 Orbs of Upheaval in the inbox")
+eq(cara.inbox[29857], 1, "full backpack: the Orb of Fate in the inbox")
+local saidInbox = false
+for _, m in ipairs(cara.msgs) do if m:find("backpack was full", 1, true) then saidInbox = true end end
+check(saidInbox, "full backpack: the reward line names the inbox")
 
 print = print_
 check(logged[1] and logged[1]:find("Great Brazier stands at 104, 95, 7", 1, true), "startup log: the first free offset (O386: 4, -5)")
