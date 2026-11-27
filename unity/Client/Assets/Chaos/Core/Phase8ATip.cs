@@ -57,7 +57,7 @@ namespace Chaos.Core
             {
                 case "dps": return Loc.T("DPS");
                 case "attack": return Loc.T("Attack");
-                case "speed": return Loc.T("Speed");
+                case "speed": return Loc.T("Interval"); // F46: seconds between attacks (tooltiplogic.lua tileCaption)
                 case "range": return Loc.T("Range");
                 case "armor": return Loc.T("Armour");
                 case "defense": return Loc.T("Defense");
@@ -90,6 +90,8 @@ namespace Chaos.Core
                 bool signed = imp || !Unsigned.Contains(k);
                 string label = Json.Text(b, "l");
                 if (label.Length == 0) label = k.Length > 0 ? k : "?";
+                // F46: beside the viewer's own interval tile the weapon's interval says that it is the weapon's
+                if (k == "attackspeed" && speed != null && !ReferenceEquals(speed, b) && used.Contains(speed)) label = Loc.T("Weapon Interval");
                 rest.Add(new KeyValuePair<string, string>(label, TipLines.BaseValue(b, signed)));
             }
         }

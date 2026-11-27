@@ -122,7 +122,9 @@ namespace Chaos.Core
             var off = new List<Stat>(); var def = new List<Stat>(); var rs = new List<Stat>();
             if (Pos(c, "attack")) Add(off, Loc.T("Weapon attack"), Num(Json.Number(c, "attack")));
             if (Pos(c, "hit")) Add(off, Loc.T("Average hit"), Num(Json.Number(c, "hit")));
-            if (Pos(c, "maxHit")) Add(off, Loc.T("Highest hit"), Num(Json.Number(c, "maxHit")), "gold");
+            // F46 (client game_playerinspect): the landing hit range the average lies in, then the record of the biggest hit dealt
+            if (Pos(c, "hitHi")) Add(off, Loc.T("Hit range"), Num(Json.Number(c, "hitLo")) + " - " + Num(Json.Number(c, "hitHi")));
+            if (Pos(c, "maxHit")) Add(off, Loc.T("Biggest hit dealt"), Num(Json.Number(c, "maxHit")), "gold");
             if (Pos(c, "attackSpeed")) Add(off, Loc.T("Attack speed"), "+" + SFmt.Pct(Json.Number(c, "attackSpeed")) + "%");
             if (Pos(c, "critChance")) Add(off, Loc.T("Critical chance"), SFmt.Pct(Json.Number(c, "critChance")) + "%");
             if (Pos(c, "critAmount")) Add(off, Loc.T("Critical damage"), "+" + SFmt.Pct(Json.Number(c, "critAmount")) + "%");

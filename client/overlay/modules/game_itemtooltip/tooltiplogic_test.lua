@@ -524,7 +524,8 @@ eq(card.stats.tiles[4].value, '5', 'range tile')
 eq(#card.stats.extra, 2, 'the extra items wrap at the line limit')
 local extraText = {}
 for i = 1, #card.stats.extra[1], 2 do extraText[#extraText + 1] = card.stats.extra[1][i] end
-eq(table.concat(extraText), 'Attack Interval 1.8s - Magic Level +3', 'the raw interval and the bonuses')
+eq(table.concat(extraText), 'Weapon Interval 1.8s - Magic Level +3', 'the weapon interval says so beside the Interval tile (F46)')
+eq(card.stats.tiles[3].caption, 'Interval', 'the tile of seconds between attacks is an Interval, not a Speed (F46)')
 eq(card.stats.extra[2][3], '+3%', 'second line value')
 eq(card.stats.extra[1][#card.stats.extra[1]], L.COLORS.better, 'values are green')
 eq(#card.mods, 2, 'prefix and suffix groups')
@@ -1007,7 +1008,7 @@ do
   local _, rest = L.statTiles({ BASE[10], BASE[16] })
   eq(rest[1].label, 'Dano de Fogo', 'element in the rest rows') eq(rest[2].label, ChaosLocaleCore.toCp1252('Vida Máxima'), 'pt-BR label of a rest row')
   local tiles = L.statTiles({ BASE[7] })
-  eq(tiles[1].caption, 'Velocidade', 'the Speed tile')
+  eq(tiles[1].caption, 'Intervalo', 'the Interval tile (F46)')
   eq(L.diffText({ k = 'attackspeed', l = 'Attack Interval', d = -0.5, fmt = 'sec' }), '-0,5s Intervalo de ataque', 'pt-BR compare row')
   lang = 'en'
   ChaosLocale = nil
@@ -1016,6 +1017,38 @@ do
   all = table.concat(text, '|')
   eq(all:find('Attack Interval: 2s', 1, true) ~= nil and all:find('Prefixes 1/3', 1, true) ~= nil, true, 'English rows as before')
   eq(L.diffText({ k = 'attackspeed', l = 'Attack Interval', d = -0.5, fmt = 'sec' }), '-0.5s Attack Interval', 'English compare row')
+end
+
+-- ---------------------------------------------------------------- F46: the Alt help wraps at the card, by clauses
+do
+  local px6 = function(t) return #t * 6 end -- 6 px a byte, 288 px of card: 48 characters
+  local help = 'Prefixes and Suffixes: an item holds a few of each; orbs add, change or remove them.'
+  local plain = L.wrapPx(help, 288, px6)
+  eq(plain[1], 'Prefixes and Suffixes: an item holds a few of', 'a plain wrap leaves the clause end alone (the fault)')
+  local lines = L.wrapPx(help, 288, px6, true)
+  eq(#lines, 3, 'three lines: ' .. table.concat(lines, ' / '))
+  eq(lines[1], 'Prefixes and Suffixes:', 'the term on its own line')
+  eq(lines[2], 'an item holds a few of each;', 'the clause stays whole')
+  eq(lines[3], 'orbs add, change or remove them.', 'the last clause')
+  for _, l in ipairs(lines) do eq(px6(l) <= 288, true, 'fits: ' .. l) end
+  -- a short head is not cut off: the plain break stays
+  local short = L.wrapPx('Ab: ' .. string.rep('word ', 12), 60, px6, true)
+  eq(short[1], 'Ab: word', 'no cut that would leave a stub line')
+  -- no clause mark: as the plain wrap
+  local t = 'one two three four five six seven eight nine ten'
+  eq(table.concat(L.wrapPx(t, 60, px6, true), '|'), table.concat(L.wrapPx(t, 60, px6), '|'), 'no mark: the plain wrap')
+  -- no word alone on the last line
+  local magic = L.wrapPx('Magic: the rarity. Rarer items roll more modifiers.', 240, px6, true)
+  eq(table.concat(magic, ' / '), 'Magic: the rarity. Rarer items roll / more modifiers.', 'the last word gets company')
+  eq(table.concat(L.wrapPx('Magic: the rarity. Rarer items roll more modifiers.', 240, px6), ' / '),
+    'Magic: the rarity. Rarer items roll more / modifiers.', 'the plain wrap as before')
+  -- the help rows: one row per line, no fixed character wrap, the divider on the first, marked for the clause wrap
+  local rows = L.helpRows({ help, 'Bound: orbs do not change this modifier.' }, '#abc')
+  eq(#rows, 2, 'one row per help line')
+  eq(rows[1].text, help, 'the whole line, wrapped later by the card')
+  eq(rows[1].sep, true, 'divider before the first') eq(rows[2].sep, false, 'none before the next')
+  eq(rows[1].help and rows[1].color, '#abc', 'help row in the help colour')
+  eq(#L.helpRows(nil), 0, 'no help: no rows')
 end
 
 -- ---------------------------------------------------------------- V37: a tile caption fits its tile

@@ -125,7 +125,7 @@ namespace Chaos.Core
                 {
                     for (int i = 0; i < help.Count; i++)
                     {
-                        var parts = TipLines.WrapText(help[i], 48);
+                        var parts = TipLines.WrapText(help[i], 48, true); // F46: by clauses
                         for (int j = 0; j < parts.Count; j++) rows.Add(new TipLine { Text = parts[j], Color = HelpColor, Sep = i == 0 && j == 0 });
                     }
                 }

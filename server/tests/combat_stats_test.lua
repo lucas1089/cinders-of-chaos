@@ -93,9 +93,20 @@ eq(d.armor, 100, "armor = the sum")
 near(d.mitigation, math.floor(100 / 350 * 10000 + 0.5) / 10000, "mitigation = the armour share")
 eq(d.defense, C.defence({weapon = {defense = 20, extra = 0, skill = 80}, shield = {defense = 30}, shielding = 60}), "defence with weapon and shield")
 ok(d.damage and d.damage > 0, "damage for a sword")
+-- F46: the landing hit range rides along and the average lies inside it
+eq(d.hitLo, 0, "a sword rolls from 0")
+ok(d.hitHi and d.damage <= d.hitHi and d.damage >= d.hitLo, "average inside the range")
+do
+	local lo, hi = C.hitRange({kind = "distance", attack = 50, launcher = "bow"}, {level = 100, skill = 80}, 1.5, 2)
+	ok(lo > 0 and hi > lo, "a bow's range starts above 0")
+	local avg = C.hit({kind = "distance", attack = 50, launcher = "bow", hitChance = 90}, {level = 100, skill = 80}, 1.5, 2)
+	ok(avg >= lo and avg <= hi, "the bow's average lies in its range")
+	eq(C.hitRange({kind = "wand", attack = 0}, {level = 100, skill = 80}, 1, 1), nil, "a wand has no range")
+end
 d = C.build({level = 100, weapon = {kind = "wand", attack = 0, defense = 0, extra = 0}, armourList = {},
 	skills = {melee = 80, shielding = 60, fist = 5}, k = 250, cap = 80}, cfg)
 eq(d.attack, nil, "no attack with a wand"); eq(d.damage, nil, "no damage with a wand"); eq(d.armor, 0, "no armour")
+eq(d.hitHi, nil, "no range with a wand")
 eq(d.mitigation, 0, "no mitigation"); ok(type(d.defense) == "number", "a defence value anyway")
 d = C.build({level = 1, armourList = {100}, skills = {fist = 0}, k = nil, cap = 80, absorb = 10, monster = 5}, cfg)
 near(d.mitigation, 1 - 0.9 * 0.95, "percent armour off: absorb and gear only")

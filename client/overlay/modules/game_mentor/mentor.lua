@@ -272,9 +272,24 @@ local function onMessage(protocol, opcode, msg)
     local t = V.offerTexts(d)
     offerWindow.body:setText(t.body)
     offerWindow.online:setText(t.online)
-    offerWindow:show()
-    offerWindow:raise()
+    -- one popup at a time (F46, O772): at a level jump the offer waits for the Helper's box and the survey
+    local queue = rawget(_G, 'ChaosPopupQueue')
+    if queue then
+      queue.request('mentorOffer', showOffer, offerShown)
+    else
+      showOffer()
+    end
   end
+end
+
+function showOffer()
+  if not offerWindow then return end
+  offerWindow:show()
+  offerWindow:raise()
+end
+
+function offerShown()
+  return offerWindow ~= nil and offerWindow:isVisible()
 end
 
 -- the mentor offer's buttons: Find a mentor opens this window (the server answers with status open = true, on Find a

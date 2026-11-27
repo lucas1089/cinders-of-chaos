@@ -111,6 +111,12 @@ function skip()
   hide()
 end
 
+local function showWindow()
+  if not window or not current then return end
+  window:show()
+  window:raise()
+end
+
 local function onOpen(data)
   local o = L.parseOpen(data)
   if not o or not window then return end
@@ -127,8 +133,13 @@ local function onOpen(data)
   window:setHeight(asks and 436 or 380)
   setStatus('')
   refresh()
-  window:show()
-  window:raise()
+  -- one popup at a time (F46, O772): at a level jump the survey waits for the Helper's box and the mentor offer
+  local queue = rawget(_G, 'ChaosPopupQueue')
+  if queue then
+    queue.request('survey', showWindow, function() return window ~= nil and window:isVisible() end)
+  else
+    showWindow()
+  end
 end
 
 local function onDone(data)

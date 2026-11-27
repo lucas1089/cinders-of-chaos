@@ -61,7 +61,7 @@ namespace Chaos.Core
             { "Reset and apply: your tree already fits this build, nothing is taken back.", "Resetar e aplicar: sua árvore já cabe nesta build, nada é devolvido." },
             { "Reset your tree and apply {0}?\nNodes taken back: {1}. Price: {2}.", "Resetar sua árvore e aplicar {0}?\nNós devolvidos: {1}. Preço: {2}." },
             { "Reveal it with an Orb of Unveiling", "Revele-o com um Orbe da Revelação" },
-            { "Speed", "Velocidade" },
+            { "Speed", "Velocidade" }, { "Interval", "Intervalo" }, { "Weapon Interval", "Intervalo da arma" },
             { "Support rune", "Runa de suporte" },
             { "Switch", "Trocar" },
             { "Switch node", "Trocar de nó" },

@@ -187,6 +187,25 @@ end
 -- the effects of a mastery as buttons; saved: the node is allocated (a change is priced), else it is planned (free)
 -- the choice window: its height without the effect list, the gap between two buttons, the room round a button's text
 CHOICE_CHROME, CHOICE_SPACING, CHOICE_PAD = 130, 6, 10
+-- F46: the room kept free above and below the window, its lowest height, and the list's gap for its scroll bar
+CHOICE_MARGIN, CHOICE_MIN, CHOICE_BAR = 16, 250, 16
+
+-- the height the choice window may take: the smaller of the tree window and the interface (540 on a phone)
+local function choiceRoom(win)
+  local h = rootWidget and rootWidget:getHeight() or 0
+  local parent = win and win:getParent()
+  if parent and parent:getHeight() > 0 and (h <= 0 or parent:getHeight() < h) then h = parent:getHeight() end
+  return h
+end
+
+-- the window at the wanted height, cut to the screen: the list scrolls and leaves room for its bar when it was cut
+local function fitChoice(win, total)
+  local height, cut = TreePlan.choiceFit(total, choiceRoom(win), CHOICE_MARGIN, CHOICE_MIN)
+  win:setHeight(height)
+  win.effectsScrollBar:setVisible(cut)
+  win.effects:setMarginRight(cut and CHOICE_BAR or 0)
+  return cut
+end
 
 function openMasteryChoice(node, saved)
   closeMasteryChoice()
@@ -228,7 +247,7 @@ function openMasteryChoice(node, saved)
       end
     end
   end
-  choiceWindow:setHeight(rows) -- up to 7 effects of three lines since O451, and a low combo mastery button since O686 phase 6b
+  fitChoice(choiceWindow, rows) -- up to 7 effects of three lines since O451, and a low combo mastery button since O686 phase 6b
   local remove = choiceWindow.removeButton
   remove:setVisible(not saved)
   remove.onClick = function()
@@ -240,8 +259,9 @@ function openMasteryChoice(node, saved)
   choiceWindow:raise()
   choiceWindow:focus()
   -- once the layout gave the buttons their width, each grows to its wrapped text (TreePlan.choiceHeights)
+  -- a second pass when the list was cut: the scroll bar made the buttons narrower, so their text wraps again (F46)
   local shown = choiceWindow
-  scheduleEvent(function()
+  local function measure(pass)
     if choiceWindow ~= shown or shown:isDestroyed() then
       return
     end
@@ -253,8 +273,13 @@ function openMasteryChoice(node, saved)
     for i, button in ipairs(buttons) do
       button:setHeight(heights[i])
     end
-    shown:setHeight(total)
-  end, 50)
+    local wasCut = shown.effectsScrollBar:isVisible()
+    local cut = fitChoice(shown, total)
+    if pass == 1 and cut ~= wasCut then
+      scheduleEvent(function() measure(2) end, 50)
+    end
+  end
+  scheduleEvent(function() measure(1) end, 50)
 end
 
 -- ------------------------------------------------------------------------------------------------ clicks and apply

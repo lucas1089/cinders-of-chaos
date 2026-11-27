@@ -21,7 +21,6 @@ local C = L.COLORS
 
 local PAD_X, LINE_GAP = 16, 1
 local CARD_W = 320 -- the card is this wide (phone: the 960x540 interface keeps it readable)
-local HELP_WRAP = 46 -- characters per Alt help line (itemhelp.lua)
 local ASK_DELAY = 60 -- ms of hover before asking the server
 local PENDING_TIMEOUT = 2 -- s before an unanswered request may be sent again
 local CTRL_POLL = 100 -- ms
@@ -424,7 +423,7 @@ local function buildPanel(tip, extra, heading)
     if row.sep then y = divider(panel, y + 2) end
     local text = row.text
     if textWidth('ItemTooltipLine', text) > CARD_W - 2 * PAD_X then
-      for _, part in ipairs(L.wrapPx(text, CARD_W - 2 * PAD_X, function(t) return textWidth('ItemTooltipLine', t) end)) do
+      for _, part in ipairs(L.wrapPx(text, CARD_W - 2 * PAD_X, function(t) return textWidth('ItemTooltipLine', t) end, row.help)) do
         y = centredRow(panel, y, { text = part, color = row.color })
       end
     else
@@ -540,11 +539,7 @@ local function render()
   local wantHelp = altPressed()
   local help = ItemTooltipHelp.lines(tip, tr)
   if wantHelp then
-    for i, line in ipairs(help) do
-      for j, part in ipairs(L.wrap(line, HELP_WRAP)) do
-        extra[#extra + 1] = { text = part, color = C.help, sep = i == 1 and j == 1 }
-      end
-    end
+    for _, row in ipairs(L.helpRows(help, C.help)) do extra[#extra + 1] = row end
   else
     local hint = L.altHintText(tip, #help > 0) or (#help > 0 and altHint() or nil)
     if hint then

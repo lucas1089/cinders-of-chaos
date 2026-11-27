@@ -1,0 +1,10 @@
+Module
+  name: client_chaos_popupqueue
+  description: Centre popups that open by themselves (mentor offer, level survey) wait their turn, one on screen at a time; a message box or server modal dialog on screen holds them (F46, O772)
+  author: Cinders of Chaos
+  sandboxed: true
+  scripts: [ popupqueue_logic, popupqueue ]
+  autoload: true
+  autoload-priority: 6
+  @onLoad: init()
+  @onUnload: terminate()

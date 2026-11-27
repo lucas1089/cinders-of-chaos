@@ -263,5 +263,25 @@ eq(total, 130 + 46 + 66 + 52 + 18, 'the window holds every button')
 hs, total = P.choiceHeights({46, 34}, {}, 10, 6, 130)
 eq(table.concat(hs, ','), '46,34', 'before the layout the base heights stay')
 eq(total, 130 + 46 + 34 + 12, 'base window height')
+
+-- F46: the choice window is cut to the screen (eight long effects wanted about 580 px on the 540 px phone interface)
+do
+  local h, cut = P.choiceFit(580, 540, 16, 250)
+  eq(h, 524, 'cut to the phone interface less the margin') eq(cut, true, 'cut: the list scrolls')
+  h, cut = P.choiceFit(400, 540, 16, 250)
+  eq(h, 400, 'fits: as wanted') eq(cut, false, 'not cut')
+  h, cut = P.choiceFit(200, 540, 16, 250)
+  eq(h, 250, 'never under the lowest height') eq(cut, false, 'short: not cut')
+  h, cut = P.choiceFit(900, 200, 16, 250)
+  eq(h, 250, 'a tiny screen keeps the lowest height') eq(cut, true, 'and scrolls')
+  h, cut = P.choiceFit(580, nil, 16, 250)
+  eq(h, 580, 'no screen known: as wanted') eq(cut, false, 'not cut without a screen')
+  -- eight three-line effects of 56 px text on a phone
+  local bases, texts = {}, {}
+  for i = 1, 8 do bases[i], texts[i] = 46, 56 end
+  local _, want = P.choiceHeights(bases, texts, 10, 6, 130)
+  eq(want > 540, true, 'eight long effects want more than the phone has: ' .. want)
+  eq(P.choiceFit(want, 540, 16, 250) <= 540, true, 'and fit after the cut')
+end
 print(string.format('treelinks_test: %d checks, %d failures', count, fails))
 if fails > 0 then os.exit(1) end

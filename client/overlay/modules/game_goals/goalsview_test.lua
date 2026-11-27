@@ -143,6 +143,26 @@ eq(V.trackerTopMargin(-80, 720, 440, 150), 230, 'tall tracker: top under the pla
 eq(V.trackerTopMargin(0, 600, 600, nil), nil, 'no plate: centred')
 eq(V.trackerTopMargin(0, 600, 300, 150), nil, 'top exactly on the line: centred')
 
+-- F46: the tracker's bottom stays above the chat; between the plate and the chat it gets what fits
+do
+  local top, over = V.trackerPlace(-80, 720, 200, 150, 600)
+  eq(top, nil, 'short tracker: centred'); eq(over, 0, 'fits')
+  top, over = V.trackerPlace(0, 720, 440, 150, 500)
+  eq(top, 150, 'tall tracker: under the plate'); eq(over, 90, 'lacks 90 px above the chat')
+  top, over = V.trackerPlace(0, 720, 300, 100, 480)
+  eq(top, 180, 'centred bottom over the chat: lifted to end on it'); eq(over, 0, 'then it fits')
+  eq(top + 300 <= 480, true, 'bottom above the chat top')
+  top, over = V.trackerPlace(0, 720, 452, nil, 500)
+  eq(top, 48, 'no plate: lifted above the chat'); eq(over, 0, 'fits without a plate')
+  top, over = V.trackerPlace(0, 720, 800, nil, 700)
+  eq(top, -100, 'taller than the room without a plate: ends on the chat'); eq(over, 0, 'no plate to keep')
+  top, over = V.trackerPlace(0, 720, 440, 150, nil)
+  eq(top, 150, 'no chat: the V38 rule'); eq(over, 0, 'nothing under it')
+  top, over = V.trackerPlace(-80, 720, 440, 150, nil)
+  eq(top, V.trackerTopMargin(-80, 720, 440, 150), 'same as trackerTopMargin without a chat')
+  eq(V.fewerRows(8), 7, 'a row fewer'); eq(V.fewerRows(1), nil, 'one row stays'); eq(V.fewerRows(nil), nil, 'nothing shown')
+end
+
 -- phone: row budget, clamp, saved position, drag threshold
 local sh, hid = V.budget({ 5, 2, 1 }, 3)
 eq(sh[1], 3, 'budget: goals first'); eq(sh[2], 0, 'budget: none left'); eq(sh[3], 0, 'budget: none left 2'); eq(hid, 5, 'budget: hidden')

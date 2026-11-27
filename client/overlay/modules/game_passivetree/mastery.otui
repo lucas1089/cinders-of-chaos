@@ -7,9 +7,13 @@ MasteryEffectButton < ChaosButton
   $on:
     color: #ffd98a
 
+// F46: with 8 long effects the window grew to about 580 px, over the 540 px phone interface. planner.lua caps its
+// height to the screen (TreePlan.choiceFit) and the effect list scrolls when it is cut; the phone rule narrows it.
 ChaosWindow
   id: masteryWindow
   size: 460 250
+  $mobile:
+    width: 440
   anchors.centerIn: parent
   @onEscape: modules.game_passivetree.closeMasteryChoice()
 
@@ -23,7 +27,7 @@ ChaosWindow
     text-auto-resize: false
     text-align: center
 
-  UIWidget
+  ScrollablePanel
     id: effects
     anchors.top: hint.bottom
     anchors.left: parent.left
@@ -31,9 +35,20 @@ ChaosWindow
     anchors.bottom: cancelButton.top
     margin-top: 6
     margin-bottom: 8
+    vertical-scrollbar: effectsScrollBar
     layout:
       type: verticalBox
       spacing: 6
+
+  // shown by planner.lua only while the list is cut (the list then leaves it 16 px on the right)
+  VerticalScrollBar
+    id: effectsScrollBar
+    anchors.top: effects.top
+    anchors.bottom: effects.bottom
+    anchors.right: parent.right
+    step: 40
+    pixels-scroll: true
+    visible: false
 
   ChaosButton
     id: removeButton

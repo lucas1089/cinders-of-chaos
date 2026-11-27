@@ -155,7 +155,9 @@ function L.combatStats(d)
   local function has(v) return (tonumber(v) or 0) > 0 end
   if has(c.attack) then add(off, tr('Weapon attack'), L.numberText(c.attack)) end
   if has(c.hit) then add(off, tr('Average hit'), L.numberText(c.hit)) end
-  if has(c.maxHit) then add(off, tr('Highest hit'), L.numberText(c.maxHit), C.gold) end
+  -- F46: the landing hit range (the average lies in it) and the record of the biggest hit dealt, two different numbers
+  if has(c.hitHi) then add(off, tr('Hit range'), L.numberText(c.hitLo or 0) .. ' - ' .. L.numberText(c.hitHi)) end
+  if has(c.maxHit) then add(off, tr('Biggest hit dealt'), L.numberText(c.maxHit), C.gold) end
   if has(c.attackSpeed) then add(off, tr('Attack speed'), '+' .. pct(c.attackSpeed) .. '%') end
   if has(c.critChance) then add(off, tr('Critical chance'), pct(c.critChance) .. '%') end
   if has(c.critAmount) then add(off, tr('Critical damage'), '+' .. pct(c.critAmount) .. '%') end

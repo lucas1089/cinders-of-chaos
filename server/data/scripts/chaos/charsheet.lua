@@ -38,6 +38,7 @@ function K.read(player)
 		local c = pcallv(S.compute, player)
 		if type(c) == "table" then
 			raw.attack, raw.hit, raw.defense, raw.armor, raw.mitigation = c.attack, c.damage, c.defense, c.armor, c.mitigation
+			raw.hitLo, raw.hitHi = c.hitLo, c.hitHi -- F46: the landing hit range the average lies in
 		end
 	end
 	local TT = ChaosPassiveTotals

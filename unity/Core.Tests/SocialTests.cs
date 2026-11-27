@@ -500,7 +500,7 @@ namespace Chaos.Core.Tests
             check(InspectMath.CleanName("  Brannoc  Vex ") == "Brannoc Vex" && InspectMath.CleanName("x") == null && InspectMath.CleanName("Bad1") == null && InspectMath.CleanName("O'Neil-Z") == "O'Neil-Z" && InspectMath.CleanName(new string('a', 30)) == null, "inspect: a typed name");
             const string result = "{'name':'Brannoc','level':400,'voc':'Juggernaut','ascended':true,'guild':{'name':'Ash','rank':'Leader'},'ach':120,'rift':14,'trials':3,'outfit':{'type':128,'head':1,'body':2,'legs':3,'feet':4,'addons':1}," +
                                   "'parts':2,'paragon':25,'title':'Sealer','bestiary':{'points':900,'rank':'Hunter'},'bosses':{'got':4,'total':20},'pvp':{'name':'Arena','tier':'Gold','rating':1800},'collection':77,'passive':{'spent':30,'total':45}," +
-                                  "'combat':{'attack':500,'hit':900,'maxHit':3000,'attackSpeed':12.5,'critChance':10,'critAmount':50,'lifeLeech':{'chance':5,'amount':3},'damage':[{'k':'fire','pct':20}],'defense':200,'armor':150,'mitigation':30,'maxHealth':20000,'maxMana':8000,'moveSpeed':400,'resist':[{'k':'fire','pct':25},{'k':'ice','pct':-10}]}}";
+                                  "'combat':{'attack':500,'hit':900,'hitLo':0,'hitHi':1800,'maxHit':3000,'attackSpeed':12.5,'critChance':10,'critAmount':50,'lifeLeech':{'chance':5,'amount':3},'damage':[{'k':'fire','pct':20}],'defense':200,'armor':150,'mitigation':30,'maxHealth':20000,'maxMana':8000,'moveSpeed':400,'resist':[{'k':'fire','pct':25},{'k':'ice','pct':-10}]}}";
             var d = Json.Parse(result.Replace('\'', '"'));
             var head = InspectMath.Header(d);
             check(head[0].Key == "Brannoc" && head[1].Key == "Level 400 Juggernaut" && head.Any(h => h.Key == "Ascended class") && head.Any(h => h.Key == "Sealer") && head.Last().Key == "Leader of Ash", "inspect: the header lines");
@@ -511,7 +511,8 @@ namespace Chaos.Core.Tests
             check(bare[1].Rows.Any(r => r.Label == "Best rift sealed" && r.Value == "None" && r.Tone == "dim") && !bare[0].Rows.Any(r => r.Label == "Paragon points") && InspectMath.CombatStats(Json.Parse("{}")).Count == 0, "inspect: an older server has fewer rows and no combat tab");
             var combat = InspectMath.CombatStats(d);
             check(combat[0].Rows.Any(r => r.Label == "Attack speed" && r.Value == "+12.5%") && combat[0].Rows.Any(r => r.Label == "Life leech" && r.Value == "5% / 3%") && combat[0].Rows.Any(r => r.Label == "Fire damage" && r.Value == "+20%") &&
-                  combat[2].Rows.Any(r => r.Label == "Ice" && r.Value == "-10%" && r.Tone == "bad") && combat[1].Rows.Any(r => r.Label == "Maximum health" && r.Value == "20,000"), "inspect: the combat sheet");
+                  combat[2].Rows.Any(r => r.Label == "Ice" && r.Value == "-10%" && r.Tone == "bad") && combat[1].Rows.Any(r => r.Label == "Maximum health" && r.Value == "20,000") &&
+                  combat[0].Rows.Any(r => r.Label == "Hit range" && r.Value == "0 - 1,800") && combat[0].Rows.Any(r => r.Label == "Biggest hit dealt" && r.Value == "3,000") && !combat[0].Rows.Any(r => r.Label == "Highest hit"), "inspect: the combat sheet");
             var o = InspectMath.OutfitOf(d);
             check(o.LookType == 128 && o.Head == 1 && o.Feet == 4 && o.Addons == 1, "inspect: the outfit of the result");
             check(InspectMath.TipItem(Json.Parse("{\"id\":2160,\"look\":{\"cid\":3000}}")) == 3000 && InspectMath.TipItem(Json.Parse("{\"id\":2160}")) == 2160, "inspect: a transmog look is drawn");

@@ -145,6 +145,17 @@ function TreePlan.choiceHeights(bases, textHeights, pad, spacing, chrome)
   return heights, total
 end
 
+-- the height of the mastery choice window on a screen (F46): the wanted total, cut to the room it has (screenH, the
+-- smaller of the tree window and the interface, less margin) and never under minH. Returns the height and whether it was
+-- cut (the effect list then scrolls). Eight long effects wanted about 580 px on the 540 px phone interface.
+function TreePlan.choiceFit(total, screenH, margin, minH)
+  total = tonumber(total) or 0
+  local room = (tonumber(screenH) or 0) - (tonumber(margin) or 0)
+  minH = tonumber(minH) or 0
+  if room <= 0 or total <= room then return math.max(total, minH), false end
+  return math.max(room, minH), true
+end
+
 function TreePlan.ownedIds(shown, saved)
   local set = {}
   for id in pairs(shown or {}) do

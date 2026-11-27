@@ -249,6 +249,9 @@ end
 -- The invasion HUD (game_invasion, key 'invasion') sits under the character plate where the tracker starts and was
 -- covered the same way: the tracker steps aside while it shows.
 local hiddenBy = {}
+-- F46: the rows the tracker may show while it lacks room above the chat (nil: all); anchorTracker lowers it a row at a time
+-- (V.fewerRows), new data and a change of the panels give every row back
+local fitRows, shownRows = nil, 0
 
 local function renderTracker()
   if not tracker then return end
@@ -281,7 +284,10 @@ local function renderTracker()
   tracker.sqRows:destroyChildren()
   tracker.welcomeRows:destroyChildren()
   if tracker.moreLine then tracker.moreLine:destroy() tracker.moreLine = nil end
-  local take, hidden = V.budget({ #st.welcome, #st.tracker, #st.ascension, #st.spellquest }, look.maxRows)
+  local maxRows = look.maxRows
+  if fitRows then maxRows = maxRows and math.min(maxRows, fitRows) or fitRows end
+  local take, hidden = V.budget({ #st.welcome, #st.tracker, #st.ascension, #st.spellquest }, maxRows)
+  shownRows = folded and 0 or (take[1] + take[2] + take[3] + take[4])
   if not hasWelcome then resetSkip() end
   tracker.welcomeRows:setVisible(not folded)
   tracker.welcomeSkip:setVisible(hasWelcome and not folded)
@@ -398,15 +404,19 @@ local function onMessage(msg)
     if window and window:isVisible() then draw() end
   elseif msg.action == 'tracker' then
     V.onTracker(st, msg.data)
+    fitRows = nil
     renderTracker()
   elseif msg.action == 'ascension' then
     V.onAscension(st, msg.data)
+    fitRows = nil
     renderTracker()
   elseif msg.action == 'spellquest' then
     V.onSpellQuest(st, msg.data)
+    fitRows = nil
     renderTracker()
   elseif msg.action == 'welcome' then
     V.onWelcome(st, msg.data)
+    fitRows = nil
     renderTracker()
   elseif msg.action == 'mq' then
     V.onMQ(st, msg.data)
@@ -501,6 +511,22 @@ local function setPos(root, x, y)
   return x, y
 end
 
+-- the top of the chat under the tracker's column (F46): the console (gameBottomPanel, lifted or not by game_chatpanel) and
+-- the floating chat of the action bar layout (game_floatchat), where they overlap the tracker's x range; the map's bottom
+-- edge when none does
+local function chatTop(root, m)
+  local y = m.y + m.height
+  local x0 = tracker:getX()
+  local x1 = x0 + tracker:getWidth()
+  for _, w in ipairs({ root:getChildById('gameBottomPanel'), rootWidget:recursiveGetChildById('chaosFloatChat') }) do
+    if w and w:isVisible() then
+      local r = w:getRect()
+      if r.height > 0 and r.x < x1 and r.x + r.width > x0 and r.y < y then y = r.y end
+    end
+  end
+  return y
+end
+
 -- The tracker sits at the left edge of the map, half way down until the player drags it. Anchors are dropped and set
 -- again, so after the side panels changed (Options > Interface > Show Left Horizontal Panel adds a left panel, hiding
 -- it leaves one) an undragged tracker is back at its corner. A dragged place is kept per character (top left corner in
@@ -520,25 +546,37 @@ local function anchorTracker()
   end
   tracker:setMarginLeft(10)
   tracker:setMarginTop(0)
-  -- a tall tracker: under the character plate and the buff bar instead of over them (V38)
+  -- a tall tracker: under the character plate and the buff bar instead of over them (V38), and above the chat (F46)
   local map = root:getChildById('gameMapPanel')
-  local plate = rootWidget:recursiveGetChildById('chaosHud')
-  if not map or not plate or not plate:isVisible() then return end
-  local r = plate:getRect()
-  local minY = r.y + r.height
-  local buffs = rootWidget:recursiveGetChildById('buffBar')
-  if buffs and buffs:isVisible() then
-    local b = buffs:getRect()
-    minY = math.max(minY, b.y + b.height)
-  end
+  if not map then return end
   local m = map:getRect()
-  local top = V.trackerTopMargin(m.y, m.height, tracker:getHeight(), minY + 8)
-  if not top then return end
-  tracker:breakAnchors()
-  local a = V.trackerAnchors(root:getChildById('gameLeftPanels') ~= nil)[1]
-  tracker:addAnchor(EDGES[a[1]], a[2], EDGES[a[3]])
-  tracker:addAnchor(AnchorTop, 'gameMapPanel', AnchorTop)
-  tracker:setMarginTop(top)
+  local minY
+  local plate = rootWidget:recursiveGetChildById('chaosHud')
+  if plate and plate:isVisible() then
+    local r = plate:getRect()
+    minY = r.y + r.height
+    local buffs = rootWidget:recursiveGetChildById('buffBar')
+    if buffs and buffs:isVisible() then
+      local b = buffs:getRect()
+      minY = math.max(minY, b.y + b.height)
+    end
+    minY = minY + 8
+  end
+  local maxY = chatTop(root, m) - 8
+  local top, over = V.trackerPlace(m.y, m.height, tracker:getHeight(), minY, maxY)
+  if top then
+    tracker:breakAnchors()
+    local a = V.trackerAnchors(root:getChildById('gameLeftPanels') ~= nil)[1]
+    tracker:addAnchor(EDGES[a[1]], a[2], EDGES[a[3]])
+    tracker:addAnchor(AnchorTop, 'gameMapPanel', AnchorTop)
+    tracker:setMarginTop(top)
+  end
+  -- still no room between the plate and the chat: a row fewer (and "+N more"), placed again once its height follows
+  local fewer = over > 0 and V.fewerRows(shownRows) or nil
+  if fewer then
+    fitRows = fewer
+    renderTracker()
+  end
 end
 
 -- called on every geometry change of the panels it hangs on, one pass per frame at most
@@ -550,6 +588,16 @@ function scheduleAnchor()
   end)
 end
 
+-- the side panels or the map changed: every row back (the room may have grown), then placed again (F46)
+local function onPanelsChanged()
+  if fitRows then
+    fitRows = nil
+    renderTracker()
+  else
+    scheduleAnchor()
+  end
+end
+
 local function watchGeometry(connectIt)
   local root = modules.game_interface.getRootPanel()
   for _, id in ipairs({ 'gameLeftPanels', 'gameMapPanel', 'horizontalLeftPanel' }) do
@@ -557,9 +605,9 @@ local function watchGeometry(connectIt)
     if w then
       if connectIt then
         if w.insertLuaCall then w:insertLuaCall('onGeometryChange') end
-        connect(w, { onGeometryChange = scheduleAnchor })
+        connect(w, { onGeometryChange = onPanelsChanged })
       else
-        disconnect(w, { onGeometryChange = scheduleAnchor })
+        disconnect(w, { onGeometryChange = onPanelsChanged })
       end
     end
   end
