@@ -175,7 +175,12 @@ C.flaying = {families = {beasts = true, reptiles = true}, chance = 0.4, exclude 
 -- rolls once, at most every rollMs per character: chance of a material of the ground's tier (an area with
 -- fishing = true whose box holds the water tile; elsewhere `defaultTier`). The stock catch (fish, the Fishing skill,
 -- worms) is not changed.
-C.angling = {rollMs = 3000, chance = 0.1, defaultTier = 1}
+C.angling = {rollMs = 3000, chance = 0.1, defaultTier = 1,
+	-- the water grounds where the stock cast (data/actions/scripts/tools/fishing.lua) reaches the Angling roll: its waterIds
+	-- less 493 / 15402 (no catch), 10499 / 13549 (their own loot). Other water, a muddy floor or a coast (ground 4820) is
+	-- no cast: the bot guide (P.nearestWater) offers only these (seen in a client 2026-11-27, V36).
+	castIds = {4608, 4609, 4610, 4611, 4612, 4613, 4614, 4615, 4616, 4617, 4618, 4619, 4620, 4621, 4622, 4623, 4624, 4625,
+		7236, 13550, 13552}}
 
 -- ------------------------------------------------------------------ selling
 -- The Material Broker (one per town, next to the temple; data/npc/Material Broker.xml) opens the Professions window on

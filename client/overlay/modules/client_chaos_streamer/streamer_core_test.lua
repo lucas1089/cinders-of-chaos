@@ -90,5 +90,25 @@ eq(#added, 1, 'one new widget')
 eq(added[1], toast, 'the new one')
 eq(#hidden, 3, 'recorded for the restore')
 
+-- the engine's widgets: a new userdata for the same widget on every call, equal only by __eq (V36: cinema mode hid the
+-- map and the game root because a widget-keyed table never matched). Proxies with one __eq stand in for them.
+local W = {}
+local function proxy(id) return setmetatable({ id = id }, W) end
+W.__eq = function(a, b) return a.id == b.id end
+local pchain = {
+  { widget = proxy('map'), siblings = { { widget = proxy('map'), visible = true }, { widget = proxy('chat'), visible = true } } },
+  { widget = proxy('root'), siblings = { { widget = proxy('root'), visible = true }, { widget = proxy('toast'), visible = true } } },
+}
+local ppicked = C.cinemaPick(pchain, {})
+local ids = {}
+for _, w in ipairs(ppicked) do ids[#ids + 1] = w.id end
+eq(table.concat(ids, ','), 'chat,toast', 'proxies: the map and the game root stay')
+local phidden = { proxy('chat') }
+eq(#C.addNew(phidden, { proxy('chat'), proxy('toast') }), 1, 'proxies: the same widget again is not new')
+eq(#C.addNew(phidden, { proxy('chat'), proxy('toast') }), 0, 'proxies: nothing new on the next tick')
+eq(#phidden, 2, 'proxies: the restore list does not grow every tick')
+eq(C.has({ { w = proxy('a') } }, proxy('a'), 'w'), true, 'has by field')
+eq(C.has({ proxy('a') }, proxy('b')), false, 'has: another widget')
+
 print(string.format('%d checks, %d failures', n, fails))
 if fails > 0 then os.exit(1) end

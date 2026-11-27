@@ -870,6 +870,32 @@ local function windowAboveBar(p)
   return ok and covered == true
 end
 
+-- O411: the badges (ChaosTopBar.setBadge) are siblings of the bar, on the bar's parent: a child outside its parent's rectangle
+-- is never drawn, and the badge sat outside the bar, so it never showed (seen in a client 2026-11-27, V36). Left of the
+-- bar: its right side belongs to the Candlemarks counter (ChaosTopBarLogic.badgeAnchor). Called by setBadge and when the
+-- bar moves between the login screen and the game.
+local badges = {}             -- { key, widget }, in the order they were added
+local function layoutBadges()
+  if not isAlive(menuBar) then return end
+  local parent = menuBar:getParent()
+  local prev, n = nil, 0
+  for _, b in ipairs(badges) do
+    local w = b.widget
+    if isAlive(w) then
+      n = n + 1
+      local a = ChaosTopBarLogic.badgeAnchor(n)
+      if parent and w:getParent() ~= parent then w:setParent(parent) end
+      w:breakAnchors()
+      w:addAnchor(AnchorVerticalCenter, menuBar:getId(), AnchorVerticalCenter)
+      w:addAnchor(AnchorRight, a.target == 'prev' and prev:getId() or menuBar:getId(), AnchorLeft)
+      w:setMarginLeft(0)
+      w:setMarginRight(a.margin)
+      w:raise()
+      prev = w
+    end
+  end
+end
+
 function ChaosTopBar.refresh()
   if not isAlive(menuBar) then return end
   if keepStockGone then keepStockGone() end
@@ -914,7 +940,10 @@ function ChaosTopBar.refresh()
   if not menuBar:isVisible() then menuBar:setVisible(true) end
   local p = menuBar:getParent()
   local top = p and p.getLastChild and p:getLastChild() == menuBar
-  if moved or (not top and not windowAboveBar(p)) then menuBar:raise() end
+  if moved or (not top and not windowAboveBar(p)) then
+    menuBar:raise()
+    layoutBadges()
+  end
 end
 
 -- one refresh for a burst of requests (every module that adds an entry at load asks for one)
@@ -931,9 +960,8 @@ function ChaosTopBar.setAdmin(value)
   ChaosTopBar.refresh()
 end
 
--- O411: a small badge right of the bar (ChaosMenuBadge) while a mode is on, by key; text nil removes it.
--- ChaosTopBar.setBadge('streamer', tr('STREAMER'), tooltip). Badges follow the bar (login screen and game).
-local badges = {}             -- { key, widget }, in the order they were added
+-- O411: a small badge left of the bar (ChaosMenuBadge) while a mode is on, by key; text nil removes it.
+-- ChaosTopBar.setBadge('streamer', tr('STREAMER'), tooltip). Badges follow the bar (login screen and game): layoutBadges.
 function ChaosTopBar.setBadge(key, text, tooltip)
   if not isAlive(menuBar) or not key then return false end
   local at
@@ -945,7 +973,7 @@ function ChaosTopBar.setBadge(key, text, tooltip)
     end
   else
     if not at or not isAlive(badges[at].widget) then
-      local w = g_ui.createWidget('ChaosMenuBadge', menuBar)
+      local w = g_ui.createWidget('ChaosMenuBadge', menuBar:getParent() or menuBar)
       w:setId('chaosBadge_' .. tostring(key))
       if at then badges[at].widget = w else badges[#badges + 1] = { key = key, widget = w } end
     end
@@ -953,17 +981,7 @@ function ChaosTopBar.setBadge(key, text, tooltip)
     w:setText(text)
     w:setTooltip(tooltip or '')
   end
-  local prev
-  for _, b in ipairs(badges) do
-    local w = b.widget
-    if isAlive(w) then
-      w:breakAnchors()
-      w:addAnchor(AnchorVerticalCenter, 'parent', AnchorVerticalCenter)
-      if prev then w:addAnchor(AnchorLeft, prev:getId(), AnchorRight) else w:addAnchor(AnchorLeft, 'parent', AnchorRight) end
-      w:setMarginLeft(prev and 4 or 6)
-      prev = w
-    end
-  end
+  layoutBadges()
   return true
 end
 
@@ -1237,6 +1255,9 @@ function terminate()
   if refreshEvent then removeEvent(refreshEvent) refreshEvent = nil end
   if refreshQueued then removeEvent(refreshQueued) refreshQueued = nil end
   closeMenu()
+  for _, b in ipairs(badges) do
+    if isAlive(b.widget) then b.widget:destroy() end
+  end
   if isAlive(menuBar) then menuBar:destroy() end
   if isAlive(stockTopMenu) then
     stockTopMenu.onVisibilityChange = nil

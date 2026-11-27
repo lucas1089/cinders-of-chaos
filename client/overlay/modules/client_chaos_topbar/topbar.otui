@@ -61,7 +61,7 @@ ChaosMenuBar < UIWidget
       type: horizontalBox
       spacing: 4
 
-// O411: a small badge right of the bar while a mode is on (STREAMER, client_chaos_streamer), ChaosTopBar.setBadge
+// O411: a small badge left of the bar (a sibling of it) while a mode is on (STREAMER, client_chaos_streamer), ChaosTopBar.setBadge
 ChaosMenuBadge < UILabel
   font: verdana-11px-antialised
   color: #ffe7a6

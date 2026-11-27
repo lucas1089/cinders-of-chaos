@@ -498,8 +498,13 @@ local function hold(w, spec, wasVisible)
   w:addAnchor(AnchorRight, 'parent', AnchorRight)
   w:show()
   -- the window's own close (Escape, a button of its own) closes the dock
-  rec.onVisible = function(_, visible)
-    if not visible and not releasing then scheduleEvent(function() M.close() end, 1) end
+  -- The engine also calls it when an ancestor hides (the dock panel itself, cinema mode Ctrl+Shift+H): the window is
+  -- then still explicitly visible, and that is no close. Before, cinema mode closed the dock and showed its empty panel
+  -- again when it ended (seen in a client 2026-11-27, V36).
+  rec.onVisible = function(widget, visible)
+    if visible or releasing then return end
+    if widget and widget.isExplicitlyVisible and widget:isExplicitlyVisible() then return end
+    scheduleEvent(function() M.close() end, 1)
   end
   connect(w, { onVisibilityChange = rec.onVisible })
   held[#held + 1] = rec

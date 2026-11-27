@@ -29,7 +29,8 @@ local hookTries = 0
 local origSetTitle
 local lastTitle
 local chatHooks = nil        -- { class, talk, text, ourTalk, ourText }
-local forcedHidden = {}      -- text edits this module hid: [widget] = their own hidden state before
+local forcedHidden = {}      -- text edits this module hid: { {w = widget, was = their own hidden state before}, ... }
+                             -- (a list compared with ==: the engine hands out a new userdata per call, StreamerCore.has)
 local cinemaOn = false
 
 local function tr(s, ...)
@@ -141,17 +142,25 @@ local function tryHookChat()
 end
 
 -- ---------------------------------------------------------------- login fields and lists
+local function forcedEntry(edit)
+  for i, e in ipairs(forcedHidden) do
+    if e.w == edit then return e, i end
+  end
+  return nil
+end
+
 local function hideText(edit, on)
   if not alive(edit) or type(edit.setTextHidden) ~= 'function' then return end
+  local entry, at = forcedEntry(edit)
   if on then
-    if forcedHidden[edit] == nil then
+    if not entry then
       local ok, was = pcall(edit.isTextHidden, edit)
-      forcedHidden[edit] = ok and was == true
+      forcedHidden[#forcedHidden + 1] = { w = edit, was = ok and was == true }
     end
     if not edit:isTextHidden() then edit:setTextHidden(true) end
-  elseif forcedHidden[edit] ~= nil then
-    edit:setTextHidden(forcedHidden[edit])
-    forcedHidden[edit] = nil
+  elseif entry then
+    edit:setTextHidden(entry.was)
+    table.remove(forcedHidden, at)
   end
 end
 
@@ -163,8 +172,8 @@ local function applyLogin(on)
   end
   -- the server address field: the login module moves the server selector onto the background
   hideText(root and root:recursiveGetChildById('serverHostTextEdit'), on)
-  for edit in pairs(forcedHidden) do
-    if not alive(edit) then forcedHidden[edit] = nil end
+  for i = #forcedHidden, 1, -1 do
+    if not alive(forcedHidden[i].w) then table.remove(forcedHidden, i) end
   end
 end
 

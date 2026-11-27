@@ -17543,6 +17543,8 @@ request refused with the name in the text and no stale data in the window. Not t
 out of range (unit tests), a character with a guild (the guild line is the stock `getGuild`), rift / trial records of a
 character that has them (the fields were 0).
 
+Seen in a client (2026-11-27, V36): a tester inspected by name from a second client; the Combat tab lists weapon attack, average and highest hit (after a first auto attack on a wolf), armour, damage reduction, the armour share, dodge, block, spell suppression, health, mana, speed and the resistances; Character Info shows the same numbers. Attack speed shows only with a bonus.
+
 ## Inspect Monster (O721: `monster_inspect.lua`, `monster_inspect_core.lua`, `monster_inspect_config.lua`, client `game_monsterinspect`)
 
 Owner 2026-11-22 (pt-BR): "quando a gente dá um control+right click, faça uma opção pra inspecionar o monstro, mostrando todas as
@@ -31345,6 +31347,10 @@ levels kept over a relogin, the bonus on monster experience: Demons 175,500 -> 1
 Not tested: the real map (the area centres come from the spawn data; the tile picks there are not seen), more than one broker,
 the weekly leaderboard reset and the achievements unlocking at 50 / 100.
 
+Seen in a client (2026-11-27, V36): on the real map, in hunts of the hall, an ore vein (pick) and an herb patch (sickle) with the cast bar and the 6:00 node cooldown, a mudfin from fishing in a hunt, two ashstone ores refined to a piece of bronze at a Mining table of the crafting hall. Two fixes:
+- **A full backpack lost the material.** `giveMaterial` sent the rest to `player:getInbox():addItem(id, n)`; the engine's inbox takes nothing without `FLAG_NOLIMIT` (Inbox::queryAdd), so the call returned nil and the gather was gone with "You gathered" shown. It passes `INDEX_WHEREEVER, FLAG_NOLIMIT` now and tells the inbox line only when it worked. `tests/professions_test.lua` (the mock inbox refuses without the flag, a gather with a full backpack).
+- **The bot's water guide (`P.nearestWater`, probe `angleGuide`).** It took a ground whose fluid source was `FLUID_WATER`, but this engine registers no `FLUID_WATER`: nil let every fluid ground pass, a muddy floor (fluid 19) first; and coast water (ground 4820, fluid 1) is no water of the stock cast either. It offers only the grounds where the stock cast reaches the Angling roll now: `angling.castIds` of `professions_config.lua` (the stock `waterIds` less 493 / 15402 / 10499 / 13549). `tests/professions_test.lua` (mud and coast nearer than the water).
+
 ## Client guard (engine `src-patches/0021-client-guard.patch`, `clientguard.lua`, `clientguard_core.lua`, `clientguard_config.lua`, client base patch 0035, client `game_chaosguard`)
 
 Only the official Cinders of Chaos client may play. **What it is and is not:** no client check is unbreakable. The key
@@ -32249,6 +32255,7 @@ Built on what exists; nothing is duplicated:
   Next Goals lines and the tower reach; `milestones.lua` on a mocked engine: login, advance, cache, inbox, toast,
   broadcast, staff, testers, the switch); `achievements_test.lua`, `cosmetics_test.lua`, `goals_test.lua`,
   `i18n_test.lua`; client `game_chaosnotify/notifyview_test.lua`. Not run on a live server.
+- **Seen in a client (2026-11-27, V36):** a tester raised from 1500 to 1600 got the LEVEL MILESTONE toast (title Hollowcrowned, cache 8 Orb of Upheaval and 3 Orb of Fate in the backpack, next milestone 1700), the achievement toast "Crown of Hollows" and the log line; no broadcast (a tester).
 
 ## Main quest "The Ember Oath" (O551, `mainquest.lua`, `mainquest_core.lua`, `mainquest_config.lua`, `mainquest_boss.lua`, client `game_goals`)
 
