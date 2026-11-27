@@ -5362,6 +5362,8 @@ Tester 2026-10-29: some hunt teleports send the player to the wrong place. A tel
 - **Tests.** `tools/audit_hunt_bands_test.py` (band maths, reach, portals, suggestions, outputs, and the real CSV: every `retargeted` row has its way back in `hunt_teleports_config.lua` and a band under 3 x), `tools/patch_hunt_gates_test.py` (synthetic map), `tests/hunt_teleports_test.lua`.
 - **Not covered.** Teleports whose target a movement script sets (an action or unique id): the base map has 99 teleport items with a destination and about 1700 without one, mostly inert forcefield items. Monsters of a hunt that sit behind a door or a quest wall (the flood fill only knows ground and blocking items). The levels are the pool estimate (`gen_bounty_pool.py`), not the level a script shows. The planned hunts.
 
+Seen in a client (2026-11-27, V32): the Fire Elemental, Hydra and Hellspawn teleports land among their monsters (Fire Elemental [24], Hydra [73-75], Hellspawn [81]). Dragon [42] and Hellhound [132] stand inside the audit's 20% slack. `audit_hunt_bands.py` on the installed data folder: 100% in band, 0% far, for all three.
+
 ## Hunt audit (O337) (`tools/audit_hunts.py`, `tools/hunt_audit_known.csv`, `docs/HUNT_AUDIT.md`)
 
 Owner 2026-10-30: "check again whether every hunt points to the right monsters, the monster density of those hunts and their size". The O333 audit judged the arrival by the level band and let any of a row's top monsters count as "the hunt's own", on the base copy of the map. This audit runs on an INSTALLED server (`python3 -I tools/install_all.py SERVER_DIR`, then the tool on `SERVER_DIR/data`), so it sees the fill, the late game spawns, the planned hunts and the hall as they ship. About one minute and 4 GB, numpy; not in CI (`tools/audit_hunts_test.py` is).
@@ -17292,6 +17294,8 @@ mocks; `tests/shop_services_test.lua`: the auto seller keeps a locked item.
 Seen in a client (2026-11-26, V29): Salvage All on the Loot Bag held 3 Common, 3 Uncommon, 2 Magic, 2 Rare and 1 Legendary.
 "Up to Uncommon" took the 6 lowest for 12 rune shards. "Up to Rare" then took the 4 others for 25. The Legendary stayed.
 
+Seen in a client (2026-11-27, V32, O340): a Normal Mercurial Bleeder shows in the Salvage tab (1 rune shard, 0% orb chance) and in Salvage all. Salvage gave 1 rune shard.
+
 ## Item attributes in packets and rich tooltips (`src-patches/0003-item-custom-attributes.patch`, `item_tooltip.lua`, `item_tooltip_core.lua`, client `game_itemrarity`, `game_itemtooltip`)
 
 **Item custom attributes in item packets (engine patch 0003).** Our client already parses per-item custom attributes
@@ -19209,6 +19213,8 @@ regenerated: the codex and wiki text of the bad-luck protection (`gen_codex_data
 `roulette_model.lua`, `store_model.lua`, `progression_model.lua` and `pack_model.py` do not read the unique chances. Going live: loot.lua
 is a script, not a config table, so "Reload one file" does not apply; admin app: Painel > Atualizar servidor > Aplicar e reiniciar
 (`update-apply`, after the release), or Server > Reload system > scripts for a live reload; fallback `chaos-ctl.sh update-apply`.
+
+Seen in a client (2026-11-27, V32): the Codex page of Hoarfen Bow shows its level window (36 to 90). Two Hoarfen Bows dropped from monsters spawned by a test command (pace 1). A roll probe gave 1 in 66 magic Behemoth kills at pace 1, the model 1 in 210 at the hunt's pace 0.34: the same rate.
 
 ## Roulette prizes against token drops (O151)
 
@@ -27980,6 +27986,8 @@ mirror), `tests/classes_test.lua`, `tests/class_tree_test.lua`, `tests/attack_ki
 
 Seen in a client (2026-11-25): first take broken, the area hit refusal dropped the target. See "Summons: targets, walk-through, levels", area hit on the own wolf. After the fix: level 750, bow, 8 Behemoths, only wolf spells cast. DPS Meter: Companion bites 70%, Rending Pounce, Pack Howl, Pack Frenzy, Feral Command 19%, bow 10%.
 
+Seen in a client (2026-11-27, V32): a level 747 Beastmaster with Pack Alpha (Auto build), two War Wolves and Keen Edge and Echo on Pack Frenzy, against 8 Behemoths. The combat log gave the wolves about 87% of the damage (Companion 64.8%, Pack Howl 12.7%, Rending Pounce 8.6%). Both wolves lived, at 20.6k and 21.6k of 23.2k.
+
 ## Pets (`pets.lua`, `pets_core.lua`, `pets_config.lua`, `sql/chaos_pets.sql`, client `game_pets`)
 
 A pet is a small companion that cannot fight and cannot be fought. One is out at a time; it follows its owner, levels from
@@ -33988,6 +33996,8 @@ Owner request 2026-10-25: a chest that any monster can leave; opening it wakes 5
 
 Seen in a client (2026-11-27, V31): a Rootling Nutshell above the ascension level counted 1/10.
 
+Seen in a client (2026-11-27, V32, O341): `!tester chest` at the Fire Elemental hunt. The horde's Hellhounds carry the chest smoke (one bottom widget each, none on the hunt monsters).
+
 ## Progress metrics (O253) (`metrics.lua`, `metrics_core.lua`, `metrics_config.lua`, `sql/chaos_progress_metrics.sql`, `tools/progress_metrics.py`)
 
 Owner request 2026-10-26: see where players stop playing and where they die, so balance is tuned from real data. The admin app shows it (Painel > "Métricas dos jogadores" > "Atualizar métricas"; command `chaos-ctl.sh metrics [--json]`, read only).
@@ -34893,6 +34903,8 @@ Final Verdict and Skewering Line, and the server refused each cast ("not for you
   (presets, extras, ultimate, heals) with the class lists.
   Not checked in a live client.
 
+Seen in a client (2026-11-27, V32): a level 747 Beastmaster's Spellbook lists 33 spells, all its own, no Hail of Dawn or Twin Verdict. Dawnpiercer, Lightward, Blessed Earth and Rending Pounce cast from it.
+
 ## Templar aura on the client (`templar_combat.lua`, `templar_aura_core.lua`, client `game_chestaura`, O315)
 
 Owner request 2026-10-29: the Templar line's aura showed as a holy_spiral map effect on the Templar's tile every 4 s (`aura.fxMs`),
@@ -35084,6 +35096,8 @@ cannot do it alone now has a **Go to NPC** button.
   and the no-protection-zone rule are a proposal: a free trip to the hub from anywhere out of combat competes with the Town
   Portal (its own cooldown and cast); raise `cooldownSeconds` or add a cast if that matters.
 Seen in a client (2026-11-25, V12): Go to NPC of the Cinderforge Compact put the character beside Forgemaster Brannoc (32955,32076) with "You stand before Forgemaster Brannoc.".
+
+Seen in a client (2026-11-27, V32): Factions > Veiled Choir names Cantor Velith next to the temple of Bellwatch. Go to NPC put the character in front of him. Turn in took 10 veiled eyes for +300 reputation. Minimap marks and a level 1 player not shown.
 
 ## How it works cards (O331) (`tools/gen_howitworks_data.lua`, `tools/howitworks_config.lua`, client `game_howitworks`)
 
