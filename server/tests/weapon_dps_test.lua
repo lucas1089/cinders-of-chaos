@@ -42,6 +42,17 @@ ok(D.estimate({level = 100, skill = 90, attack = 40, interval = 2000}) > D.estim
 near(D.estimate({level = 100, skill = 70, attack = 40, interval = 2000, familyFactor = 0.975}), 274 / 2 / 2 * 0.975, 1e-9, "the axe's price")
 near(D.estimate({level = 100, skill = 70, attack = 40, interval = 2000, familyFactor = 1}), 274 / 2 / 2, 1e-9, "the sword's: none")
 near(D.estimate({level = 100, skill = 70, attack = 40, interval = 2000, familyFactor = 0}), 274 / 2 / 2, 1e-9, "a bad number: none")
+-- F46: the landing hit range, the same factors and no hit chance; the mean of the range at 1 s is the estimate
+do
+	local lo, hi = D.hitRange({level = 100, skill = 70, attack = 40})
+	near(lo, 0, 1e-9, "melee rolls from 0") near(hi, 274, 1e-9, "melee top")
+	lo, hi = D.hitRange({level = 100, skill = 60, attack = 50, launcher = "bow", twoHanded = true, hitChance = 50})
+	near(lo, 20 * fb, 1e-9, "bow low: a fifth of the level x style") near(hi, D.maxHit(100, 60, 50) * fb, 1e-9, "bow top")
+	local est = D.estimate({level = 100, skill = 60, attack = 50, interval = 1000, launcher = "bow", twoHanded = true, hitChance = 50})
+	ok(est >= lo * 0.5 and est <= hi, "the expected hit with misses stays under the top")
+	ok(D.hitRange({level = 100, skill = 70, attack = 0}) == nil, "attack 0: no range")
+	ok(D.hitRange(nil) == nil, "nothing: no range")
+end
 -- nothing to estimate
 ok(D.estimate({level = 100, skill = 70, attack = 0, interval = 2000}) == nil, "no attack")
 ok(D.estimate({level = 100, skill = 70, attack = 40, interval = 0}) == nil, "no interval")

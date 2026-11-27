@@ -323,6 +323,30 @@ function V.trackerTopMargin(mapY, mapH, h, minY)
   return minY - mapY
 end
 
+-- F46: with goals, ascension and spell quest open the tracker (about 450 px) kept its top under the plate (V38) but its
+-- bottom ran over the top of the chat. Screen y of the map top, its height, the tracker's height, the lowest point of the
+-- plate and buff bar (minY, nil: none) and the top of the chat under it (maxY, nil: none). Returns the top margin from
+-- the map top (nil: the centre fits) and the pixels the tracker still lacks between minY and maxY (0 when it fits:
+-- goals.lua then shows fewer rows and a "+N more" line).
+function V.trackerPlace(mapY, mapH, h, minY, maxY)
+  mapY, mapH, h = num(mapY), num(mapH), num(h)
+  local centre = mapY + math.floor((mapH - h) / 2)
+  local top = centre
+  if maxY ~= nil and top + h > num(maxY) then top = num(maxY) - h end
+  if minY ~= nil and top < num(minY) then top = num(minY) end
+  local over = 0
+  if maxY ~= nil and top + h > num(maxY) then over = top + h - num(maxY) end
+  if top == centre then return nil, over end
+  return top - mapY, over
+end
+
+-- the rows to try next when the tracker lacks room: one fewer than shown, at least one (nil: nothing left to take)
+function V.fewerRows(shown)
+  shown = math.floor(num(shown))
+  if shown <= 1 then return nil end
+  return shown - 1
+end
+
 -- Phone tracker: at most `max` rows over the sections in order (welcome path, goals, ascension, spell quest). Returns the rows shown per
 -- section and the count left out ("+N" line). max nil or below 1 shows everything (desktop).
 function V.budget(counts, max)

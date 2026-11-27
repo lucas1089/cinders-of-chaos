@@ -237,7 +237,7 @@ namespace Chaos.Core.Tests
         // ------------------------------------------------------------------------------------ the tooltip card
         const string TipJson = "{\"name\":\"blazing staff\",\"rarity\":4,\"rarityName\":\"Epic\",\"slot\":\"Weapon: Wand\",\"level\":120,\"maxTier\":6,"
             + "\"quality\":{\"q\":10,\"cap\":20},"
-            + "\"base\":[{\"k\":\"dps\",\"l\":\"DPS\",\"v\":123.4},{\"k\":\"attack\",\"l\":\"Attack\",\"v\":50},{\"k\":\"yourinterval\",\"l\":\"Interval\",\"v\":1.5,\"fmt\":\"sec\"},{\"k\":\"critchance\",\"l\":\"Crit\",\"v\":5,\"fmt\":\"pct\"}],"
+            + "\"base\":[{\"k\":\"dps\",\"l\":\"DPS\",\"v\":123.4},{\"k\":\"attack\",\"l\":\"Attack\",\"v\":50},{\"k\":\"yourinterval\",\"l\":\"Interval\",\"v\":1.5,\"fmt\":\"sec\"},{\"k\":\"critchance\",\"l\":\"Crit\",\"v\":5,\"fmt\":\"pct\"},{\"k\":\"attackspeed\",\"l\":\"Attack Interval\",\"v\":3,\"fmt\":\"sec\"}],"
             + "\"mods\":[{\"sd\":\"p\",\"t\":\"+10 fire\",\"tr\":6,\"lo\":8,\"hi\":12,\"g\":\"element\"},{\"sd\":\"s\",\"t\":\"+5 mana\",\"tr\":3,\"bd\":true}],\"sides\":{\"p\":1,\"s\":1,\"max\":3},"
             + "\"sockets\":{\"count\":2,\"list\":[{\"name\":\"Ruby\",\"text\":\"+3 fire\",\"color\":\"#ff6060\"}]},"
             + "\"req\":{\"level\":150,\"voc\":\"Mage, Druid\"},\"desc\":\"A hot staff.\",\"charges\":{\"n\":3,\"max\":5},"
@@ -251,8 +251,8 @@ namespace Chaos.Core.Tests
             check(c.Title == "Blazing staff" && c.Kind == "EPIC WAND" && c.SlotLine == "Weapon: Wand" && c.TitleColor == "#a35cf0" && c.KindColor == c.TitleColor, "card: head: " + c.Title + " / " + c.Kind);
             check(c.Level == "Item Level 120 - up to T6", "card: item level line: " + c.Level);
             check(c.Flags.Count == 1 && c.Flags[0].Text == "Quality +10%  (up to 20%)", "card: quality flag");
-            check(c.Tiles.Count == 3 && c.Tiles[0].Key == "dps" && c.Tiles[0].Hero && c.Tiles[0].Value == "123.4" && c.Tiles[1].Key == "attack" && c.Tiles[2].Key == "speed" && c.Tiles[2].Caption == "Speed", "card: DPS the hero tile, then attack and speed: " + string.Join(",", c.Tiles.Select(t => t.Key)));
-            check(c.ExtraLines.Count == 1 && c.ExtraLines[0][0] == "Crit " && c.ExtraLines[0][2] == "+5%", "card: the rest of the base stats in one line: " + string.Join("|", c.ExtraLines[0]));
+            check(c.Tiles.Count == 3 && c.Tiles[0].Key == "dps" && c.Tiles[0].Hero && c.Tiles[0].Value == "123.4" && c.Tiles[1].Key == "attack" && c.Tiles[2].Key == "speed" && c.Tiles[2].Caption == "Interval", "card: DPS the hero tile, then attack and speed: " + string.Join(",", c.Tiles.Select(t => t.Key)));
+            check(c.ExtraLines.Count == 1 && c.ExtraLines[0][0] == "Crit " && c.ExtraLines[0][2] == "+5%" && c.ExtraLines[0].Contains("Weapon Interval ") && !c.ExtraLines[0].Contains("Attack Interval "), "card: the rest of the base stats in one line: " + string.Join("|", c.ExtraLines[0]));
             check(c.Mods.Count == 2 && c.Mods[0].Caption == "PREFIXES 1/3" && c.Mods[1].Caption == "SUFFIXES 1/3", "card: modifier groups with side counts: " + string.Join(",", c.Mods.Select(g => g.Caption)));
             var p = c.Mods[0].Rows[0];
             check(p.IsMod && p.Tag == "T6" && p.Top && p.Range == "8-12" && p.Color == TipLines.Element && p.TagColor == TipLines.TierColor(6), "card: a prefix row: tag, top tier, range, colour");

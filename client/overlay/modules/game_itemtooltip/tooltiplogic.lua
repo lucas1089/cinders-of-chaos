@@ -901,7 +901,9 @@ L.TILE_ORDER = { 'dps', 'attack', 'speed', 'range', 'armor', 'defense', 'extrade
 local function tileCaption(key)
   if key == 'dps' then return tr('DPS') end
   if key == 'attack' then return tr('Attack') end
-  if key == 'speed' then return tr('Speed') end
+  -- F46: the tile shows seconds between attacks, an interval (a "Speed" of 1.95s read as the opposite of the walking Speed
+  -- of boots, and beside the weapon's own "Attack Interval 3s" it looked like a contradiction)
+  if key == 'speed' then return tr('Interval') end
   if key == 'range' then return rangeLabel() end
   if key == 'armor' then return tr('Armour') end
   if key == 'defense' then return tr('Defense') end
@@ -934,7 +936,12 @@ function L.statTiles(base)
   for _, b in ipairs(list) do
     if type(b) == 'table' and not used[b] then
       local signed = b.imp or not L.UNSIGNED[b.k]
-      rest[#rest + 1] = { label = L.label(b.k, b.l), value = L.baseValue(b, signed), imp = b.imp or false }
+      local label = L.label(b.k, b.l)
+      -- F46: the Interval tile is the viewer's own interval (server item_tooltip_core.lua "yourinterval": vocation,
+      -- dexterity, attack speed bonus, the cap; what the server swings at); the weapon's own interval stays as a line and
+      -- says that it is the weapon's
+      if b.k == 'attackspeed' and speed and speed ~= b and used[speed] then label = tr('Weapon Interval') end
+      rest[#rest + 1] = { label = label, value = L.baseValue(b, signed), imp = b.imp or false }
     end
   end
   return tiles, rest
@@ -1236,20 +1243,67 @@ function L.altHintText(tip, hasHelp)
   return nil
 end
 
--- pixel-measured wrap: words of text into lines no wider than maxw; measure(text) -> pixels (the view passes a label)
-function L.wrapPx(text, maxw, measure)
+-- the last clause end of a line (a ";" or ":" then a space, else a ",") that leaves at least L.PHRASE_SHARE of maxw on the
+-- line: the head (with its mark) and the tail, or nil
+L.PHRASE_SHARE = 0.4
+local function phraseCut(line, maxw, measure)
+  for _, marks in ipairs({ '[;:]() ', ',() ' }) do
+    local best
+    for pos in line:gmatch(marks) do best = pos end
+    if best then
+      local head, tail = line:sub(1, best - 1), line:sub(best + 1)
+      if tail ~= '' and measure(head) >= maxw * L.PHRASE_SHARE then return head, tail end
+    end
+  end
+  return nil
+end
+
+-- pixel-measured wrap: words of text into lines no wider than maxw; measure(text) -> pixels (the view passes a label).
+-- phrase (the Alt help, F46): a full line breaks after its last clause end when that keeps most of the line, so a
+-- clause does not end alone at the start of the next line ("an item holds a few of / each; orbs add ..."), and the last
+-- line never holds one word alone
+function L.wrapPx(text, maxw, measure, phrase)
   local lines, line = {}, ''
   for word in tostring(text or ''):gmatch('%S+') do
     local try = line == '' and word or (line .. ' ' .. word)
     if line ~= '' and measure(try) > maxw then
-      lines[#lines + 1] = line
-      line = word
+      local head, tail
+      if phrase then head, tail = phraseCut(line, maxw, measure) end
+      if head and measure(tail .. ' ' .. word) <= maxw then
+        lines[#lines + 1] = head
+        line = tail .. ' ' .. word
+      else
+        lines[#lines + 1] = line
+        line = word
+      end
     else
       line = try
     end
   end
   if line ~= '' then lines[#lines + 1] = line end
+  -- phrase: no last word alone on the last line ("Rarer items roll more" / "modifiers."): the word before it goes down too
+  if phrase and #lines >= 2 and not lines[#lines]:find(' ', 1, true) then
+    local prev = lines[#lines - 1]
+    local head, last = prev:match('^(.+%S) (%S+)$')
+    if head and head:find(' ', 1, true) and not head:find('[;:]$') then
+      local joined = last .. ' ' .. lines[#lines]
+      if measure(joined) <= maxw then
+        lines[#lines - 1], lines[#lines] = head, joined
+      end
+    end
+  end
   return lines
+end
+
+-- the Alt help as extra rows (F46): one row per help line, wrapped later by the card in pixels (L.wrapPx with phrase).
+-- A first wrap at a fixed count of characters (46) used to cut lines short of the card's width and then the card's own
+-- wrap could not join them: "an item holds a few of" / "each; orbs add, change or remove them."
+function L.helpRows(help, color)
+  local rows = {}
+  for i, line in ipairs(help or {}) do
+    rows[#rows + 1] = { text = line, color = color, sep = i == 1, help = true }
+  end
+  return rows
 end
 
 -- O503: the layout of a modifier row, pure. The text and its suffix (row.parts = {text, colour, ' [bound]', colour}) wrap

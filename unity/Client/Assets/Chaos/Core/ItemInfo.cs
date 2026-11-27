@@ -133,7 +133,12 @@ namespace Chaos.Core
         }
 
         /// <summary>Splits a text into lines of at most n characters at spaces.</summary>
-        public static List<string> WrapText(string text, int n = Wrap)
+        public static List<string> WrapText(string text, int n = Wrap) => WrapText(text, n, false);
+
+        /// <summary>Wrap at n characters; phrase (the Alt help, F46, tooltiplogic.lua L.wrapPx): a full line breaks after its
+        /// last clause end ("; " or ": ", else ", ") when the head keeps at least 40% of the line, so a clause does not end
+        /// alone at the start of the next line, and the last line never holds one word alone.</summary>
+        public static List<string> WrapText(string text, int n, bool phrase)
         {
             var lines = new List<string>();
             string line = "";
@@ -141,10 +146,41 @@ namespace Chaos.Core
             {
                 if (line.Length == 0) line = word;
                 else if (line.Length + 1 + word.Length <= n) line += " " + word;
-                else { lines.Add(line); line = word; }
+                else
+                {
+                    int cut = phrase ? PhraseCut(line, n) : -1;
+                    if (cut > 0 && line.Length - cut - 1 + 1 + word.Length <= n) { lines.Add(line.Substring(0, cut)); line = line.Substring(cut + 1) + " " + word; }
+                    else { lines.Add(line); line = word; }
+                }
             }
             if (line.Length > 0) lines.Add(line);
+            // phrase: no last word alone on the last line; the word before it goes down too
+            if (phrase && lines.Count >= 2 && lines[lines.Count - 1].IndexOf(' ') < 0)
+            {
+                string prev = lines[lines.Count - 2];
+                int sp = prev.LastIndexOf(' ');
+                if (sp > 0)
+                {
+                    string head = prev.Substring(0, sp), joined = prev.Substring(sp + 1) + " " + lines[lines.Count - 1];
+                    if (head.IndexOf(' ') >= 0 && !head.EndsWith(";") && !head.EndsWith(":") && joined.Length <= n)
+                    {
+                        lines[lines.Count - 2] = head;
+                        lines[lines.Count - 1] = joined;
+                    }
+                }
+            }
             return lines;
+        }
+
+        static int PhraseCut(string line, int n)
+        {
+            foreach (string marks in new[] { ";:", "," })
+            {
+                int best = -1;
+                for (int i = 0; i + 1 < line.Length; i++) if (marks.IndexOf(line[i]) >= 0 && line[i + 1] == ' ') best = i + 1;
+                if (best > 0 && best < line.Length - 1 && best >= n * 0.4) return best;
+            }
+            return -1;
         }
 
         /// <summary>Item names come lower case from the item types: the title starts with a capital.</summary>

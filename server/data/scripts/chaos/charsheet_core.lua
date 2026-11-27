@@ -17,7 +17,7 @@ K.TYPES = {physical = "Physical", fire = "Fire", energy = "Energy", earth = "Ear
 K.ORDER = {"physical", "fire", "cold", "lightning", "chaos", "energy", "earth", "ice", "holy", "death", "water", "arcane", "drown",
 	"lifedrain", "manadrain"}
 
--- raw = what charsheet.lua read: attack, hit, maxHit, attackSpeed (percent), critChance, critAmount (percent),
+-- raw = what charsheet.lua read: attack, hit, hitLo, hitHi (F46), maxHit, attackSpeed (percent), critChance, critAmount (percent),
 -- lifeLeech / manaLeech = {chance, amount}, damage = [{k, pct}] (damage bonus per type), defense, armor, mitigation (share
 -- 0 .. 1; O464: the physical total against a typical hit), resist = [{k, pct}] (per element, may be negative; O464: the four
 -- groups fire, cold, lightning, chaos, each with sum and penalty), defence = {armourShare, reduction, dodge, block, suppress,
@@ -66,6 +66,14 @@ function K.clean(raw)
 		mitigation = raw.mitigation and pos(tonumber(raw.mitigation) * 100, 100) or nil, resist = list(raw.resist, -1000),
 		maxHealth = pos(raw.maxHealth), maxMana = pos(raw.maxMana), moveSpeed = pos(raw.moveSpeed)
 	}
+	-- F46: the landing hit range of the weapon (combat_stats_core.lua C.hitRange; melee rolls from 0); the average is held
+	-- inside it, so it never reads above the highest hit
+	local hi = pos(raw.hitHi)
+	if hi and out.hit then
+		out.hitHi = hi
+		out.hitLo = math.min(hi, n(raw.hitLo, 0) or 0)
+		out.hit = math.max(out.hitLo, math.min(hi, out.hit))
+	end
 	if type(raw.defence) == "table" then
 		local d = raw.defence
 		out.defence = {armourShare = n(d.armourShare, 0, 100) or 0, reduction = n(d.reduction, -100, 1000) or 0,
@@ -128,8 +136,12 @@ function K.text(sheet, character, tx)
 	if sheet.hit then
 		off[#off + 1] = tx("Average hit: %s", K.number(sheet.hit))
 	end
+	if sheet.hitHi then
+		off[#off + 1] = tx("Hit range: %s - %s", K.number(sheet.hitLo or 0), K.number(sheet.hitHi))
+	end
+	-- the biggest single hit the character has dealt (a record, capped by the target's health): not the top of the range
 	if sheet.maxHit then
-		off[#off + 1] = tx("Highest hit: %s", K.number(sheet.maxHit))
+		off[#off + 1] = tx("Biggest hit dealt: %s", K.number(sheet.maxHit))
 	end
 	if sheet.attackSpeed then
 		off[#off + 1] = tx("Attack speed: +%s%%", pct(sheet.attackSpeed))

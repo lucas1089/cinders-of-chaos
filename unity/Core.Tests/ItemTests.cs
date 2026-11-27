@@ -86,7 +86,10 @@ namespace Chaos.Core.Tests
             string ua = string.Join("\n", ul.Select(l => l.Text));
             check(ul[0].Text == "Set" && TipLines.TitleColor(uniq) == TipLines.SetC && ua.Contains("Set: Dawn (2/4)") && ua.Contains("  Helm") && ua.Contains("  Boots (level 300)") && ua.Contains("(2) +5% speed") && ua.Contains("Ember") && ua.Contains("Burns what it hits."),
                   "tooltip: a set piece shows the set block and the passive");
-            check(TipLines.Title("magic sword") == "Magic sword" && TipLines.WrapText("one two three four", 9).Count == 3 && TipLines.Int(12345.7) == "12,345" && TipLines.Trim(2.5) == "2.5" && TipLines.Trim(3) == "3", "tooltip: helpers");
+            check(TipLines.Title("magic sword") == "Magic sword" && TipLines.WrapText("one two three four", 9).Count == 3 &&
+                  TipLines.WrapText("Prefixes and Suffixes: an item holds a few of each; orbs add, change or remove them.", 48, true)[1] == "an item holds a few of each;" &&
+                  TipLines.WrapText("Prefixes and Suffixes: an item holds a few of each; orbs add, change or remove them.", 48)[0] == "Prefixes and Suffixes: an item holds a few of" &&
+                  TipLines.WrapText("Magic: the rarity. Rarer items roll more modifiers.", 40, true)[1] == "more modifiers." && TipLines.Int(12345.7) == "12,345" && TipLines.Trim(2.5) == "2.5" && TipLines.Trim(3) == "3", "tooltip: helpers");
             Loc.Set("pt-BR");
             check(TipLines.Lines(tip, 100)[0].Text.StartsWith("Rara", StringComparison.Ordinal), "tooltip: the rarity name follows the language");
             Loc.Set("en");

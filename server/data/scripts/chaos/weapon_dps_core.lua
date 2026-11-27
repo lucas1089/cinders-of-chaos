@@ -34,24 +34,20 @@ function D.maxHit(level, skill, attack, factor)
 	return floor(floor(num(level) / 5) + ((num(skill) / 4 + 1) * (num(attack) / 3) * 1.03) / f + 0.5)
 end
 
--- p = {level, skill, attack, interval (ms), launcher = "bow" | "crossbow" | nil, twoHanded = bool, weaponType = "sword" |
--- "club" | "axe" | nil, hitChance = percent (launchers), factor = attack factor (default 1), styleFactor = override}
--- Returns the estimate (damage per second, a number) or nil when it cannot be worked out.
-function D.estimate(p)
+-- the parts of one landing hit: low, top (the engine's roll range) and the factor on it (style, auto attack power, family);
+-- nil when the hit cannot be worked out. p as in D.estimate (the interval is not read).
+local function hitParts(p)
 	if type(p) ~= "table" then
 		return nil
 	end
-	local attack, interval, level = num(p.attack), num(p.interval), num(p.level)
-	if attack <= 0 or interval <= 0 or level < 1 then
+	local attack, level = num(p.attack), num(p.level)
+	if attack <= 0 or level < 1 then
 		return nil
 	end
 	local top = D.maxHit(level, p.skill, attack, p.factor)
 	local low = 0
-	local chance = 1
 	if p.launcher then
 		low = math.min(top, -floor(-level / 5)) -- ceil(level / 5)
-		local hc = num(p.hitChance)
-		chance = hc > 0 and math.min(100, hc) / 100 or 1
 	end
 	local style = p.styleFactor
 	if style == nil then
@@ -74,7 +70,37 @@ function D.estimate(p)
 	if family and family > 0 then
 		power = power * family
 	end
-	return (low + top) / 2 * style * power * chance / (interval / 1000)
+	return low, top, style * power
+end
+
+-- p = {level, skill, attack, interval (ms), launcher = "bow" | "crossbow" | nil, twoHanded = bool, weaponType = "sword" |
+-- "club" | "axe" | nil, hitChance = percent (launchers), factor = attack factor (default 1), styleFactor = override}
+-- Returns the estimate (damage per second, a number) or nil when it cannot be worked out.
+function D.estimate(p)
+	if type(p) ~= "table" or num(p.interval) <= 0 then
+		return nil
+	end
+	local low, top, k = hitParts(p)
+	if not low then
+		return nil
+	end
+	local chance = 1
+	if p.launcher then
+		local hc = num(p.hitChance)
+		chance = hc > 0 and math.min(100, hc) / 100 or 1
+	end
+	return (low + top) / 2 * k * chance / (num(p.interval) / 1000)
+end
+
+-- the lowest and highest landing hit of the auto attack (F46: Inspect showed the average next to a record of damage
+-- dealt, so the average could read above the "highest"): lo, hi before rounding, the same factors as D.estimate and no
+-- hit chance (a miss is no hit); nil when the hit cannot be worked out. p as in D.estimate (the interval is not read).
+function D.hitRange(p)
+	local low, top, k = hitParts(p)
+	if not low then
+		return nil
+	end
+	return low * k, top * k
 end
 
 -- the number the tooltip shows: a whole number, nil when there is nothing to show

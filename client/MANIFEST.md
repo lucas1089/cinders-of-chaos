@@ -8727,3 +8727,36 @@ Faults seen in a client (V41-V44), fixed at the cause and seen again in a Linux 
 - `game_npctalk` (`npctalk.lua`, `npctalk_logic.lua`): "bye" in Local Chat did not close the talk window. The player's own farewell in the `onTalk` signal (`L.ownFarewell(speaker, me, text)`, names by `sameName`) and a farewell typed in the Default tab end the conversation without a second "bye"; another player's "bye" leaves it open. New public `getWindowRect()` and `moveWindow(pos)` for the trade window. Tests: `npctalk_logic_test.lua`, `npctalk_test.lua`.
 - `game_npctradewindow` (`tradeview.lua`): "Capacity after" and the weights had no thousands separator. `weightText` goes through `comma_value` (`client_chaos_numbers`, ChaosLocale): `39,183.70 oz` in English, `39.183,70 oz` in pt-BR. Test: `tradeview_test.lua`.
 - `game_cosmetics` (`cosmeticslogic.lua`, `cosmetics.lua`): the Collection "Unlocked" line wrapped inside an entry ("Chat / colours 2 (8)"). `CL.wrapEntries(head, entries, maxWidth, measure)` breaks only between whole entries, a comma at each line end; the row measures with a hidden label in the row's font. Test: `cosmeticslogic_test.lua`.
+
+## F46 fixes (O772)
+
+Six faults seen in a client, each fixed at its cause and seen again in the Linux main client on a local server (video in
+the task report, not committed).
+
+- `game_goals`: the Next Goals tracker reached over the chat. `GoalsView.trackerPlace(mapY, mapH, h, minY, maxY)` places it
+  between the plate / buff bar and the top of the chat (`gameBottomPanel` or the floating chat where they share its x range),
+  and gives how far it would reach over; `goals.lua` then shows fewer rows (`GoalsView.fewerRows`, the rest as "+N more") and
+  measures again when the panels move. `goalsview_test.lua`.
+- `game_playerinspect`: the average hit stood above the "Highest hit". The server sends the weapon's hit range now
+  (server/README.md "Inspect Player", Hit range); the Combat page shows "Hit range lo - hi" and "Biggest hit dealt".
+  `playerinspect_logic_test.lua`. Unity: `Core/Inspect.cs`, `LocSocial.cs`; `SocialTests.cs` "inspect: the combat sheet"
+  asserts the new rows (same check count).
+- `game_itemtooltip`: a bow showed "Speed 1.95s" beside "Attack Interval 3s". The tile is the interval the server uses
+  for your auto attacks (the weapon's interval with your attack speed), so its caption is "Interval"; the weapon's own row
+  beside it reads "Weapon Interval" (pt-BR "Intervalo", "Intervalo da arma"). `tooltiplogic_test.lua`. Unity:
+  `Phase8ATip.cs`, `LocPhase8A.cs`; `Phase8ATests.cs` (same check count).
+- `client_chaos_popupqueue` (new): after a big level jump the Helper's "New spell available", the mentor offer and the level
+  survey lay on top of each other. `ChaosPopupQueue.request(key, open, isOpen)` opens a popup when no other popup is on
+  screen (a message box, a server modal dialog, the death recap, the patch notes, or the queue's own popup) and the screen
+  has been clear for 400 ms, in the order they came; a second request of the same key keeps its turn.
+  `game_mentor` (offer) and `game_chaossurvey` (open) ask the queue; without the module they open at once.
+  `popupqueue_test.lua` (logic and the engine file on a fake engine).
+- `game_passivetree`: the mastery window with 8 effects was about 580 px high, over a 540 px screen. `TreePlan.choiceFit`
+  cuts the window to the screen (16 px margin, at least 250 px) and the effect list scrolls (`effects` is a ScrollablePanel
+  with `effectsScrollBar`); a second measure runs when the bar narrows the buttons. `mastery.otui` has a `$mobile` width.
+  `treelinks_test.lua`.
+- `game_itemtooltip`: the Alt help broke lines oddly ("an item holds a few of / each; orbs ..."). `TooltipLogic.wrapPx`
+  with `phrase` breaks a full line at its last clause end ("; ", ": ", ", ") when that keeps at least 40% of the line, and
+  never leaves one word alone on the last line; `TooltipLogic.helpRows` builds the rows. `tooltiplogic_test.lua`. Unity:
+  `TipLines.WrapText(text, n, phrase)` in `ItemInfo.cs`, used by `ItemCompare.cs`; `ItemTests.cs` "tooltip: helpers"
+  (same check count).

@@ -3,7 +3,7 @@
 --
 -- Protocol (extended opcode ChaosOpcodes.combatStats = 119, JSON {action, data}):
 --   client -> server  get                         the numbers again (at most one answer per getEveryMs)
---   server -> client  stats {damage?, attack?, defense, armor, mitigation}
+--   server -> client  stats {damage?, hitLo?, hitHi?, attack?, defense, armor, mitigation}
 --     damage      the average auto attack hit (display scale applied); absent for a wand, a rod, a fist
 --     attack      the equipped weapon's attack; absent with no attack weapon
 --     defense     Defence Value, whole number

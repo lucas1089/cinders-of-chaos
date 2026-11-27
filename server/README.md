@@ -17560,6 +17560,15 @@ commands, MAX_IDS now 8) answers `[ Offense ]`, `[ Defense ]`, `[ Resistances ]`
 `[ Character ]` (level, class, health, mana, capacity, speed, experience to the next level, magic level and skills with
 percent, soul, stamina), in the player's language (`Chaos.t`; pt-BR in `i18n_strings.lua`).
 
+**Hit range (F46, O772).** Inspect showed an average hit (318) above the "Highest hit" (115): the average is the weapon's
+expected hit, the highest hit was the record of hits dealt, and a character that had hunted little had a small record.
+`ChaosWeaponDps.hitRange` gives the lowest and highest hit of the weapon formula (the same parts as `estimate`: style,
+power, family, no hit chance), `ChaosCombatStats.hitRange` turns it into whole numbers and `build` now sends `hitLo` and
+`hitHi` and clamps the average into them. The sheet (`ChaosCharSheet.clean`, `text`) shows "Hit range: lo - hi" next to the
+average and names the record "Biggest hit dealt" (pt-BR "Faixa de golpe", "Maior golpe causado"). Tests:
+`tests/weapon_dps_test.lua`, `tests/combat_stats_test.lua`, `tests/charsheet_test.lua`. The item tooltip's attack interval
+is unchanged on the server; the client names it (client/MANIFEST.md "F46 fixes (O772)").
+
 **Rules.**
 - `cid` (right-click): the same floor, at most 10 tiles away in x and y and in view (`player:canSee`). `name` (the menu
   entry): any online player, any distance; the same public data.

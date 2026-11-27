@@ -109,7 +109,21 @@ eq(#cs, 3, 'offense, defense, resistances')
 eq(cs[1].title, 'Offense', 'offense title')
 local function crow(sec, label) for _, r in ipairs(cs[sec].rows) do if r.label == label then return r end end end
 eq(crow(1, 'Weapon attack').value, '40', 'attack')
-eq(crow(1, 'Highest hit').value, '98,765', 'highest hit')
+eq(crow(1, 'Biggest hit dealt').value, '98,765', 'the record of the biggest hit dealt')
+eq(crow(1, 'Highest hit'), nil, 'no row reads "highest" next to the average (F46)')
+eq(crow(1, 'Hit range'), nil, 'no range from an older server')
+-- F46: the hit range the average lies in, before the record row
+do
+  local hs = L.combatStats({ combat = { hit = 1500, hitLo = 0, hitHi = 3000, maxHit = 1200 } })
+  local function hrow(label) for i, r in ipairs(hs[1].rows) do if r.label == label then return r, i end end end
+  local range, ri = hrow('Hit range')
+  local avg, ai = hrow('Average hit')
+  local rec, ki = hrow('Biggest hit dealt')
+  eq(range.value, '0 - 3,000', 'melee range from 0')
+  eq(avg.value, '1,500', 'the average')
+  eq(ai < ri and ri < ki, true, 'average, range, then the record')
+  eq(rec.value, '1,200', 'a record under the average is a record, not the top of the range')
+end
 eq(crow(1, 'Attack speed').value, '+9%', 'attack speed')
 eq(crow(1, 'Critical chance').value, '12.5%', 'crit chance')
 eq(crow(1, 'Life leech').value, '5% / 3%', 'leech')

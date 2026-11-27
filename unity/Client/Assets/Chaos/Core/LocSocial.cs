@@ -217,7 +217,7 @@ namespace Chaos.Core
             { "Achievement points", "Pontos de conquistas" }, { "Collection score", "Pontuação da coleção" }, { "Boss Points", "Pontos de chefes" },
             { "Best rift sealed", "Melhor fenda selada" }, { "Tier {0}", "Nível {0}" }, { "Vocation Trials", "Provas da vocação" },
             { "Tier {0} of {1}", "Nível {0} de {1}" }, { "PvP: {0}", "PvP: {0}" }, { "name", "nome" }, { "Progress", "Progresso" },
-            { "Combat", "Combate" }, { "Weapon attack", "Ataque da arma" }, { "Average hit", "Golpe médio" }, { "Highest hit", "Maior golpe" },
+            { "Combat", "Combate" }, { "Weapon attack", "Ataque da arma" }, { "Average hit", "Golpe médio" }, { "Highest hit", "Maior golpe" }, { "Hit range", "Faixa de golpe" }, { "Biggest hit dealt", "Maior golpe causado" },
             { "Attack speed", "Velocidade de ataque" }, { "Critical chance", "Chance crítica" }, { "Critical damage", "Dano crítico" },
             { "Life leech", "Roubo de vida" }, { "Mana leech", "Roubo de mana" }, { "{0} damage", "Dano {0}" }, { "Defense", "Defesa" },
             { "Armor", "Armadura" }, { "Damage reduction", "Redução de dano" }, { "Maximum health", "Vida máxima" },

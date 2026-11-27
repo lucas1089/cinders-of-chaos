@@ -109,9 +109,35 @@ function C.hit(w, p, mult, scale)
 	return hit > 0 and hit or nil
 end
 
+-- the lowest and highest landing hit of a weapon (F46, Inspect Player's hit rows): lo, hi whole numbers with the factors of
+-- C.hit; nil when there is no hit to show. The average of C.hit lies between them (C.build clamps it).
+function C.hitRange(w, p, mult, scale)
+	local D = ChaosWeaponDps
+	if not (D and D.hitRange and w and p) or num(w.attack) <= 0 then
+		return nil
+	end
+	local melee = w.kind == "sword" or w.kind == "club" or w.kind == "axe"
+	if not melee and w.kind ~= "distance" then
+		return nil
+	end
+	local lo, hi = D.hitRange({
+		level = p.level, skill = p.skill, attack = w.attack,
+		launcher = not melee and (w.launcher or "bow") or nil, twoHanded = w.twoHanded or false,
+		weaponType = melee and w.kind or nil})
+	if not lo then
+		return nil
+	end
+	local k = (num(mult) > 0 and num(mult) or 1) * (num(scale) > 0 and num(scale) or 1)
+	lo, hi = floor(lo * k + 0.5), floor(hi * k + 0.5)
+	if hi <= 0 then
+		return nil
+	end
+	return lo, hi
+end
+
 -- the message data. s = {level, weapon, shield, armourList, skills = {melee, distance, shielding, fist}, k, cap,
 -- absorb (percent), monster (percent), mult (tree factor on a physical hit), scale (display scale)}
--- Returns {damage = n | nil, attack = n | nil, defense = n, armor = n, mitigation = share 0 .. 1}.
+-- Returns {damage = n | nil, hitLo = n | nil, hitHi = n | nil, attack = n | nil, defense = n, armor = n, mitigation = share 0 .. 1}.
 function C.build(s, cfg)
 	s = s or {}
 	cfg = cfg or {}
@@ -128,6 +154,11 @@ function C.build(s, cfg)
 			out.attack = floor(num(w.attack))
 		end
 		out.damage = C.hit(w, {level = s.level, skill = weaponSkill}, s.mult, s.scale)
+		local lo, hi = C.hitRange(w, {level = s.level, skill = weaponSkill}, s.mult, s.scale)
+		if lo and out.damage then
+			out.hitLo, out.hitHi = lo, hi
+			out.damage = math.max(lo, math.min(hi, out.damage))
+		end
 	end
 	out.defense = C.defence({
 		weapon = w and {defense = w.defense, extra = w.extra, skill = weaponSkill} or nil,
