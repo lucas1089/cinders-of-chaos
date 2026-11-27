@@ -181,6 +181,30 @@ check(ksNode ~= nil, "a keystone variant exists")
 local names = C.keystones(tree, {ksNode, path[1]}, ksVariant)
 eq(#names, 1, "one keystone among the nodes")
 check(names[1] and not names[1]:match("^ks"), "keystone name without the prefix")
+-- the archetype keystones (ar*) count too, as for the keystone cap (seen in a client, V38: Wild Volley's slot listed
+-- Ricochet and not Longshot)
+eq(C.keystoneName("arLongshot"), "Longshot", "archetype keystone name")
+eq(C.keystoneName("arIronTithe"), "Iron Tithe", "archetype keystone name 2")
+eq(C.keystoneName("ksArmour"), "Armour", "a ks name keeps its first letter")
+local arNode
+for id, node in pairs(tree.nodes) do
+	for stat in pairs(node.s or {}) do
+		if stat:match("^ar%u") and not arNode then arNode = id end
+	end
+end
+check(arNode ~= nil, "an archetype keystone node exists")
+local arFlag
+for stat in pairs(tree.nodes[arNode].s) do if stat:match("^ar%u") then arFlag = stat end end
+names = C.keystones(tree, {arNode, path[1]}, ksVariant)
+eq(#names, 1, "the archetype keystone is listed")
+eq(names[1], C.keystoneName(arFlag), "by its flag's name without labels")
+names = C.keystones(tree, {arNode, ksNode}, ksVariant, {[arFlag] = "The Label"})
+eq(#names, 2, "both kinds listed")
+check(names[1] == "The Label" or names[2] == "The Label", "the label wins over the flag's name")
+names = C.keystones(tree, {arNode}, nil, {[arFlag] = ""})
+eq(names[1], C.keystoneName(arFlag), "an empty label falls back to the flag's name")
+local labels = dofile("data/scripts/chaos/keystone_labels_config.lua")
+eq(labels.flags.arBarbed.name, "Barbed Quiver", "the labels hold the tree's names (arBarbed is Barbed Quiver)")
 
 -- ================================================================== switching gate
 eq(C.switchGate({level = 100, inPz = true}), "instant", "protection zone: at once")

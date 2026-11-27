@@ -367,15 +367,19 @@ function C.validateParagon(alloc, defs, total)
 end
 
 -- ------------------------------------------------------------------------------------------------ keystones
--- "ksArcaneEcho" -> "Arcane Echo"
+-- "ksArcaneEcho" -> "Arcane Echo", "arLongshot" -> "Longshot" (the tree's own name, when the caller has it, is better:
+-- C.keystones `labels`)
 function C.keystoneName(stat)
-	local s = tostring(stat or ""):gsub("^ks", "")
+	local s = tostring(stat or ""):gsub("^ks", ""):gsub("^ar(%u)", "%1")
 	s = s:gsub("(%l)(%u)", "%1 %2")
 	return s
 end
 
--- names of the keystones among ids (stats starting "ks"; the per-class variant when the node has one), by node id
-function C.keystones(tree, ids, variantKey)
+-- names of the keystones among ids, by node id: every flag the keystone cap counts (passivetree_core.lua keystoneKind:
+-- ks* and the archetypes' ar*; the per-class variant when the node has one). labels: optional flag -> name (the names of
+-- keystone_labels_config.lua), else C.keystoneName. Seen in a client (V38): a slot saved from Wild Volley listed
+-- Ricochet and not Longshot, an archetype keystone (ar*) the list left out.
+function C.keystones(tree, ids, variantKey, labels)
 	local sorted = {}
 	for i, id in ipairs(ids or {}) do
 		sorted[i] = id
@@ -387,8 +391,9 @@ function C.keystones(tree, ids, variantKey)
 		local stats = node and ((node.v and variantKey and node.v[variantKey]) or node.s)
 		local names = {}
 		for stat in pairs(stats or {}) do
-			if type(stat) == "string" and stat:match("^ks%u") then
-				names[#names + 1] = C.keystoneName(stat)
+			if type(stat) == "string" and (stat:match("^ks%u") or stat:match("^ar%u")) then
+				local label = type(labels) == "table" and labels[stat]
+				names[#names + 1] = type(label) == "string" and label ~= "" and label or C.keystoneName(stat)
 			end
 		end
 		table.sort(names)

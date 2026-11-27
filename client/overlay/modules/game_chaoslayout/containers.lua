@@ -153,6 +153,30 @@ function K.snapshot()
       end
     end
   end
+  -- the side dock (game_chaosdock, on by default since O755) lifts container windows out of the right column and stands them
+  -- left of it, under the minimap: they are in no side panel, so they were not saved and did not come back at the next
+  -- login (seen in a client, V38). They are saved as the last windows of the first right panel, top to bottom; the
+  -- restore opens them there and the dock lifts them again in the same order.
+  local first = nil
+  if M.panelsMaps then
+    local _, f = M.panelsMaps()
+    first = f
+  end
+  local right = first and first.right
+  if right then
+    local up = {}
+    for _, c in pairs(g_game.getContainers() or {}) do
+      local w = c.window
+      local key = keyById[c:getId()]
+      if key and w and not w:isDestroyed() and w.chaosDockLifted and w:isVisible() then up[#up + 1] = { w = w, key = key } end
+    end
+    table.sort(up, function(a, b) return C.liftedBefore(a.w:getRect(), b.w:getRect()) end)
+    for n, x in ipairs(up) do
+      local bar = x.w:getChildById('miniwindowScrollBar')
+      windows[#windows + 1] = { key = x.key, panel = right, side = 'right', panelOrder = 1000, index = 1000 + n,
+        height = x.w:getHeight(), minimized = x.w:isOn(), scroll = bar and bar.getValue and bar:getValue() or nil }
+    end
+  end
   return C.snapshot(windows)
 end
 
@@ -288,6 +312,13 @@ end
 
 -- Find my item: open the containers of steps (game_stash stashfind.lua F.steps) and flash the item's slot
 local function flash(container, at)
+  -- the backpack, its bags and the purse are pages of the inventory panel (game_bagpanel, O420): their stock windows are
+  -- hidden, so the panel shows the page and flashes its cell (seen in a client, V38: the flash went to the hidden window)
+  local bp = modules.game_bagpanel
+  if bp and bp.showSlot then
+    local ok, shown = pcall(bp.showSlot, container, at)
+    if ok and shown then return end
+  end
   local panel = container and container.itemsPanel
   local slot = panel and at and panel:getChildById('item' .. at)
   if not slot then return end

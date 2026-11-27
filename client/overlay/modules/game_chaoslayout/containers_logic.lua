@@ -191,6 +191,16 @@ function C.placement(saved, existing, first)
   return out
 end
 
+-- the order the side dock's lifted container windows are saved in (V38): the dock stands them right-aligned in stacks
+-- left of the right column, the first stack nearest the column (chaosdocklogic.lua liftPlaces), so the stack with the
+-- rightmost right edge first, top to bottom in a stack. a, b: rects {x, y, width}
+function C.liftedBefore(a, b)
+  local ar = (int(a and a.x) or 0) + (int(a and a.width) or 0)
+  local br = (int(b and b.x) or 0) + (int(b and b.width) or 0)
+  if ar ~= br then return ar > br end
+  return (int(a and a.y) or 0) < (int(b and b.y) or 0)
+end
+
 -- the option "Remember open backpacks" (client_settings rememberBackpacks, base patch 0187): on unless turned off
 function C.enabled(value)
   return value ~= false

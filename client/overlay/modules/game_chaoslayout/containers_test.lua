@@ -115,5 +115,18 @@ eq(merged.containers, saved, 'a snapshot without containers keeps the saved ones
 merged = L.merge({ mini = {}, containers = saved }, { mini = {}, panels = {}, containers = {} })
 eq(#merged.containers, 0, 'a snapshot with none open saves none')
 
+-- the side dock's lifted windows (V38): saved nearest stack first (rightmost right edge), top to bottom in a stack
+local wide = { x = 700, y = 210, width = 220 }   -- first stack, right edge 920
+local narrow = { x = 742, y = 300, width = 178 } -- first stack, right edge 920, under it
+local far = { x = 500, y = 210, width = 178 }    -- second stack further left
+eq(C.liftedBefore(wide, narrow), true, 'same stack: the upper first, whatever the width')
+eq(C.liftedBefore(narrow, wide), false, 'same stack: the lower after')
+eq(C.liftedBefore(narrow, far), true, 'the stack nearest the column before the one further left')
+eq(C.liftedBefore(far, wide), false, 'the far stack after')
+local list = { far, narrow, wide }
+table.sort(list, C.liftedBefore)
+eq(list[1], wide, 'sorted: first') eq(list[2], narrow, 'sorted: second') eq(list[3], far, 'sorted: third')
+eq(C.liftedBefore({}, { x = 1, width = 1 }), false, 'a rect with no numbers sorts last')
+
 if fails > 0 then print('containers_test: ' .. fails .. ' failure(s)') os.exit(1) end
 print('containers_test: ok')

@@ -839,6 +839,32 @@ local function onChange()
 end
 
 -- ---------------------------------------------------------------- pages and sort
+-- Find my item (O412): container `c` holds the found item at slot `at` (0-based). When the panel shows `c`, its page is
+-- selected, drawn now and the cell flashed; true. false: not a container of the panel (its own window flashes, as before).
+-- Seen in a client (V38): the flash went to the hidden stock window of the bag, so nothing showed.
+function M.showSlot(c, at)
+  if not (c and alive(window)) then return false end
+  local kind, slot = C.classify(keyOf(c))
+  local page = C.pageOf(kind, slot)
+  if not page then return false end
+  if kind == 'pbag' and C.isLootBag(bagItemId(c), lootIds()) then return false end -- the Loot Bag is a section, not a page
+  if sorting then sorting = nil end
+  selected = page
+  M.draw()
+  if selected ~= page then return false end
+  local d = dock()
+  if d and d.bagOpened and not window:isVisible() then pcall(d.bagOpened, false, false) end
+  local i = C.foundCell(at, #cells)
+  local w = i and cells[i]
+  if not alive(w) then return true end
+  w:setBorderWidth(2)
+  w:setBorderColor('#ffd040')
+  scheduleEvent(function()
+    if alive(w) then w:setBorderWidth(0) end
+  end, 2500)
+  return true
+end
+
 function M.selectPage(key)
   if sorting then sorting = nil end
   local kind, slot = C.parseKey(key)
@@ -1217,6 +1243,8 @@ function sort() M.sort() end
 function openPurse() M.openPurse() end
 function getPurseButton() return M.purseButton() end
 function selectPage(key) M.selectPage(key) end
+-- Find my item (O412): show the found slot of a container the panel shows (game_chaoslayout containers.lua openPath)
+function showSlot(c, at) return M.showSlot(c, at) end
 function toggleLoot() M.toggleLoot() end
 function togglePin() M.togglePin() end
 function lootArrow(delta) M.lootArrow(delta) end

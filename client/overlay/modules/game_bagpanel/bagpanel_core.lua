@@ -120,6 +120,23 @@ function C.bagKey(fam, slot)
   return (fam == 'purse' and 'pbag' or 'bag') .. tostring(int(slot) or 0)
 end
 
+-- the page key of a container the panel shows (kind and slot as C.classify gives them), nil for any other container.
+-- Find my item (O412) shows a found item on this page: the stock window it used to flash is hidden here (V38).
+function C.pageOf(kind, slot)
+  if kind == 'main' or kind == 'purse' then return kind end
+  if kind == 'bag' then return C.bagKey('main', slot) end
+  if kind == 'pbag' then return C.bagKey('purse', slot) end
+  return nil
+end
+
+-- the grid cell of container slot `at` (0-based, the stock window's item<at>): its index in the cells, or nil when the
+-- page shows fewer cells than that (`shown`: the cells drawn)
+function C.foundCell(at, shown)
+  at = int(at)
+  if not at or at < 0 or not shown or at >= shown then return nil end
+  return at + 1
+end
+
 -- a page key -> 'main' | 'purse' | 'bag' | 'pbag', slot (nil for a key that is none of them)
 function C.parseKey(key)
   if key == 'main' or key == 'purse' then return key end

@@ -945,6 +945,8 @@ Stash.ApplyHighlight = function()
 	local r = Stash.PendingHighlight
 	if not r or not (Stash.UI and Stash.UI:isVisible() and Stash.Data) then return end
 	Stash.PendingHighlight = nil
+	-- over the Find window: it opened under it and hid the flashed entry (seen in a client, V38)
+	pcall(function() Stash.UI:raise() end)
 	if Stash.UI.Search and Stash.UI.Search:getText() ~= '' then Stash.UI.Search:clearText() end
 	Stash.SelectTab(tonumber(r.tab) or 0)
 	for _, w in ipairs(Stash.UI.SupplyList:getChildren()) do
@@ -990,6 +992,7 @@ Stash.FindGo = function(r)
 		failure(tr('It is in your purse. The purse page of the inventory panel shows it.'))
 	elseif a == 'inbox' then
 		showStash(function()
+			if Stash.UI then pcall(function() Stash.UI:raise() end) end
 			if Stash.UI and Stash.UI.InboxButton then flashWidget(Stash.UI.InboxButton) end
 		end)
 		failure(tr('It is in your inbox: the Inbox button of the stash moves it into your stash (in a protection zone).'))

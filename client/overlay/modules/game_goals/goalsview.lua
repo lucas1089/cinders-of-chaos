@@ -310,6 +310,19 @@ function V.trackerAnchors(hasLeftPanels)
   }
 end
 
+-- A tall tracker (goals, ascension and spell quest together) centred on the map climbed over the character plate and
+-- the buff bar top left and hid the health and mana bars (seen in a client 2026-11-27, V38, a Templar of level 1483
+-- with the Ascension section open). Screen y of the map top, its height, the tracker's height and the lowest point of
+-- the plate and buff bar (minY): nil keeps the centre, else the top margin from the map top that keeps it under them.
+function V.trackerTopMargin(mapY, mapH, h, minY)
+  mapY, mapH, h = num(mapY), num(mapH), num(h)
+  if minY == nil then return nil end
+  minY = num(minY)
+  local top = mapY + math.floor((mapH - h) / 2)
+  if top >= minY then return nil end
+  return minY - mapY
+end
+
 -- Phone tracker: at most `max` rows over the sections in order (welcome path, goals, ascension, spell quest). Returns the rows shown per
 -- section and the count left out ("+N" line). max nil or below 1 shows everything (desktop).
 function V.budget(counts, max)

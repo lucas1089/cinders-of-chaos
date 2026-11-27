@@ -617,6 +617,23 @@ local function armOf(player, rows)
 	return {active = active, limit = Core.slotLimit(player:getLevel(), nil, pactSlots(player)), slots = slots, live = live}
 end
 
+-- the keystone names of the tree (keystone_labels_config.lua: "Barbed Quiver" for arBarbed), flag -> name; nil when the
+-- labels are not loaded (loadouts_core.lua C.keystoneName then)
+local labelMemo
+local function keystoneLabels()
+	if not labelMemo then
+		local lc = ChaosKeystoneLabels and ChaosKeystoneLabels.cfg
+		local map = {}
+		for flag, row in pairs(lc and lc.flags or {}) do
+			if type(row) == "table" and type(row.name) == "string" then
+				map[flag] = row.name
+			end
+		end
+		labelMemo = next(map) and map or nil
+	end
+	return labelMemo
+end
+
 -- one slot for the window
 local function slotView(player, slot, row, ctx)
 	local view = {slot = slot, locked = slot > ctx.limit, active = slot == ctx.active}
@@ -650,7 +667,7 @@ local function slotView(player, slot, row, ctx)
 	view.voc = vocationName(row.voc)
 	view.cls = ChaosClasses and ChaosClasses.classKey and ChaosClasses.classKey(row.voc) or ""
 	view.points, view.pointsTotal = #nodes, ctx.points
-	view.keystones = Core.keystones(ctx.tree, nodes, ctx.variantKey)
+	view.keystones = Core.keystones(ctx.tree, nodes, ctx.variantKey, keystoneLabels())
 	view.paragon = Core.paragonSpent(paragon)
 	view.supports = runeSummary(layout)
 	local steps = Core.planGear(Core.decodeGear(row.gear), ctx.equipped, ctx.pool, cfg.gearSlots)
