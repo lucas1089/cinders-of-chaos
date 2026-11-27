@@ -598,4 +598,21 @@ do -- a draw of 200 cells twice in a row (a burst of loot): the second draw sets
   eq(sets, 200, 'two draws of the same page: each filled cell set once, the empty ones never')
 end
 
+-- controls right of the equipment fit the panel (seen in a client 2026-11-27: the second column ran off the right edge)
+do
+  local l, span = C.controlsLayout(38)
+  eq(l.chaseModeBoxStand[1] + C.BOX, 38, 'width 38: the second column ends at the right edge')
+  eq(l.fightOffensiveBox[1] + C.BOX <= l.chaseModeBoxStand[1], true, 'width 38: the columns do not overlap')
+  eq(l.fightOffensiveBox[1] >= -C.CONTROLS_MARGIN, true, 'width 38: the first column stays right of the slots')
+  eq(l.stopButton[1], l.fightOffensiveBox[1], 'Stop under the first column')
+  eq(span, 38 - l.fightOffensiveBox[1], 'span')
+  local w = C.controlsLayout(60)
+  eq(w.chaseModeBoxStand[1], 40, 'width 60: second column against the right edge')
+  eq(w.fightOffensiveBox[1], 18, 'width 60: first column 2 px left of it')
+  local n = C.controlsLayout(30)
+  eq(n.fightOffensiveBox[1] >= -C.CONTROLS_MARGIN and n.fightOffensiveBox[1] + C.BOX <= n.chaseModeBoxStand[1], true, 'width 30: no overlap, inside the gap')
+  local z = C.controlsLayout(nil)
+  eq(z.fightOffensiveBox[1] >= -C.CONTROLS_MARGIN, true, 'no width: still placed')
+end
+
 if fails == 0 then print('bagpanel_core_test: ok') else os.exit(1) end

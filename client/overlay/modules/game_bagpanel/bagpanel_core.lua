@@ -711,3 +711,23 @@ function C.cellUpdate(current, item, notifiesRemoval)
   if item == nil and not notifiesRemoval then return 'set+decorate' end
   return 'set'
 end
+
+-- the stock inventory controls right of the equipment (bagpanel.lua moveControls): two columns of 20 px boxes, the
+-- fight stances in the first, stand / chase / PvP button in the second, safe fight, Stop and the conditions under
+-- them. Seen in a client (2026-11-27): the panel left about 38 px right of the slots and the second column, fixed at
+-- x 22, ran past the window's right edge. The columns sit against the right edge now, 2 px apart when there is room;
+-- with less than 40 px the first column moves into the gap left of the panel (at most 8 px, the panel's margin).
+C.BOX, C.CONTROLS_GAP, C.CONTROLS_MARGIN = 20, 2, 8
+function C.controlsLayout(width)
+  width = tonumber(width) or 0
+  if width ~= width then width = 0 end
+  local x2 = math.max(C.BOX + C.CONTROLS_GAP - C.CONTROLS_MARGIN, math.floor(width) - C.BOX)
+  local gap = math.max(0, math.min(C.CONTROLS_GAP, x2 - C.BOX + C.CONTROLS_MARGIN))
+  local x1 = math.max(-C.CONTROLS_MARGIN, x2 - C.BOX - gap)
+  return {
+    fightOffensiveBox = { x1, 0 }, fightBalancedBox = { x1, 22 }, fightDefensiveBox = { x1, 44 },
+    chaseModeBoxStand = { x2, 0 }, chaseModeBoxChase = { x2, 22 }, openPvpButton = { x2, 44 },
+    safeFightBox = { x1, 68 }, stopButton = { x1, 92 }, conditionPanel = { x1, 112 },
+    pvpModesPanel = { x1, 68 },   -- opens over safe fight and Stop
+  }, x2 + C.BOX - x1
+end

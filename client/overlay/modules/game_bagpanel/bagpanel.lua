@@ -1028,12 +1028,7 @@ end
 -- on terminate. Right of the equipment, at { x, y } in the controls panel: the fight modes in one column, stand,
 -- chase and the PvP modes button in the next, safe fight, Stop and the condition icons under them. Soul and capacity
 -- sit in the empty corners of the last equipment row, under the ring and the badge (the stock window's places).
-local CONTROLS = {
-  fightOffensiveBox = { 0, 0 }, fightBalancedBox = { 0, 22 }, fightDefensiveBox = { 0, 44 },
-  chaseModeBoxStand = { 22, 0 }, chaseModeBoxChase = { 22, 22 }, openPvpButton = { 22, 44 },
-  safeFightBox = { 0, 68 }, stopButton = { 0, 92 }, conditionPanel = { 0, 112 },
-  pvpModesPanel = { 0, 68 },   -- opens over safe fight and Stop
-}
+-- (the places: bagpanel_core.lua C.controlsLayout, from the width the panel has, against its right edge)
 local CORNERS = { soulLabel = 0, capLabel = 2 }   -- equipment column of the last row
 local moved = {}          -- widget -> its stock parent
 
@@ -1065,14 +1060,24 @@ end
 local function moveControls()
   local stock, controls, equipPanel = stockWindow(), child('controls'), child('equipPanel')
   if not stock or not controls or not equipPanel then return end
-  for id, at in pairs(CONTROLS) do
+  local layout, span = C.controlsLayout(controls:getWidth())
+  for id, at in pairs(layout) do
     local w = stock:recursiveGetChildById(id) or controls:getChildById(id)
     if alive(w) then place(w, controls, 'parent', at[1], at[2]) end
   end
   local stop = controls:getChildById('stopButton')
-  if alive(stop) then stop:setWidth(42) end
+  if alive(stop) then stop:setWidth(span) end
   local cond = controls:getChildById('conditionPanel')
-  if alive(cond) then cond:setWidth(controls:getWidth()) end
+  if alive(cond) then cond:setWidth(span) end
+  if handlers.controlsOn ~= controls then
+    handlers.controlsOn = controls
+    -- the width is known after the first layout and changes with the side panel: place them again then
+    handlers.controls = { onGeometryChange = function(_, oldRect, newRect)
+      if oldRect and newRect and oldRect.width == newRect.width then return end
+      addEvent(function() if alive(window) then moveControls() end end)
+    end }
+    connect(controls, handlers.controls)
+  end
   local modes = controls:getChildById('pvpModesPanel')
   if alive(modes) then modes:raise() end
   local step = C.CELL + 3
