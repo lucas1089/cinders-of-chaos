@@ -135,7 +135,7 @@ namespace Chaos.Core
             { "PARTY_INVITE", "images/toast/party_invite.png" }, { "BOUNTY", "images/toast/bounty.png" }, { "NEW_PLAYER", "images/toast/new_player.png" },
             { "BESTIARY", "images/toast/bestiary.png" }, { "ACHIEVEMENT", null }, { "ASCENSION", "images/toast/ascension.png" },
             { "MARKET", "images/toast/market.png" }, { "SALE", "images/toast/market.png" }, { "INVASION", "images/toast/invasion.png" },
-            { "CURSED_CHEST", "images/toast/invasion.png" }, { "WEEKLY_CHEST", "images/toast/task.png" }, { "MILESTONE", "images/toast/ascension.png" },
+            { "WORLD_EVENT", "images/toast/announce.png" }, { "CURSED_CHEST", "images/toast/invasion.png" }, { "WEEKLY_CHEST", "images/toast/task.png" }, { "MILESTONE", "images/toast/ascension.png" },
             { "SEASON_PASS", "images/toast/season_pass.png" }, { "PACT", "images/toast/pact.png" }, { "JOURNEY", "images/toast/journey.png" },
             { "BOSS_POINT", "images/toast/boss_point.png" }, { "SCREENSHOT", "images/toast/announce.png" }, { "CATACOMB_FREE", "images/toast/catacomb_invite.png" },
         };

@@ -353,6 +353,7 @@ local function renderMine()
   for _, a in ipairs(apps) do
     local w = g_ui.createWidget('PartyFinderApplicant', list)
     w.name:setText(V.applicantLine(a))
+    w.name:setTooltip(V.applicantLine(a))
     w.role:setText(V.roleName(a.r))
     w.role:setColor(V.roleColor(a.r))
     w.info:setText((a.q and tr('quick join, ') or '') .. V.ago((a.ago or 0) + elapsed()))

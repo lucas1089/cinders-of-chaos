@@ -90,6 +90,9 @@ end
 
 -- ---------------------------------------------------------------- the conversation log
 local function pointer(label)
+  -- a UILabel is phantom: without this the click fell through to the log panel and a gold word did nothing (V35, seen in
+  -- a client 2026-11-27 at the tavern NPC)
+  if label.setPhantom then label:setPhantom(false) end
   label:setEventListener(EVENT_TEXT_CLICK)
   label:setEventListener(EVENT_TEXT_HOVER)
   label.onTextHoverChange = function(widget, _, hovered)

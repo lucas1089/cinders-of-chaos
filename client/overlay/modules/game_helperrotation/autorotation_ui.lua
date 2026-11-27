@@ -497,9 +497,15 @@ function U.onLevelUp()
   return action
 end
 
+local loginAt -- g_clock.millis() of the game start
+local function onGameStart()
+  loginAt = g_clock.millis()
+end
+
 local function onLevelChange(localPlayer, level, levelPercent, oldLevel)
-  -- oldLevel 0: the login's first level packet (also after a death), not a level-up
-  if oldLevel and oldLevel > 0 and level > oldLevel then
+  -- oldLevel 0: the login's first level packet (also after a death), not a level-up; a jump in the first seconds of a login
+  -- is the server's start level (A.isLevelUp, V35)
+  if A.isLevelUp(oldLevel, level, loginAt and (g_clock.millis() - loginAt) or nil) then
     U.onLevelUp()
   end
 end
@@ -578,13 +584,14 @@ end
 
 function U.init()
   connect(LocalPlayer, { onLevelChange = onLevelChange, onVocationChange = onVocationChange })
-  connect(g_game, { onGameEnd = onGameEnd, onTextMessage = onTextMessage })
+  connect(g_game, { onGameStart = onGameStart, onGameEnd = onGameEnd, onTextMessage = onTextMessage })
+  if g_game.isOnline() then onGameStart() end
   poll()
 end
 
 function U.terminate()
   disconnect(LocalPlayer, { onLevelChange = onLevelChange, onVocationChange = onVocationChange })
-  disconnect(g_game, { onGameEnd = onGameEnd, onTextMessage = onTextMessage })
+  disconnect(g_game, { onGameStart = onGameStart, onGameEnd = onGameEnd, onTextMessage = onTextMessage })
   if pollEvent then
     removeEvent(pollEvent)
     pollEvent = nil

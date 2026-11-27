@@ -516,8 +516,10 @@ TradeWindow < ChaosWindow
         anchors.top: capacityCaption.bottom
         anchors.left: parent.left
         anchors.right: parent.right
+        anchors.bottom: optionsBox.top
         margin-top: 6
-        height: 28
+        margin-bottom: 2
+        // down to the options: an NPC's answer to a buy shows here and runs to three or four lines (V35)
         font: verdana-11px-antialised
         color: #e03a1e
         text-align: topLeft

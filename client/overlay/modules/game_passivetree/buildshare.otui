@@ -2,7 +2,7 @@
 ChaosWindow
   id: buildShareWindow
   !text: tr('Build Code')
-  size: 400 392
+  size: 400 410
   anchors.top: parent.top
   anchors.right: parent.right
   margin-top: 80
@@ -14,7 +14,8 @@ ChaosWindow
     anchors.top: parent.top
     anchors.left: parent.left
     anchors.right: parent.right
-    height: 42
+    // four lines in English and pt-BR: at 42 the sentence ran over the title and under the box (V35, seen 2026-11-27)
+    height: 60
     text-wrap: true
     text-auto-resize: false
     text-align: center

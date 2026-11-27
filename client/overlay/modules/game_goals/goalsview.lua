@@ -354,4 +354,13 @@ function V.isDrag(dx, dy)
   return math.abs(num(dx)) >= V.DRAG_THRESHOLD or math.abs(num(dy)) >= V.DRAG_THRESHOLD
 end
 
+-- whether the tracker shows: enabled, something to show (welcome, tracker, ascension or spell quest rows), online, and
+-- no other HUD has asked it aside (hiddenBy: key -> true; the dungeon kill counter and the invasion HUD, V35)
+function V.trackerShown(st, enabled, online, hiddenBy)
+  if not (enabled and online) then return false end
+  if type(hiddenBy) == 'table' and next(hiddenBy) ~= nil then return false end
+  st = st or {}
+  return #(st.welcome or {}) > 0 or #(st.tracker or {}) > 0 or #(st.ascension or {}) > 0 or #(st.spellquest or {}) > 0
+end
+
 return V

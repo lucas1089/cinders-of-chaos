@@ -1095,6 +1095,10 @@ finish = function(result)
 		end
 		V.startBuff(state.area)
 		state.result = "win"
+		-- the final numbers first: the HUD refreshes every hudSeconds and the last kills (the warlord's above all) came
+		-- after its last refresh, so it ended on the warlord at 100% and shares far from the rewarded ones (V35, seen in
+		-- a client 2026-11-27: the HUD said 58% / 42%, the rewards 27% / 73%)
+		V.broadcastHud()
 		sendAll("end", {result = "win", text = ChaosI18n.msg("%s held!", state.areaName)})
 		cleanupInvaders()
 		addEvent(function(tk)
@@ -1109,6 +1113,7 @@ finish = function(result)
 	V.lastEndAt = now()
 	clashSettle()
 	discord("lost")
+	V.broadcastHud() -- the final numbers before the end line (V35)
 	sendAll("end", {result = result, text = result == "breach" and ChaosI18n.msg("%s has fallen!", state.areaName)
 		or ChaosI18n.msg("Time is up: %s is overrun!", state.areaName)})
 	announce(ChaosI18n.msg("DEFEAT! %s %s. The %s occupies it for %d minutes: slay the occupiers to free it.",

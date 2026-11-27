@@ -763,11 +763,14 @@ local function statusWord(st, lang)
 end
 
 -- the list window: {title, text, choices = {{key, label}}}; stateOf(t) -> stored state. The tales in progress first,
--- then the new ones, then the done ones; by level within each. The NPC's list and the answer in tales.lua both call
--- this, so a choice index names the same tale. A chain's next tale shows once the one before is done.
+-- then the new ones, then the done ones; within each the story quest (cfg.story.saga, O415) first, then by level. The
+-- NPC's list and the answer in tales.lua both call this, so a choice index names the same tale. A chain's next tale
+-- shows once the one before is done. V35 (seen in a client 2026-11-27): a level 8 character asked her for the story
+-- and got the list with "Teeth in the Cellars" first and the story's chapter I second.
 local GROUP = {on = 1, ready = 1, new = 2, done = 3}
 function M.listView(level, stateOf, lang)
 	local ui = M.cfg().ui
+	local storySaga = M.cfg().story and M.cfg().story.saga
 	local rows, nextLevel = {}, nil
 	for i, t in ipairs(M.tales()) do
 		local st = M.status(t, stateOf(t))
@@ -780,6 +783,10 @@ function M.listView(level, stateOf, lang)
 	table.sort(rows, function(a, b)
 		if GROUP[a.st] ~= GROUP[b.st] then
 			return GROUP[a.st] < GROUP[b.st]
+		end
+		local sa, sb = storySaga ~= nil and a.t.saga == storySaga, storySaga ~= nil and b.t.saga == storySaga
+		if sa ~= sb then
+			return sa
 		end
 		if a.t.minLevel ~= b.t.minLevel then
 			return a.t.minLevel < b.t.minLevel

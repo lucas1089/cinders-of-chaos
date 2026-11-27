@@ -1141,6 +1141,7 @@ ChaosLocaleStrings['pt-BR'] = {
   ["In queue for"] = "Na fila para",
   -- game_dungeons/dungeonsview.lua: the Weekly Challenge (O390, server weekly_challenge.lua)
   ["Weekly Challenge %s: %s"] = "Desafio Semanal %s: %s",
+  ["Layout seed %s, the same for every player."] = "Semente do mapa %s, a mesma para todos os jogadores.",
   ["The same layout for everyone this week, always at difficulty 1. Solo or a party of up to 4."] = "O mesmo mapa para todos nesta semana, sempre na dificuldade 1. Sozinho ou em grupo de até 4.",
   ["Fastest clear per class: Leaderboards, Weekly Challenge Solo and Party. The top 3 of each class get Conquest Tokens."] = "Conclusão mais rápida por classe: Leaderboards, Desafio Semanal Solo e em Grupo. Os 3 primeiros de cada classe ganham Conquest Tokens.",
   ["This layout is last week's: the new one opens at the next server save."] = "Este mapa é da semana passada: o novo abre no próximo server save.",

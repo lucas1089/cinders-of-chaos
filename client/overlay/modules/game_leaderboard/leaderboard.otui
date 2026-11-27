@@ -123,16 +123,19 @@ ChaosMainWindow
     menu-height: 342
     menu-scroll-step: 18
 
-  // margin-left: the combo's width + 8 while it shows (leaderboard.lua setView); not anchored to the combo, which hides
+  // the board's (or Records category's) sentence on a row of its own under the combo: beside the combo it had about 30 px
+  // between the combo and the Records button and showed "Fast" of "Fastest clear of ..." (V35, seen in a client
+  // 2026-11-27). Two lines, as the longest sentences need; the whole sentence is also its tooltip (leaderboard.lua setInfo).
   ChaosLabel
     id: infoLabel
     anchors.top: parent.top
     anchors.left: parent.left
-    anchors.right: recordsToggle.left
-    margin-top: 4
-    margin-left: 178
-    margin-right: 8
-    text-align: left
+    anchors.right: parent.right
+    margin-top: 26
+    height: 28
+    text-wrap: true
+    text-align: topLeft
+    phantom: false
 
   // Records view (records.lua): fastest kills and best results, this week / season / all time
   ChaosTabButton
@@ -167,10 +170,10 @@ ChaosMainWindow
   // the category tabs of the Records view (buildRecordTabs); empty and 0 high on the weekly boards
   UIWidget
     id: tabs
-    anchors.top: parent.top
+    anchors.top: infoLabel.bottom
     anchors.left: parent.left
     anchors.right: parent.right
-    margin-top: 26
+    margin-top: 4
     height: 0
     visible: false
     phantom: true

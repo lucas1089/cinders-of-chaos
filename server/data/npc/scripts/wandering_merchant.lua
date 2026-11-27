@@ -102,13 +102,18 @@ local function overLimit(cid, itemId, amount)
 		return false
 	end
 	local stop, period = stopNumber()
+	-- the refusal also goes to the status line: the trade window covers the conversation, so the NPC's line alone was
+	-- not seen and the Buy button seemed to do nothing (V35, seen in a client 2026-11-27)
 	if (tonumber(amount) or 1) > perStop then
 		npcHandler:say(t(cid, "One of each per customer, friend. I have only so much to go around."), cid)
+		player:sendCancelMessage(t(player, "One of each per customer, friend. I have only so much to go around."))
 		return true
 	end
 	if player:getStorageValue(key) == stop + 1 then
 		local left = math.max(1, math.ceil(((stop + 1) * period - os.time()) / 60))
-		npcHandler:say(t(cid, "You already bought that from me here. I move on in %d minutes; find me again then.", left), cid)
+		local text = t(cid, "You already bought that from me here. I move on in %d minutes; find me again then.", left)
+		npcHandler:say(text, cid)
+		player:sendCancelMessage(text)
 		return true
 	end
 	return false

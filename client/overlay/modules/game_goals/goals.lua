@@ -243,10 +243,16 @@ local function onSkipClick()
   send('welcomeSkip')
 end
 
+-- Other HUDs that need the left edge hide the tracker while they show (setHiddenBy). V35, seen 2026-11-27: in a
+-- dungeon run the kill counter (objectives, monsters alive, time left) sits bottom left above the chat and the tracker
+-- half way down covered its objectives; in a run the counter is the goal, so the tracker steps aside until it ends.
+-- The invasion HUD (game_invasion, key 'invasion') sits under the character plate where the tracker starts and was
+-- covered the same way: the tracker steps aside while it shows.
+local hiddenBy = {}
+
 local function renderTracker()
   if not tracker then return end
-  local shown = trackerEnabled() and (#st.welcome > 0 or #st.tracker > 0 or #st.ascension > 0 or #st.spellquest > 0)
-    and g_game.isOnline()
+  local shown = V.trackerShown(st, trackerEnabled(), g_game.isOnline(), hiddenBy)
   tracker:setVisible(shown)
   if not shown then return end
   local look = trackerLook()
@@ -344,6 +350,12 @@ function setTrackerEnabled(on)
     window.trackerBox:setChecked(on and true or false)
   end
   if on and #st.tracker == 0 and g_game.isOnline() then send('tracker') end
+  renderTracker()
+end
+
+-- key: who asks ('dungeon'); on: hide the tracker while any key holds it. The player's own switch is not touched.
+function setHiddenBy(key, on)
+  hiddenBy[key] = on and true or nil
   renderTracker()
 end
 
@@ -450,6 +462,7 @@ end
 local function onGameEnd()
   if window then window:hide() end
   st = V.new()
+  hiddenBy = {}
   renderTracker()
 end
 

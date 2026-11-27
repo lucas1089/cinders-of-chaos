@@ -140,6 +140,12 @@ function placeKillCounter()
   killCounter:setMarginLeft(spot.left)
 end
 
+-- the quest tracker of game_goals hides while the kill counter shows: both want the left edge of the map (V35)
+function goalsTrackerAside(on)
+  local goals = modules.game_goals
+  if goals and goals.setHiddenBy then pcall(goals.setHiddenBy, 'dungeon', on) end
+end
+
 function onChatMoved()
   if killCounter and killCounter:isVisible() then addEvent(placeKillCounter) end
 end
@@ -212,6 +218,7 @@ function destroy()
     if ChaosHudMove then ChaosHudMove.detach(killCounter) end
     killCounter:destroy()
     killCounter = nil
+    goalsTrackerAside(false)
   end
 
   if challengeNotifi then
@@ -342,7 +349,7 @@ local function refreshCard(id)
   end
 
   local best = card:getChildById('best')
-  local bestText = info and DungeonsView.bestText(info.difficulty) or nil
+  local bestText = info and DungeonsView.bestText(info.difficulty, info.weekly) or nil
   best:setText(bestText and chipText(bestText) or '')
   best:setVisible(bestText ~= nil)
 
@@ -1033,6 +1040,7 @@ function onDungeonStart(data)
 
   if not killCounter then return end
   killCounter:show()
+  goalsTrackerAside(true)
 
   local bonusObjectives = killCounter:getChildById("bonusObjectives")
   if bonusObjectives then
@@ -1088,6 +1096,7 @@ end
 
 function onDungeonFinish(data)
   killCounter:hide()
+  goalsTrackerAside(false)
   if timeLeftEvent then
     removeEvent(timeLeftEvent)
   end

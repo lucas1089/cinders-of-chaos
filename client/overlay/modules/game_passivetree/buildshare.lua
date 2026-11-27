@@ -137,12 +137,8 @@ end
 
 local function spellName(id)
   local spells = modules.game_chaosspells and modules.game_chaosspells.ChaosSpellData
-  for _, s in ipairs(spells or {}) do
-    if s.id == id then
-      return s.name
-    end
-  end
-  return '#' .. id
+  local data = rawget(_G, 'ChaosAutoRotationData')
+  return ChaosBuildCode.spellName(id, spells, data and data.spells)
 end
 
 local SLOT_NAMES = {[1] = 'Head', [2] = 'Amulet', [4] = 'Armour', [5] = 'Right hand', [6] = 'Left hand', [7] = 'Legs',

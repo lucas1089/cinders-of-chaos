@@ -100,7 +100,7 @@ V.BANNERS = {
 }
 V.BANNER_FALLBACK = 'Underworld'
 
--- the Weekly Challenge (server weekly_challenge.lua, the "dungeon" payload's `weekly` = {label, theme, current,
+-- the Weekly Challenge (server weekly_challenge.lua, the "dungeon" payload's `weekly` = {label, theme, seed, current,
 -- resetIn}): the line on top of the challenges and its text; nil without `weekly`
 function V.weeklyTitle(w)
   if type(w) ~= 'table' or not w.label then return nil end
@@ -120,6 +120,10 @@ function V.weeklyText(w)
   if type(w) ~= 'table' or not w.label then return nil end
   local lines = { tr('The same layout for everyone this week, always at difficulty 1. Solo or a party of up to 4.'),
     tr('Fastest clear per class: Leaderboards, Weekly Challenge Solo and Party. The top 3 of each class get Conquest Tokens.') }
+  -- the seed of the week's layout (V35, owner's row O390 "same dungeon and seed for all"): players can compare it
+  if tonumber(w.seed) then
+    table.insert(lines, 1, tr('Layout seed %s, the same for every player.', string.format('%d', tonumber(w.seed))))
+  end
   if w.current == false then
     lines[#lines + 1] = tr('This layout is last week\'s: the new one opens at the next server save.')
   elseif tonumber(w.resetIn) then
@@ -291,8 +295,11 @@ function V.difficultyName(d)
   return tr(V.DIFFICULTY_NAMES[clampDifficulty(d)])
 end
 
--- the hardest difficulty the character has unlocked ("Best: Hard"); nil for the first one (nothing to say yet)
-function V.bestText(d)
+-- the hardest difficulty the character has unlocked ("Best: Hard"); nil for the first one (nothing to say yet) and for
+-- the Weekly Challenge, which runs at Normal only: a clear unlocked Hard there and the card said "Best: Hard" over a
+-- locked Hard tile (V35, seen in a client 2026-11-27)
+function V.bestText(d, weekly)
+  if weekly then return nil end
   d = clampDifficulty(d)
   if d <= 1 then return nil end
   return tr('Best: %s', V.difficultyName(d))
@@ -310,7 +317,7 @@ function V.headerChips(entry, dungeon, playerLevel)
     queue = V.queueText(players),
     queueTone = V.queueTone(players),
   }
-  if dungeon then chips.best = V.bestText(dungeon.difficulty) end
+  if dungeon then chips.best = V.bestText(dungeon.difficulty, dungeon.weekly) end
   return chips
 end
 

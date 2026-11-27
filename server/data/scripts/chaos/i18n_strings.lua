@@ -1186,8 +1186,8 @@ return {
 			"Ah, |PLAYERNAME|! Recém-chegado das estradas quebradas. Peça um {trade}, eu não fico muito tempo.",
 		["May the shards spare you, |PLAYERNAME|."] = "Que os fragmentos te poupem, |PLAYERNAME|.",
 		["Your loss, wanderer."] = "Azar o seu, andarilho.",
-		["Orbs and oddities, found where the world bleeds. Look, but be quick."] =
-			"Orbes e curiosidades, achados onde o mundo sangra. Olhe, mas seja rápido.",
+		["Orbs and oddities, found where the world bleeds. One of each per customer, and be quick."] =
+			"Orbes e curiosidades, achados onde o mundo sangra. Um de cada por cliente, e seja rápido.",
 		["Season characters gain nothing from a %s, so I will not sell you one."] =
 			"Personagens de temporada não ganham nada com um %s, então não vou te vender um.",
 		["Season characters cannot buy a %s."] = "Personagens de temporada não podem comprar um %s.",

@@ -520,4 +520,11 @@ end
 if fails > 0 then
   error(fails .. ' failure(s)')
 end
+-- a level jump in the first seconds of a login is the start level, not a level-up (V35)
+eq(A.isLevelUp(1, 8, 800), false, 'the start level at a first login: no notice')
+eq(A.isLevelUp(1, 8, A.LOGIN_LEVEL_MS + 1), true, 'a level-up later in the session')
+eq(A.isLevelUp(7, 8, nil), true, 'login time not known: a level-up')
+eq(A.isLevelUp(0, 8, 60000), false, 'the first level packet')
+eq(A.isLevelUp(8, 7, 60000), false, 'a level lost')
+
 print('autorotation_test: OK')

@@ -119,12 +119,15 @@ PartyFinderApplicant < UIWidget
     id: name
     anchors.top: parent.top
     anchors.left: parent.left
+    anchors.right: accept.left
     margin-top: 5
     margin-left: 8
-    text-auto-resize: true
+    margin-right: 6
+    // fixed width, cut before the buttons: "Name Lv 1500 Beastmaster" ran under Accept (V35); the tooltip has the whole line
+    height: 14
     font: verdana-11px-rounded
     color: #f6cf72
-    phantom: true
+    phantom: false
 
   UILabel
     id: role
@@ -426,6 +429,10 @@ ChaosMainWindow
         anchors.left: lDetail.right
         anchors.verticalCenter: lDetail.verticalCenter
         width: 224
+        // the Hunt list holds every hunt of the teleport room (120+): a plain menu ran off the screen (V35)
+        menu-scroll: true
+        menu-height: 300
+        menu-scroll-step: 18
 
       ChaosTextEdit
         id: title
@@ -720,6 +727,9 @@ ChaosMainWindow
     anchors.right: refreshButton.left
     anchors.verticalCenter: closeButton.verticalCenter
     margin-right: 8
+    // two lines: "... accepted you as DPS for Hunt: <name>: accept the party invitation." ran under Refresh (V35)
+    height: 28
+    text-wrap: true
     text-align: left
 
   ChaosButton

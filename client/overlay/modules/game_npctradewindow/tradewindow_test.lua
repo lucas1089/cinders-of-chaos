@@ -173,6 +173,13 @@ find('tradeButton').onClick(); eq(sent[#sent][5], true, 'bags asked')
 find('bagsCheck'):setChecked(false)
 find('ignoreCapCheck'):setChecked(true); find('tradeButton').onClick(); eq(sent[#sent][4], true, 'ignore capacity asked')
 find('ignoreCapCheck'):setChecked(false)
+-- the NPC's answer to the buy is shown in the window, over the conversation it covers (V35)
+MessageModes = MessageModes or { Say = 1, NpcFrom = 10, NpcFromStartBlock = 11 }
+connected[g_game].onTalk('Merchant', 0, MessageModes.Say, 'a player line')
+eq(find('warnLabel').text, '', 'a player line is not the answer')
+connected[g_game].onTalk('Wandering Merchant', 0, MessageModes.NpcFrom, 'One of each per customer, ask for a {trade}.')
+eq(find('warnLabel').text, 'One of each per customer, ask for a trade.', 'the NPC line in the warning line')
+find('tradeButton').onClick(); eq(sent[#sent][1], 'buy', 'a new buy clears it')
 -- the card of what the player cannot afford is dimmed and a heavy buy is capped by capacity
 connected[LocalPlayer].onFreeCapacityChange(nil, 7)
 eq(find('quantityScroll').scroll.max, 2, 'capacity caps the amount (7 / 3.5)'); eq(find('warnLabel').text, 'That is all you can carry.', 'and says so')

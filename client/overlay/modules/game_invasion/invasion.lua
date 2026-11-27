@@ -75,11 +75,10 @@ place = function()
     x = rift.x + rift.width + InvasionMath.GAP
     top = math.max(top, rift.y)
   end
-  local obstacles = { InvasionMath.characterZone(view) }
-  for _, r in ipairs({ plate, shownRect(byId('energyShieldBar')), shownRect(byId('buffBar')), shownRect(byId('partyFrames')),
-      shownRect(byId('mapOverlayStrip')) }) do
-    obstacles[#obstacles + 1] = r
-  end
+  -- a hidden widget gives nil: InvasionMath.addRects skips it (ipairs stopped at the first nil, so with no energy shield
+  -- bar the buff bar, party frames and map strip were never obstacles and the HUD title sat under the buff icons, V35)
+  local obstacles = InvasionMath.addRects({ InvasionMath.characterZone(view) }, 5, plate, shownRect(byId('energyShieldBar')),
+    shownRect(byId('buffBar')), shownRect(byId('partyFrames')), shownRect(byId('mapOverlayStrip')))
   local overlay = mapPanel:getChildById('mapOverlay')
   local box = shownRect(overlay)
   if box and box.width < view.width * 0.6 then obstacles[#obstacles + 1] = box end -- the corner box (not the full view)
@@ -145,10 +144,18 @@ local function render()
   scheduleEvent(place, 50) -- again once the layout has the new height
 end
 
+-- the quest tracker of game_goals steps aside while the HUD shows: both sit at the top left of the map and the tracker
+-- covered the HUD's clock and breach meter (V35, seen in a client 2026-11-27); the HUD folds to its title on a click
+local function goalsTrackerAside(on)
+  local goals = modules.game_goals
+  if goals and goals.setHiddenBy then pcall(goals.setHiddenBy, 'invasion', on) end
+end
+
 local function hideHud()
   stopTick()
   if hideEvent then removeEvent(hideEvent) hideEvent = nil end
   if hud then hud:setVisible(false) end
+  goalsTrackerAside(false)
   data = nil
 end
 
@@ -158,6 +165,7 @@ local function onHud(d)
   receivedAt = now()
   if d.phase ~= 'occupied' then hud.result:setVisible(false) end -- a lost invasion keeps "X has fallen" up
   hud:setVisible(true)
+  goalsTrackerAside(true)
   render()
   stopTick()
   tick()
@@ -171,6 +179,7 @@ local function onEnd(d)
   stopTick()
   render()
   hud:setVisible(true)
+  goalsTrackerAside(true)
   hud.result:setText(tostring(d.text or ''))
   hud.result:setColor(InvasionMath.resultColor(d.result))
   hud.result:setVisible(true)

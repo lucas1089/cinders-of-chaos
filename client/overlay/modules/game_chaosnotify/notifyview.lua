@@ -19,6 +19,9 @@ V.MESSAGE_TYPES = {
   pact = 'PACT', -- the Chaos Pact (or the Pacto Completo) ends soon (pact.lua, O317)
   journey = 'JOURNEY',
   invasion = 'INVASION',
+  -- the world events (server worldevents.lua: the Wandering Merchant's shop, Chaos Storm, Golden Hour); they came as
+  -- 'invasion' and showed INVASION with crossed axes (V35, seen in a client 2026-11-27)
+  worldevent = 'WORLD_EVENT',
   cursedchest = 'CURSED_CHEST', -- a Cursed Chest rises, its hordes, its loot (server cursedchest.lua, O244)
   weeklychest = 'WEEKLY_CHEST', -- the Weekly Chest opens, the bonus roll (server weeklychest.lua, O261)
   milestone = 'MILESTONE', -- a level milestone every 100 levels from 800 (server milestones.lua, O378)

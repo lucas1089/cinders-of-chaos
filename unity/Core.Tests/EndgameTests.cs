@@ -179,6 +179,8 @@ namespace Chaos.Core.Tests
             check(DungeonsView.MsToShortTime(61234) == "01:01.2" && DungeonsView.MsToShortTime(0) == "00:00.000" && DungeonsView.SecondsToShortTime(3725) == "01:02:05", "dungeons: time formats");
             check(DungeonsView.WeeklyTitle(Json.Parse("{\"label\":\"W12\",\"theme\":\"Crucible\"}")) == "Weekly Challenge W12: Crucible", "dungeons: the weekly title");
             check(DungeonsView.WeeklyText(Json.Parse("{\"label\":\"W12\",\"current\":false}")).Contains("last week's"), "dungeons: the weekly text for an old layout");
+            check(DungeonsView.WeeklyText(Json.Parse("{\"label\":\"W12\",\"seed\":1773680016}")).StartsWith("Layout seed 1773680016,"), "dungeons: the weekly text starts with the layout seed (V35)");
+            check(!DungeonsView.WeeklyText(Json.Parse("{\"label\":\"W12\"}")).Contains("seed"), "dungeons: no seed line without a seed");
             check(Eg.Span(90061) == "1d 1h" && Eg.Span(3700) == "1h 01m" && Eg.Span(300) == "5m", "dungeons: span formats");
         }
 

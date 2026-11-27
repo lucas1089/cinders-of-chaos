@@ -96,3 +96,20 @@ end
 function L.release(state)
   state.active = nil
 end
+
+-- ---------------------------------------------------------------------------------------------------------------
+-- What the NPC answers to a trade (V35, seen in a client 2026-11-27 at the Wandering Merchant): a refused buy ("one of
+-- each per customer", "you already bought that") comes as the NPC's line in the conversation, which the trade window
+-- covers, so the Buy button seemed to do nothing. A line of the NPC the player trades with, heard within REPLY_SECONDS of
+-- a Buy or Sell click, is shown in the window's warning line until the next selection.
+-- ---------------------------------------------------------------------------------------------------------------
+L.REPLY_SECONDS = 3
+
+-- true when a line (speaker name, at seconds now) answers the trade clicked at tradeAt with the shop of npcName
+function L.isTradeReply(tradeAt, now, speaker, npcName, isNpcLine)
+  if not isNpcLine then return false end
+  tradeAt, now = tonumber(tradeAt), tonumber(now)
+  if not tradeAt or not now or now < tradeAt or now - tradeAt > L.REPLY_SECONDS then return false end
+  if npcName and npcName ~= '' and speaker ~= npcName then return false end
+  return true
+end

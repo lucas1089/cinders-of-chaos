@@ -8594,3 +8594,18 @@ Linux main client, local server, a fresh level 8 Warrior raised to 10, 12 and 20
 - Server side: the Season Pass vanished at level 10 and the death advice gave no tip for a stock monster (server/README.md, V34 notes).
 - Fine as built: NPC level gates (Mordecai, Cantor Velith: come back at level 40), the mentor offer at 12, the Main Quest tracker and Next Goals, the Newcomer buff, item and spell Alt help, Alt+F Help search, the level 20 survey and the funnel / survey reports.
 - Not fixed, seen: at a jump of several levels the popups pile up in the centre (New spell available, Want a mentor?, NEW ADVENTURER, the survey). The death recap opens at one place, then moves to the centre.
+
+## Seen in a client (2026-11-27, V35: party finder, weekly challenge, build codes, invasion, rumours, merchant, story)
+
+Linux main client from this branch (base patches to 0215), pair 88, local server, two testers and one fresh character. Rows O389, O390, O391, O393, O394, O399 and O415 played through. What was wrong is fixed here.
+
+- `game_partyfinder` (O389): a Hunt want posted by one tester, applied to and accepted by the other; the party invitation joins them. Fixed: the form's rows and the notes menu were cut at the window's bottom.
+- `game_dungeons` (O390): the weekly dungeon shows its layout seed ("Layout seed N, the same for every player.", `DungeonsView` weekly line). Fixed: a "Best: Hard" chip showed on the Normal-only weekly (`V.bestText` skips the weekly). The Next Goals tracker steps aside while the run's kill counter shows (`game_goals` `setHiddenBy`).
+- `game_leaderboard` (O390): the weekly board shows the run. Fixed: the info line was cut to its first word; it has its own wrapped row and a tooltip.
+- `game_passivetree` (O391): Copy Full Build on one tester, pasted on the other: the tree loads (248 nodes), spells and gear plan shown as text (by design). Fixed: a stock spell in the code showed as "#124" (`ChaosBuildCode.spellName` also reads the rotation data); the Import hint overflowed its box.
+- `game_invasion` (O393): a staff start, two defenders, rewards and the Victory buff. Fixed: the quest tracker covered the HUD (it steps aside); the HUD sat under the buff icons when the energy shield bar was hidden (`InvasionMath.addRects` skips hidden widgets); the subtitle was cut on both sides (it wraps).
+- `game_npctalk` (O394, O399): fixed: a click on a gold word did nothing, the line labels were phantom (`pointer` makes them take the mouse).
+- `game_npctradewindow` (O399): the merchant's prices and one of each. Fixed: a refused buy ("one of each per customer", "you already bought that") came as an NPC line under the trade window; the window's warning line now shows the NPC's answer to a Buy or Sell for 3 s (`TradeWindowLogic.isTradeReply`) and grows to the options.
+- `game_chaosnotify` (O399): fixed: the Wandering Merchant's move came as an INVASION toast with crossed axes; world events have their own kind `worldevent`, shown as WORLD EVENT (`ChaosNotifyView.MESSAGE_TYPES`; the Unity mirror `ToastKinds` too).
+- `game_helperrotation` (O415): fixed: the "New spell available" box opened over a fresh character's quiet first login (the server raises level 1 to the start level 8 just after the login); a level jump in the first 10 s of a login is not a level-up (`A.isLevelUp`). The main quest's first step and the gold ! over Archivist Maelis show.
+- Base patch 0215 (`client/BASE.md`): modal dialog choices wider (the tavern NPC's choices were cut).

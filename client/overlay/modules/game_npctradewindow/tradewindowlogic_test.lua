@@ -83,5 +83,14 @@ L.receive(S, P('azure'), 400)
 L.receive(S, P('storage'), 401)
 eq(L.take(S, 402).name, 'Hallowfall Coins', 'the last pending packet wins')
 
+-- the NPC's answer to a trade click goes to the warning line (V35)
+eq(L.isTradeReply(100, 101, 'Wandering Merchant', 'Wandering Merchant', true), true, 'a line of the trader just after a Buy')
+eq(L.isTradeReply(100, 100 + L.REPLY_SECONDS + 1, 'Wandering Merchant', 'Wandering Merchant', true), false, 'too late')
+eq(L.isTradeReply(100, 99, 'Wandering Merchant', 'Wandering Merchant', true), false, 'before the click')
+eq(L.isTradeReply(nil, 101, 'Wandering Merchant', 'Wandering Merchant', true), false, 'no click')
+eq(L.isTradeReply(100, 101, 'Someone', 'Wandering Merchant', true), false, 'another speaker')
+eq(L.isTradeReply(100, 101, 'Wandering Merchant', 'Wandering Merchant', false), false, 'not an NPC line')
+eq(L.isTradeReply(100, 101, 'Wandering Merchant', nil, true), true, 'the trader not known: any NPC line')
+
 print('npctradewindow tests OK (' .. checks .. ' checks)')
 if fails > 0 then os.exit(1) end

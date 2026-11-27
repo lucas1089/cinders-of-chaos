@@ -110,7 +110,7 @@ function WC.info(player)
 	local now = LB and LB.now and LB.now() or os.time()
 	local resetIn = LB and LB.nextReset and Chaos.leaderboardConfig
 		and math.max(0, LB.nextReset(now, Chaos.leaderboardConfig.resetHour) - now) or nil
-	return {label = b.label, theme = b.theme, current = b.week == WC.weekNow(), resetIn = resetIn,
+	return {label = b.label, theme = b.theme, seed = b.seed, current = b.week == WC.weekNow(), resetIn = resetIn,
 		boards = {C().boards.solo, C().boards.party}}
 end
 

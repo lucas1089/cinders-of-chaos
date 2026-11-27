@@ -223,6 +223,9 @@ refresh = function(rebuild)
   local d = card and M.detail(c, card, st.amount) or nil
   if d then st.amount = d.amount end
   view:setSelection(card, d, c)
+  if card and st.npcNote then -- the NPC's answer to the last trade (V35)
+    view.ui.warnLabel:setText(st.npcNote)
+  end
 end
 
 local function select(key)
@@ -230,6 +233,7 @@ local function select(key)
   local card = st.cardsByKey[key]
   if not card then return end
   st.selectedKey = key
+  st.npcNote = nil
   if st.tab == M.SELL then
     local max = M.limit(ctx(), card.item)
     st.amount = max
@@ -318,6 +322,7 @@ local function doTrade()
   local max = M.limit(ctx(), card.item)
   local amount = M.clampAmount(st.amount, 1, max)
   if amount < 1 then return end
+  st.tradeAt, st.npcNote = now(), nil
   if st.tab == M.BUY then
     g_game.buyItem(card.item.ptr, amount, prefs.ignoreCapacity, prefs.bags and isGold())
   else
@@ -618,6 +623,17 @@ local function onStep(dir)
   return true
 end
 
+-- the NPC's line right after a Buy or Sell (a refusal: "one of each per customer") in the warning line: the conversation
+-- that carries it is under this window (V35, TradeWindowLogic.isTradeReply)
+local function onTalk(name, _, mode, text)
+  if not (st and session and session.open and alive(window) and window:isVisible()) then return end
+  local MM = MessageModes or {}
+  local npcLine = mode ~= nil and (mode == MM.NpcFrom or mode == MM.NpcFromStartBlock)
+  if not L.isTradeReply(st.tradeAt, now(), name, nil, npcLine) then return end
+  st.npcNote = tostring(text or ''):gsub('[{}]', '')
+  refresh()
+end
+
 -- ---------------------------------------------------------------- what other modules call on game_npctrade
 local function takeOver(trade)
   base.trade = trade
@@ -714,7 +730,7 @@ function init()
   g_keyboard.bindKeyDown('Down', function() return onStep(1) end, window)
   takeOver(npcTrade)
   connect(g_game, { onOpenNpcTrade = onOpenNpcTrade, onCloseNpcTrade = onCloseNpcTrade, onPlayerGoods = onPlayerGoods,
-    onGameEnd = hideShop })
+    onGameEnd = hideShop, onTalk = onTalk })
   connect(LocalPlayer, { onFreeCapacityChange = onFreeCapacityChange, onInventoryChange = onInventoryChange })
   ProtocolGame.registerExtendedOpcode(OPCODE, onCurrency)
 end
@@ -722,7 +738,7 @@ end
 function terminate()
   pcall(ProtocolGame.unregisterExtendedOpcode, OPCODE)
   pcall(disconnect, g_game, { onOpenNpcTrade = onOpenNpcTrade, onCloseNpcTrade = onCloseNpcTrade,
-    onPlayerGoods = onPlayerGoods, onGameEnd = hideShop })
+    onPlayerGoods = onPlayerGoods, onGameEnd = hideShop, onTalk = onTalk })
   pcall(disconnect, LocalPlayer, { onFreeCapacityChange = onFreeCapacityChange, onInventoryChange = onInventoryChange })
   if session then session:finish() end
   closeSellAll()

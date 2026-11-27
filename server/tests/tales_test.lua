@@ -293,13 +293,14 @@ v = M.listView(520, stateOf, "pt")
 local open520 = 0
 for _, t in ipairs(cfg.tales) do if t.minLevel <= 520 and not t.requires then open520 = open520 + 1 end end
 eq(#v.choices, open520, "the tales of the level, chains closed")
-assert(v.choices[1].label:find("Dentes", 1, true), "by level: the cellars first")
+eq(v.choices[1].key, "cinderhold_1", "the story quest first among the new tales (O415, V35)")
+assert(v.choices[2].label:find("Dentes", 1, true), "then by level: the cellars")
 for _, ch in ipairs(v.choices) do assert(M.tale(ch.key).minLevel <= 520) end
 states.ash_requiem = 1
 states.cellar_teeth = 100
 v = M.listView(520, stateOf, "en"); eq(#v.choices, open520 + 2, "a taken tale shows below its level too; the chain opens")
 eq(v.choices[1].key, "ash_requiem", "in progress first"); eq(v.choices[#v.choices].key, "cellar_teeth", "done last")
-eq(v.choices[2].key, "cinderhold_1", "by level: the Tale of Cinderhold's first chapter (level 10)")
+eq(v.choices[2].key, "cinderhold_1", "the story quest heads the new tales: the Tale of Cinderhold's first chapter")
 eq(v.choices[3].key, "lantern_road", "the chain's next tale, by level")
 v = M.listView(5000, function() return -1 end, "en")
 eq(#v.choices, #cfg.tales - chained, "every tale but the locked chains at the top")

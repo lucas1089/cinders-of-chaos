@@ -287,6 +287,7 @@ do
 	ok(msgs[1]:find("5:13", 1, true) ~= nil, "the time told")
 	local info = WC.info(player)
 	ok(info.current and info.label == "2026-W45" and info.resetIn > 0, "window info")
+	ok(type(info.seed) == "number" and info.seed == WC.built.seed, "window info: the layout seed (V35)")
 	-- the testers' run is never ranked (O651): no board row, no line of "your best"; and the probe sees no tester on the boards
 	do
 		Chaos.isTester = function(p) return p.tester == true end

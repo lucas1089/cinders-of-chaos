@@ -8,7 +8,7 @@
 --                       health = {monsters = {six %}, boss = {six %}}: only a dungeon with its own health curves (the
 --                       Vault, the generated dungeons 6-9; dungeons_difficulty.lua D.healthCurves); without it the
 --                       client's panel shows the table's 100-1300%
---                       weekly = {label, theme, current, resetIn, boards}: the Weekly Challenge (weekly_challenge.lua)
+--                       weekly = {label, theme, seed, current, resetIn, boards}: the Weekly Challenge (weekly_challenge.lua)
 --                     solo / group {id,diff,top=[{name,time,self?}]}      (time in ms)
 --                     queue {id,joined}   stopQueue   queueUpdate {id,queue,estimated}
 --                     prepare            start {boss,left,duration,objectives,need}
@@ -464,7 +464,7 @@ local function dungeonPayload(player, id, dg)
 		challenges = challenges,
 		-- the dungeon's own health curves for the difficulty panel (nil: the table's, old clients ignore it)
 		health = DIFF.healthCurves(extra.bossName and extra.bossHealth or nil, extra.trashHealth),
-		-- the Weekly Challenge (weekly_challenge.lua): {label, theme, current, resetIn, boards} (old clients ignore it)
+		-- the Weekly Challenge (weekly_challenge.lua): {label, theme, seed, current, resetIn, boards} (old clients ignore it)
 		weekly = extra.weeklyInfo and extra.weeklyInfo(player) or nil
 	}
 end

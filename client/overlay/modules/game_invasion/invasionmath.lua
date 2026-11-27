@@ -140,6 +140,17 @@ function InvasionMath.characterZone(view)
   return { x = cx - 80, y = top, width = 160, height = math.max(0, cy + 40 - top) }
 end
 
+-- adds the n rects given after it to list, skipping the nil ones (a hidden widget); returns list
+function InvasionMath.addRects(list, n, ...)
+  list = list or {}
+  local rects = { ... }
+  for i = 1, n do
+    local r = rects[i]
+    if type(r) == 'table' then list[#list + 1] = r end
+  end
+  return list
+end
+
 -- From (x, top) down: the first spot where a w x h HUD keeps `gap` pixels from every obstacle and ends above `bottom`.
 -- Returns x, y, or nil when there is no such spot (the caller then keeps x, top).
 function InvasionMath.place(x, top, w, h, obstacles, bottom, gap)

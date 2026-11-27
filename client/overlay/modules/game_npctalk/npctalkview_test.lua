@@ -13,6 +13,7 @@ function Widget:setOutfit(o) self.outfit = o end
 function Widget:setSize(s) self.size = s end
 function Widget:setMarginRight(v) self.margins.right = v end
 function Widget:setMarginBottom(v) self.margins.bottom = v end
+function Widget:setPhantom(v) self.phantom = v end
 function Widget:setEventListener(e) self.listeners = self.listeners or {} self.listeners[e] = true end
 function Widget:setColoredText(t) self.colored = t end
 function Widget:clearText() self.text = '' end
@@ -77,6 +78,7 @@ eq(hers.colored[1], 'Maelis: ', 'the speaker first'); eq(hers.colored[2], '#e8b8
 eq(hers.colored[3], 'Ash on your boots. I keep the ', 'then the words'); eq(hers.colored[4], L.COLORS.npc, 'in parchment')
 eq(hers.colored[5], '[text-event]ledger[/text-event]', 'a keyword is a link'); eq(hers.colored[6], L.COLORS.keyword, 'in bright gold')
 eq(hers.listeners[EVENT_TEXT_CLICK], true, 'a line with keywords listens for clicks')
+eq(hers.phantom, false, 'a line with keywords takes the mouse: a UILabel is phantom (V35)')
 hers.onTextClick(hers, 'ledger'); eq(fired[#fired][1], 'word', 'a click on a gold word'); eq(fired[#fired][2], 'ledger', 'says it')
 hers.onTextHoverChange(hers, nil, true); eq(cursors[1], 'pointer', 'the pointer cursor over a word')
 hers.onTextHoverChange(hers, nil, false); eq(#cursors, 0, 'and back')
