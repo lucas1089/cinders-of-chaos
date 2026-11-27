@@ -78,7 +78,8 @@ SpellbookRow < UIWidget
     color: #8c8070
     phantom: true
 
-  // "AoE" tag of an attack spell that hits an area, left of the level (empty for the others; always takes its width)
+  // "AoE" tag of an attack spell that hits an area, left of the level (spellbook.lua sets width 0 on the others, so the
+  // words take the room; V42)
   UILabel
     id: aoe
     anchors.right: level.left

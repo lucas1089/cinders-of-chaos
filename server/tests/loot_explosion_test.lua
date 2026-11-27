@@ -1080,6 +1080,44 @@ for _, row in ipairs(loose()) do
 end
 eq(#loose(), 2, "both landed")
 
+-- a death tile in the open: a tile under a roof (a ground on the floor above) is skipped, the player outside would not see
+-- the item (V42: a potion and an emerald went under a building's roof); a death tile under the roof spreads anywhere in sight
+do
+reset()
+openGround(350, 350, 2)
+for dx = -2, 2 do
+	newTile(350 + dx, 352, 6)
+	newTile(350 + dx, 351, 6)
+end
+load()
+newPlayer(1, 350, 350)
+local street = makeBag(350, 350, 1, {{id = 2400}, {id = 2401}, {id = 2402}, {id = 2403}, {id = 2404}, {id = 2405}})
+runDrop(street)
+runEvents(clock.ms + 3000)
+for _, row in ipairs(loose()) do
+	local y = tonumber(row.key:match("^%d+,(%d+)"))
+	ok(y < 351, "nothing under the roof: " .. row.key)
+end
+eq(#loose(), 6, "all six landed in the open")
+reset()
+openGround(350, 350, 2)
+for dx = -2, 2 do
+	for dy = -2, 2 do
+		newTile(350 + dx, 350 + dy, 6)
+	end
+end
+load()
+newPlayer(1, 350, 350)
+local hall = makeBag(350, 350, 1, {{id = 2400}, {id = 2401}, {id = 2402}, {id = 2403}, {id = 2404}, {id = 2405}})
+runDrop(hall)
+runEvents(clock.ms + 3000)
+local spread = 0
+for _, row in ipairs(loose()) do
+	if row.key ~= "350,350,7" then spread = spread + 1 end
+end
+eq(spread, 6, "a kill under the roof: the loot spreads round it as before")
+end
+
 -- the cap per kill: 20 items, 14 fly, the rest stays in the small bag
 reset()
 openGround(400, 400, 4)

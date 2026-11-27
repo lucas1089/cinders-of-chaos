@@ -256,6 +256,25 @@ eq(id('buyButton'):isEnabled(), true, 'and on (150 coins, price 20)')
 eq(id('dNote'):getText(), '', 'no note')
 eq(id('lookPreview'):isVisible(), false, 'an item has no look: the preview column stays shut')
 
+-- a description taller than its label is cut at a word with "..." (V42), the tooltip keeps all; one that fits stays
+local d = id('dDesc')
+Widget.getTextSize = function(self)
+  local t = self.props.text or ''
+  return { width = 180, height = 14 * math.ceil(#t / 26) }
+end
+d.props.height = 28
+local long = 'Cosmetics > Level-up Effects: Leaves bloom round you when you gain a level.'
+card.offerData.description = long
+card.onMousePress(card, nil, 1)
+eq(d:getText(), 'Cosmetics > Level-up Effects: Leaves bloom round...', 'two lines of 26: cut at a word')
+eq(d.props.tooltip, long, 'the whole text in the tooltip')
+d.props.height = 200
+d.onGeometryChange()
+eq(d:getText(), long, 'a taller label: the whole text again')
+Widget.getTextSize = nil
+card.offerData.description = 'Week 2 text'
+card.onMousePress(card, nil, 1)
+
 -- a card the coins do not reach
 local dear = sections[3].grid:getChildren()[2]
 dear.onMousePress(dear, nil, 1)

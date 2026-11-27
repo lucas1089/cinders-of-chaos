@@ -214,6 +214,14 @@ local function setIcon(iconWidget, itemWidget, spell)
   end
 end
 
+-- the second line of a row: the words, or "Rune"
+local function wordsOf(spell)
+  return (spell.words and spell.words ~= '') and spell.words or (spell.rune and tr('Rune') or '')
+end
+
+-- width of the "AoE" tag column (spellbook.otui SpellbookRow aoe; pt-BR "Área")
+local AOE_WIDTH = 28
+
 -- a label's text cut with "..." to its width (the full text goes in the row's tooltip)
 local function fitLabel(label, text)
   label:setText(text)
@@ -686,6 +694,9 @@ fitNames = function()
   fittedGen = buildGen
   for i, row in ipairs(rows) do
     if row.name then fitLabel(row.name, nameOf(spells[i])) end
+    -- the words too: a long incantation was cut mid-letter by the AoE tag (seen in a client 2026-11-27, V42:
+    -- "kah zhul zar|"); "..." now, the full words are in the detail pane
+    if row.words then fitLabel(row.words, wordsOf(spells[i])) end
   end
 end
 
@@ -709,8 +720,11 @@ local function buildList()
     setIcon(row.icon, row.item, spell)
     row.name:setText(nameOf(spell))
     row.name:setColor(spell.element and elementColor(spell.element) or '#d6c9ae')
-    row.aoe:setText(Core.isAoE(spell) and tr('AoE') or '')
-    row.words:setText((spell.words and spell.words ~= '') and spell.words or (spell.rune and tr('Rune') or ''))
+    local aoe = Core.isAoE(spell)
+    row.aoe:setText(aoe and tr('AoE') or '')
+    -- no tag: its width goes to the words (V42)
+    row.aoe:setWidth(aoe and AOE_WIDTH or 0)
+    row.words:setText(wordsOf(spell))
   end
   for i = #rows, #spells + 1, -1 do
     rows[i]:destroy()

@@ -233,5 +233,13 @@ eq(table.concat(V.homeMissing(hs, { [2] = true }), ','), '1,3', 'the weekly page
 eq(#V.homeMissing(hs, { [1] = true, [2] = true, [3] = true }), 0, 'all came: nothing to ask')
 eq(#V.homeMissing(nil, nil), 0, 'no sections')
 
+-- a long description cut at a word with "..." (V42: Verdant Ascent ran under the buttons)
+local short = function(t) return #t <= 20 end
+eq(V.fitWords('Leaves bloom round you.', short), 'Leaves bloom...', 'cut at a word')
+eq(V.fitWords('Short text.', short), 'Short text.', 'fits: kept')
+eq(V.fitWords('Cosmetics > Level-up Effects', function(t) return #t <= 16 end), 'Cosmetics...', 'no trailing ">"')
+eq(V.fitWords('Unbreakablewordthatislong', short), '', 'not one word fits')
+eq(V.fitWords(nil, short), '', 'nil text')
+
 if fails > 0 then print(fails .. ' of ' .. checks .. ' checks FAILED') os.exit(1) end
 print('shopview_test: ' .. checks .. ' checks OK')
