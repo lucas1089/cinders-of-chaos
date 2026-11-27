@@ -52,11 +52,14 @@ ChaosMainWindow
   @onEscape: modules.game_carddeck.hide()
 
   // ---------------------------------------------------------------- filters
+  // the row is the window's 868 px: search 100, six boxes 4 px apart, each its longest label (English or pt-BR, verdana 11)
+  // plus the 23 px of text offset and arrow; at 104 px "Owned and missing" and the pt-BR "Todos os ..." were cut (seen in a
+  // client 2026-11-27, V40)
   ChaosTextEdit
     id: searchEdit
     anchors.top: parent.top
     anchors.left: parent.left
-    width: 150
+    width: 100
     height: 22
     max-length: 32
     !tooltip: tr('Search by name, spell, element or text')
@@ -65,48 +68,48 @@ ChaosMainWindow
     id: setCombo
     anchors.left: searchEdit.right
     anchors.verticalCenter: searchEdit.verticalCenter
-    margin-left: 6
-    size: 104 22
+    margin-left: 4
+    size: 118 22
     !tooltip: tr('Card set')
 
   ChaosComboBox
     id: rarityCombo
     anchors.left: setCombo.right
     anchors.verticalCenter: searchEdit.verticalCenter
-    margin-left: 6
-    size: 104 22
+    margin-left: 4
+    size: 118 22
     !tooltip: tr('Rarity')
 
   ChaosComboBox
     id: elementCombo
     anchors.left: rarityCombo.right
     anchors.verticalCenter: searchEdit.verticalCenter
-    margin-left: 6
-    size: 104 22
+    margin-left: 4
+    size: 122 22
     !tooltip: tr('Element')
 
   ChaosComboBox
     id: ownedCombo
     anchors.left: elementCombo.right
     anchors.verticalCenter: searchEdit.verticalCenter
-    margin-left: 6
-    size: 126 22
+    margin-left: 4
+    size: 130 22
     !tooltip: tr('Owned or missing')
 
   ChaosComboBox
     id: classCombo
     anchors.left: ownedCombo.right
     anchors.verticalCenter: searchEdit.verticalCenter
-    margin-left: 6
-    size: 96 22
+    margin-left: 4
+    size: 130 22
     !tooltip: tr('Cards your class can use')
 
   ChaosComboBox
     id: sortCombo
     anchors.left: classCombo.right
     anchors.verticalCenter: searchEdit.verticalCenter
-    margin-left: 6
-    size: 104 22
+    margin-left: 4
+    size: 126 22
     !tooltip: tr('Sort')
 
   // ---------------------------------------------------------------- the cards

@@ -68,6 +68,31 @@ function requestPage(categoryId, page)
   sendAction("get_page", { category = categoryId, page = page })
 end
 
+-- the first pages of the home page's sections, spaced out and asked again when one does not come (ShopView.homeMissing:
+-- the server drops a get_page that follows another within 100 ms). A new round (showHome) makes the older events void.
+local homeAsk = { token = 0, arrived = {} }
+local function askHomePages(tries)
+  homeAsk.token = homeAsk.token + 1
+  local token = homeAsk.token
+  local list = ShopView.homeMissing(HOME, homeAsk.arrived)
+  if #list == 0 then return end
+  for i, index in ipairs(list) do
+    local delay = ShopView.homeDelay(i, ShopView.HOME_GAP_MS)
+    if delay == 0 then
+      requestPage(index, 1)
+    else
+      scheduleEvent(function()
+        if homeAsk.token == token and view == 'home' then requestPage(index, 1) end
+      end, delay)
+    end
+  end
+  if tries > 1 then
+    scheduleEvent(function()
+      if homeAsk.token == token and view == 'home' then askHomePages(tries - 1) end
+    end, ShopView.homeDelay(#list, ShopView.HOME_GAP_MS) + ShopView.HOME_RETRY_MS)
+  end
+end
+
 function init()
   -- pushFront: signalcall stops at the first handler that returns a value
   connect(g_game, {
@@ -357,6 +382,7 @@ function onExtendedJSONOpcode(protocol, code, json_data)
     local total = cat.pages or 1
 
     currentCategoryPage[catId] = page
+    if page == 1 then homeAsk.arrived[catId] = true end
     cat.offers[page] = {}
     for i, offerData in ipairs(data.offers) do
       cat.offers[page][i] = offerData
@@ -625,7 +651,8 @@ function showHome()
   updatePager(1, 1)
   showPage('home')
   renderHome()
-  for _, s in ipairs(HOME) do requestPage(s.index, 1) end
+  homeAsk.arrived = {}
+  askHomePages(ShopView.HOME_TRIES)
 end
 
 -- the sections from the pages that came (the first page of each category; a page not here yet leaves its strip short)
@@ -702,22 +729,34 @@ function renderChips()
   if not group then return end
   local chips = ShopView.chips(TREE, group, CHIP_CHARS)
   if #chips < 2 then return end
-  for _, c in ipairs(chips) do
+  local picked
+  for i, c in ipairs(chips) do
     local chip = g_ui.createWidget('ShopChip', ui.chips)
     chip:setText(c.text)
     chip:setTooltip(tr(c.name))
     chip:setChecked(c.index == selectedCategory)
+    if c.index == selectedCategory then picked = i end
     chip.onClick = function() if c.index ~= selectedCategory or view ~= 'category' then selectCategory(c.index) end end
   end
-  setChipsHeight(#chips)
+  local cols = setChipsHeight(#chips)
+  -- the picked chip stays in sight (ShopView.chipScroll); after the layout has placed the new chips
+  local offset = ShopView.chipScroll(picked, cols, CHIP_H, CHIP_GAP, CHIP_ROWS)
+  local bar = ui.chipsScrollBar
+  if bar and offset > 0 then
+    scheduleEvent(function()
+      if bar and not bar:isDestroyed() then bar:setValue(offset) end
+    end, 50)
+  end
 end
 
+-- the height of the chips area for `count` chips; returns the columns they take
 function setChipsHeight(count)
   local width = ui.chips:getWidth() - CHIP_PAD
   local cols = width > 0 and ShopView.columns(width, CHIP_W, CHIP_GAP) or 5
   local area = ShopView.chipsArea(count, cols, CHIP_H, CHIP_GAP, CHIP_ROWS)
   ui.chips:setHeight(area.height)
   if ui.chipsScrollBar then ui.chipsScrollBar:setVisible(area.overflow) end
+  return cols
 end
 
 -- for other modules: open the store at a category (by its name, as the server sends it)
@@ -813,7 +852,9 @@ function processSearch(data)
   renderResultChips()
   renderSearchCards()
   updatePager(1, 1)
-  updatePath(#offers > 0 and tr('Search "%s": %d offers', searching, #offers) or tr('Search "%s": nothing found', searching), '')
+  -- one result reads "1 offer", not "1 offers" (seen in a client 2026-11-27, V40)
+  local found = #offers == 1 and tr('Search "%s": 1 offer', searching) or tr('Search "%s": %d offers', searching, #offers)
+  updatePath(#offers > 0 and found or tr('Search "%s": nothing found', searching), '')
 end
 
 function processHistory(data)

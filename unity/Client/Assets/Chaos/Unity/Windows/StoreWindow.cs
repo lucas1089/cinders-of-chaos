@@ -96,7 +96,7 @@ namespace Chaos.Client
 
             // path and offers
             var main = new Rect(side.xMax + 6, inner.y + 32, inner.width - SideW - 10, inner.height - 54);
-            string path = st.BrowsingHistory ? Loc.T("Transaction history") : st.Searching.Length > 0 ? Loc.T("Search \"{0}\": {1} offers", st.Searching, st.Offers.Count) : PathOf(st);
+            string path = st.BrowsingHistory ? Loc.T("Transaction history") : st.Searching.Length > 0 ? (st.Offers.Count == 1 ? Loc.T("Search \"{0}\": 1 offer", st.Searching) : Loc.T("Search \"{0}\": {1} offers", st.Searching, st.Offers.Count)) : PathOf(st);
             GUI.Label(new Rect(main.x, main.y - 2, main.width, 20), path, app.SmallStyle);
             var list = new Rect(main.x, main.y + 20, main.width, main.height - 20 - 26);
             ChaosApp.Fill(list, new Color(1f, 1f, 1f, 0.03f));

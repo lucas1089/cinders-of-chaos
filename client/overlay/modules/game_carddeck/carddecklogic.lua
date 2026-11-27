@@ -237,9 +237,11 @@ function L.options(kind)
     for _, e in ipairs(L.ELEMENTS) do out[#out + 1] = { e, tr(e) } end
     out[#out + 1] = { 'none', tr('No element') }
   elseif kind == 'owned' then
-    out = { { nil, tr('Owned and missing') }, { 'owned', tr('Owned') }, { 'missing', tr('Missing') } }
+    -- short labels: the seven boxes share one 868 px row; "Owned and missing" and the long pt-BR "Todos os ..." texts were
+    -- cut by the box's arrow (seen in a client 2026-11-27, V40)
+    out = { { nil, tr('All cards') }, { 'owned', tr('Owned') }, { 'missing', tr('Missing') } }
   elseif kind == 'class' then
-    out = { { false, tr('Every class') }, { true, tr('My class') } }
+    out = { { false, tr('Any class') }, { true, tr('My class') } }
   elseif kind == 'sort' then
     local names = { number = tr('By number'), name = tr('By name'), rarity = tr('By rarity'), copies = tr('By copies'),
       new = tr('New first'), element = tr('By element') }

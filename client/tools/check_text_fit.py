@@ -141,6 +141,7 @@ def forge_tabs(tr):
 
 BAG_FONT = 'verdana-11px-rounded'  # a stand-in: the panel uses verdana-11px-antialised, whose sheet is not in the overlay
 BAG_BUTTON_PAD = 4                 # BagPanelButton padding 2 each side
+BAG_ROW = 144                      # the buttons row: the contents of the 164 px dock window with the scrollbar shown (V40); Purse takes what Sort and Pin leave
 BAG_PAGE_WORST = '13/13'           # the Loot Bag's last page (13 client pages per engine page, two engine pages)
 
 
@@ -159,8 +160,11 @@ def bag_panel(tr):
     page_w = width_of('lootPage')
     if page_w is None or measure(BAG_PAGE_WORST) + 4 > page_w:
         problems.append('bag panel: the loot page text "%s" is %s px, its label is %s px' % (BAG_PAGE_WORST, measure(BAG_PAGE_WORST), page_w))
+    sort_w, pin_w = width_of('sortButton', 'BagPanelButton'), width_of('pinButton', 'BagPanelButton')
+    gaps = re.search(r'id: purseButton\n(?:(?!\n\n).)*?margin-left: (\d+)\n\s+margin-right: (\d+)', otui, re.S)
+    purse_w = None if None in (sort_w, pin_w) or not gaps else BAG_ROW - sort_w - pin_w - int(gaps.group(1)) - int(gaps.group(2))
     for wid, key in (('sortButton', 'Sort'), ('purseButton', 'Purse'), ('pinButton', 'Pin')):
-        room = width_of(wid, 'BagPanelButton')
+        room = purse_w if wid == 'purseButton' else width_of(wid, 'BagPanelButton')
         for lang in ('en', 'pt-BR'):
             text = key if lang == 'en' else tr.get(key)
             if text is None:

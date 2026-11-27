@@ -89,7 +89,7 @@ local cool = st(100, 0)
 cool.tiers[1].problem = 'The trial is still closed to you for 40 seconds.'
 eq(M.openTier(cool), 1, 'the cooldown after a failed run keeps it open')
 eq(M.badgeText(st(100, 0)), '!', 'badge while open'); eq(M.badgeText(st(99, 0)), '', 'no badge when not')
-eq(M.availableText(st(250, 1)), 'Trial open: The Iron Gauntlet on Cruel. Your level (250) reaches it. The first clear opens a pair of special nodes.', 'which trial and why')
+eq(M.availableText(st(250, 1)), 'Trial open: The Iron Gauntlet on Cruel. It opens at level 250 and you have reached it. The first clear opens a pair of special nodes.', 'which trial and why')
 eq(M.availableText(st(99, 0)), '', 'no text when none')
 eq(M.pendingPicks(st(100, 1)), 1, 'pair 1 unlocked, nothing held: one choice waits')
 eq(M.pendingPicks(st(400, 3)), 2, 'a pair with no choosable node does not count')

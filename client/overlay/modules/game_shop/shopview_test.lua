@@ -215,5 +215,23 @@ eq(V.oldPriceFits('2.5k', '3.2k', true), false, '180 days: 2.5k 3.2k would run u
 eq(V.oldPriceFits('1.35k', '1.69k', false), true, 'no chip: always')
 eq(V.oldPriceFits('90', '100', true), true, 'short prices fit')
 
+-- V40: the picked chip stays in sight (four columns, two rows shown, rows of 18 px and 2 px gaps)
+eq(V.chipScroll(3, 4, 18, 2, 2), 0, 'first row: no scroll')
+eq(V.chipScroll(8, 4, 18, 2, 2), 0, 'second row: no scroll')
+eq(V.chipScroll(11, 4, 18, 2, 2), 20, 'third row: one row down')
+eq(V.chipScroll(15, 4, 18, 2, 2), 40, 'fourth row (Rare Loot Effects, 15th of the Cosmetics chips): two rows down')
+eq(V.chipScroll(24, 4, 18, 2, 2), 80, 'sixth row: four rows down')
+eq(V.chipScroll(nil, 4, 18, 2, 2), 0, 'no chip picked')
+
+-- V40: the home pages go out spaced (the server drops a get_page within 100 ms of another) and a missing one again
+eq(V.homeDelay(1, 150), 0, 'the first page at once')
+eq(V.homeDelay(3, 150), 300, 'the third 300 ms later')
+eq(V.HOME_GAP_MS > 100, true, 'the gap is longer than the server limit of 100 ms')
+local hs = { { key = 'weekly', index = 2 }, { key = 'starter', index = 1 }, { key = 'bundles', index = 3 } }
+eq(table.concat(V.homeMissing(hs, {}), ','), '2,1,3', 'none came: all three, in the order of the sections')
+eq(table.concat(V.homeMissing(hs, { [2] = true }), ','), '1,3', 'the weekly page came: the other two')
+eq(#V.homeMissing(hs, { [1] = true, [2] = true, [3] = true }), 0, 'all came: nothing to ask')
+eq(#V.homeMissing(nil, nil), 0, 'no sections')
+
 if fails > 0 then print(fails .. ' of ' .. checks .. ' checks FAILED') os.exit(1) end
 print('shopview_test: ' .. checks .. ' checks OK')

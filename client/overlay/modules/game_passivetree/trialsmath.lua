@@ -186,7 +186,9 @@ function TrialsMath.availableText(state)
   if not i then
     return ''
   end
-  return tr('Trial open: %s on %s. Your level (%d) reaches it. The first clear opens a pair of special nodes.',
+  -- the level is the difficulty's own (Normal 100, ...), not the character's: "Your level (100)" read as a wrong level for a level
+  -- 1500 character (seen in a client 2026-11-27, V40)
+  return tr('Trial open: %s on %s. It opens at level %d and you have reached it. The first clear opens a pair of special nodes.',
     tostring(state.trial), tostring(t.name), tonumber(t.minLevel) or 0)
 end
 
