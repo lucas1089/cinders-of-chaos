@@ -225,5 +225,16 @@ eq(V.mqItemText({ state = 'open' }), nil, 'a step with no item has no count')
 V.onMQ(mqs, nil)
 eq(#mqs.mq.chapters, 0, 'a bad message empties it'); eq(V.mqChapter(nil), 1)
 
+-- the tracker steps aside for the dungeon kill counter and the invasion HUD (V35)
+local rows = { welcome = {}, tracker = { { key = 'a' } }, ascension = {}, spellquest = {} }
+eq(V.trackerShown(rows, true, true, {}), true, 'tracker rows: shown')
+eq(V.trackerShown(rows, true, true, { dungeon = true }), false, 'aside for the kill counter')
+eq(V.trackerShown(rows, true, true, { invasion = true }), false, 'aside for the invasion HUD')
+eq(V.trackerShown(rows, true, true, nil), true, 'no HUD asked')
+eq(V.trackerShown(rows, false, true, {}), false, 'turned off')
+eq(V.trackerShown(rows, true, false, {}), false, 'offline')
+eq(V.trackerShown({ welcome = {}, tracker = {}, ascension = {}, spellquest = {} }, true, true, {}), false, 'nothing to show')
+eq(V.trackerShown({ spellquest = { {} } }, true, true, {}), true, 'a spell quest row alone')
+
 if fails > 0 then print('goalsview_test: ' .. fails .. ' failure(s)'); os.exit(1) end
 print('goalsview_test: ' .. checks .. ' checks OK')

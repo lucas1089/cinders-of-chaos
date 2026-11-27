@@ -131,6 +131,15 @@ local NOTIFICATION_TYPES = {
         borderColor = "#7a1a12",
         duration = 9000,
     },
+    -- world events (server data/scripts/chaos/worldevents.lua): the Wandering Merchant moves, a Chaos Storm, a Golden Hour
+    WORLD_EVENT = {
+        icon = "images/toast/announce.png",
+        title = "WORLD EVENT",
+        titleColor = "#e8b84a",
+        backgroundColor = "#ccbebb",
+        borderColor = "#6a5632",
+        duration = 9000,
+    },
     -- Cursed Chest (server data/scripts/chaos/cursedchest.lua, O244): the chest rises, the hordes, the loot
     CURSED_CHEST = {
         icon = "images/toast/invasion.png",
@@ -1417,6 +1426,13 @@ function onExtendedOpcode(protocol, opcode, buffer)
         invasion = function(data)
             if data.message then
                 addNotification("INVASION", data.message)
+            end
+        end,
+
+        -- world events (server data/scripts/chaos/worldevents.lua)
+        worldevent = function(data)
+            if data.message then
+                addNotification("WORLD_EVENT", data.message)
             end
         end,
 

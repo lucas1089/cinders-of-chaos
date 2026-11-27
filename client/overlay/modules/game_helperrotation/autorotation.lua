@@ -435,6 +435,18 @@ function A.levelUpAction(sel, rules, marker, opts)
   return 'none', {}
 end
 
+-- A level change right after the login is the server's start level, not a level-up (V35, seen in a client 2026-11-27: a new
+-- character's first login is raised from 1 to the start level 8 by newplayer.lua just after the login packet, and the
+-- "New spell available" box opened over the quiet first login, O761, where the main quest's first step sets the Helper up).
+-- msSinceLogin: milliseconds since the game started (nil: not known)
+A.LOGIN_LEVEL_MS = 10000
+function A.isLevelUp(oldLevel, level, msSinceLogin)
+  oldLevel, level = tonumber(oldLevel) or 0, tonumber(level) or 0
+  if oldLevel <= 0 or level <= oldLevel then return false end
+  msSinceLogin = tonumber(msSinceLogin)
+  return not (msSinceLogin and msSinceLogin >= 0 and msSinceLogin < A.LOGIN_LEVEL_MS)
+end
+
 -- the healing tab's slots for the class: up to 3 heals it can cast, the strongest (highest level) at the lowest health
 function A.heals(vocId, level, canCast)
   local c = A.classOf(vocId)

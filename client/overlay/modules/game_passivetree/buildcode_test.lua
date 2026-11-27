@@ -142,5 +142,10 @@ eq(table.concat(C.PARAGON_KEYS, ','), table.concat(B.PARAGON_KEYS, ','), 'Parago
 eq(C.TREE_LAYOUT_MAX, B.VERSION, 'the tree layouts this codec reads end at the server\'s tree code version')
 ok(B.READS[C.TREE_LAYOUT_MAX], 'the server reads that version')
 
+-- spell names of a full build (V35: a stock spell of the preset showed "#124")
+eq(C.spellName(300, { { id = 300, name = 'Pack Howl' } }, { [124] = { name = 'Sanctum Burst' } }), 'Pack Howl', 'a Chaos spell by its list')
+eq(C.spellName(124, { { id = 300, name = 'Pack Howl' } }, { [124] = { name = 'Sanctum Burst' } }), 'Sanctum Burst', 'a stock spell by the rotation data')
+eq(C.spellName(999, nil, nil), '#999', 'an unknown spell keeps its number')
+eq(C.spellName(124, {}, { [124] = { name = '' } }), '#124', 'an empty name is no name')
 print(string.format('buildcode_test: %d checks, %d failed', count, fails))
 if fails > 0 then os.exit(1) end

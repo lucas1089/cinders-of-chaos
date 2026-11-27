@@ -84,5 +84,14 @@ eq(y, 208, 'below an obstacle in the column')
 eq(M.place(40, 144, 270, 500, { { x = 0, y = 150, width = 400, height = 50 } }, 600), nil, 'no room')
 eq(select(2, M.place(40, 144, 270, 100, { { x = 400, y = 150, width = 100, height = 50 } }, 600)), 144, 'obstacle beside: no move')
 
+-- obstacles from widgets that may be hidden (V35: the buff bar was skipped when the energy shield bar was hidden)
+do
+  local plate, buffs = { x = 34, y = 40, width = 300, height = 96 }, { x = 41, y = 138, width = 290, height = 26 }
+  local list = M.addRects({ { x = 560, y = 0, width = 160, height = 400 } }, 5, plate, nil, buffs, nil, nil)
+  eq(#list, 3, 'addRects: the zone, the plate and the buff bar, the hidden ones skipped')
+  eq(list[3], buffs, 'addRects: the buff bar after a hidden energy shield bar')
+  local x, y = M.place(40, M.columnTop(plate, -65), 270, 205, list, 606)
+  eq(y, 138 + 26 + M.GAP, 'place: the HUD goes under the buff bar')
+end
 if fails > 0 then os.exit(1) end
 print('invasionmath tests OK')

@@ -75,6 +75,7 @@ namespace Chaos.Core
             { "MARKET", new ToastStyle("MARKET", "#e8b84a", Brown, 9000) },
             { "SALE", new ToastStyle("ITEM SOLD", "#e8b84a", Brown, 12000) },
             { "INVASION", new ToastStyle("INVASION", "#d8452a", "#7a1a12", 9000) },
+            { "WORLD_EVENT", new ToastStyle("WORLD EVENT", "#e8b84a", Brown, 9000) }, // V35: the merchant is no invasion
             { "CURSED_CHEST", new ToastStyle("CURSED CHEST", "#b46ae0", "#4a1a6a", 9000) },
             { "WEEKLY_CHEST", new ToastStyle("WEEKLY CHEST", "#e0b24a", "#6a4a1a", 9000) },
             { "MILESTONE", new ToastStyle("LEVEL MILESTONE", "#e8c15a", "#6a4a1a", 10000) },
@@ -92,6 +93,7 @@ namespace Chaos.Core
             { "bounty", "BOUNTY" }, { "newplayer", "NEW_PLAYER" }, { "bestiary", "BESTIARY" }, { "achievement", "ACHIEVEMENT" },
             { "bosspoints", "BOSS_POINT" }, { "ascension", "ASCENSION" }, { "market", "MARKET" }, { "sale", "SALE" },
             { "seasonpass", "SEASON_PASS" }, { "pact", "PACT" }, { "journey", "JOURNEY" }, { "invasion", "INVASION" },
+            { "worldevent", "WORLD_EVENT" },
             { "cursedchest", "CURSED_CHEST" }, { "weeklychest", "WEEKLY_CHEST" }, { "milestone", "MILESTONE" },
             { "gmBroadcast", "GM_BROADCAST" },
         };

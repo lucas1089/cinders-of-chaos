@@ -76,6 +76,10 @@ eq(V.weeklyTitle(wk), 'Weekly Challenge 2026-W45: Marrow Crypts', 'weekly title'
 eq(V.weeklyText(wk):match('New layout in 2d 5h%.$') ~= nil, true, 'weekly: time to the new layout')
 eq(V.weeklyText({ label = '2026-W45', current = false, resetIn = 60 }):match("last week's") ~= nil, true,
   'weekly: a stale layout says so')
+eq(V.weeklyText(wk):match('seed') == nil, true, 'weekly: no seed line without a seed')
+local seeded = { label = '2026-W48', theme = 'Marrow Crypts', seed = 1773680016, current = true, resetIn = 60 }
+eq(V.weeklyText(seeded):match('^Layout seed 1773680016, the same for every player%.\n') ~= nil, true,
+  'weekly: the seed on the first line (V35)')
 eq(V.span(3725), '1h 02m', 'span hours')
 eq(V.span(59), '0m', 'span minutes')
 eq(V.bannerTitle({ title = 'Weekly Challenge', weekly = wk }), 'The Marrow Crypts', 'weekly banner: the theme')
@@ -174,6 +178,9 @@ eq(V.bestText(1), nil, 'nothing to say about Normal')
 eq(V.bestText(nil), nil, 'no difficulty')
 eq(V.bestText(2), 'Best: Hard', 'best Hard')
 eq(V.bestText(6), 'Best: Hell', 'best Hell')
+eq(V.bestText(2, true), nil, 'the Weekly Challenge runs at Normal only: no best (V35)')
+eq(V.headerChips({ id = 10, level = 800 }, { req = { level = 800 }, difficulty = 2, weekly = true }, 1500).best, nil,
+  'no best chip on the Weekly Challenge (V35)')
 local chips = V.headerChips({ id = 1, level = 150, queue = 2 }, { req = { level = 150, party = '1-2' }, queue = { players = 4 }, difficulty = 3 }, 600)
 eq(chips.level, '150+ Level', 'header level')
 eq(chips.levelTone, 'plain', 'header level tone')

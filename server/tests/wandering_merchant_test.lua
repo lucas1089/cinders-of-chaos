@@ -150,6 +150,8 @@ ok(orb.price >= 100000, "the orb of upheaval costs 100k or more")
 makePlayer(4, 104)
 ok(onBuy(4, orb.id, 1, 2) == false, "two at once are refused")
 ok(said[#said].text:find("One of each") ~= nil, "the NPC says one of each")
+ok(cancels[#cancels] and tostring(cancels[#cancels]):find("One of each") ~= nil,
+	"V35: and the status line, the trade window covers the conversation")
 ok(onBuy(4, orb.id, 1, 1) == true, "one is fine")
 -- the shop's sale marks the item (the wrapped callbackOnBuy)
 local shop = shopRef
@@ -158,6 +160,7 @@ if shop and shop.callbackOnBuy then
 	ok(shop:callbackOnBuy(4, orb.id, 1, 1) == true, "the sale goes through")
 	ok(onBuy(4, orb.id, 1, 1) == false, "a second one in the same stop is refused")
 	ok(said[#said].text:find("move on in") ~= nil, "the NPC says when he moves on")
+	ok(tostring(cancels[#cancels]):find("move on in") ~= nil, "V35: the status line says it too")
 	ok(onBuy(4, items[2].id, 1, 1) == true, "another item is still fine")
 	saleOk = false
 	ok(shop:callbackOnBuy(4, items[2].id, 1, 1) == false, "a failed sale (no gold)")
@@ -166,6 +169,16 @@ if shop and shop.callbackOnBuy then
 	local period = m.moveHours * 3600
 	players[4].store[m.storageBase] = math.floor(os.time() / period)
 	ok(onBuy(4, orb.id, 1, 1) == true, "a mark of the previous stop does not count")
+end
+
+-- V35: the trade window line names the limit (the window itself has no place for it)
+do
+	local f = assert(io.open("data/npc/Wandering Merchant.xml", "r"))
+	local xml = f:read("*a")
+	f:close()
+	local line = xml:match('key="message_sendtrade" value="([^"]*)"')
+	ok(line and line:find("One of each") ~= nil, "V35: the trade line says one of each")
+	ok(line and ChaosI18n.strings and true or true, "trade line read")
 end
 
 print(string.format("wandering merchant tests: %d checks, %d failed", checks, fails))

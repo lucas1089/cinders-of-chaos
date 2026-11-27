@@ -29,7 +29,6 @@ local classGroup       -- class tab of the boards with class tabs (byClass); nil
 local tabs, groupTabs = {}, {} -- tabs: the Records view's category tabs
 local boardOptions = {}        -- the dropdown's options (BoardPick.options)
 local comboFilling = false     -- true while the dropdown is set from code (no request, nothing saved)
-local COMBO_GAP = 8
 local tickEvent
 local refreshAsked = false
 local seasonView = false -- the Season toggle (server season.lua): only the running season's characters
@@ -217,6 +216,13 @@ local function tick()
   tickEvent = scheduleEvent(tick, 1000)
 end
 
+-- the board's or category's sentence, on its own row under the combo; the tooltip keeps a sentence too long for it
+local function setInfo(text)
+  text = text or ''
+  window.infoLabel:setText(text)
+  window.infoLabel:setTooltip(text)
+end
+
 local function showBoard()
   if not window or not current then return end
   local b = boardMeta(current.key) or { key = current.key, name = current.key, weekly = true }
@@ -226,7 +232,7 @@ local function showBoard()
   local rows = rowsOf(current.rows)
   for _, r in ipairs(rows) do createRow(r, b, ownName) end
 
-  window.infoLabel:setText(b.info or '')
+  setInfo(b.info)
   window.header.value:setText(b.value or tr('Value'))
   window.header.extra:setText(b.weekly and (b.count or '') or tr('Class'))
 
@@ -412,7 +418,6 @@ end
 -- the weekly boards (dropdown) or the Records view (category tabs) on the top rows
 local function setView(records)
   window.boardCombo:setVisible(not records)
-  window.infoLabel:setMarginLeft(records and 0 or (window.boardCombo:getWidth() + COMBO_GAP))
   window.tabs:setVisible(records)
   if not records then
     window.tabs:destroyChildren()
@@ -566,7 +571,7 @@ local function selectRecordCategory(key)
     end
     for i, tab in pairs(buildTabRows(window.groupTabs, 'LeaderboardGroupTab', items, 160)) do groupTabs[boards[i].key] = tab end
   end
-  window.infoLabel:setText(c and c.info or '')
+  setInfo(c and c.info)
   if boards[1] then
     local keep = false
     for _, b in ipairs(boards) do keep = keep or b.key == rboard end

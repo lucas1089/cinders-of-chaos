@@ -282,11 +282,14 @@ namespace Chaos.Core
         public static string WeeklyText(object w)
         {
             if (!(w is Dictionary<string, object>) || !(Json.Get(w, "label") is string)) return null;
-            var lines = new List<string>
+            var lines = new List<string>();
+            // the layout seed first (main client dungeonsview.lua V.weeklyText, V35)
+            if (Json.Get(w, "seed") is double seed) lines.Add(Loc.T("Layout seed {0}, the same for every player.", ((long)seed).ToString(CultureInfo.InvariantCulture)));
+            lines.AddRange(new[]
             {
                 Loc.T("The same layout for everyone this week, always at difficulty 1. Solo or a party of up to 4."),
                 Loc.T("Fastest clear per class: Leaderboards, Weekly Challenge Solo and Party. The top 3 of each class get Conquest Tokens."),
-            };
+            });
             if (Json.Get(w, "current") != null && !Json.Truthy(w, "current", true)) lines.Add(Loc.T("This layout is last week's: the new one opens at the next server save."));
             else if (Json.Get(w, "resetIn") is double r) lines.Add(Loc.T("New layout in {0}.", Eg.Span(r)));
             return string.Join("\n", lines);

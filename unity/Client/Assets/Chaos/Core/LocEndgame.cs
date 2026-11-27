@@ -30,6 +30,7 @@ namespace Chaos.Core
             { "Dungeons", "Masmorras" }, { "Monster Health {0}%", "Vida dos monstros {0}%" }, { "Monster Damage {0}%", "Dano dos monstros {0}%" },
             { "Bonus XP +{0}%", "XP bônus +{0}%" }, { "Gold Drop +{0}%", "Ouro dropado +{0}%" }, { "Loot Chance +{0}%", "Chance de loot +{0}%" },
             { "Boss Health {0}%", "Vida do chefe {0}%" }, { "Weekly Challenge {0}: {1}", "Desafio semanal {0}: {1}" },
+            { "Layout seed {0}, the same for every player.", "Semente do mapa {0}, a mesma para todos os jogadores." },
             { "The same layout for everyone this week, always at difficulty 1. Solo or a party of up to 4.", "O mesmo mapa para todos nesta semana, sempre na dificuldade 1. Sozinho ou em grupo de até 4." },
             { "Fastest clear per class: Leaderboards, Weekly Challenge Solo and Party. The top 3 of each class get Conquest Tokens.", "Vitória mais rápida por classe: Rankings, Desafio semanal solo e em grupo. Os 3 melhores de cada classe ganham Fichas de Conquista." },
             { "This layout is last week's: the new one opens at the next server save.", "Este mapa é o da semana passada: o novo abre no próximo save do servidor." },

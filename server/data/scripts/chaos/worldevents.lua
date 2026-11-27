@@ -36,13 +36,20 @@ local function we()
 	return cfg().worldEvents or {}
 end
 
+-- a world event's line to everybody: the chat line and a toast of its own kind, "worldevent" (client game_chaosnotify
+-- WORLD_EVENT). It went through ChaosInvasion.announce, whose toast is titled INVASION with crossed axes: the Wandering
+-- Merchant's shop read as an invasion (V35, seen in a client 2026-11-27).
 local function announce(text)
 	if ChaosInvasion and ChaosInvasion.announce then
-		ChaosInvasion.announce(text)
+		ChaosInvasion.announce(text, false)
 	else
 		Chaos.broadcast(MESSAGE_EVENT_ADVANCE, text)
 	end
+	for _, p in ipairs(Game.getPlayers()) do
+		p:sendExtendedOpcode(ChaosOpcodes.notifications or 79, json.encode({action = "worldevent", message = Chaos.t(p, text)}))
+	end
 end
+W.announce = announce
 
 local function activeIn(kind, pos)
 	local a = W.active

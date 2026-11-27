@@ -132,6 +132,23 @@ function C.className(key)
   return i and C.CLASSES[i][3] or nil
 end
 
+-- the name of a spell id of a full build code: a Chaos spell (game_chaosspells ChaosSpellData, a list with ids), else a
+-- spell of the Auto rotation data (ChaosAutoRotationData.spells[id], which also names the stock spells of the class
+-- lines, e.g. 124 Sanctum Burst), else "#id". Before V35 only the first list was asked and the Beastmaster's preset
+-- showed "#124" (seen in a client 2026-11-27).
+function C.spellName(id, chaosSpells, rotationSpells)
+  for _, s in ipairs(chaosSpells or {}) do
+    if s.id == id and s.name then
+      return s.name
+    end
+  end
+  local r = type(rotationSpells) == 'table' and rotationSpells[id] or nil
+  if type(r) == 'table' and type(r.name) == 'string' and r.name ~= '' then
+    return r.name
+  end
+  return '#' .. tostring(id)
+end
+
 -- ------------------------------------------------------------------------------------------------ the inner tree code
 -- the tree code's version and bytes (checked: canonical, its checksum), or nil
 local function treeBytes(code)

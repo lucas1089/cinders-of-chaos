@@ -724,6 +724,43 @@ do
 	eq(I.guide({running = true, pos = at}).why, "no target point", "guide: no target")
 end
 
+-- ------------------------------------------------------------------ engine: a world event's toast is its own kind (V35)
+-- worldevents.lua announce: the chat line through ChaosInvasion.announce without its INVASION toast, and a "worldevent"
+-- toast (client game_chaosnotify WORLD_EVENT): the Wandering Merchant's shop read as an invasion
+do
+	local f = assert(io.open("data/scripts/chaos/worldevents.lua", "r"))
+	local src = f:read("*a")
+	f:close()
+	local body = src:match("\nlocal function announce%(text%)(.-)\nend\n") or ""
+	ok(body:find("ChaosInvasion.announce(text, false)", 1, true) ~= nil, "world event: no INVASION toast")
+	ok(body:find('action = "worldevent"', 1, true) ~= nil, "world event: its own toast kind")
+end
+
+-- ------------------------------------------------------------------ engine: the last HUD before the end line (V35)
+-- finish() sends every player the final HUD (shares with the last kills, the warlord gone) before "end": the client
+-- keeps the last HUD under the result line, and the HUD of the last refresh showed the warlord at 100% and old shares
+do
+	local f = assert(io.open("data/scripts/chaos/invasion.lua", "r"))
+	local src = f:read("*a")
+	f:close()
+	local a = src:find("\nfinish = function%(result%)")
+	local b = a and src:find("\nend\n", a)
+	ok(a and b, "invasion.lua: finish found")
+	local body = a and b and src:sub(a, b) or ""
+	local ends, before = 0, 0
+	local from = 1
+	while true do
+		local i = body:find('sendAll%("end"', from)
+		if not i then break end
+		ends = ends + 1
+		local prev = body:sub(math.max(1, i - 400), i)
+		if prev:find("V%.broadcastHud%(%)") then before = before + 1 end
+		from = i + 1
+	end
+	eq(ends, 2, "finish: a win and a loss end line")
+	eq(before, ends, "finish: the final HUD goes out before every end line")
+end
+
 -- ------------------------------------------------------------------ engine: the boss unique by the boss's type
 -- invasion.lua against a mocked engine: a renamed boss ("Warchief Grashnak", an Orc Warlord) rolls the unique drop
 -- lists by its type name, which is what chaos_unique_items.lua lists, not by the name it is shown under.

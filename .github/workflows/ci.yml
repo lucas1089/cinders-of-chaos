@@ -917,6 +917,9 @@ jobs:
       - name: Default ambient light 60 % (base patch 0214)
         run: python3 -I client/tools/ambient_light_patch_test.py
 
+      - name: Modal dialog choices wider (base patch 0215)
+        run: python3 -I client/tools/modal_choices_patch_test.py
+
       - name: HD sprite overlay maths (C++; header from base patch 0196)
         run: |
           d=$(mktemp -d)
