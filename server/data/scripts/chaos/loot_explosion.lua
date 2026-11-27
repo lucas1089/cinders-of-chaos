@@ -414,14 +414,29 @@ local function tileFree(tile)
 	return true
 end
 
+-- under a roof: a ground on a floor above (the client draws that floor over the tile for a player outside, so an item there
+-- is hidden). Seen in a client 2026-11-27 (V42): a Demon killed in the street sent a potion and an emerald through a
+-- building's open front under its roof, out of sight of the killer.
+local function covered(pos)
+	for z = pos.z - 1, math.max(0, pos.z - 3), -1 do
+		local above = Tile(Position(pos.x, pos.y, z))
+		if above and above:getGround() then
+			return true
+		end
+	end
+	return false
+end
+
 local function factsOf(origin)
 	local facts = {}
+	-- a death tile in the open keeps the loot in the open; under a roof the outside is seen from inside, so no rule
+	local open = not covered(origin)
 	for dx = -cfg.radius, cfg.radius do
 		for dy = -cfg.radius, cfg.radius do
 			local pos = Position(origin.x + dx, origin.y + dy, origin.z)
 			local tile = Tile(pos)
 			local ring = math.max(math.abs(dx), math.abs(dy))
-			if tileFree(tile) and (ring == 0 or origin:isSightClear(pos, true)) then
+			if tileFree(tile) and (ring == 0 or (origin:isSightClear(pos, true) and not (open and covered(pos)))) then
 				facts[#facts + 1] = {dx = dx, dy = dy, ring = ring, items = tile:getItemCount() or 0}
 			end
 		end

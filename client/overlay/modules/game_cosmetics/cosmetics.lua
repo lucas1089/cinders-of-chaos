@@ -271,6 +271,26 @@ local function fitTabs()
   for i, b in ipairs(shown) do b:setWidth(widths[i]) end
 end
 
+-- a row's second line cut with "..." to its width: the source text ran under the list's edge and was cut mid-letter
+-- ("Rewards for owning cosmeti|", seen in a client 2026-11-27, V42); the detail pane shows the whole text
+local function fitLabel(label, text)
+  label:setText(text)
+  local width = label:getWidth()
+  if width <= 10 or label:getTextSize().width <= width then return end
+  local cut = #text
+  while cut > 1 do
+    cut = cut - 1
+    label:setText(text:sub(1, cut):gsub('%s+$', '') .. '...')
+    if label:getTextSize().width <= width then return end
+  end
+end
+
+local function fitRows()
+  for _, row in pairs(rowWidgets) do
+    if not row:isDestroyed() and row.subText then fitLabel(row.sub, row.subText) end
+  end
+end
+
 local function showList()
   if not window or not state then return end
   for key, b in pairs(tabButtons) do
@@ -300,7 +320,8 @@ local function showList()
       row.swatch:setBackgroundColor(swatch)
     end
     row.name:setText(r.name .. (r.selected and '  *' or ''))
-    row.sub:setText(CL.subText(r))
+    row.subText = CL.subText(r)
+    row.sub:setText(row.subText)
     if not r.owned or r.otherLine then
       row.name:setColor('#8c8070')
     end
@@ -330,6 +351,7 @@ local function showList()
     status = tr('Earned') .. ' ' .. have .. ' / ' .. all .. ' ' .. tr('(never sold)')
   end
   window.statusLabel:setText(status)
+  addEvent(fitRows) -- after the layout pass: the labels have their width then
   local u = unlocks()
   window.onlyMineBox:setVisible(u ~= nil)
   if u then
@@ -365,6 +387,7 @@ function show()
   window:raise()
   window:focus()
   addEvent(fitTabs)
+  addEvent(fitRows)
 end
 
 function hide()

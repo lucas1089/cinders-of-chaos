@@ -99,6 +99,21 @@ function V.clip(text, max)
   return (text:sub(1, cut):gsub('%s+$', '')) .. '...'
 end
 
+-- the longest start of `text` (whole words, "..." after a cut) for which fits(candidate) is true; the text itself when it
+-- fits, '' when not even one word does. The details pane cut a long description mid-line under the buttons (Verdant
+-- Ascent, seen in a client 2026-11-27, V42); shop.lua asks fits() of the label's wrapped height, the tooltip keeps all
+function V.fitWords(text, fits)
+  text = tostring(text or '')
+  if fits(text) then return text end
+  local ends = {}
+  for pos in text:gmatch('()%s+') do ends[#ends + 1] = pos - 1 end
+  for i = #ends, 1, -1 do
+    local candidate = (text:sub(1, ends[i]):gsub('[%s%.,;:>-]+$', '')) .. '...'
+    if fits(candidate) then return candidate end
+  end
+  return ''
+end
+
 -- ---------------------------------------------------------------- the home page
 -- Which categories the home page shows, in this order: the weekly rotation (the category the server gives `endsIn`:
 -- the highlighted strip with the timer), the starter packs (while one is for sale), the bundles. Each is

@@ -35509,7 +35509,8 @@ the ground around the death tile. `enabled = false` in `loot_explosion_config.lu
   an instance (`Chaos.instanceAt`: rift, dungeon, tower, arena, raid, boss rooms: the instance clears its area when it ends and the floor loot would go with it;
   `inInstances = true` lifts it), a kill over a cap, a death tile with no free tile in sight. They keep the bag, as before.
 * **The spread** (`X.pickTiles`, `X.plan`). Free tiles within `radius` (2): a ground, no wall / water / lava / stairs / teleport / magic field / protection zone /
-  house / depot / mailbox / trash, and in line of sight of the death tile (no loot behind a wall). Each drop takes the cheapest tile: its ring (ring 2 costs 0.35 more),
+  house / depot / mailbox / trash, and in line of sight of the death tile (no loot behind a wall). When the death tile is open (no ground on the
+  three floors above it), a tile under a roof is refused too (V42: a kill in the street sent loot under a house's roof, out of the player's view). Each drop takes the cheapest tile: its ring (ring 2 costs 0.35 more),
   the items already there (1.0 each), the drops of this kill already sent there (2.0 each), a random 0 .. 0.6. So 14 drops fill the 8 ring 1 tiles, then 6 of ring 2, and
   nothing is piled before every free tile has one. The death tile costs 6: a last resort. **Gold** (all its stacks) is one drop on one tile. Items leave in rank order,
   gold and plain first, **the rarest last** (a unique last), 50 to 80 ms apart (`staggerMinMs`, `staggerMaxMs`), each with a distance effect from the death tile
@@ -35597,6 +35598,9 @@ the ground around the death tile. `enabled = false` in `loot_explosion_config.lu
   and count, a stranger read one stock flight per row and the poff and no message, the owner with `burst {on = 0}` read the stock flights; the ground row and the corpse row carry `st` for a set
   piece; the kill beam (opcode 238) listed only the unique, the set piece, Divine and Legendary of eight injected items. Check `loot_burst`, helper v29 `explode set | bag`. **Not run:** the
   client's drawing (no client in that run). One gold drop is one flight with the count of its first coin (50 of 100 + 50 gold; two stacks lie there): left as it is.
+* **Seen in a client (2026-11-27, V42).** Two Demon kills in the street of the start town: the burst flies, lands and sparkles; six swords on the ground: beams on
+  Legendary, Divine, the set piece and the unique, none on Magic and Rare. Fixed: a ring tile under a roof took loot while the kill tile was open, so the item lay
+  hidden under the house roof (`covered` in `loot_explosion.lua`; test block "roof" of `tests/loot_explosion_test.lua`).
 
 
 Refusal text (V41): the engine sends its own cancel ("Sorry, not possible.") for any refused move after `Player:onMoveItem`, which overwrote ours. The ownership refusal is sent as `MESSAGE_STATUS_WARNING`, like depot.lua, so "That loot belongs to someone else for N more seconds." stays on screen.

@@ -14,6 +14,7 @@ return {
 
 	-- where the items land: free walkable tiles within this many tiles of the death tile (1 or 2). A tile with no wall, no water,
 	-- no stairs / teleport / magic field, no protection zone and no house is free; one that the death tile cannot see is skipped
+	-- (and, for a death tile in the open, one under a roof: the floor above hides it from a player outside; V42)
 	radius = 2,
 
 	-- the pile rules: the cost of a tile is the ring it lies on (ring 2 costs `ringPenalty` more than ring 1), the items already

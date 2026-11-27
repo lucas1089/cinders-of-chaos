@@ -8667,3 +8667,15 @@ Linux main client from this branch, local server, one tester. Rows O562, O576, O
 - `game_passivetree` (O409): Trending Builds cut its footer and the descenders of the row names. Rows 48 px, window 440x432, footer anchored above Close.
 - Seen, fine: the Divine beam is the loudest; Angelic Wings centred on the Mage look; fusion kept the unique, rare and set copies; the day 7 login claim gave Devoted Labels.
 - Not fixed, seen: the trade window lies over the talk window; "bye" did not close the talk window; "Capacity after" has no thousands separator; the How it works card comes back after each restart; the helper hint text overlaps the minimap; Beastmaster rows are grouped under Ranger on the class board (class base).
+
+## Seen in a client (2026-11-27, V42: spellbook, auto turn, reward chests, collection, loot burst, PixelLab monsters)
+
+Linux main client from this branch, local server with the sprite pair of `windows-assets`, one tester (a level 1504 Elementalist). Rows O76, O75, O256, O318, O677 and O640 played through. What was wrong is fixed here.
+
+- `game_spellbook` (O76): Learned, the Attack / Support / All type filters and the AoE tags work; a wave shows its area. Fixed: a long spell's words were cut mid-letter and the AoE tag kept 28 px with no tag; the words are fitted at a character with "..." (`fitNames`) and the tag is 0 px wide when the spell has no area.
+- O75: with Auto turn on, the Magic Shooter turned the character west, east and north to a troll before Pyre Torrent.
+- O256: the quest hall chests carry the reward chest look; one opened gave "You have found a blacksteel sword".
+- `game_cosmetics`, `game_shop` (O318): score 95, 98 after a purchase, 102 after a second; Try on a mount and a level-up effect, buy, Use, the effect plays at the next level. Fixed: a row's second line was cut mid-letter ("Rewards for owning cosmeti"): `fitRows` fits it at a word with "..."; a long store description ran under TRY ON: `fitDesc` (with `ShopView.fitWords`, tests in `shopview_test.lua` and `shop_ui_test.lua`) fits it to its label and fits again on a size change.
+- `game_lootburst`, `game_lootbeams` (O677): the burst on two Demon kills; beams on Legendary, Divine, set piece and unique, none on Magic and Rare. Fixed on the server: loot under a roof (server/README.md "Loot explosion (O669)").
+- O640: Gnarlhound, Cinderclaw, Lesser Fire Devil, Hellflayer and Ogre Brute in their own hunts: they walk and move while they stand, on their tile.
+- Not fixed, seen: the helper hint overlaps the minimap; "New spell available" opens at a level-up when a custom rotation lacks a recommended spell (as built); the Collection "Unlocked" line wraps; many toasts and achievements during kills.

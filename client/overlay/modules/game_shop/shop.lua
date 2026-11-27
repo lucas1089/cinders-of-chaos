@@ -1166,6 +1166,19 @@ end
 -- the details of a card: its look in the preview column (look offers), the name, tags, price, text, the note (owned,
 -- coins short) and the Buy / Gift / Try on buttons; nothing picked: a hint. `keepTry` leaves the Try on countdown alone.
 -- the note sits on the top-most button shown and the text takes the room above it (ShopView.detailLayout)
+-- the description cut to the label's height (ShopView.fitWords on the wrapped text size; whole text in the tooltip)
+function fitDesc()
+  local d = ui.dDesc
+  if not d or d:isDestroyed() or type(d.fullText) ~= 'string' or d:getHeight() <= 0 then return end
+  local full = d.fullText
+  local fitted = ShopView.fitWords(full, function(t)
+    d:setText(t)
+    local size = d:getTextSize()
+    return size ~= nil and size.height <= d:getHeight()
+  end)
+  d:setText(fitted ~= '' and fitted or full)
+end
+
 local function layoutDetailText(plan, noteText)
   local L = ShopView.detailLayout(plan, noteText)
   local note = ui.dNote
@@ -1195,6 +1208,7 @@ function showDetails(card, keepTry)
     ui.dPrice:setText('')
     ui.dOld:setVisible(false)
     ui.dDesc:setText(tr('Pick an offer to see its details.'))
+    ui.dDesc.fullText = nil
     ui.dDesc:setTooltip('')
     ui.dNote:setText('')
     ui.buyButton:setVisible(false)
@@ -1217,8 +1231,14 @@ function showDetails(card, keepTry)
     if type(t) == "string" then tags[#tags + 1] = ShopView.tagLabel(t, function(k) return tr(k) end) end
   end
   ui.dTags:setText(table.concat(tags, '  '))
-  ui.dDesc:setText(tostring(data["description"] or ''))
-  ui.dDesc:setTooltip(tostring(data["description"] or ''))
+  local desc = tostring(data["description"] or '')
+  ui.dDesc:setText(desc)
+  ui.dDesc:setTooltip(desc)
+  ui.dDesc.fullText = desc
+  -- a text taller than the label is cut at a word with "..." instead of mid-line under the buttons (V42); the tooltip
+  -- keeps the whole text. Again on every size change of the label (the look room and the buttons move its bottom)
+  if not ui.dDesc.onGeometryChange then ui.dDesc.onGeometryChange = function() fitDesc() end end
+  addEvent(fitDesc)
   -- the price with its coin, the old price struck through
   local cost = tonumber(data["cost"])
   ui.dCoin:setVisible(cost ~= nil)
