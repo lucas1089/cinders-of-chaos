@@ -2423,6 +2423,11 @@ jobs:
           /tmp/fxenv/bin/python -I chaos/client/tools/sprites/gen_relook_monsters.py live \
               "$RUNNER_TEMP/pair/Tibia.dat" "$RUNNER_TEMP/pair/Tibia.spr"
 
+      - name: Code-drawn wings sit as drawn, the north view level with the south (gen_drawn_wings.py live, pair 89, O770)
+        run: |
+          /tmp/fxenv/bin/python -I chaos/client/tools/sprites/gen_drawn_wings.py live \
+              "$RUNNER_TEMP/pair/Tibia.dat" "$RUNNER_TEMP/pair/Tibia.spr" --new --keep-painted --painted-sides
+
       - name: Decor flames sit at their ids (gen_decor_flames.py live, pair 74, O623)
         run: |
           /tmp/fxenv/bin/python -I chaos/client/tools/sprites/gen_decor_flames.py live \

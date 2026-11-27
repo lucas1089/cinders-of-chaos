@@ -341,7 +341,7 @@ local function shortName(name) return (str(name):gsub('^Orb of ', '')) end
 function V.materials(ctx)
   local state, out = ctx.state or {}, {}
   for _, a in ipairs(V.actions({ info = ctx.info, forge = ctx.forge, state = { counts = state.counts, bag = state.bag, stash = state.stash } })) do
-    local tip = a.name .. '\n' .. a.text .. '\n' .. tr('%d in backpack, %d in stash', a.bag, a.stash)
+    local tip = a.name .. '\n' .. a.text .. '\n' .. tr('%d in purse and backpack, %d in stash', a.bag, a.stash)
     out[#out + 1] = { key = a.key, name = shortName(a.name), clientId = a.clientId, count = a.total, bag = a.bag, stash = a.stash,
       dim = a.total <= 0, tip = tip }
   end
@@ -351,12 +351,12 @@ end
 -- ---------------------------------------------------------------- the chosen change
 function V.costLine(a)
   if not a then return '' end
-  return tr('Cost: 1 %s. You have %d (%d in backpack, %d in stash).', a.name, a.total, a.bag, a.stash)
+  return tr('Cost: 1 %s. You have %d (%d in purse and backpack, %d in stash).', a.name, a.total, a.bag, a.stash)
 end
 
 function V.costShort(a)
   if not a then return '' end
-  return tr('Costs 1 %s (backpack first, then stash)', a.name)
+  return tr('Costs 1 %s (purse and backpack first, then stash)', a.name)
 end
 
 -- the server's answer in one text: "Guaranteed: tier 3 to tier 4. ..." / "Random: ..." (+ the warning of a risky one)
@@ -597,10 +597,10 @@ function V.compare(ex)
   return nil
 end
 
--- the cost row of the what-happens box: {name = "Cost: 1 Ember Orb", have = "you have 7: 3 backpack, 4 stash"}
+-- the cost row of the what-happens box: {name = "Cost: 1 Ember Orb", have = "you have 7: 3 purse and bag, 4 stash"}
 function V.costRow(a)
   if not a then return { name = '', have = '' } end
-  return { name = tr('Cost: 1 %s', a.name), have = tr('you have %d: %d backpack, %d stash', a.total, a.bag, a.stash) }
+  return { name = tr('Cost: 1 %s', a.name), have = tr('you have %d: %d purse and bag, %d stash', a.total, a.bag, a.stash) }
 end
 
 -- the FORGE button: {title, sub, risky, enabled}

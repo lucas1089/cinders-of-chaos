@@ -118,8 +118,14 @@ PAIR_STIPPLE = 88   # pair 87 with the stipple inside the pack effects redrawn s
                     # client/tools/sprites/fix_stipple.py build): holes on the Bayer or checker grid filled from their sides, the dim
                     # lattice dots of a faint fringe removed, frames and timing kept. Client art only, no server gate.
 
-PAIR_ASSETS = 88
-PAIR_ASSETS_DAT_MD5 = 'cf780a4a956aefca0ee3860d5171982a'
+PAIR_WINGS_NORTH = 89   # pair 88 with ten code-drawn wings looks redrawn in place (O770, gen_drawn_wings.py apply --only): the north view
+                    # (back to the camera) stands as high as the south view (it hung 9-29 px lower over the hips: Vampire 940, Gravecrow
+                    # 2141, Gloomgild 2231, Sunforged 2232, Elderleaf 939, Bubble Fairy 2395, the new looks 3555, 3556, 3558, 3559).
+PAIR_RELOOK_BODY = 89   # the same pair: outfits 3744-3746 of O768 rewritten in place (gen_relook_monsters.py relook), idle and walk on
+                    # the standing picture by the body (the Banshee's idle stood 6 px off its walk). Client art only, no server gate.
+
+PAIR_ASSETS = 89
+PAIR_ASSETS_DAT_MD5 = 'c5c6252e23e418aa4713340c00b1430c'
 
 
 def parse(text):

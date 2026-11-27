@@ -495,7 +495,7 @@ for _sp in _specs:
         _bad += [] if (_m[0] == 0 and _n[0] == 0 and fm587.mirror_strip(_n) == _m) else ['root or mirror']
         _a = _st.Strip(_m, -1, (48.0, 58.0))
         _b = _st.Strip(_n, 1, (48.0, 58.0))
-        _lens = [_st.Strip(v, sg, (0, 0)).length for v, sg in zip(_sp.strips[_v], (-1, 1)) if v is not None]
+        _lens = [_st.Strip(v, sg, (0, 0)).length for v, sg in zip(_sp.strips[fm587.strip_view(_sp, _v)], (-1, 1)) if v is not None]
         _bad += [] if abs(_a.length - max(_lens)) < 1.0 else ['not the longer wing']
         _pa, _pb = np.array([_a.pt(s_, 0.0) for s_ in (0.2, 0.5, 1.0)]), np.array([_b.pt(s_, 0.0) for s_ in (0.2, 0.5, 1.0)])
         _bad += [] if np.allclose(_pa[:, 0] - 48.0, -(_pb[:, 0] - 48.0), atol=1e-6) and np.allclose(_pa[:, 1], _pb[:, 1], atol=1e-6) else ['strip and mirror']
@@ -513,6 +513,37 @@ check(all(np.array_equal(gd.mirrored(_fr['east'][_f][_i]), _fr['west'][_f][_i]) 
 check(all(not _fr[_d][_f][1][..., 3].any() for _d in ('east', 'west') for _f in range(F)), 'O590: from the side the pair lies behind the body')
 check(any(_fr['north'][_f][1][..., 3].any() for _f in range(F)) and not any(_fr['south'][_f][1][..., 3].any() for _f in range(F)),
       'O583: south behind the body, north in front of it')
+# ---- O770: the north view (back to the camera) stood as high as the south view. Before, the old art's north strips
+# of some rows pointed down (Vampire 940 +26 px, Gravecrow 2141 +29 under the south picture) and the six of O581
+# reached back, so depth * reach put them lower from behind (Ember Pinions 3555 +11.5): the back view hung over the hips.
+_mg = {_d: [gd.merge(*_x) for _x in _fr[_d]] for _d in ('north', 'south')}
+check(abs(gd.north_hang(_mg['north'], _mg['south'])) <= fm587.NORTH_HANG_MAX, 'O770: fiery north stands as high as south')
+_low = {_d: [(np.roll(_b, 12, axis=0), np.roll(_f, 12, axis=0)) if _d == 'north' else (_b, _f) for _b, _f in _fr[_d]] for _d in _fr}
+check(any('north: the pair sits' in _b for _b in fm587.layout_problems(_sp, _low)),
+      'O770: a north pair 12 px under the south pair is named: %s' % fm587.layout_problems(_sp, _low))
+check(fm587.strip_view(_sp, 'north') == 'north' and fm587.strip_view(_sp, 'south') == 'south', 'O770: fiery keeps its own north strip')
+_by_key = {sp.key: sp for sp in _specs}
+for _key in ('vampire', 'gravecrow', 'gloomgild', 'sunforged', 'elderleaf', 'bubble_fairy', 'soot_moth'):
+    _r = _by_key[_key]
+    check(fm587.north_drop(_r) > fm587.NORTH_DROP_MAX and fm587.strip_view(_r, 'north') == 'south'
+          and fm587.model_strip(_r, 'north') == fm587.model_strip(_r, 'south'),
+          'O770: %s draws its north pair from the south strip (old north strip %.1f px lower)' % (_key, fm587.north_drop(_r)))
+_r = _by_key['vampire']
+_rf = fm587.render(_r, dirs=('north', 'south'))
+_rm = {_d: [gd.merge(*_x) for _x in _rf[_d]] for _d in _rf}
+check(abs(gd.north_hang(_rm['north'], _rm['south'])) <= 1.0, 'O770: vampire north stands as high as south (%.1f)'
+      % gd.north_hang(_rm['north'], _rm['south']))
+check(not np.array_equal(_rm['north'][0], _rm['south'][0]), 'O770: vampire north is still its own picture (in front of the body)')
+for _key in gd.KEYS:
+    _kf = {_d: [gd.merge(*gd.render_frame(_key, _d, _f)) for _f in range(F)] for _d in ('north', 'south')}
+    check(abs(gd.north_hang(_kf['north'], _kf['south'])) <= fm587.NORTH_HANG_MAX,
+          'O770: %s north stands as high as south (%.1f)' % (_key, gd.north_hang(_kf['north'], _kf['south'])))
+check(abs(gd.project((5.0, 9.0, -6.0), 'north', level=True)[1] - gd.project((5.0, 9.0, -6.0), 'south')[1]) < 1e-9
+      and gd.project((5.0, 9.0, -6.0), 'north', level=True)[2] > 0 > gd.project((5.0, 9.0, -6.0), 'south')[2],
+      'O770: a level wing point stands as high from behind, still in front of the body')
+check(gd.project((5.0, 9.0, -6.0), 'north')[1] > gd.project((5.0, 9.0, -6.0), 'south')[1],
+      'O770: a ring round the body (level off) keeps the camera height')
+
 _ys, _xs = np.nonzero(gd.merge(*_fr['east'][3])[..., 3] == 255)
 check(fm587.JOIN[1] - _ys.min() >= fm587.SIDE_RISE_MIN and (_ys >= gd.ANCHOR[1]).mean() <= 0.25, 'O714: the east wing rises over the join and does not hang')
 check(_xs.min() < fm587.JOIN[0] - 8, 'O714: the east wing trails behind the join')

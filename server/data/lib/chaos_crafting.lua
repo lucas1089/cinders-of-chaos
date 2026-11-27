@@ -2093,6 +2093,18 @@ local function tierSpan(level)
 end
 C.tierSpan = tierSpan
 
+-- "1 new modifier" / "4 new modifiers": the count with the word in the singular for one (O770)
+local function modCountWords(n, word)
+	word = word and (word .. " ") or ""
+	return string.format("%d %s%s", n, word, n == 1 and "modifier" or "modifiers")
+end
+C.modCountWords = modCountWords
+
+-- "one of 3 modifiers goes" / "the one modifier goes"
+local function oneGoes(n)
+	return n == 1 and "the one modifier goes" or string.format("one of %d modifiers goes", n)
+end
+
 function C.preview(orbKey, item)
 	if C.isWaystone(item) then
 		local WM = ChaosWaystoneMods
@@ -2108,9 +2120,9 @@ function C.preview(orbKey, item)
 		elseif orbKey == "exalted" then
 			return string.format("%d -> %d of %d modifiers", n, n + 1, max)
 		elseif orbKey == "annulment" then
-			return string.format("one of %d modifiers goes", n)
+			return oneGoes(n)
 		elseif orbKey == "scouring" then
-			return string.format("all %d modifiers go", n)
+			return n == 1 and "the one modifier goes" or string.format("all %d modifiers go", n)
 		elseif orbKey == "chaos" then
 			return "new modifiers (1 to 3)"
 		elseif orbKey == "divine" then
@@ -2138,25 +2150,25 @@ function C.preview(orbKey, item)
 		return string.format("%d -> %d of %d (prefixes %d/%d, suffixes %d/%d), %s", n, n + 1, C.maxModsOf(item, rarity), p,
 			M.sideLimitOf(item, "prefix", rarity), s, M.sideLimitOf(item, "suffix", rarity), tierSpan(level))
 	elseif orbKey == "annulment" then
-		return string.format("one of %d modifiers goes", n - C.bindCount(mods))
+		return oneGoes(n - C.bindCount(mods))
 	elseif orbKey == "scouring" then
-		return string.format("%s with %d modifiers -> normal, item level %d", rarity > 0 and C.rarityName(rarity) or "Normal",
-			n, level)
+		return string.format("%s with %s -> normal, item level %d", rarity > 0 and C.rarityName(rarity) or "Normal",
+			modCountWords(n), level)
 	elseif orbKey == "chaos" then
 		local bound = C.bindCount(mods)
 		if bound > 0 then
-			return string.format("%d bound stay, %d new modifiers, %s", bound, math.max(0, M.modCount(rarity) - bound),
-				tierSpan(level))
+			return string.format("%d bound %s, %s, %s", bound, bound == 1 and "stays" or "stay",
+				modCountWords(math.max(0, M.modCount(rarity) - bound), "new"), tierSpan(level))
 		end
-		return string.format("stays %s, item level %d: %d new modifiers, %s", rarity > 0 and C.rarityName(rarity) or "Normal",
-			level, M.modCount(rarity), tierSpan(level))
+		return string.format("stays %s, item level %d: %s, %s", rarity > 0 and C.rarityName(rarity) or "Normal",
+			level, modCountWords(M.modCount(rarity), "new"), tierSpan(level))
 	elseif orbKey == "divine" then
 		local rank = ChaosRarity.rank(rarity)
 		if rank == 5 then
 			return string.format("%d%% chance of Divine (new modifiers), else no change", C.config.fateDivineChance)
 		end
-		return string.format("becomes %s: %d new modifiers, item level %d stays",
-			C.rarityName(ChaosRarity.idOfRank(rank + 1)), M.modCount(ChaosRarity.idOfRank(rank + 1)), level)
+		return string.format("becomes %s: %s, item level %d stays",
+			C.rarityName(ChaosRarity.idOfRank(rank + 1)), modCountWords(M.modCount(ChaosRarity.idOfRank(rank + 1)), "new"), level)
 	end
 	return ""
 end
