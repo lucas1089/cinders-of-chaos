@@ -8554,3 +8554,14 @@ Owner (pt-BR) 2026-11-25: "banshee, white lion, hellhound, werelion, leaf golem 
 - **Held**: `check_pair.py P88 --old P87 --allow-changed` (the 640 things) 0 errors, 5,300 warnings (pair 87's). Every step of the CI job "Live sprite pair" passes on it with `PAIR_ASSETS` 88 (39 steps).
 - **Switch on (done in the repository)**: `PAIR_ASSETS` 88 and its dat md5 in `server/tools/client_pair.py`. Tables regenerated from pair 88: `outfit_anchors.lua`, `info_lifts.lua` and `InfoLiftData.cs`, `wing_centres.lua`, `head_centres.lua`, `foot_marks.lua` (only the md5 line changed). `check_content.py` `PAIR_NAME` 'pair 88'. CI's live-pair job fails until the parts are on windows-assets.
 - **Owner steps**: a client package with pair 88, then admin app Comandos > "Par do cliente" > Gravar 88 (`chaos-ctl.sh client-pair set 88`). No server step: client art only.
+
+## Seen in a client (2026-11-27, V31: store, stash, pact, cosmetics, Skills rows)
+
+Linux main client on pair 88, local server, two characters. Rows O315 to O328 played through.
+
+- `game_shop`: the struck old price of a sale card was cut when the price did not fit. `V.oldPriceFits` hides it then. `shopview_test.lua`.
+- `game_pact`: perk and status text cut. The window is 640 wide, perks wrap by `V.perkWidth`, the status line has room for two lines. `pactview_test.lua`.
+- `game_cosmetics`: the kind tabs cut their labels in pt-BR. `CL.tabWidths` sizes each shown tab to its text, padding 16 down to 4, then a share. `fitTabs` runs after the window is shown. `cosmeticslogic_test.lua`.
+- `game_skillstats`: "Damage/Healing" and "Offline Training" ran into their values. `V.nameFits` checks the row; a long name shows "Dmg/Heal" or "Offline" with the full name as tooltip. `skillstatsview_test.lua`.
+- `game_chaosdock`: Skills from the dock said "not available" after the right column hid it, or after a release. Root cause: the dock ran the base Skills entry, a toggle, on a window it still thought open. The dock now takes a column-hidden window without the entry, and a release closes a mini window the module's way. `chaosdock_engine_test.lua`.
+- Fine as built: chest auras and the Templar sigil, Guild Stash, collection score and Try on, the hunt warning, monster levels with no skull, the Rootling Nutshell, the Tower floor damage and loot.

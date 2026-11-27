@@ -1007,6 +1007,11 @@ function applyCardState(card)
     card.badge:setVisible(false)
   end
   if card.accent then card.title:setColor(card.accent) end
+  -- V31: the struck old price only when it fits beside the chip (ShopView.oldPriceFits; the details pane always has it)
+  if card.sel ~= nil then
+    card.oldPrice:setVisible(st.onSale == true and ShopView.oldPriceFits(card.price:getText(), card.oldPrice:getText(),
+      card.badge:isVisible()))
+  end
 end
 
 -- an offer card in `parent`; sel = where the server has it ({category, page, offer}: what buy, gift and preview

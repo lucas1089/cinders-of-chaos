@@ -56,8 +56,32 @@ local function fitWindow()
   end
 end
 
+-- long row names: the short name when the full one runs into its number (V.SHORT_NAMES); restore = full names back
+local function fitNames(restore)
+  local w = window()
+  if not w then return end
+  for id, spec in pairs(V.SHORT_NAMES) do
+    local row = w:recursiveGetChildById(id)
+    local name = row and row.getChildById and row:getChildById('nameLabel')
+    local value = row and row:recursiveGetChildById(spec.value)
+    if name and value and name.getTextSize then
+      row.chaosFullName = row.chaosFullName or name:getText()
+      local full = row.chaosFullName
+      name:setText(full)
+      if not restore and not V.nameFits(name:getTextSize().width, value:getTextSize().width, row:getWidth(),
+          name:getMarginLeft() + name:getMarginRight() + value:getMarginRight()) then
+        name:setText(tr(spec.short))
+        name:setTooltip(full)
+      else
+        name:setTooltip('')
+      end
+    end
+  end
+end
+
 local function render()
   if not window() then return end
+  fitNames(false)
   local view = V.build(state, formatShortNumber)
   for name, spec in pairs(ROW) do
     local row = rowWidget(name)
@@ -105,6 +129,12 @@ local function onGameEnd()
 end
 
 function init()
+  -- the column is laid out (opened, docked, resized) after the numbers came: fit the names again then
+  local w = window()
+  if w then
+    handlers.window = { onGeometryChange = function() fitNames(false) end }
+    connect(w, handlers.window)
+  end
   handlers.game = { onGameStart = onGameStart, onGameEnd = onGameEnd }
   connect(g_game, handlers.game)
   ProtocolGame.registerExtendedJSONOpcode(OPCODE, onStats)
@@ -119,6 +149,11 @@ function terminate()
     handlers.game = nil
   end
   pcall(ProtocolGame.unregisterExtendedJSONOpcode, OPCODE)
+  if handlers.window and window() then
+    disconnect(window(), handlers.window)
+  end
+  handlers.window = nil
+  fitNames(true)
   for name in pairs(ROW) do
     local row = rowWidget(name)
     if row then

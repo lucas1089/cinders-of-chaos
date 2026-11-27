@@ -341,3 +341,13 @@ function V.pageText(page, pages)
   if pages <= 1 then return '' end
   return string.format('%d / %d', math.max(1, math.min(tonumber(page) or 1, pages)), pages)
 end
+
+-- the struck old price of a card and its chip share one line (shop.otui ShopCard: the price at 66 px, the 46 px chip from
+-- 118 px). Seen in a client (2026-11-27, V31): "1.35k 1.69k" and "2.5k 3.2k" ran under the "-20%" chip, which cut
+-- them to "1." and "3.2". The old price shows only when both fit beside the chip (about 8 px a price character, 6 px an
+-- old price character, 5 px between); the details pane still shows it. No chip: it always shows.
+V.CARD_PRICE_ROOM = 50
+function V.oldPriceFits(priceText, oldText, chip)
+  if not chip then return true end
+  return 8 * #tostring(priceText or '') + 5 + 6 * #tostring(oldText or '') <= V.CARD_PRICE_ROOM
+end

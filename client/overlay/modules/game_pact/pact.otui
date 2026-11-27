@@ -102,7 +102,8 @@ PactShelfRow < ChaosPanelDark
 
 PactWindow < ChaosMainWindow
   id: pactWindow
-  size: 560 670
+  // V31 (seen in a client 2026-11-27): 560 wide cut the status line, the Perk names and the affinity tab line; 640 keeps them
+  size: 640 670
   // phone interface is 540 high and 960 wide: 950 wide keeps the long lines to one or two lines,
   // inside the frame (536 - 54 = 482): header 62, wallet 17, 3 plates 18 each, limits head 18 and
   // list 102, special 28, marks line 17, month line 16, shelf 54, builds 84 (2 rows of 38), name row 30
@@ -134,7 +135,7 @@ PactWindow < ChaosMainWindow
       anchors.right: claimButton.left
       margin-top: 2
       margin-right: 6
-      height: 28
+      height: 42
       text-wrap: true
       text-align: topLeft
 
@@ -217,6 +218,8 @@ PactWindow < ChaosMainWindow
     margin-top: 2
     height: 28
     text-wrap: true
+    // the ten affinity tabs take three lines (four in pt-BR): the label grows with its text, the builds list below gives the room
+    text-auto-resize: true
     text-align: topLeft
 
     $mobile:

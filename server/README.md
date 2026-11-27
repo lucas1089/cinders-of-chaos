@@ -5257,6 +5257,8 @@ tower. No change; ask the tester for the hunt tracker and the class.
 
 **Deploy.** `files` step and a script reload or restart. No SQL, no engine patch, no client change.
 
+Seen in a client (2026-11-27, V31): floor 57 monsters at level ~1198 hit a level 900 hard; 24 kills paid 42217 gold and loot of the level.
+
 ## Infinity Tower season rewards (`infinitytower.lua`, `infinitytower_core.lua`, `Chaos.tower` in `chaos_constants.lua`)
 
 The client window's "Top Rank Rewards" podium (Gold, Silver and Copper Tower Chest) is paid at the end of every tower
@@ -5343,6 +5345,8 @@ Owner 2026-10-29: some low-level hunts have a hole or a portal inside them that 
 - **Not covered.** Teleports whose target a movement script sets (action or unique id) have no destination on the map; most teleport items of the base map are of that kind. Holes a player digs. Cliff edges without an item. The planned content hunts. Re-run the audit on the installed server's data folder when the map changes.
 
 Seen in a client (2026-11-25, V12): Demon Skeleton stairs at 33031,32450,11, the effect and the DANGER window two tiles off, the Caution message on arrival. The client window was cut off at the top; fixed in `game_chaosnotify` (client/MANIFEST.md). The cooldown lives in memory: a restart shows the warning again.
+
+Seen in a client (2026-11-27, V31): the hole warning shown before the drop.
 
 ## Hunt bands (O333) (`tools/audit_hunt_bands.py`, `tools/patch_hunt_gates.py`, `tools/hunt_gates.csv`, install step `huntgates`)
 
@@ -6625,6 +6629,8 @@ Owner, 2026-11-23 (pt-BR, translated): "The old death effects can be removed com
 - **Texts:** the pt-BR strings of the Candle Seal offer left `i18n_strings.lua`; docs (CONTENT, GAME_GUIDE, OWNER_TODO) and the sections above no longer promise the effects.
 - Tests: `tests/cosmetics_removal_test.lua` (17 retired rows against the SQL, every reward table names live cosmetics only, no Pact cosmetic in January and March 2027), `cosmetics_test.lua` (10 kill effects, 12 track cosmetics, the track view and the sync moved to Raids), `battleground_test.lua`, `candlemarks_test.lua`, `milestones_test.lua`, `raid_test.lua`, `pvpzone_test.lua`, `pact_test.lua`, `pact_engine_test.lua`; the generated data (wiki, codex, guide, how it works, tester scenarios, Unity info) did not name the 17 and is unchanged.
 
+Seen in a client (2026-11-27, V31): score 64 to 72 after a purchase, Try on works, a cosmetic seen by a second character; the cut tab labels were a client fix.
+
 ## Wardrobe catalogue (`wardrobe.lua`, `wardrobe_core.lua`, client `game_unlocks`, base patch 0060)
 
 The 10.98 outfit window packet lists only what the character owns; the Customise Character window shows everything
@@ -7787,6 +7793,8 @@ capped, items}` or `found {q, error = "short" | "long"}`.
 - Tests: `tests/itemsearch_test.lua` (the rules), `tests/stash_test.lua` "Find my item" (the engine side with a closed bag, the
   purse, the inbox, a stash row, the rate limit and pages).
 
+Seen in a client (2026-11-27, V31): no depot in game or store, the guild hall storage is named Guild Stash.
+
 ## Chaos Pact and account storage (`pact.lua`, `pact_core.lua`, `pact_config.lua`, `sql/chaos_pact.sql`, client `game_pact`)
 
 Two things sold for Chaos Coins, both account-wide and comfort only: nothing here adds damage, defence or loot. Every
@@ -7945,6 +7953,8 @@ taking coins; the Pact expired: limits back to the free counts, title gone, tab 
 that item moves it to tab 2), builds 3-4 read-only (a forged save refused), a read-only build loaded into the passive tree;
 `grantDays` from a bundle; the Pactbound name plate; a sixth character refused at login, then let in after a Character Slot
 was bought; the window from another character of the account; the autoloot window with 20 rules.
+
+Seen in a client (2026-11-27, V31): Pact bought and shown; the cut old store prices and the cut Pact text were client fixes (client/MANIFEST.md, V31).
 
 ## Depot (retired) (`depot.lua`, `depot_core.lua`, `depot_config.lua`, `tools/patch_base_depot.py`)
 
@@ -27002,6 +27012,8 @@ decision: no skull, and no weaker monsters on average; the complaint is the high
   `patch -p1 --dry-run < src-patches/0082-monster-level-no-skull-no-spread.patch` on a copy of the patched source tree.
   Guard test: `tools/monster_level_patch_test.py` (patch text, same mean health bonus).
 
+Seen in a client (2026-11-27, V31): a level 830 monster with no skull and its plain look.
+
 ## Monster level bonus once (O477, engine patch 0090)
 Found by the O460 run on the local server (2026-11-10): a fixed 40 hit from a level 950 monster took 235 from a player,
 not 97.
@@ -33974,6 +33986,8 @@ Owner request 2026-10-25: a chest that any monster can leave; opening it wakes 5
 - **Monster aura (O341).** The event monsters wear the chest's dark smoke on the client. `CC.syncAuras` (every 1.5 s in the think loop, after a horde spawns and when an event ends) lists `CC.tagged` and tells each player the ones within 10 x 8 tiles on their floor: extended opcode `ChaosOpcodes.templarAura` (118, the chest aura module's), JSON `{action = "cursed", data = {c = [creature id]}}`, the whole list, only when a viewer's list changed (`K.auraList`, `K.auraDecide`, `K.auraPrune`; an empty list clears; a player who logs in or walks into view gets it at the next check). No new opcode, storage or table. Client: client/MANIFEST.md "Chest and Templar auras (O315)". Test: `tests/cursedchest_test.lua`. A script reload is enough; needs the client with the O341 `game_chestaura`.
 - **Not done / assumptions.** Damage scale needs `ChaosAreaGen` (its hit hook); without it only health is scaled. Without `Monster:setDropLoot` the monsters would drop loot. Untested on a live server. No client part: server texts only. Tests: `tests/cursedchest_test.lua` (rules, state machine, loot against the gold model, and the glue on a mocked engine).
 
+Seen in a client (2026-11-27, V31): a Rootling Nutshell above the ascension level counted 1/10.
+
 ## Progress metrics (O253) (`metrics.lua`, `metrics_core.lua`, `metrics_config.lua`, `sql/chaos_progress_metrics.sql`, `tools/progress_metrics.py`)
 
 Owner request 2026-10-26: see where players stop playing and where they die, so balance is tuned from real data. The admin app shows it (Painel > "Métricas dos jogadores" > "Atualizar métricas"; command `chaos-ctl.sh metrics [--json]`, read only).
@@ -34912,6 +34926,8 @@ over the aura's range for the Templar and its party members (client/MANIFEST.md 
 - **Install.** Nothing: scripts only. Ship the client build with `game_chestaura` first (an older client ignores opcode 118 and shows
   no aura at all, as the effect is gone).
 
+Seen in a client (2026-11-27, V31): reward and cursed chest auras and the Templar sigil under the feet, as built.
+
 ## Discord bot for bug reports and patch notes (O324) (`deploy/discord_bot/`, `deploy/chaos-discordbot.service`, `chaos-ctl.sh discord-bot`)
 
 A Discord bot on the game VPS, separate from the announcement worker (`chaos-discord.timer`, webhooks). It reads the bugs channel,
@@ -35008,6 +35024,8 @@ Value 0, Defence Value 0, Armor Value 0, Mantra Value 0 and Mitigation +0% whate
 - **Tests.** `tests/combat_stats_test.lua` (opcode uniqueness, the pure rules, the glue against a mocked player: weapon, shield,
   armour, tree factor, wand, bare hands, when a message goes out); client `skillstatsview_test.lua`, `skillstats_glue_test.lua`.
   Not checked in a live client or on a live server.
+
+Seen in a client (2026-11-27, V31): real numbers shown (183 / 21 / 120 / 17 / +24.6%); long row names and the dock Skills entry were client fixes.
 
 ## Travel to an NPC (O330) (`npc_travel.lua`, `npc_travel_core.lua`, `npc_travel_config.lua`, client `game_npctravel`)
 

@@ -156,3 +156,14 @@ function V.buildHeader(s)
   local used = #(s.builds or {})
   return tr('Saved builds: %d of %d slots (account-wide)', used, n(s.buildLimit))
 end
+
+-- the width of the Perk column of the limits table: the row's width less the four number columns and the spacing, never
+-- under the old 186 (V31, seen in a client 2026-11-27: "Stash slot expansions (+25 entries)" was cut to "(+25" in 186 px)
+V.NUMBER_COLS = { 48, 96, 70, 60 }
+function V.perkWidth(rowWidth, spacing)
+  local used = 0
+  for _, w in ipairs(V.NUMBER_COLS) do used = used + w end
+  local free = (tonumber(rowWidth) or 0) - used - 4 * (tonumber(spacing) or 4)
+  return math.max(186, math.floor(free))
+end
+

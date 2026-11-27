@@ -113,6 +113,9 @@ container.x, container.width, container.height = 1102, 178, 720
 local minimap = widget('UIMiniWindow', 'minimapWindow', container)
 minimap.x, minimap.y, minimap.width, minimap.height = 1102, 0, 178, 180
 local skillsMini = widget('UIMiniWindow', 'skillWindow', container)
+local skillsButton -- game_sidebuttons' state of the Skills window (set below)
+-- UIMiniWindow:close of the client: hides and runs the module's onClose (game_skills: the side button off)
+function skillsMini:close() skillsButton = false self:setVisible(false) end
 local bag = widget('UIMiniWindow', 'bagPanel', container)
 bag.width, bag.height = 178, 400
 widget('UIButton', 'closeButton', bag)
@@ -182,6 +185,7 @@ local function part(parent, id, w, h)
   p.width, p.height = w or 100, h or 100
   return p
 end
+skillsButton = true -- open at the login
 local fakeTopbar = { runRaw = function(text)
   ran[#ran + 1] = text
   if text == 'Spellbook' then
@@ -208,6 +212,10 @@ local fakeTopbar = { runRaw = function(text)
     end
     questlog.width, questlog.height = 789, 537
     questlog:show()
+  elseif text == 'Skills' then
+    -- the base Skills entry toggles by its side button, which still says open while the column hides the window
+    skillsButton = not skillsButton
+    skillsMini:setVisible(skillsButton)
   elseif text == 'Store' then
     store960 = store960 or widget('UIWindow', 'shopWindow', root)
     store960.width, store960.height = 960, 560
@@ -221,6 +229,7 @@ modules = {
   game_bagpanel = { getWindow = function() return bag end, setDocked = function(on) bagDocked[#bagDocked + 1] = on end,
     showWindow = function() bagShown = bagShown + 1 bag:show() end },
   game_chaosnotify = {},
+  game_skills = { skillsWindow = skillsMini },
 }
 local toastMoves = 0
 modules.game_chaosnotify.repositionNotifications = function() toastMoves = toastMoves + 1 end
@@ -350,6 +359,35 @@ D.close(); runEvents()
 battle:show()
 runEvents()
 eq(battle.visible, false, 'the column keeps only the minimap')
+
+-- Skills (V31): open but hidden by the column, the dock takes it without running its entry (which would close it)
+local ranBefore = #ran
+eq(D.route('Skills'), true, 'skills routed'); runEvents()
+eq(#ran, ranBefore, 'the Skills entry is not run')
+eq(skillsMini.parent, scroller, 'skills in the dock'); eq(skillsMini.visible, true, 'skills shown')
+D.close(); runEvents()
+eq(skillsMini.parent, container, 'skills back in the column'); eq(skillsMini.visible, false, 'hidden there again')
+eq(D.route('Skills'), true, 'skills again'); runEvents()
+eq(skillsMini.parent, scroller, 'skills in the dock a second time'); eq(#ran, ranBefore, 'still not run')
+D.close(); runEvents()
+
+-- Skills closed (V31): the dock opens it through its entry, and its release closes it the module's way, so the entry
+-- opens it again on the next visit (hidden only, the module still thought it open and its toggle closed it)
+local bagShownBefore = bagShown -- (the off and on below shows the bag panel's window once: not what the later check counts)
+D.setEnabled(false); skillsMini:close(); D.setEnabled(true); runEvents()
+bagShown = bagShownBefore
+eq(skillsButton, false, 'skills closed')
+D.route('Skills'); runEvents()
+eq(#ran, ranBefore + 1, 'the entry opens it'); eq(skillsMini.parent, scroller, 'skills docked')
+D.close(); runEvents()
+eq(skillsButton, false, 'the release closed it the module\'s way'); eq(skillsMini.visible, false, 'hidden')
+D.route('Skills'); runEvents()
+eq(#ran, ranBefore + 2, 'the entry opens it again'); eq(skillsMini.parent, scroller, 'docked on the second visit')
+eq(skillsMini.visible, true, 'shown on the second visit')
+D.close(); runEvents()
+-- opened again in the column (the layout restore): the column hides it, as at the login
+skillsButton = true; skillsMini:show(); runEvents()
+eq(skillsMini.visible, false, 'the column hides it again')
 
 -- turned off: entries float as before, keys gone, the right column and the bag panel's window back; on again
 D.setEnabled(false)

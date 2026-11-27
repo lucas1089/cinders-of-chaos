@@ -313,3 +313,26 @@ function CL.colorLine(parts, text, msg, names)
   if not first then return nil end
   return CL.recolor(parts, first, last, color)
 end
+
+-- tab widths from their text (V31, seen in a client 2026-11-27: a fixed 82 px cut "Spell Effects" and "Chat Colours",
+-- and pt-BR is longer): each tab is its text plus a padding of 16, the padding shrinks down to 4 when the row would
+-- not fit, and below that every tab is cut by the share of its text. textWidths: pixels of the shown tabs in order.
+CL.TAB_PAD_MAX, CL.TAB_PAD_MIN = 16, 4
+function CL.tabWidths(textWidths, avail, spacing)
+  local n = #textWidths
+  if n == 0 then return {} end
+  spacing = spacing or 4
+  local sum = 0
+  for _, w in ipairs(textWidths) do sum = sum + w end
+  local room = (tonumber(avail) or 0) - spacing * (n - 1)
+  for pad = CL.TAB_PAD_MAX, CL.TAB_PAD_MIN, -2 do
+    if sum + pad * n <= room then
+      local out = {}
+      for i, w in ipairs(textWidths) do out[i] = w + pad end
+      return out
+    end
+  end
+  local out, whole = {}, sum + CL.TAB_PAD_MIN * n
+  for i, w in ipairs(textWidths) do out[i] = math.max(1, math.floor(room * (w + CL.TAB_PAD_MIN) / whole)) end
+  return out
+end

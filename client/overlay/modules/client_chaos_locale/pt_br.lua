@@ -6663,6 +6663,9 @@ ChaosLocaleStrings['pt-BR'] = {
   ["TRY ON"] = "EXPERIMENTAR",
   ["Shows it on your character for 10 seconds. Only you see it. Nothing is bought."] = "Mostra no seu personagem por 10 segundos. Só você vê. Nada é comprado.",
   ["Average hit of your weapon's auto attack, with the bonuses of your passive tree. Wands, rods and fists have no attack hit."] = "Dano médio do ataque automático da sua arma, com os bônus da árvore passiva. Varinhas, cajados e punhos não têm esse golpe.",
+  -- short names of long Skills window rows (game_skillstats V.SHORT_NAMES)
+  ["Dmg/Heal"] = "Dano/Cura",
+  ["Offline"] = "Offline",
   ["Attack of the weapon in your hands, with the roll of the item. The Damage/Healing row shows what it hits for."] = "Ataque da arma em suas mãos, com o sorteio do item. A linha Damage/Healing mostra quanto ela acerta.",
   ["How much of a hit your shield blocks (your weapon without one): (skill / 4 + 2.23) x defence x 0.15, with shielding or the weapon's skill."] = "Quanto de um golpe o seu escudo bloqueia (a arma, sem escudo): (skill / 4 + 2,23) x defesa x 0,15, com o shielding ou o skill da arma.",
   ["The armour of all the pieces you wear. It takes a share of every physical hit; each point adds less than the one before."] = "A armadura de todas as peças que você veste. Ela tira uma parte de cada golpe físico; cada ponto rende menos que o anterior.",
