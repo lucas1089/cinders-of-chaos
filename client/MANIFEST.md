@@ -8636,7 +8636,7 @@ Linux main client from this branch on V37's dock fix (lifted container windows, 
 - O454: a Templar with a giant sword, a war axe and a war hammer on demons: sword hits, the axe's "Axe cleave" row in the combat log (9 % of the damage on a pack of four), the club's stun stars.
 - O456: Death Mage on look 3317 turned to all four sides, its death effect, blood effects on rats, loot bag glows, dust specks in the rat cave and embers in Cinderfall. The respawn puff was not caught on video.
 - O457: Censer Swing, Penitent Lash, Bell of Reckoning and Crusader's Sweep cast on a pack: gold sparks on each tile, no blue blast.
-- Not fixed, seen: Ok on the death window after about 30 s ends in "Connection timed out (ERROR 110)": the server sends nothing to a dead player and the client's 30 s read timeout ends the game, so the fast relog finds it offline (a relog from the character list works). A Death Mage (level 1018) kills a level 1500 tester in about 4 s. The Daily Reward window opens at every login while a day is unclaimed (as built).
+- Not fixed, seen: Ok on the death window after about 30 s ends in "Connection timed out (ERROR 110)": the server sends nothing to a dead player and the client's 30 s read timeout ends the game, so the fast relog finds it offline (a relog from the character list works). Fixed since by client base patch `0217` (O770, client/BASE.md "0217"); not seen in a client yet. A Death Mage (level 1018) kills a level 1500 tester in about 4 s. The Daily Reward window opens at every login while a day is unclaimed (as built).
 
 ## Seen in a client (2026-11-27, V39: three fixes, spell masteries, fusion, class identity, new monsters, relic sets)
 

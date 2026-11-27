@@ -1,0 +1,176 @@
+# Chaos: Ok on the death window logs in again after the connection timed out (modules/game_playerdeath/playerdeath.lua,
+# modules/client_entergame/characterlist.lua; after 0001-0216; client/BASE.md "0217"). Seen in a client 2026-11-27 (V38,
+# three times): the death window stayed open 30 s or longer, the client ended the game and showed "Connection timed out
+# ... (ERROR 110)"; Ok did nothing because it called CharacterList.doLogin() only while online. Cause: the server removes
+# a dead player at once and sends that connection nothing more, so the client's 30 s read timeout ends the game.
+#  * playerdeath.lua: onGameEnd keeps an open death window (one event later it takes the input lock back from the
+#    character list); onGameStart closes it (any relog, auto reconnect included); Ok calls CharacterList.doLogin()
+#    unless a login is already running (LoginEvent:tryLogin logs in at once when offline, logs out first when online);
+#    Cancel while offline leaves the character list showing. holdsConnectionError() is true while the window is open.
+#  * characterlist.lua: onGameConnectionError asks game_playerdeath.holdsConnectionError() first and shows no error box
+#    for the expected end of a dead player's session.
+# The first hunk spans the whole death module file, so client/tools/death_relog_patch_test.py runs the old and the new
+# file on a fake engine.
+--- a/modules/game_playerdeath/playerdeath.lua
++++ b/modules/game_playerdeath/playerdeath.lua
+@@ -1,108 +1,140 @@
+ deathWindow = nil
+ 
+ local deathTexts = {
+   regular = {text = 'Alas! Brave adventurer, you have met a sad fate.\nBut do not despair, for the gods will bring you back\ninto this world in exchange for a small sacrifice\n\nSimply click on Ok to resume your journeys!', height = 140, width = 0},
+   unfair = {text = 'Alas! Brave adventurer, you have met a sad fate.\nBut do not despair, for the gods will bring you back\ninto this world in exchange for a small sacrifice\n\nThis death penalty has been reduced by %i%%\nbecause it was an unfair fight.\n\nSimply click on Ok to resume your journeys!', height = 185, width = 0},
+   blessed = {text = 'Alas! Brave adventurer, you have met a sad fate.\nBut do not despair, for the gods will bring you back into this world\n\nThis death penalty has been reduced by 100%\nbecause you are blessed with the Adventurer\'s Blessing\n\nSimply click on Ok to resume your journeys!', height = 170, width = 90}
+ }
+ 
+ function init()
+   g_ui.importStyle('deathwindow')
+ 
+   connect(g_game, { onDeath = display,
+-                    onGameEnd = reset })
++                    onGameStart = reset,
++                    onGameEnd = onGameEnd })
+ end
+ 
+ function terminate()
+   disconnect(g_game, { onDeath = display,
+-                       onGameEnd = reset })
++                       onGameStart = reset,
++                       onGameEnd = onGameEnd })
+ 
+   reset()
+ end
+ 
++-- Chaos 0217: the server removes a dead player at once and sends nothing more, so the client's
++-- 30 s read timeout ends the game while the death window waits. The window stays open through
++-- that game end; Ok then logs in again from the character list, Cancel leaves the list showing.
++-- A new game start (any relog) closes it.
++function onGameEnd()
++  if not deathWindow then return end
++  deathWindow.chaosOffline = true
++  -- the character list takes the input lock in its own onGameEnd; give it back to the window
++  addEvent(function()
++    if deathWindow then
++      deathWindow:show()
++      deathWindow:raise()
++      deathWindow:focus()
++      g_client.setInputLockWidget(deathWindow)
++    end
++  end)
++end
++
++-- Chaos 0217: the character list asks this before it shows a connection error. While the death
++-- window is open, the lost connection is the expected end of a dead player's session: no error box.
++function holdsConnectionError()
++  return deathWindow ~= nil
++end
++
+ function reset()
+   if deathWindow then
+     g_client.setInputLockWidget(nil)
+     deathWindow:destroy()
+     deathWindow = nil
+   end
+ end
+ 
+ function display(deathType, penalty)
+   displayDeadMessage()
+   openWindow(deathType, penalty)
+ end
+ 
+ function displayDeadMessage()
+   local advanceLabel = m_interface.getRootPanel():recursiveGetChildById('middleCenterLabel')
+   if advanceLabel:isVisible() then return end
+   modules.game_textmessage.displayGameMessage(tr('You are dead.'))
+ end
+ 
+ function openWindow(deathType, penalty)
+   if deathWindow then
+     deathWindow:destroy()
+     return
+   end
+ 
+   deathWindow = g_ui.createWidget('DeathWindow', rootWidget)
+   deathWindow:focus()
+   g_client.setInputLockWidget(deathWindow)
+ 
+   -- Chaos 0108: a death no longer switches Auto Target and Magic Shooter off. This toggled both
+   -- checkboxes, wrote false to the helper config and saved it, so they stayed off after the relog.
+   -- The helper's own onDeath handler drops the attack; the respawn PZ pauses both systems.
+ 
+   local messageT = {}
+   local textLabel = deathWindow:getChildById('labelText')
+   if deathType == DeathType.Regular then
+     if penalty == 100 then
+ 	  setStringColor(messageT, 'Alas! Brave adventurer, you have met a sad fate.\nBut do not despair, for the gods will bring you back\ninto the world in exchange for a small sacrifice\n\nSimply click on ', "#c0c0c0")
+ 	  setStringColor(messageT, "Ok ", "#ffffff")
+ 	  setStringColor(messageT, 'to resume your journeys in game\nor on ', "#c0c0c0")
+ 	  setStringColor(messageT, "Cancel ", "#ffffff")
+ 	  setStringColor(messageT, 'to get to your character list!', "#c0c0c0")
+ 	  textLabel:setColoredText(messageT)
+       deathWindow:setHeight(deathWindow.baseHeight - 30)
+       deathWindow:setWidth(deathWindow.baseWidth)
+     else
+ 	  setStringColor(messageT, 'Alas! Brave adventurer, you have met a sad fate.\nBut do not despair, for the gods will bring you back\ninto the world in exchange for a small sacrifice\n\n', "#c0c0c0")
+ 	  setStringColor(messageT, 'This death penalty has been reduced by ' .. tostring(penalty) .. '%\nbecause it was a unfair fight.\n\nSimply click on ', "#c0c0c0")
+ 	  setStringColor(messageT, "Ok ", "#ffffff")
+ 	  setStringColor(messageT, 'to resume your journeys in game\nor on ', "#c0c0c0")
+ 	  setStringColor(messageT, "Cancel ", "#ffffff")
+ 	  setStringColor(messageT, 'to get to your character list!', "#c0c0c0")
+ 	  textLabel:setColoredText(messageT)
+       deathWindow:setHeight(deathWindow.baseHeight)
+       deathWindow:setWidth(deathWindow.baseWidth)
+     end
+   end
+ 
+   local okButton = deathWindow:getChildById('buttonOk')
+   local cancelButton = deathWindow:getChildById('buttonCancel')
+ 
+   local okFunc = function()
+     g_client.setInputLockWidget(nil)
+     okButton:getParent():destroy()
+     deathWindow = nil
+ 
+-    if g_game.isOnline() then
++    -- Chaos 0217: also when the game ended while the window was open (LoginEvent:tryLogin logs in
++    -- at once when offline, logs out first when online); not while a login is already running.
++    if not g_game.isLogging() then
+       CharacterList.doLogin()
+     end
+   end
+   local cancelFunc = function()
+     g_client.setInputLockWidget(nil)
+-    if g_game.isOnline() then
++    local online = g_game.isOnline()
++    if online then
+       g_game.safeLogout()
+     end
+ 
+     cancelButton:getParent():destroy()
+     deathWindow = nil
++    if not online then
++      CharacterList.showAgain() -- the list takes the input lock back
++    end
+   end
+ 
+   deathWindow.onEnter = okFunc
+   deathWindow.onEscape = cancelFunc
+ 
+   okButton.onClick = okFunc
+   cancelButton.onClick = cancelFunc
+ end
+--- a/modules/client_entergame/characterlist.lua
++++ b/modules/client_entergame/characterlist.lua
+@@ -460,6 +460,13 @@
+      and modules.client_background.handleCastLoginError(message, code) then
+     return
+   end
++  -- Chaos 0217: a dead player's connection times out behind the open death window; Ok logs in again.
++  local death = modules.game_playerdeath
++  if death and death.holdsConnectionError and death.holdsConnectionError() then
++    CharacterList.destroyLoadBox()
++    removeAutoReconnectEvent()
++    return
++  end
+ 
+   CharacterList.destroyLoadBox()
+   -- The server waiting list owns its retry deadline. EOF after a wait response
