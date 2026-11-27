@@ -5,6 +5,8 @@ dofile('data/spells/scripts/chaos/_common.lua')
 local CANDIDATES = {"Spirit Wolf", "Winter Wolf", "Wolf"}
 local DURATION = 40000
 local MAX_SUMMONS = 4
+-- the rings round the caster where a wolf may appear: a pack all round the Druid leaves the next ring (V30, freeNear)
+local CALL_REACH = 3
 
 function onCastSpell(creature, variant, isHotkey)
 	local player = creature:getPlayer()
@@ -31,7 +33,7 @@ function onCastSpell(creature, variant, isHotkey)
 		return ChaosSpell.cancel(player, "You cannot summon more creatures.")
 	end
 
-	local free = ChaosSpell.freeAround(player:getPosition(), player:getPosition())
+	local free = ChaosSpell.freeNear(player:getPosition(), player:getPosition(), CALL_REACH)
 	local created = 0
 	for i = 1, #free do
 		if created >= want then

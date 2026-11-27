@@ -7,6 +7,9 @@ end
 
 local DURATION = 10000
 local COPIES = 3
+-- the rings round the caster where a copy may appear (V30, freeNear). Ring 1 first; with the 8 tiles taken by a pack the
+-- copies stand one step further out, still in the crowd and in sight. Not ring 3: a copy past the pack reads as no copy.
+local COPY_REACH = 2
 
 function onCastSpell(creature, variant, isHotkey)
 	local player = creature:getPlayer()
@@ -17,7 +20,7 @@ function onCastSpell(creature, variant, isHotkey)
 		return ChaosSpell.cancel(player, "The mirror image needs the Clone monster.")
 	end
 	local pos = player:getPosition()
-	local spots = ChaosSpell.freeAround(pos, pos)
+	local spots = ChaosSpell.freeNear(pos, pos, COPY_REACH)
 	local made = 0
 	for i = 1, math.min(COPIES, #spots) do
 		local clone = Game.createMonster("Clone", spots[i].pos)

@@ -64,7 +64,7 @@ Game = {createMonster = function(name, pos) return Game_createMonster(name, pos)
 local fxCalls = 0
 ChaosSpell = {
 	isFreeTile = function() return true end,
-	freeAround = function(pos) return {{pos = pos}} end,
+	freeNear = function(pos) return {{pos = pos}} end,
 	bindSummon = function(player, m) m.owner = player player.summons[#player.summons + 1] = m end,
 	fx = function() fxCalls = fxCalls + 1 end,
 	vfxOr = function() end,
@@ -248,10 +248,20 @@ ok(readPatch("0057-script-target-drop-tells-client.patch"):find("player->sendCan
 -- on a crowded tile, created with force), never "not enough room"
 do
 	TILESTATE_BLOCKSOLID, TILESTATE_PROTECTIONZONE, TILESTATE_FLOORCHANGE, TILESTATE_TELEPORT = 1, 2, 4, 8
-	local saveFree, saveAround, saveTile = ChaosSpell.isFreeTile, ChaosSpell.freeAround, Tile
+	local saveFree, saveNear, saveTile = ChaosSpell.isFreeTile, ChaosSpell.freeNear, Tile
 	local freeAt
 	ChaosSpell.isFreeTile = function(p) return freeAt ~= nil and p.x == freeAt.x and p.y == freeAt.y end
-	ChaosSpell.freeAround = function() return {} end
+	-- the real room rule of _common.lua (V30): ring 1, then rings 2 and 3 in sight
+	local fh = assert(io.open("data/spells/chaos/_common.lua", "r"))
+	local near = fh:read("*a"):match("function ChaosSpell%.freeNear%(.-\nend\n")
+	fh:close()
+	ok(near ~= nil, "ChaosSpell.freeNear is in _common.lua")
+	assert((loadstring or load)(near))()
+	local lib = io.open("data/scripts/chaos/necro_lib.lua", "r")
+	local libText = lib:read("*a")
+	lib:close()
+	ok(libText:find("ChaosSpell.freeNear(Position(pos), ref, M.SPOT_REACH)", 1, true) and L.SPOT_REACH == 3,
+		"spotAt asks the shared room rule, 3 rings out")
 	Tile = function(p)
 		return {getGround = function() return true end, hasFlag = function(_, f) return p.x == 12 and f == 1 end}
 	end
@@ -259,6 +269,19 @@ do
 	freeAt = {x = 8, y = 11}
 	local m = L.raise(crowd, "warrior", {x = 10, y = 10, z = 7})
 	ok(m ~= nil and m.pos.x == 8 and m.pos.y == 11, "crowded: a free tile two steps away")
+	freeAt = {x = 13, y = 7}
+	m = L.raise(crowd, "warrior", {x = 10, y = 10, z = 7})
+	ok(m ~= nil and m.pos.x == 13 and m.pos.y == 7, "crowded: rings 1 and 2 taken, a free tile three steps away")
+	-- a free tile past ring 1 the spot cannot see is no spot
+	local savePos = Position
+	Position = function(p, y, z)
+		local t = savePos(p, y, z)
+		t.isSightClear = function(_, to) return not (to.x == 13 and to.y == 7) end
+		return t
+	end
+	m = L.raise(crowd, "mage", {x = 10, y = 10, z = 7})
+	ok(m ~= nil and not (m.pos.x == 13 and m.pos.y == 7), "crowded: no tile out of sight")
+	Position = savePos
 	freeAt = nil
 	m = L.raise(crowd, "mage", {x = 10, y = 10, z = 7})
 	ok(m ~= nil and m.pos.x == 10 and m.pos.y == 10, "packed: on the crowded tile itself")
@@ -278,7 +301,7 @@ do
 	m = L.raise(crowd, "mage", {x = 10, y = 10, z = 7})
 	ok(m ~= nil and not (m.pos.x == 10 and m.pos.y == 10), "fields: an empty field tile before the crowded one")
 	ok(removed == 1, "fields: the field on the spot is put out")
-	ChaosSpell.isFreeTile, ChaosSpell.freeAround, Tile = saveFree, saveAround, saveTile
+	ChaosSpell.isFreeTile, ChaosSpell.freeNear, Tile = saveFree, saveNear, saveTile
 end
 
 print(string.format("necro_summon_test: %d checks, %d failed", checks, fails))
