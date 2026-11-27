@@ -110,4 +110,17 @@ assert(withAlt[1] == 'Node' and #withAlt == 1 + #parts, 'help lines wrapped in A
 assert(#A.lines({ long }, {}, true)[1] == #long, 'short lines are not touched by A.lines')
 assert(A.wrapText('a\n' .. long) == 'a\n' .. table.concat(parts, '\n'), 'wrapText keeps newlines')
 assert(A.wrapText('a\n\nb') == 'a\n\nb', 'empty line kept')
+
+-- V38 (seen in a client): the Auto rotation list's tip, one line of 190 bytes, ran off both sides of the screen; every
+-- plain tooltip is broken at A.TIP_WRAP
+local tip = 'The Auto rotation list: pick one, then press Auto setup or Auto rotation. Every list holds at most 5 attack spells and casts every 2 s; a variant trades damage on the other target count (computed, not measured). A level with no variant uses the default.\nMines: short line.'
+local wrapped = A.tooltipText(tip)
+for line in (wrapped .. '\n'):gmatch('(.-)\n') do assert(#line <= A.TIP_WRAP, 'tip line fits: ' .. line) end
+assert(wrapped:gsub('\n', ' ') == tip:gsub('\n', ' '), 'no word lost in the tip')
+assert(wrapped:sub(-19) == '\nMines: short line.', 'own line breaks kept')
+assert(A.tooltipText(wrapped) == wrapped, 'wrapping twice gives the same text')
+local plain = 'Short tip\n' .. string.rep('y', 40)
+assert(A.tooltipText(plain) == plain, 'a tooltip with no long line is unchanged')
+local tbl = { { 'a', '#ffffff' } }
+assert(A.tooltipText(tbl) == tbl and A.tooltipText(nil) == nil, 'a coloured (table) tooltip is not touched')
 print('althelp_test: ok')

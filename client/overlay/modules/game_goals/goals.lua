@@ -520,6 +520,25 @@ local function anchorTracker()
   end
   tracker:setMarginLeft(10)
   tracker:setMarginTop(0)
+  -- a tall tracker: under the character plate and the buff bar instead of over them (V38)
+  local map = root:getChildById('gameMapPanel')
+  local plate = rootWidget:recursiveGetChildById('chaosHud')
+  if not map or not plate or not plate:isVisible() then return end
+  local r = plate:getRect()
+  local minY = r.y + r.height
+  local buffs = rootWidget:recursiveGetChildById('buffBar')
+  if buffs and buffs:isVisible() then
+    local b = buffs:getRect()
+    minY = math.max(minY, b.y + b.height)
+  end
+  local m = map:getRect()
+  local top = V.trackerTopMargin(m.y, m.height, tracker:getHeight(), minY + 8)
+  if not top then return end
+  tracker:breakAnchors()
+  local a = V.trackerAnchors(root:getChildById('gameLeftPanels') ~= nil)[1]
+  tracker:addAnchor(EDGES[a[1]], a[2], EDGES[a[3]])
+  tracker:addAnchor(AnchorTop, 'gameMapPanel', AnchorTop)
+  tracker:setMarginTop(top)
 end
 
 -- called on every geometry change of the panels it hangs on, one pass per frame at most
@@ -599,6 +618,11 @@ function init()
   tracker.title.onMouseRelease = onTitleRelease
   tracker.welcomeSkip.onClick = onSkipClick
   tracker.mqOpen.onClick = function() toggleMainQuest() end
+  -- the tracker's height follows its rows a frame after renderTracker: a new height places it again (only a new
+  -- height, so the re-anchoring itself starts no loop; V38, a tall tracker under the character plate)
+  tracker.onGeometryChange = function(w, oldRect, newRect)
+    if oldRect and newRect and oldRect.height ~= newRect.height then scheduleAnchor() end
+  end
   anchorTracker()
   watchGeometry(true)
 

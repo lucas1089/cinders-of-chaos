@@ -251,6 +251,21 @@ eq(C.family('x'), nil, 'no family')
 -- page keys
 eq(C.bagKey('main', 3), 'bag3', 'bag key')
 eq(C.bagKey('purse', 3), 'pbag3', 'purse bag key')
+
+-- Find my item (O412, seen in a client V38): the page of a container the panel shows, and the cell of a slot
+eq(C.pageOf('main'), 'main', 'the backpack: page main')
+eq(C.pageOf('purse'), 'purse', 'the purse: its page')
+eq(C.pageOf('bag', 1), 'bag1', 'a bag of the backpack at slot 1: page bag1')
+eq(C.pageOf('pbag', 2), 'pbag2', 'a bag of the purse: page pbag2')
+eq(C.pageOf(nil), nil, 'a bag in a bag (no kind): no page, its own window flashes')
+eq(C.pageOf(C.classify('3_2853/1_2853')), 'bag1', 'a key of a bag of the backpack, through classify')
+eq(C.pageOf(C.classify('3_2853/1_2853/0_2853')), nil, 'a key of a bag in a bag, through classify')
+eq(C.foundCell(0, 8), 1, 'slot 0 is the first cell')
+eq(C.foundCell(7, 8), 8, 'the last cell drawn')
+eq(C.foundCell(8, 8), nil, 'a slot past the cells drawn: none')
+eq(C.foundCell(-1, 8), nil, 'a negative slot: none')
+eq(C.foundCell('x', 8), nil, 'not a number: none')
+eq(C.foundCell(2, nil), nil, 'no cells: none')
 local k, n = C.parseKey('pbag12')
 eq(k == 'pbag' and n == 12, true, 'parse a purse bag key')
 k, n = C.parseKey('bag0')
@@ -596,6 +611,23 @@ do -- a draw of 200 cells twice in a row (a burst of loot): the second draw sets
     end
   end
   eq(sets, 200, 'two draws of the same page: each filled cell set once, the empty ones never')
+end
+
+-- controls right of the equipment fit the panel (seen in a client 2026-11-27: the second column ran off the right edge)
+do
+  local l, span = C.controlsLayout(38)
+  eq(l.chaseModeBoxStand[1] + C.BOX, 38, 'width 38: the second column ends at the right edge')
+  eq(l.fightOffensiveBox[1] + C.BOX <= l.chaseModeBoxStand[1], true, 'width 38: the columns do not overlap')
+  eq(l.fightOffensiveBox[1] >= -C.CONTROLS_MARGIN, true, 'width 38: the first column stays right of the slots')
+  eq(l.stopButton[1], l.fightOffensiveBox[1], 'Stop under the first column')
+  eq(span, 38 - l.fightOffensiveBox[1], 'span')
+  local w = C.controlsLayout(60)
+  eq(w.chaseModeBoxStand[1], 40, 'width 60: second column against the right edge')
+  eq(w.fightOffensiveBox[1], 18, 'width 60: first column 2 px left of it')
+  local n = C.controlsLayout(30)
+  eq(n.fightOffensiveBox[1] >= -C.CONTROLS_MARGIN and n.fightOffensiveBox[1] + C.BOX <= n.chaseModeBoxStand[1], true, 'width 30: no overlap, inside the gap')
+  local z = C.controlsLayout(nil)
+  eq(z.fightOffensiveBox[1] >= -C.CONTROLS_MARGIN, true, 'no width: still placed')
 end
 
 if fails == 0 then print('bagpanel_core_test: ok') else os.exit(1) end

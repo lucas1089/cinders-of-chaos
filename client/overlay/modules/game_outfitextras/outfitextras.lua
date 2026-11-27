@@ -26,6 +26,7 @@ local GOLD, IRON = '#e8b84a', '#3a3339'
 local BATCH = 24 -- cards made per tick (an outfit list can hold hundreds)
 
 local window, preview
+local styleHeight   -- the window height of the .otui, before fitHeight (V37)
 local packet            -- the outfit window packet: {outfit, outfits, mounts, wings, auras, shaders}
 local temp, original    -- the outfit being edited, as it was
 local chosen, layers, touched = {}, {}, {}
@@ -646,6 +647,7 @@ end
 local function buildWindow()
   window = g_ui.displayUI('outfitextras')
   window:hide()
+  styleHeight = window:getHeight()
   buildStrip()
   buildLayers()
   buildColors()
@@ -679,6 +681,18 @@ local function buildWindow()
   end
 end
 
+-- V37: the window's height for this screen (CustomiseCore.fitHeight): at 1280x720 the style height ran past the bottom
+local function fitToScreen()
+  if mobile or not styleHeight then return end
+  local root = g_ui.getRootWidget()
+  if not root then return end
+  local barBottom
+  local ok, bar = pcall(function() return root:recursiveGetChildById('chaosMenuBar') end)
+  if ok and bar and not bar:isDestroyed() and bar:isVisible() then barBottom = bar:getY() + bar:getHeight() end
+  local h = C.fitHeight(styleHeight, root:getHeight(), barBottom)
+  if h and h ~= window:getHeight() then window:setHeight(h) end
+end
+
 -- ---------------------------------------------------------------- opening
 local function open(...)
   local p = readPacket(...)
@@ -694,6 +708,7 @@ local function open(...)
   muteSearch = true
   edit:setText('')
   muteSearch = false
+  fitToScreen()
   window:show()
   window:raise()
   window:focus()

@@ -65,6 +65,20 @@ function A.wrapText(text, width)
   return table.concat(out, '\n')
 end
 
+-- any plain tooltip: a line longer than A.TIP_WRAP bytes is broken at spaces (chaos_theme.lua runs every plain
+-- tooltip through it). The Auto rotation list's tip was one line of 190 bytes, wider than a 1280 px screen, cut at
+-- both sides (seen in a client 2026-11-27, V38). A tooltip with no long line comes back unchanged.
+A.TIP_WRAP = 96
+function A.tooltipText(text)
+  if type(text) ~= 'string' then return text end
+  local long = false
+  for line in (text .. '\n'):gmatch('(.-)\n') do
+    if #line > A.TIP_WRAP then long = true break end
+  end
+  if not long then return text end
+  return A.wrapText(text, A.TIP_WRAP)
+end
+
 -- texts: the short lines; extra: the help lines (may be empty or nil, each wrapped by A.wrap); altDown: Alt held now
 -- hint: the hint line (nil: A.hint). Returns a new list: texts, then extra with Alt or the hint without it.
 -- No help lines: no hint either.

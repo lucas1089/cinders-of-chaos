@@ -137,6 +137,12 @@ eq(a[2][2], 'gameMapPanel', 'centred on the map')
 a = V.trackerAnchors(false)
 eq(a[1][2], 'gameMapPanel', 'no left panels: map'); eq(a[1][3], 'left', 'map left edge')
 
+-- V38: a tall tracker stays under the character plate and buff bar
+eq(V.trackerTopMargin(-80, 720, 200, 150), nil, 'short tracker: centred')
+eq(V.trackerTopMargin(-80, 720, 440, 150), 230, 'tall tracker: top under the plate')
+eq(V.trackerTopMargin(0, 600, 600, nil), nil, 'no plate: centred')
+eq(V.trackerTopMargin(0, 600, 300, 150), nil, 'top exactly on the line: centred')
+
 -- phone: row budget, clamp, saved position, drag threshold
 local sh, hid = V.budget({ 5, 2, 1 }, 3)
 eq(sh[1], 3, 'budget: goals first'); eq(sh[2], 0, 'budget: none left'); eq(sh[3], 0, 'budget: none left 2'); eq(hid, 5, 'budget: hidden')

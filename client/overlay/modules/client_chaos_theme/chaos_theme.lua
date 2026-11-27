@@ -269,6 +269,7 @@ end
 -- corelib paints the tooltip label light grey with dark text after every display call; repaint it as a
 -- dark gold-rimmed plate. Coloured (table) tooltips keep their own colours.
 local tooltipWrapped = {}
+local tooltipSetOrig = nil -- UIWidget.setTooltip before the wrap (V38)
 
 local function skinTooltip()
   local label = rootWidget and rootWidget:getChildById('toolTip')
@@ -288,11 +289,35 @@ local function wrapTooltip()
     local orig = g_tooltip[name]
     if type(orig) == 'function' and not tooltipWrapped[name] then
       tooltipWrapped[name] = orig
-      g_tooltip[name] = function(...)
-        local r = orig(...)
+      g_tooltip[name] = function(arg, ...)
+        -- a plain text tooltip: long lines broken (ChaosAltHelp.tooltipText, V38); a coloured (table) one as it is.
+        -- displayText gets the text, display gets the hovered widget: its widget.tooltip is wrapped in place (the
+        -- corelib sets the label from widget.tooltip again while the tooltip shows, so a text wrapped for one call
+        -- only came back as one long line, V38). Wrapping twice gives the same text.
+        local wrap = ChaosAltHelp and ChaosAltHelp.tooltipText
+        local r
+        if wrap and type(arg) == 'string' then
+          r = orig(wrap(arg), ...)
+        else
+          if wrap and name == 'display' and arg ~= nil and type(arg) ~= 'string' and type(arg.tooltip) == 'string' then
+            local short = wrap(arg.tooltip)
+            if short ~= arg.tooltip then arg.tooltip = short end
+          end
+          r = orig(arg, ...)
+        end
         skinTooltip()
         return r
       end
+    end
+  end
+  -- the corelib puts widget:getTooltip() on the label again every 100 ms (checkTooltip) and a module may set its text
+  -- again while it shows (the Auto rotation list every 2 s): the text is wrapped where it is set as well
+  if UIWidget and type(UIWidget.setTooltip) == 'function' and not tooltipSetOrig then
+    tooltipSetOrig = UIWidget.setTooltip
+    UIWidget.setTooltip = function(self, text, ...)
+      local wrap = ChaosAltHelp and ChaosAltHelp.tooltipText
+      if wrap and type(text) == 'string' then text = wrap(text) end
+      return tooltipSetOrig(self, text, ...)
     end
   end
 end
@@ -303,6 +328,10 @@ local function unwrapTooltip()
     g_tooltip[name] = orig
   end
   tooltipWrapped = {}
+  if tooltipSetOrig and UIWidget then
+    UIWidget.setTooltip = tooltipSetOrig
+    tooltipSetOrig = nil
+  end
 end
 
 -- ---------------------------------------------------------------- popup menus

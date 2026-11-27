@@ -7798,6 +7798,9 @@ capped, items}` or `found {q, error = "short" | "long"}`.
   purse, the inbox, a stash row, the rate limit and pages).
 
 Seen in a client (2026-11-27, V31): no depot in game or store, the guild hall storage is named Guild Stash.
+Seen in a client (2026-11-27, V38): a sword found in the backpack, a bag in it, the inbox and a stash row; the client fixes
+(the bag panel flashes the cell, the stash opens above the Find window, a docked bag window comes back at the next login) are in
+client/MANIFEST.md "Seen in a client (2026-11-27, V38 ...)".
 
 ## Chaos Pact and account storage (`pact.lua`, `pact_core.lua`, `pact_config.lua`, `sql/chaos_pact.sql`, client `game_pact`)
 
@@ -8512,6 +8515,10 @@ the basic melee attack. The rule of the owner: class damage does not move, so `c
 | Sentinel | 30/9/16 | 20/22/24 | 22/24/23 | 13/15/14 | 21/17/18 | 10/10/7 | 6/4/4 | 11/7/6 | 9/8/4 | 8/12/9 |
 
 <!-- weapon-families:end -->
+
+Seen in a client (2026-11-27, V38): a level 1483 Templar with a giant sword, a war axe and a war hammer on demons. The sword
+hits, the axe's cleave shows on the neighbours and as the combat log row "Axe cleave" (306 of 3,256 damage, 9.4 %, on a pack of
+four), the club's daze shows the stun stars. Nothing changed.
 
 ## Weapon damage scales with skills (`weapon_skill_core.lua`, `weapon_skill_config.lua`, `weapon_styles.lua`)
 
@@ -30563,6 +30570,11 @@ Tested on a live test server copy with the client: two loadouts of a Juggernaut 
 with Bulwark, 2 runes and a two-handed sword), switching in the temple and through the channel outside it, runes and gear moving
 both ways without duplicates, the state kept over a server restart, an item left in the depot reported, a saved tree with nodes
 that left the tree refunded for free, the Loadouts button in the passive tree window.
+Seen in a client (2026-11-27, V38): a Beastmaster's Wild Volley from Auto build saved to slot 3. Fixed: the slot's keystone line
+showed "Ricochet" and left out Longshot. `C.keystones` counted only the `ks*` flags; it now takes every flag the keystone cap
+counts, the archetype keystones `ar*` too, named by `keystone_labels_config.lua` (`loadouts.lua` `keystoneLabels`, the same label
+the tree shows) or else by `C.keystoneName` (`arLongshot` -> "Longshot"). `tests/loadouts_test.lua`. The slot reads
+"Keystones: Longshot, Ricochet". The Unity client lists the strings as sent (no change).
 
 ## Ember Blessings (`blessings.lua`, `blessings_core.lua`, `blessings_config.lua`)
 
@@ -35642,6 +35654,9 @@ the body). Visual only: no damage, area, timing, loot or spawn rule moves. Nothi
   long stream, the glue on a mocked engine, the hooks in `cosmetics.lua`, the config against the libs. **Not tested:** a kill or a respawn
   in a client, the look on a live screen, whether `artificial` is false for a map respawn in the built engine (read from src-patch 0041 and
   TFS 1.4: `Spawn::spawnMonster` passes false, `Game.createMonster` true).
+* **Seen in a client (2026-11-27, V38):** the Death Mage on look 3317 (pair 73) turned to all four sides, its blood death
+  effect, the rats' blood effects in the rat cave, loot bag glows, dust specks in the rat cave and embers in Cinderfall. The
+  respawn puff was not caught on video. Nothing changed.
 
 ## Launch wipe (O438) (`deploy/launch_wipe.py`, `deploy/launch_wipe_tables.json`)
 
@@ -35932,6 +35947,9 @@ effect that already is in the pair. No art, no pair, no engine patch, no opcode;
 * **Not verified:** a live client (draw order, real ground, the look of each effect in the real size, the offsets of the
   p50 names, which come from the registry); Raise Dead, Raise Bone Warrior, Archer and Mage and Banner of Bones need corpses or
   minions, so the probe does not run them (the pass is the same call path).
+* **Seen in a client (2026-11-27, V38):** a Templar cast Censer Swing, Penitent Lash, Bell of Reckoning and Crusader's Sweep
+  on a pack of demons (gold sparks on each tile, no blue blast), and a Beastmaster's Auto rotation threw Seeker Mine with its
+  mark. Nothing changed.
 
 ## Donor effects (O525)
 

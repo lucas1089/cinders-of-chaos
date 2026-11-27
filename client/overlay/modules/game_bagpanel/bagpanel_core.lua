@@ -120,6 +120,23 @@ function C.bagKey(fam, slot)
   return (fam == 'purse' and 'pbag' or 'bag') .. tostring(int(slot) or 0)
 end
 
+-- the page key of a container the panel shows (kind and slot as C.classify gives them), nil for any other container.
+-- Find my item (O412) shows a found item on this page: the stock window it used to flash is hidden here (V38).
+function C.pageOf(kind, slot)
+  if kind == 'main' or kind == 'purse' then return kind end
+  if kind == 'bag' then return C.bagKey('main', slot) end
+  if kind == 'pbag' then return C.bagKey('purse', slot) end
+  return nil
+end
+
+-- the grid cell of container slot `at` (0-based, the stock window's item<at>): its index in the cells, or nil when the
+-- page shows fewer cells than that (`shown`: the cells drawn)
+function C.foundCell(at, shown)
+  at = int(at)
+  if not at or at < 0 or not shown or at >= shown then return nil end
+  return at + 1
+end
+
 -- a page key -> 'main' | 'purse' | 'bag' | 'pbag', slot (nil for a key that is none of them)
 function C.parseKey(key)
   if key == 'main' or key == 'purse' then return key end
@@ -710,4 +727,24 @@ function C.cellUpdate(current, item, notifiesRemoval)
   if current == item then return 'skip' end
   if item == nil and not notifiesRemoval then return 'set+decorate' end
   return 'set'
+end
+
+-- the stock inventory controls right of the equipment (bagpanel.lua moveControls): two columns of 20 px boxes, the
+-- fight stances in the first, stand / chase / PvP button in the second, safe fight, Stop and the conditions under
+-- them. Seen in a client (2026-11-27): the panel left about 38 px right of the slots and the second column, fixed at
+-- x 22, ran past the window's right edge. The columns sit against the right edge now, 2 px apart when there is room;
+-- with less than 40 px the first column moves into the gap left of the panel (at most 8 px, the panel's margin).
+C.BOX, C.CONTROLS_GAP, C.CONTROLS_MARGIN = 20, 2, 8
+function C.controlsLayout(width)
+  width = tonumber(width) or 0
+  if width ~= width then width = 0 end
+  local x2 = math.max(C.BOX + C.CONTROLS_GAP - C.CONTROLS_MARGIN, math.floor(width) - C.BOX)
+  local gap = math.max(0, math.min(C.CONTROLS_GAP, x2 - C.BOX + C.CONTROLS_MARGIN))
+  local x1 = math.max(-C.CONTROLS_MARGIN, x2 - C.BOX - gap)
+  return {
+    fightOffensiveBox = { x1, 0 }, fightBalancedBox = { x1, 22 }, fightDefensiveBox = { x1, 44 },
+    chaseModeBoxStand = { x2, 0 }, chaseModeBoxChase = { x2, 22 }, openPvpButton = { x2, 44 },
+    safeFightBox = { x1, 68 }, stopButton = { x1, 92 }, conditionPanel = { x1, 112 },
+    pvpModesPanel = { x1, 68 },   -- opens over safe fight and Stop
+  }, x2 + C.BOX - x1
 end

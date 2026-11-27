@@ -440,5 +440,14 @@ do
   eq(deps:find('%- client_chaos_wingfit') ~= nil, true, 'game_outfitextras depends on client_chaos_wingfit (Float box)')
 end
 
+-- V37: the window fits the free height below the menu bar
+eq(C.fitHeight(690, 1080, 50), 690, 'fit: 1080 keeps the style height')
+eq(C.fitHeight(690, 720, 50), 654, 'fit: 720 under a 50 px bar shrinks to the free height less margins')
+eq(C.fitHeight(690, 720, nil), 690, 'fit: 720 with no bar fits (704 free)')
+eq(C.fitHeight(690, 500, 50), 520, 'fit: never below the phone height')
+eq(C.fitHeight(690, 720, 900), 690, 'fit: a bar below the root is ignored')
+eq(C.fitHeight(690, nil, 50), 690, 'fit: no root keeps the style height')
+eq(C.fitHeight(nil, 720, 50), nil, 'fit: no style height')
+
 if fails > 0 then print(fails .. ' of ' .. checks .. ' checks FAILED'); os.exit(1) end
 print('customise tests OK (' .. checks .. ' checks)')
