@@ -410,7 +410,16 @@ local function processNotificationQueue()
     local slot = findFreeNotificationSlot()
     if not slot then return end
     
-    local notificationData = table.remove(notificationQueue, 1)
+    -- F49: at most ChaosNotifyView.ROUTINE_SHOWN routine toasts (kill progress) up at once; the rest go first
+    local shownRoutine = 0
+    for _, entry in pairs(activeNotifications) do
+        if entry and entry.data and ChaosNotifyView.isRoutine(entry.data.notificationType) then
+            shownRoutine = shownRoutine + 1
+        end
+    end
+    local index = ChaosNotifyView.nextIndex(notificationQueue, shownRoutine)
+    if not index then return end
+    local notificationData = table.remove(notificationQueue, index)
     if notificationData then
         showNotification(notificationData, slot)
     end
@@ -722,6 +731,7 @@ local function createCompactNotification(data, isPinned)
     end
     
     -- Criar texto da mensagem
+    local setMessage = nil -- a merged toast takes a new text (F49: ChaosNotifyView.admit 'shown')
     local messageLabel = g_ui.createWidget('Label', notification)
     if messageLabel then
         pcall(function()
@@ -748,12 +758,22 @@ local function createCompactNotification(data, isPinned)
             fit()
             -- the wrapped text size is known only once the label is laid out and drawn (live check 2026-10-31: 14 px,
             -- one line, at creation; 70 px, five lines, 300 ms later), so measure again then and restack if it grew
-            for _, delay in ipairs(REFIT_MS) do
-                scheduleEvent(function()
-                    if isWidgetValid(notification) and isWidgetValid(messageLabel) and fit() then
-                        repositionNotifications()
-                    end
-                end, delay)
+            local function refitLater()
+                for _, delay in ipairs(REFIT_MS) do
+                    scheduleEvent(function()
+                        if isWidgetValid(notification) and isWidgetValid(messageLabel) and fit() then
+                            repositionNotifications()
+                        end
+                    end, delay)
+                end
+            end
+            refitLater()
+            setMessage = function(text)
+                if not (isWidgetValid(notification) and isWidgetValid(messageLabel)) then return end
+                message = text
+                messageLabel:setText(text)
+                if fit() then repositionNotifications() end
+                refitLater()
             end
             messageLabel:setMarginLeft(80)
             messageLabel:setMarginTop(28)
@@ -980,7 +1000,8 @@ local function createCompactNotification(data, isPinned)
         timerBarContainer = timerBarContainer,
         data = data,
         isPaused = function() return isPaused end,
-        getTotalPausedTime = function() return totalPausedTime end
+        getTotalPausedTime = function() return totalPausedTime end,
+        setMessage = function(text) if setMessage then setMessage(text) end end
     }
 end
 
@@ -1140,10 +1161,12 @@ function showNotification(data, slot)
         timerLabel = notificationWidget.timerLabel,
         timerBarContainer = notificationWidget.timerBarContainer,
         startTime = g_clock.millis(),
+        shownAt = g_clock.millis(), -- F49: a merge restarts startTime, never this (the merge window counts from here)
         duration = duration,
         data = data,
         isPaused = notificationWidget.isPaused,
-        getTotalPausedTime = notificationWidget.getTotalPausedTime
+        getTotalPausedTime = notificationWidget.getTotalPausedTime,
+        setMessage = notificationWidget.setMessage
     }
     
     -- Ajustar label inicial do timer baseado na duração definida
@@ -1294,8 +1317,21 @@ function addNotification(notificationType, message, customIcon, monsterLookType,
         catacombData = catacombData
     }
     
-    -- three shown at once, the rest wait in a capped queue (notifyview.lua ChaosNotifyView.enqueue)
-    ChaosNotifyView.enqueue(notificationQueue, notificationData)
+    -- three shown at once, the rest wait in a capped queue; the kill progress toasts merge by type and hold at most
+    -- two places (F49, notifyview.lua ChaosNotifyView.admit)
+    local shown = {}
+    for _, entry in pairs(activeNotifications) do
+        if entry and entry.data then shown[#shown + 1] = { data = entry.data, shownAt = entry.shownAt or entry.startTime, entry = entry } end
+    end
+    local how, target = ChaosNotifyView.admit(notificationQueue, shown, notificationData, g_clock.millis())
+    if how == 'shown' then
+        target.data.message = ChaosNotifyView.mergedText(target.data, tr('+%d more'))
+        target.entry.startTime = g_clock.millis() -- the new line gets the toast's whole time
+        if target.entry.setMessage then pcall(target.entry.setMessage, target.data.message) end
+        return
+    elseif how == 'queued' then
+        target.message = ChaosNotifyView.mergedText(target, tr('+%d more'))
+    end
     processNotificationQueue()
 end
 

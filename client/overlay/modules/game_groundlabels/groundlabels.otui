@@ -22,7 +22,7 @@ GroundLabelsCheck < ChaosCheckBox
 
 GroundLabelsWindow < ChaosMainWindow
   id: groundLabelsWindow
-  size: 400 362
+  size: 400 390
   !text: tr('Ground Labels')
   @onEscape: modules.game_groundlabels.hideSettings()
 
@@ -48,8 +48,14 @@ GroundLabelsWindow < ChaosMainWindow
     !tooltip: tr('Magic and better gear, uniques, orbs and legendary powers get a label even when the filter does not make them glow. Items the filter dims never do.')
 
   GroundLabelsCheck
-    id: altAll
+    id: plainLoot
     anchors.top: rarePlus.bottom
+    !text: tr('Quiet labels for Common, Uncommon and plain gear')
+    !tooltip: tr('Common, Uncommon and plain gear (no rarity) gets a faded name plate below the other labels, so no gear on the ground is nameless. Items the filter dims never do.')
+
+  GroundLabelsCheck
+    id: altAll
+    anchors.top: plainLoot.bottom
     !text: tr('Hold Alt to label everything')
     !tooltip: tr('While Alt is held every item on the ground gets a label, the ones the filter dims too (faded).')
 

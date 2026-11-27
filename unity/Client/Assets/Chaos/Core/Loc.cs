@@ -620,6 +620,7 @@ namespace Chaos.Core
             { "Names over the items on the ground, by these rules", "Nomes sobre os itens no chão, por estas regras" },
             { "Ground labels", "Rótulos no chão" },
             { "Magic and better always get a label", "Magic ou melhor sempre ganha um rótulo" },
+            { "Quiet labels for Common, Uncommon and plain gear", "Rótulos discretos para equipamento Comum, Incomum e simples" },
             { "Hold Alt to show every item", "Segure Alt para mostrar todos os itens" },
             { "Corpse labels", "Rótulos de corpos" },
             { "Decay timers", "Tempo até sumir" },

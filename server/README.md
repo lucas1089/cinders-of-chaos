@@ -39752,3 +39752,12 @@ Six faults seen in a client (task F48). The client side is in client/MANIFEST.md
   with a solid item) and `opts.inView`; `service_npcs_config.lua` `inView = true` for the service NPCs. Seen: Dorrin moved
   from 32364,32238 (offset -5, -3, pillar south-east of him) to 32369,32238 in the open. No base data edited.
   `tests/npc_place_test.lua`, `tests/service_npcs_test.lua`.
+
+## F49 fixes (O775)
+
+Three client faults: the toast pile-up in a fast hunt, the helper hint on the window border, no label for Common and
+Uncommon loot. All three are fixed in the client (client/MANIFEST.md "F49 fixes (O775)"); no server file changed. The
+toast merge rests on the toast kinds `ChaosNotify.send` already sends: bestiary, bounty, seasonpass, taskComplete,
+battlePassComplete, newcard and achievement are merged on the client; a new server toast kind is shown on its own unless the
+client adds it to `notifyview.lua` `V.ROUTINE_TYPES`. A unique drop stays a screen message (`loot_config.lua`
+`unique.message`), not a toast.

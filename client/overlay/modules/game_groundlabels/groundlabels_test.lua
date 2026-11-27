@@ -63,9 +63,33 @@ local power = { id = 6, nm = 'axe', r = 1, pw = 1, g = 'equipment', c = 1 }
 
 eq(decide(epic).highlight, true, 'Rare glows: label, highlighted')
 eq(decide(rare).highlight, false, 'Magic: label (Magic+), not highlighted')
-eq(decide(unc), nil, 'Uncommon: no label without Alt')
+local plainOff = GL.normalize({ plainLoot = false })
+eq(decide(unc, false, plainOff), nil, 'quiet labels off: Uncommon: no label without Alt')
+eq(decide(unc).quiet, true, 'Uncommon: a quiet label (F49, plainLoot on by default)')
+eq(decide(unc).highlight or decide(unc).dim, false, 'the quiet label is neither highlighted nor faded')
+eq(GL.defaults().plainLoot, true, 'quiet labels for plain gear on by default')
+eq(GL.normalize({ plainLoot = 'false' }).plainLoot, false, 'quiet labels: the saved setting is read')
+eq(decide(common, false, plainOff), nil, 'quiet labels off: Common: no label')
 eq(decide(common), nil, 'Common is dimmed: no label')
 eq(decide(potion), nil, 'supplies switched off: hidden')
+-- plain loot: Common and Uncommon gear only, never what the filter dims, never a unique, orb, set piece or power
+local plainFilter = L.normalize({ highlight = 4, dim = 0 })
+eq(GL.decide(common, on, plainFilter, false).quiet, true, 'Common gear the filter keeps: a quiet label')
+eq(GL.decide({ id = 7, nm = 'old blade', r = 2, g = 'equipment', c = 1, st = 1 }, on, plainFilter, false).highlight, true,
+  'an Uncommon set piece glows (O715), it is not quiet')
+eq(GL.isPlainLoot(power), false, 'a legendary power is not plain')
+eq(GL.isPlainLoot(rare), false, 'Magic is not plain')
+eq(GL.isPlainLoot(junk), false, 'an item of another category is not gear')
+eq(GL.isPlainLoot({ nm = 'steel shield', g = 'equipment' }), true, 'gear without a rarity is plain gear')
+eq(GL.isPlainLoot({ nm = 'steel shield', g = 'equipment', u = 1 }), false, 'a unique has no rarity and is no plain gear')
+eq(GL.decide({ id = 8, nm = 'steel shield', g = 'equipment', c = 1 }, on, plainFilter, false).quiet, true, 'plain gear: quiet label')
+eq(GL.isPlainLoot({ r = 1, o = 1 }), false, 'an orb is not plain')
+eq(GL.decide(junk, on, plainFilter, false), nil, 'junk stays an Alt label')
+local qs = GL.style({ kind = 'item', quiet = true }, '#c8c8c8')
+eq(qs.background .. '/' .. qs.border .. '/' .. qs.opacity, GL.QUIET_BACKGROUND .. '/' .. GL.QUIET_BORDER .. '/' .. GL.QUIET_OPACITY,
+  'quiet style: faded plate')
+eq(qs.text, '#c8c8c8', 'quiet style keeps the rarity colour')
+eq(qs.plate, nil, 'quiet style: no set plate')
 eq(decide(junk), nil, 'other: only with Alt')
 eq(decide(unique).highlight, true, 'unique always')
 eq(decide(orb).highlight, true, 'orb always')
@@ -144,6 +168,8 @@ eq(GL.priority(unique, decide(unique)) > GL.priority(epic, decide(epic)), true, 
 eq(GL.priority(epic, decide(epic)) > GL.priority(rare, decide(rare)), true, 'higher rarity first')
 eq(GL.priority(rare, decide(rare)) > GL.priority(junk, decide(junk, true)), true, 'Magic before junk')
 eq(GL.priority(junk, decide(junk, true)) > GL.priority(common, decide(common, true)), true, 'faded last')
+eq(GL.priority(rare, decide(rare)) > GL.priority(unc, decide(unc)), true, 'Magic before a quiet Uncommon label')
+eq(GL.priority(unc, decide(unc)) > GL.priority(common, decide(common, true)), true, 'a quiet label before a faded one')
 local many = {}
 for i = 1, 100 do many[i] = { prio = i % 3, dist = i % 7, order = i } end
 local kept = GL.select(many)

@@ -200,7 +200,7 @@ local function styleLabel(label, d, color)
     label:setBorderColor(st.border)
     label:setBackgroundColor(st.background)
   end
-  label:setOpacity(d.dim and 0.7 or 1)
+  label:setOpacity(st.opacity or (d.dim and 0.7 or 1))
   label.baseBackground = label:getBackgroundColor()
 end
 
@@ -276,7 +276,7 @@ layout = function()
     -- that threw away the widget under the pointer, so a click that began on it was lost; tickTimers rewrites the text
     for _, e in ipairs(b.rows) do
       local text = GL.showTimer(e.row, e.d, settings) and (e.text:gsub('%d', '0')) or e.text
-      sig[#sig + 1] = text .. '|' .. tostring(e.d.dim) .. tostring(e.d.highlight)
+      sig[#sig + 1] = text .. '|' .. tostring(e.d.dim) .. tostring(e.d.highlight) .. tostring(e.d.quiet)
     end
     local render = table.concat(sig, '\n') .. '@' .. box.w .. 'x' .. box.h .. '+' .. box.cx .. ',' .. box.cy .. settings.size .. (GL.accent or '')
     if t.render ~= render or not t.widget or t.widget:isDestroyed() then
@@ -716,7 +716,7 @@ local updatingUi = false
 local function refreshWindow()
   if not window then return end
   updatingUi = true
-  for _, k in ipairs({ 'enabled', 'rarePlus', 'altAll', 'corpses', 'timers', 'burst' }) do
+  for _, k in ipairs(GL.FLAGS) do
     window[k]:setChecked(settings[k])
   end
   local combo = window.sizeCombo
@@ -730,7 +730,7 @@ end
 
 local function onUiChange()
   if updatingUi or not window then return end
-  for _, k in ipairs({ 'enabled', 'rarePlus', 'altAll', 'corpses', 'timers', 'burst' }) do
+  for _, k in ipairs(GL.FLAGS) do
     settings[k] = window[k]:isChecked()
   end
   local opt = window.sizeCombo:getCurrentOption()
@@ -776,7 +776,7 @@ function getLabels()
   local out = {}
   for _, l in ipairs(labels) do
     out[#out + 1] = { text = l.label and not l.label:isDestroyed() and l.label:getText() or '', pos = l.t.pos,
-      kind = l.d.kind, dim = l.d.dim, highlight = l.d.highlight, rect = l.label and l.label:getRect() }
+      kind = l.d.kind, dim = l.d.dim, highlight = l.d.highlight, quiet = l.d.quiet, rect = l.label and l.label:getRect() }
   end
   return out
 end
@@ -835,7 +835,7 @@ function init()
   if ok and ui then
     window = ui
     window:hide()
-    for _, k in ipairs({ 'enabled', 'rarePlus', 'altAll', 'corpses', 'timers', 'burst' }) do
+    for _, k in ipairs(GL.FLAGS) do
       window[k].onCheckChange = safe('ui', onUiChange)
     end
     window.sizeCombo.onOptionChange = safe('ui', onUiChange)

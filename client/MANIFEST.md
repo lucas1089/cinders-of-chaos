@@ -8805,3 +8805,35 @@ committed). The server side is in server/README.md under the same heading.
   and closed, at 1280x720 and 1024x600; the map panel rect, the visible tiles (17x11), the zoom, the side panel widths
   and the bottom splitter never changed, and a screenshot of the map edges before and after each window was the same
   (extended view: the side panels lie over the map). No code change.
+
+## F49 fixes (O775)
+
+Three faults seen in a client, each fixed at its cause and seen again in the Linux main client on a local server (video
+in the task report, not committed). Server side: server/README.md "F49 fixes (O775)".
+
+- `game_chaosnotify`: a fast hunt piled the toasts up. Per kill the server can send a bestiary stage, a bounty step, a
+  season pass challenge, a kill task, a battle pass mission, a new card and an achievement; each was its own toast of
+  7-10 s, three shown and twelve waiting, and the column was still busy long after the hunt. `notifyview.lua`:
+  `V.ROUTINE_TYPES` names these seven; `V.admit(queue, shown, item, now)` merges a routine toast into the waiting toast of
+  its type, or into the shown one during its first `MERGE_SHOWN_MS` (3 s, its time starts again), newest line first, at
+  most `MERGE_LINES` (3) lines and "+N more" (`V.mergedText`); `V.nextIndex` keeps at most `ROUTINE_SHOWN` (2) routine
+  toasts on the screen, so one place stays free. Every other toast (level milestone, quest and journey step, ascension,
+  invasion, invitation, sale ...) is never merged or held back and goes ahead of the routine ones in the queue; a full
+  queue drops the oldest routine toast first. A unique drop is not a toast (screen message and loot beam), untouched.
+  `notifications.lua` `createCompactNotification` returns `setMessage` (new text, the card refits). Measured in the same
+  30-kill hunt of 15 s: before, still three toasts and a queue 44 s later; after, five toasts in all, the milestone and
+  the journey step shown at once, the column empty at 44 s. `notifyview_test.lua` (the hunt, merge text, the windows,
+  important toasts, trim order, every routine type is a real toast type). Unity's `ToastCenter` is not changed.
+- `game_helperrotation` (onboarding): the "press Auto setup" hint was a child of the Helper window placed so its bottom
+  touched the window's top border, and it went off the screen with the window at the top edge. `onboarding.lua`
+  `O.hintPlace(winTop, winBottom, right, w, h, screenW, screenH)`: `HINT_GAP` (6 px) above the window, right edges
+  aligned, clamped `HINT_MARGIN` (4 px) inside the screen; with no room above it goes below the window. The hint is a
+  phantom label on the root with a dark plate, follows the window while the step runs and goes with the Auto setup
+  button. `onboarding_test.lua`.
+- `game_groundlabels`: Common and Uncommon loot, and the stock gear that drops with no rarity, had no label unless Alt
+  was held, though no rule hid them. New setting `plainLoot` (on by default; window checkbox "Quiet labels for Common,
+  Uncommon and plain gear"): `GL.isPlainLoot(info)` (rarity 1-2, or no rarity and the equipment group; never a set
+  piece, unique, orb or power item) gets a quiet label (`GL.QUIET_BACKGROUND`, `QUIET_BORDER`, opacity 0.8, priority 150
+  below the rest). An item the loot filter dims never gets one. `GL.FLAGS` lists the checkbox settings for the window and
+  normalize. `groundlabels_test.lua`. Unity mirror: `GroundLabels.cs` (`PlainLoot`, `IsPlainLoot`, `Quiet`), the Loot
+  window toggle, `HelperTests.cs` checks (dotnet not run here: checked by hand).

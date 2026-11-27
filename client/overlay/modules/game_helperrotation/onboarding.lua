@@ -40,6 +40,30 @@ function O.hintFit(textW, innerLeft, buttonRight)
   return { width = room, wrap = true }
 end
 
+-- F49 (O775, seen in a client): inside the window the hint grew up from the button over the window's title bar and touched
+-- its top border. The hint now lies on the screen ABOVE the window it points at, HINT_GAP px clear of its top border,
+-- right edge on the button's right edge, on a dark plate; with no room above it goes HINT_GAP below the window, and it
+-- never leaves the screen (HINT_MARGIN from each edge). All numbers are screen pixels:
+--   winTop, winBottom  the window's outer top and bottom     right  the button's right edge
+--   w, h               the hint's size                        screenW, screenH  the root widget's size
+-- Returns {x, y, above}: the hint's top left corner and whether it sits above the window.
+O.HINT_GAP = 6
+O.HINT_MARGIN = 4
+
+function O.hintPlace(winTop, winBottom, right, w, h, screenW, screenH)
+  local gap, m = O.HINT_GAP, O.HINT_MARGIN
+  w, h = math.max(0, tonumber(w) or 0), math.max(0, tonumber(h) or 0)
+  screenW, screenH = tonumber(screenW) or 0, tonumber(screenH) or 0
+  local x = (tonumber(right) or 0) - w
+  x = math.max(m, math.min(x, screenW - m - w))
+  local y, above = (tonumber(winTop) or 0) - gap - h, true
+  if y < m then
+    y, above = (tonumber(winBottom) or 0) + gap, false
+    if y + h > screenH - m then y = math.max(m, screenH - m - h) end
+  end
+  return { x = x, y = y, above = above }
+end
+
 local blinkEvent = nil
 
 local function stop()
@@ -75,17 +99,21 @@ function O.open(data)
   local b = win:recursiveGetChildById(ChaosAutoSetupUI.BUTTON_ID)
   if not b then return false end
   stop()
-  local hint = g_ui.createWidget('Label', b:getParent())
+  -- on the root, above the window (O.hintPlace): a child of the window was drawn over its title bar
+  local root = g_ui.getRootWidget()
+  local hint = g_ui.createWidget('Label', root)
   hint:setId(O.HINT_ID)
   hint:setText(p.hint)
   hint:setColor(O.GOLD)
+  hint:setBackgroundColor('#0c0a0ce0')
+  hint:setBorderWidth(1)
+  hint:setBorderColor('#6a5632')
+  hint:setPadding(3)
+  hint:setPhantom(true)
   hint:setTextAutoResize(true)
-  hint:addAnchor(AnchorBottom, ChaosAutoSetupUI.BUTTON_ID, AnchorTop)
-  hint:addAnchor(AnchorRight, ChaosAutoSetupUI.BUTTON_ID, AnchorRight)
-  hint:setMarginBottom(2)
-  -- inside the Helper window: grows left from the button's right edge, wraps when the line is wider than the window (O.hintFit)
+  -- as wide as the window at most: grows left from the button's right edge, wraps when wider (O.hintFit)
   pcall(function()
-    local fit = O.hintFit(hint:getTextSize().width, win:getX() + win:getPaddingLeft(), b:getX() + b:getWidth())
+    local fit = O.hintFit(hint:getTextSize().width + 8, win:getX() + win:getPaddingLeft(), b:getX() + b:getWidth())
     if fit.wrap then
       hint:setTextAutoResize(false)
       hint:setTextWrap(true)
@@ -94,13 +122,28 @@ function O.open(data)
       if hint.setTextVerticalAutoResize then hint:setTextVerticalAutoResize(true) end
     end
   end)
+  local function place()
+    if hint:isDestroyed() or win:isDestroyed() or b:isDestroyed() then return end
+    hint:setVisible(win:isVisible())
+    local r, rs = win:getRect(), root:getSize()
+    local at = O.hintPlace(r.y, r.y + r.height, b:getX() + b:getWidth(), hint:getWidth(), hint:getHeight(), rs.width, rs.height)
+    hint:setPosition({ x = at.x, y = at.y })
+    hint:raise()
+  end
+  pcall(place)
   b.chaosOnboardColor = b:getColor()
   local own = b.chaosOnboardColor
   local frames, i = O.blinkFrames(O.blinkMs, O.stepMs), 0
+  -- the hint follows the window (moved, hidden) until the button is clicked; the blink ends on its own
   local function step()
     i = i + 1
-    if i > #frames or b:isDestroyed() then blinkEvent = nil return end
-    b:setColor(frames[i] and O.GOLD or own)
+    if b:isDestroyed() or hint:isDestroyed() then
+      if not hint:isDestroyed() then hint:destroy() end
+      blinkEvent = nil
+      return
+    end
+    if i <= #frames then b:setColor(frames[i] and O.GOLD or own) end
+    pcall(place)
     blinkEvent = scheduleEvent(step, O.stepMs)
   end
   step()
