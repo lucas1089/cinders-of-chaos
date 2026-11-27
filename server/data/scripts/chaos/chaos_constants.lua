@@ -1700,6 +1700,43 @@ function Chaos.giveItem(player, itemId, count)
 	return player:getItemCount(itemId) - before
 end
 
+-- Put `count` of itemId in the character's inbox; returns how many landed (F47, O773). The engine's Inbox refuses every
+-- add without FLAG_NOLIMIT (inbox.cpp Inbox::queryAdd: "not enough room") and Container:addItem makes at most 100 of a
+-- stackable at once, so a plain inbox:addItem(id, n) deletes the item. Stacks of 100 for a stackable, one item each for
+-- the rest (subType: the charges or fluid of each one), as professions.lua giveMaterial does.
+function Chaos.giveToInbox(player, itemId, count, subType)
+	count = math.floor(tonumber(count) or 0)
+	local okI, inbox = pcall(function() return player:getInbox() end)
+	if count <= 0 or not (okI and inbox) then
+		return 0
+	end
+	local okT, stackable = pcall(function() return ItemType(itemId):isStackable() end)
+	local per = (okT and stackable) and 100 or 1
+	local landed = 0
+	while landed < count do
+		local n = math.min(per, count - landed)
+		local ok, item = pcall(function()
+			return inbox:addItem(itemId, per > 1 and n or (subType or 1), INDEX_WHEREEVER or -1, FLAG_NOLIMIT or 1)
+		end)
+		if not (ok and item) then
+			break
+		end
+		landed = landed + n
+	end
+	return landed
+end
+
+-- Backpack first, the rest to the inbox (the reward pattern of achievements.lua and professions.lua). Returns how many
+-- went to the backpack and how many to the inbox.
+function Chaos.giveOrInbox(player, itemId, count)
+	count = math.floor(tonumber(count) or 0)
+	if count <= 0 then
+		return 0, 0
+	end
+	local given = math.max(0, math.min(count, tonumber(Chaos.giveItem(player, itemId, count)) or 0))
+	return given, given < count and Chaos.giveToInbox(player, itemId, count - given) or 0
+end
+
 -- Resolve a player name to guid (online or offline). Returns guid, canonicalName or nil.
 function Chaos.findPlayer(name)
 	if type(name) ~= "string" or name == "" or #name > 29 then

@@ -100,7 +100,11 @@ local mkPlayer = function()
 		self.items[id] = (self.items[id] or 0) + (sub and 1 or n)
 		return {}
 	end
-	function p:getInbox() local me = self return {addItem = function(_, id, n) me.inbox[id] = (me.inbox[id] or 0) + 1 return true end} end
+	function p:getItemCount(id) return self.items[id] or 0 end
+	-- one entry per stack; the engine's Inbox refuses an add without FLAG_NOLIMIT (F47)
+	function p:getInbox() local me = self return {addItem = function(_, id, n, _, flags)
+		if flags ~= (FLAG_NOLIMIT or 1) then return nil end
+		me.inbox[id] = (me.inbox[id] or 0) + 1 return true end} end
 	function p:sendTextMessage(t, m) self.said[#self.said + 1] = m end
 	function p:sendCancelMessage(m) self.cancels[#self.cancels + 1] = m end
 	function p:sendExtendedOpcode() end

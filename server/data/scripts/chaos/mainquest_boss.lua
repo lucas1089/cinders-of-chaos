@@ -268,13 +268,7 @@ B.hook = {
 		local r = c.boss.reward
 		player:setBankBalance(player:getBankBalance() + r.gold)
 		for _, it in ipairs(r.items) do
-			local given = Chaos.giveItem and Chaos.giveItem(player, it[1], it[2]) or 0
-			if (tonumber(given) or 0) < it[2] then
-				local okI, inbox = pcall(function() return player:getInbox() end)
-				if okI and inbox then
-					inbox:addItem(it[1], it[2] - (tonumber(given) or 0))
-				end
-			end
+			Chaos.giveOrInbox(player, it[1], it[2]) -- the inbox part with FLAG_NOLIMIT (F47)
 		end
 		if ChaosFactions and ChaosFactions.gain and r.repGain then
 			pcall(ChaosFactions.gain, player, "vigil", r.repGain, "mainquest", true)

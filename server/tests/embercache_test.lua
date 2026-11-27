@@ -195,7 +195,11 @@ local function mkPlayer(guid, level, pos)
 	function p:getBankBalance() return self.bank end
 	function p:setBankBalance(val) self.bank = val end
 	function p:addItem(id, n) if self.full then return nil end self.items[id] = (self.items[id] or 0) + n return {} end
-	function p:getInbox() local me = self return {addItem = function(_, id, n) me.inbox[id] = (me.inbox[id] or 0) + n return true end} end
+	function p:getItemCount(id) return self.items[id] or 0 end
+	-- the engine's Inbox refuses an add without FLAG_NOLIMIT and makes at most 100 of a stackable (F47)
+	function p:getInbox() local me = self return {addItem = function(_, id, n, _, flags)
+		if flags ~= (FLAG_NOLIMIT or 1) then return nil end
+		n = math.min(n, 100) me.inbox[id] = (me.inbox[id] or 0) + n return true end} end
 	function p:registerEvent(n) self.events[n] = true end
 	function p:sendExtendedOpcode(op, s) self.ops[#self.ops + 1] = {op = op, msg = s} end
 	online[#online + 1] = p

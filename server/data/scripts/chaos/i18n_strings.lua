@@ -9348,6 +9348,8 @@ return {
 			"O Desafio Semanal desta semana abre no próximo server save (o calabouço ainda tem o mapa da semana passada).",
 		["Weekly Challenge %s cleared in %s (%s). Your best this week: %s. See Leaderboards."] =
 			"Desafio Semanal %s concluído em %s (%s). Seu melhor tempo nesta semana: %s. Veja os Leaderboards.",
+		["Weekly Challenge %s cleared in %s: not ranked, no real run is that fast (at least %s)."] =
+			"Desafio Semanal %s concluído em %s: fora do ranking, nenhuma corrida real é tão rápida (no mínimo %s).",
 		-- The Group Queue (O407, groupqueue.lua, groupqueue_core.lua; dungeons.lua ChaosDungeons.queueJoin)
 		["Dungeon: %s"] =
 			"Dungeon: %s",

@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
-<monster name="Death Mage" nameDescription="a death mage" race="blood" experience="180000" speed="450" manacost="0">
-	<health now="250000" max="250000"/>
+<monster name="Death Mage" nameDescription="a death mage" race="blood" experience="16100" speed="45" manacost="0">
+	<health now="22900" max="22900"/>
 	<!-- Look 1539 (skull robe, green staff) has no art facing east or west in the pair, so the monster vanished when it turned sideways. Return to 1539 once a pair draws it in all 4 directions (O456). Look 1541 draws in all 4 and reads as a skull-robed death mage. -->
 	<look type="1541" corpse="6068" />
+	<level min="1000" max="1040"/>
 	<targetchange interval="4000" chance="10" />
 	<flags>
 		<flag summonable="0"/>
@@ -18,23 +19,23 @@
 		<flag runonhealth="0"/>
 	</flags>
 	<attacks>
-		<attack name="melee" interval="1000" min="-2300" max="-4800" />
-		<attack name="physical" interval="2000" chance="20" range="7" min="-1800" max="-4200">
+		<attack name="melee" interval="1000" min="-430" max="-900" />
+		<attack name="physical" interval="2000" chance="20" range="7" min="-340" max="-790">
 			<attribute key="shootEffect" value="suddendeath" />
 			<attribute key="areaEffect" value="mortarea" />
 		</attack>
-		<attack name="death" interval="2000" chance="10" length="8" spread="0" min="-2000" max="-4500">
+		<attack name="death" interval="2000" chance="10" length="8" spread="0" min="-380" max="-840">
 			<attribute key="areaEffect" value="redspark" />
 		</attack>
-		<attack name="physical" interval="2000" chance="15" length="7" spread="3" min="-1800" max="-4000">
+		<attack name="physical" interval="2000" chance="15" length="7" spread="3" min="-340" max="-750">
 			<attribute key="areaEffect" value="explosionarea" />
 		</attack>
-		<attack name="death" interval="2000" chance="10" radius="4" target="0" min="-2000" max="-4500">
+		<attack name="death" interval="2000" chance="10" radius="4" target="0" min="-380" max="-840">
 			<attribute key="areaEffect" value="redspark" />
 		</attack>
 	</attacks>
 	<defenses armor="47" defense="47">
-		<defense name="healing" interval="2000" chance="35" min="1800" max="7500">
+		<defense name="healing" interval="2000" chance="35" min="550" max="2290">
 			<attribute key="areaEffect" value="blueshimmer"/>
 		</defense>
 	</defenses>

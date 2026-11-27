@@ -2,7 +2,7 @@
 -- ChaosPopupQueue (F46, O772): centre popups that open by themselves wait their turn, one on screen at a time.
 --   ChaosPopupQueue.request(key, open, isOpen)  open() shows the popup, isOpen() says it is still on screen
 --   ChaosPopupQueue.cancel(key)                  the popup is no longer wanted (its window closed before its turn)
--- Other popups on screen also hold the queue: a message box (displayGeneralBox: the Helper's "New spell available"),
+-- Other popups on screen also hold the queue: a message box (displayGeneralBox; the Helper's "New spell available" queues too, F47),
 -- a server modal dialog, and the windows of BLOCKER_IDS. A caller without the queue (module not loaded) opens at once.
 local L = PopupQueueLogic
 local TICK_MS = 200

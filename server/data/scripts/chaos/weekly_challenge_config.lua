@@ -51,6 +51,14 @@ return {
 	-- ------------------------------------------------------------------ the boards (leaderboard_config.lua boards)
 	-- mode "min", format "time", byClass; party size 1 -> solo, 2+ -> party
 	boards = {solo = "challenge_solo", party = "challenge_party"},
+	-- a clear no real player can make is not ranked (F47, O773; weekly_challenge_core.lua W.rankProblem). A 9 s clear
+	-- reached the board in a test (monsters thinned by a staff command): the run time is the teleport in to the boss kill
+	-- (dungeons.lua endRun), and nothing held it. The least possible time is the content's own: the run model's walk to
+	-- the gate and the boss with no fighting (dungeons_difficulty.lua D.model.walk, 90 s: the 85% of 100+ monsters in
+	-- packs over 14-16 rooms and the boss, 567k health at difficulty 1) times walkShare, so a party far stronger than
+	-- the model's still lands well above it (45 s). A run that counted fewer than minRoster monsters at its start did
+	-- not have the week's layout (a failed populate: the boss opens at once, dungeons.lua starts the gate at 100%).
+	valid = {walkShare = 0.5, minRoster = 50},
 
 	-- ------------------------------------------------------------------ the weekly rewards
 	-- At the reset: the 1st, 2nd and 3rd of every class tab (base class and its ascensions, the board's tabs) of each

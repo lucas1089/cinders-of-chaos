@@ -163,6 +163,24 @@ eq(W.boardOf(cfg, nil), "challenge_solo", "no size: solo")
 eq(W.boardOf(cfg, 3), "challenge_party", "3: party")
 eq(W.seconds(61200), 62, "61.2 s -> 62")
 eq(W.seconds(0), 1, "at least 1 s")
+-- F47 (O773): the least possible clear and the rank rule
+eq(W.minSeconds(cfg, 90), 45, "least possible: half the run model's walk")
+eq(W.minSeconds(cfg, nil), 45, "least possible without the model: its 90 s")
+eq(W.minSeconds({valid = {walkShare = 0}}, 90), 1, "never under 1 s")
+do
+	local DD = dofile("data/scripts/chaos/dungeons_difficulty.lua")
+	eq(W.minSeconds(cfg, DD.model.walk), math.ceil(DD.model.walk * cfg.valid.walkShare), "read from the run model's walk")
+	ok(DD.model.walk >= 60, "the model's walk to the gate and the boss is at least a minute")
+	-- the floor stays far under the content's own pace: the speed challenge of the base area (6 min) and the model's run
+	ok(W.minSeconds(cfg, DD.model.walk) * 4 <= 6 * 60, "the floor is under a quarter of the speed challenge")
+end
+ok(W.rankProblem(cfg, 9, 103, 90) ~= nil, "the 9 s clear of the test is refused")
+ok(W.rankProblem(cfg, 44, 103, 90) ~= nil, "44 s is refused")
+eq(W.rankProblem(cfg, 45, 103, 90), nil, "45 s is ranked")
+eq(W.rankProblem(cfg, 313, nil, 90), nil, "a run that did not tell its roster")
+ok(W.rankProblem(cfg, 313, 0, 90) ~= nil, "a run with an empty roster (its boss opened at once) is refused")
+eq(W.rankProblem(cfg, 313, cfg.minMonsters, 90), nil, "a full roster is ranked")
+ok(cfg.valid.minRoster < cfg.minMonsters, "the roster rule is under the layout rule (settle may move a few)")
 eq(W.clock(754), "12:34", "clock")
 eq(W.clock(3725), "1:02:05", "clock hours")
 ok(W.entryProblem(nil, 20261102) ~= nil, "not built: closed")
@@ -281,6 +299,14 @@ do
 	WC.onClear(player, {ms = 312400, size = 1})
 	WC.onClear(player, {ms = 290000, size = 3})
 	eq(#records, 2, "two clears recorded")
+	-- F47 (O773): a 9 s clear and a clear with an empty roster are told and not ranked
+	player.getName = function() return "Tester Aka" end
+	print = function() end
+	WC.onClear(player, {ms = 9000, size = 1, total = 103})
+	WC.onClear(player, {ms = 300000, size = 1, total = 0})
+	print = printed
+	eq(#records, 2, "too fast or empty: not recorded")
+	ok(msgs[3] and msgs[3]:find("not ranked", 1, true) ~= nil and msgs[3]:find("0:09", 1, true) ~= nil, "the player is told why")
 	eq(records[1].board, "challenge_solo", "solo board")
 	eq(records[1].value, 313, "seconds")
 	eq(records[2].board, "challenge_party", "party board")

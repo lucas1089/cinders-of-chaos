@@ -263,6 +263,13 @@ eq(total, 130 + 46 + 66 + 52 + 18, 'the window holds every button')
 hs, total = P.choiceHeights({46, 34}, {}, 10, 6, 130)
 eq(table.concat(hs, ','), '46,34', 'before the layout the base heights stay')
 eq(total, 130 + 46 + 34 + 12, 'base window height')
+-- F47: the list's content ends one gap below the last button (its margin-bottom), and with that tail the list plus the
+-- chrome is choiceHeights' total: a window that fits the total shows the whole last button
+hs, total = P.choiceHeights({46, 46, 34}, {28, 56, 42}, 10, 6, 130)
+eq(P.choiceContent(hs, 6, 6), 46 + 66 + 52 + 12 + 6, 'content: buttons, two gaps and the tail')
+eq(P.choiceContent(hs, 6, 6) + 130, total, 'list content plus chrome is the wanted window')
+eq(P.choiceContent(hs, 6, 0) + 130 < total, true, 'without the tail the last button ends on the clip line')
+eq(P.choiceContent({}, 6, 6), 0, 'no buttons: no content')
 
 -- F46: the choice window is cut to the screen (eight long effects wanted about 580 px on the 540 px phone interface)
 do
