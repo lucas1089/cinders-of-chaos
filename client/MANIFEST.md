@@ -8567,3 +8567,15 @@ Linux main client on pair 88, local server, two characters. Rows O315 to O328 pl
 - `game_skillstats`: "Damage/Healing" and "Offline Training" ran into their values. `V.nameFits` checks the row; a long name shows "Dmg/Heal" or "Offline" with the full name as tooltip. `skillstatsview_test.lua`.
 - `game_chaosdock`: Skills from the dock said "not available" after the right column hid it, or after a release. Root cause: the dock ran the base Skills entry, a toggle, on a window it still thought open. The dock now takes a column-hidden window without the entry, and a release closes a mini window the module's way. `chaosdock_engine_test.lua`.
 - Fine as built: chest auras and the Templar sigil, Guild Stash, collection score and Try on, the hunt warning, monster levels with no skull, the Rootling Nutshell, the Tower floor damage and loot.
+
+## Seen in a client (2026-11-27, V33: globes, spell icons, skins, tooltips, store cosmetics, Everfull, Ninja)
+
+Linux main client assembled from current main (base patches to 0214), pair 88, local server, one tester. Rows O343 to O367 played through. No fix needed.
+
+- `game_deadguard` (O343, O349): an ember, a health and a mana globe taken; the character stays on its tile and visible, each globe leaves the tile.
+- `game_spellbook` (O355): all spells and the searches bone, grave and soul; every Chaos cell painted.
+- `client_chaos_theme` (O356): Options > Interface shows "Interface skin"; Forge and Embers picked, applied at the next start and seen after the restart.
+- `game_itemtooltip` (O360): a unique ring's passive in its own orange section; a fist weapon shows Estimated DPS.
+- `game_cosmetics` (O362): collection score 61 before `/storecosmetics`, 1064 after.
+- `game_textmessage` (O364, base patch 0183): Everfull potions by hotkey draw no green text on the game; `game_chaosnotify` shows the DANGER window at the top centre.
+- O367: a level 757 Ninja lives in a level 750 hunt with the helper's Auto setup.

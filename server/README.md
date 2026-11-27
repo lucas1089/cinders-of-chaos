@@ -5348,6 +5348,8 @@ Seen in a client (2026-11-25, V12): Demon Skeleton stairs at 33031,32450,11, the
 
 Seen in a client (2026-11-27, V31): the hole warning shown before the drop.
 
+Seen in a client (2026-11-27, V33): the red DANGER window at the top centre at a hunt entry above the level.
+
 ## Hunt bands (O333) (`tools/audit_hunt_bands.py`, `tools/patch_hunt_gates.py`, `tools/hunt_gates.csv`, install step `huntgates`)
 
 Tester 2026-10-29: some hunt teleports send the player to the wrong place. A teleport signed "level 25" (Demon Skeleton) arrived among two Demon Skeletons and random monsters of level 15-20. Hunts of levels 500-700 (the generated areas) and the elf zone were praised. The planned hunts (`tools/areaplan/plans/`, levels 155 and up) are generated to their band; the fault was in the 37 base hunts of `tools/hall_hunts.csv`, whose arrival and band came from `hall_order.py derive` (the monsters within 40-120 tiles of the stock destination, mixed caves included).
@@ -30727,6 +30729,8 @@ ones other scripts here use, but this has only run against the mock.
 cannot take it; wait 15 s and it fades; a character in the arena gets none. Force an ember with `/blessing roll` (simulation
 only) or many kills of rare monsters: the ember shows the blessing's name when looked at.
 
+Seen in a client (2026-11-27, V33): an ember, a health and a mana globe taken; the character stays visible, each globe leaves the tile.
+
 ## Charms (`charms.lua`, `charms_core.lua`, `charms_config.lua`, `sql/chaos_charms.sql`, `tools/install_charms.py`, client `game_charms`)
 
 **Level gate (O368).** `C.minLevel` 8 -> 15. The top menu shows Charms from 15 (`unlocks_config.lua` `charms`).
@@ -35235,6 +35239,8 @@ Keeper 700), it takes too much damage; is the Thief line's defence normal? Compu
   `tools/survival_model_test.py` (formulas, parsers, both interpreters, the guard read from `classes.lua`, the state before
   fails on the Ninja only), `tests/ninja_guard_test.lua` (the reduction by level, the hook on a mock engine).
 - **Install:** reload scripts (or restart). No engine, client, database or map change.
+
+Seen in a client (2026-11-27, V33): a level 757 Ninja with the helper's Auto setup lived 40 s among 5-6 level 750 monsters of a hunt (health 3,000-8,000 of 9,200, about 2,100 damage a second taken, hits after the guard x0.6). Without healing it died in about 10 s among ten, as the model says.
 
 ## Ember Descent model (O664) (`tools/descent_model.py`, `tools/descent_numbers.lua`, `chaos/descent_balance_config.lua`; the factors in `descent_core.lua` `paceScale`, `descent.lua` `spawnOne`)
 Measured live in O663: room 1 of the Descent is 2 waves of 4 monsters at 0.60-0.85 of the party level. A level 592 Warrior took
