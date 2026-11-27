@@ -1018,6 +1018,20 @@ do
   eq(L.diffText({ k = 'attackspeed', l = 'Attack Interval', d = -0.5, fmt = 'sec' }), '-0.5s Attack Interval', 'English compare row')
 end
 
+-- ---------------------------------------------------------------- V37: a tile caption fits its tile
+do
+  local px = function(t) return #t * 7 end -- 7 px a byte
+  eq(L.fitCaption('ATAQUE', 63, px), 'ATAQUE', 'fits: unchanged')
+  eq(L.fitCaption('VELOCIDADE', 63, px), 'VELOCIDA.', 'pt-BR speed cut with a point')
+  eq(px(L.fitCaption('VELOCIDADE', 63, px)) <= 63, true, 'the cut fits')
+  eq(L.fitCaption('DEFESA EXTRA', 56, px), 'DEFESA.', 'no space before the point')
+  eq(L.fitCaption('ALCANÇADO', 49, px), 'ALCAN.', 'a two byte letter is never split (half of it would fit)')
+  eq(L.fitCaption('ALCANÇADO', 56, px), 'ALCANÇ.', 'a whole two byte letter kept')
+  eq(L.fitCaption('SPEED', nil, px), 'SPEED', 'no width: unchanged')
+  eq(L.fitCaption('SPEED', 3, px), 'S.', 'never empty')
+  eq(L.fitCaption(nil, 60, px), '', 'no text')
+end
+
 if fails > 0 then
   print(fails .. ' failure(s)')
   os.exit(1)

@@ -876,6 +876,25 @@ function L.caps(text)
   return (tostring(text or ''):upper())
 end
 
+-- a tile caption that fits its tile (V37, seen in a client 2026-11-27: the pt-BR "VELOCIDADE" ran out of a 67 px tile and
+-- was cut to "VELOCIDAD"): the text when it fits, else shortened by whole characters (UTF-8 safe) and ended with a point.
+-- measure(text) -> px; width: the room in px
+function L.fitCaption(text, width, measure)
+  text = tostring(text or '')
+  if type(measure) ~= 'function' or not width or measure(text) <= width then return text end
+  local cut = text
+  while #cut > 1 do
+    -- drop the last whole character: its continuation bytes, then its first byte
+    local i = #cut
+    while i > 1 and cut:byte(i) >= 0x80 and cut:byte(i) < 0xC0 do i = i - 1 end
+    if i <= 1 then break end
+    cut = cut:sub(1, i - 1)
+    local short = cut:gsub('%s+$', '') .. '.'
+    if measure(short) <= width then return short end
+  end
+  return cut .. '.'
+end
+
 -- which base rows become tiles, in this order: the damage and speed of a weapon, then the protection of the rest
 L.TILE_ORDER = { 'dps', 'attack', 'speed', 'range', 'armor', 'defense', 'extradefense', 'hitchance' }
 

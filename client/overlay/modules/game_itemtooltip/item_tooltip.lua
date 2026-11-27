@@ -222,7 +222,8 @@ local function statTiles(panel, y, tiles)
       try(tile.setBorderColor, tile, '#8a5a1e')
       try(tile.setBackgroundColor, tile, '#241a0e')
     end
-    putLabel(tile, 'ItemTooltipCap', 5, centred(tw), L.caps(t.caption))
+    putLabel(tile, 'ItemTooltipCap', 5, centred(tw), L.fitCaption(L.caps(t.caption), tw - 4,
+      function(text) return textWidth('ItemTooltipCap', text) end))
     putLabel(tile, 'ItemTooltipLine', 19, centred(tw), t.value, t.hero and C.gold or '#f2e6cc')
   end
   return y + 38 + 5

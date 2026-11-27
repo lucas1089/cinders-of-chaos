@@ -46,6 +46,7 @@ local boundKeys = {}
 local releasing = false
 local lastKey = 0
 local columnHidden = {}  -- the right column's windows the dock hid: { widget, key }
+local lifted = {}        -- container windows lifted out of the right column (a chest, a corpse, the depot): widgets
 local startedAt = 0
 
 -- ---------------------------------------------------------------- helpers
@@ -167,6 +168,45 @@ end
 
 -- the right column shows only the minimap while the dock is enabled: every other window there hides (and comes back
 -- when the dock is turned off)
+-- the lifted container windows (L.liftsFromColumn) stand left of the column, under the minimap: placed when one more
+-- is lifted, never while the player moves one (a drag that drops it on the map puts it back in a side panel, and the
+-- next column cycle lifts it again)
+local function placeLifted()
+  local root = gameRoot()
+  local keep, sizes = {}, {}
+  for _, w in ipairs(lifted) do
+    if alive(w) and w:isVisible() and root and same(w:getParent(), root) then
+      keep[#keep + 1] = w
+      sizes[#sizes + 1] = { width = w:getWidth(), height = w:getHeight() }
+    end
+  end
+  lifted = keep
+  local col = columnRect()
+  if not col or not root then return end
+  local rr = root:getRect()
+  local map = mapRect()
+  local top = map and (map.y + map.height + 2) or col.y
+  local places = L.liftPlaces(col.x, top, rr.y + rr.height - L.LIFT_GAP, sizes)
+  for i, w in ipairs(lifted) do
+    w:breakAnchors()
+    w:setPosition(places[i])
+    w:raise()
+  end
+end
+
+local function lift(w)
+  local root = gameRoot()
+  if not root then return false end
+  local ok = pcall(function()
+    w:setParent(root)
+    w.chaosDockLifted = true
+  end)
+  if not ok then return false end
+  lifted[#lifted + 1] = w
+  placeLifted()
+  return true
+end
+
 local function keepColumn()
   if not st or not st.enabled or isPhone() or not g_game.isOnline() then return end
   local heldIds = {}
@@ -174,7 +214,9 @@ local function keepColumn()
     if alive(rec.widget) then heldIds[tostring(rec.widget:getId())] = true end
   end
   for _, w in ipairs(columnWindows()) do
-    if w:isVisible() and L.hidesInColumn(w:getId(), heldIds) then
+    if w:isVisible() and L.liftsFromColumn(w:getId()) then
+      lift(w)
+    elseif w:isVisible() and L.hidesInColumn(w:getId(), heldIds) then
       local seen = false
       for _, h in ipairs(columnHidden) do
         if same(h.widget, w) then seen = true break end
@@ -204,6 +246,16 @@ local function giveColumnBack()
   columnHidden = {}
   for _, h in ipairs(list) do
     if alive(h.widget) and h.widget:getParent() then pcall(h.widget.show, h.widget) end
+  end
+  -- the lifted container windows go back to a side panel, as the client opens them
+  local up = lifted
+  lifted = {}
+  local gi = modules.game_interface
+  for _, w in ipairs(up) do
+    if alive(w) and w.chaosDockLifted then
+      w.chaosDockLifted = nil
+      if gi and gi.addToPanels then pcall(gi.addToPanels, w, 'always') end
+    end
   end
 end
 
@@ -902,7 +954,7 @@ local function onGameEnd()
   stopSlide()
   unbindKeys()
   if alive(panel) then panel:destroy() end
-  panel, tabButtons, known, columnHidden = nil, {}, {}, {}
+  panel, tabButtons, known, columnHidden, lifted = nil, {}, {}, {}, {}
 end
 
 function M.init()
