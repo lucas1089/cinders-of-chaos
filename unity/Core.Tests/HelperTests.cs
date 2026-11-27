@@ -745,7 +745,11 @@ namespace Chaos.Core.Tests
             Func<LootInfo, bool, GroundLabelSettings, GroundDecision> decide = (i, alt, st) => GroundLabelRules.Decide(item(i), st ?? on, filter, alt);
             check(decide(epic, false, null).Highlight, "labels: Rare glows, labelled and highlighted");
             check(decide(rare, false, null) != null && !decide(rare, false, null).Highlight, "labels: Magic is labelled (Magic+), not highlighted");
-            check(decide(unc, false, null) == null && decide(common, false, null) == null && decide(potion, false, null) == null && decide(junk, false, null) == null, "labels: Uncommon, Common, a hidden category and junk have no label without Alt");
+            var plainOff = GroundLabelSettings.From(Json.Parse("{\"plainLoot\":false}"));
+            check(decide(unc, false, plainOff) == null && decide(common, false, null) == null && decide(potion, false, null) == null && decide(junk, false, null) == null, "labels: Uncommon (quiet labels off), Common (dimmed), a hidden category and junk have no label without Alt");
+            check(gs.PlainLoot && !plainOff.PlainLoot && decide(unc, false, null).Quiet && !decide(unc, false, null).Highlight && !decide(unc, false, null).Dim, "labels: Uncommon gear gets a quiet label by default (F49)");
+            var keepAll = LootFilterRules.Normalize(Json.Parse("{\"highlight\":4,\"dim\":0}"));
+            check(GroundLabelRules.Decide(item(common), on, keepAll, false).Quiet && !GroundLabelRules.IsPlainLoot(power) && !GroundLabelRules.IsPlainLoot(rare) && !GroundLabelRules.IsPlainLoot(junk) && GroundLabelRules.Decide(item(junk), on, keepAll, false) == null, "labels: quiet only for Common and Uncommon gear the filter keeps");
             check(decide(unique, false, null).Highlight && decide(orb, false, null).Highlight && decide(power, false, null).Highlight, "labels: a unique, an orb and a legendary power always glow");
             var noRare = GroundLabelSettings.From(Json.Parse("{\"rarePlus\":false}"));
             check(decide(rare, false, noRare) == null && decide(epic, false, noRare).Highlight, "labels: Magic+ off: only what glows shows");
@@ -784,6 +788,7 @@ namespace Chaos.Core.Tests
                   GroundLabelRules.Priority(item(epic), decide(epic, false, null)) > GroundLabelRules.Priority(item(rare), decide(rare, false, null)) &&
                   GroundLabelRules.Priority(item(rare), decide(rare, false, null)) > GroundLabelRules.Priority(item(junk), decide(junk, true, null)) &&
                   GroundLabelRules.Priority(item(junk), decide(junk, true, null)) > GroundLabelRules.Priority(item(common), decide(common, true, null)), "labels: unique, rarity, junk, faded");
+            check(GroundLabelRules.Priority(item(rare), decide(rare, false, null)) > GroundLabelRules.Priority(item(unc), decide(unc, false, null)), "labels: Magic before a quiet Uncommon label");
             var many = new List<GroundLabel>();
             for (int i = 1; i <= 100; i++) many.Add(new GroundLabel { Prio = i % 3, Dist = i % 7, Order = i });
             var kept = GroundLabelRules.Select(many);

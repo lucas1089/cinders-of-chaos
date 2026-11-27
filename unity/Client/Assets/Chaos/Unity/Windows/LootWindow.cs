@@ -284,6 +284,7 @@ namespace Chaos.Client
             bool changed = false;
             bool v = GUI.Toggle(new Rect(x, y, w, 22), s.Enabled, Loc.T("Ground labels")); changed |= v != s.Enabled; s.Enabled = v; y += 24;
             v = GUI.Toggle(new Rect(x, y, w, 22), s.RarePlus, Loc.T("Magic and better always get a label")); changed |= v != s.RarePlus; s.RarePlus = v; y += 24;
+            v = GUI.Toggle(new Rect(x, y, w, 22), s.PlainLoot, Loc.T("Quiet labels for Common, Uncommon and plain gear")); changed |= v != s.PlainLoot; s.PlainLoot = v; y += 24;
             v = GUI.Toggle(new Rect(x, y, w, 22), s.AltAll, Loc.T("Hold Alt to show every item")); changed |= v != s.AltAll; s.AltAll = v; y += 24;
             v = GUI.Toggle(new Rect(x, y, w, 22), s.Corpses, Loc.T("Corpse labels")); changed |= v != s.Corpses; s.Corpses = v; y += 24;
             v = GUI.Toggle(new Rect(x, y, w, 22), s.Timers, Loc.T("Decay timers")); changed |= v != s.Timers; s.Timers = v; y += 28;

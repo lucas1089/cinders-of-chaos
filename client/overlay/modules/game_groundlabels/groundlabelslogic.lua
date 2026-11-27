@@ -55,7 +55,13 @@ function GL.plateFor(accent)
 end
 
 -- {text, border, background, plate?} of a label: d = the decision (GL.decide), color = GL.color(row, d)
+GL.QUIET_BACKGROUND = '#0c0a0c8c'
+GL.QUIET_BORDER = '#3a323066'
+GL.QUIET_OPACITY = 0.8
 function GL.style(d, color)
+  if d.quiet then
+    return { text = color, border = GL.QUIET_BORDER, background = GL.QUIET_BACKGROUND, opacity = GL.QUIET_OPACITY }
+  end
   if d.highlight then
     return { text = color, border = color, background = GL.accent or GL.HIGHLIGHT_BACKGROUND, plate = GL.plateFor(GL.accent) }
   end
@@ -82,18 +88,25 @@ end
 -- rarePlus  Rare+ items always get a label (else only the items the loot filter makes glow)
 -- altAll    holding Alt shows every item on the ground, the ones the filter hides too (dimmed)
 -- corpses   "Corpse: 2 items" over a corpse you may loot that holds items the filter makes glow
+-- plainLoot Common, Uncommon and plain gear (no rarity: 70 % of the stock rolls) gets a quiet label (F49, O775): with the
+--           loot explosion (O669) every item lies on the ground as its own row, and that gear had no name at all; faded
+--           plate, below every other label
 -- timers    the time until a label's item or corpse decays
 -- burst     the loot burst animation (game_lootburst, O677): the loot of a kill flies out in an arc; off = the server's stock effects
 -- size      small | normal | large
 function GL.defaults()
-  return { enabled = true, rarePlus = true, altAll = true, corpses = true, timers = true, burst = true, size = 'normal' }
+  return { enabled = true, rarePlus = true, plainLoot = true, altAll = true, corpses = true, timers = true, burst = true,
+    size = 'normal' }
 end
+
+-- the on / off settings, in the order of the settings window (groundlabels.otui ids)
+GL.FLAGS = { 'enabled', 'rarePlus', 'plainLoot', 'altAll', 'corpses', 'timers', 'burst' }
 
 function GL.normalize(t)
   local d = GL.defaults()
   if type(t) ~= 'table' then return d end
   local out = {}
-  for _, k in ipairs({ 'enabled', 'rarePlus', 'altAll', 'corpses', 'timers', 'burst' }) do
+  for _, k in ipairs(GL.FLAGS) do
     out[k] = bool(t[k], d[k])
   end
   out.size = GL.SIZES[t.size] and t.size or d.size
@@ -150,6 +163,16 @@ local function isRarePlus(info)
 end
 GL.isRarePlus = isRarePlus
 
+-- Common (1), Uncommon (2) or plain gear (equipment without a rarity) that is nothing more: no unique, orb, set piece or
+-- legendary power (F49, O775)
+GL.PLAIN_MAX = 2
+function GL.isPlainLoot(info)
+  if flag(info.st) or flag(info.u) or flag(info.o) or flag(info.pw) then return false end
+  local r = LF and LF.canon and LF.canon(info.r) or (tonumber(info.r) or 0)
+  if r == 0 then return info.g == 'equipment' end
+  return r <= GL.PLAIN_MAX
+end
+
 local function filterState(info, filter)
   if flag(info.pw) then return 'highlight' end -- a legendary power always glows (as on the server)
   return LF.classify(info, filter)
@@ -188,6 +211,10 @@ function GL.decide(row, s, filter, alt)
   -- a set piece always beams (game_lootbeams), so its name always shows with the beam, glowing, whatever the filter says (O715)
   if flag(row.st) or st == 'highlight' then return { kind = 'item', highlight = true, dim = false } end
   if st ~= 'dim' and s.rarePlus and isRarePlus(row) then return { kind = 'item', highlight = false, dim = false } end
+  -- plain gear the filter does not hide: a quiet label (faded, below the rest); Alt still shows it the same way
+  if st ~= 'dim' and s.plainLoot and GL.isPlainLoot(row) then
+    return { kind = 'item', highlight = false, dim = false, quiet = true }
+  end
   if showAll then return { kind = 'item', highlight = false, dim = st == 'dim' } end
   return nil
 end
@@ -299,6 +326,7 @@ function GL.priority(row, d)
     p = (flag(row.u) and 600 or 0) + (flag(row.st) and 500 or 0) + (tonumber(row.r) or 0) * 20 + (flag(row.o) and 40 or 0)
     if d.highlight then p = p + 200 end
   end
+  if d.quiet then p = p - 150 end -- every other label wins the place first (the cap of 40, the layout)
   if d.dim then p = p - 1000 end
   return p
 end

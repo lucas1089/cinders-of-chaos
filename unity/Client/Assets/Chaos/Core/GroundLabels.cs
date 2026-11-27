@@ -22,17 +22,17 @@ namespace Chaos.Core
 {
     public sealed class GroundLabelSettings
     {
-        public bool Enabled = true, RarePlus = true, AltAll = true, Corpses = true, Timers = true;
+        public bool Enabled = true, RarePlus = true, PlainLoot = true, AltAll = true, Corpses = true, Timers = true;
         public string Size = "normal";   // small | normal | large
 
         public Dictionary<string, object> ToDict() =>
-            new Dictionary<string, object> { { "enabled", Enabled }, { "rarePlus", RarePlus }, { "altAll", AltAll }, { "corpses", Corpses }, { "timers", Timers }, { "size", Size } };
+            new Dictionary<string, object> { { "enabled", Enabled }, { "rarePlus", RarePlus }, { "plainLoot", PlainLoot }, { "altAll", AltAll }, { "corpses", Corpses }, { "timers", Timers }, { "size", Size } };
 
         public static GroundLabelSettings From(object t)
         {
             var o = new GroundLabelSettings();
             if (!(t is Dictionary<string, object>)) return o;
-            o.Enabled = Json.Truthy(t, "enabled", true); o.RarePlus = Json.Truthy(t, "rarePlus", true); o.AltAll = Json.Truthy(t, "altAll", true);
+            o.Enabled = Json.Truthy(t, "enabled", true); o.RarePlus = Json.Truthy(t, "rarePlus", true); o.PlainLoot = Json.Truthy(t, "plainLoot", true); o.AltAll = Json.Truthy(t, "altAll", true);
             o.Corpses = Json.Truthy(t, "corpses", true); o.Timers = Json.Truthy(t, "timers", true);
             string size = Json.Text(t, "size", "normal");
             o.Size = size == "small" || size == "large" ? size : "normal";
@@ -54,6 +54,8 @@ namespace Chaos.Core
     public sealed class GroundDecision
     {
         public bool Corpse, Dim, Highlight;
+        /// <summary>A Common or Uncommon gear label: faded, below the rest (groundlabelslogic.lua d.quiet, F49 O775).</summary>
+        public bool Quiet;
         public int Matches;
         public LootInfo Best;
         public bool HasBest;
@@ -159,6 +161,11 @@ namespace Chaos.Core
 
         public static bool IsRarePlus(LootInfo i) => i.U || i.O || i.Pw || i.R >= Rare;
 
+        /// <summary>Common (1), Uncommon (2) or plain gear (equipment without a rarity) and nothing more (groundlabelslogic.lua GL.isPlainLoot, F49 O775).</summary>
+        public const int PlainMax = 2;
+        public const string QuietBackground = "#0c0a0c8c", QuietBorder = "#3a323066";
+        public static bool IsPlainLoot(LootInfo i) { if (i.U || i.O || i.Pw) return false; int r = LootFilterRules.Canon(i.R); if (r == 0) return i.G == "equipment"; return r <= PlainMax; }
+
         static string FilterState(LootInfo info, LootFilterSettings filter)
         {
             if (info.Pw) return "highlight";   // a legendary power always glows (as on the server)
@@ -200,6 +207,7 @@ namespace Chaos.Core
             string st = FilterState(row.Info, filter);
             if (st == "highlight") return new GroundDecision { Highlight = true };
             if (st != "dim" && s.RarePlus && IsRarePlus(row.Info)) return new GroundDecision();
+            if (st != "dim" && s.PlainLoot && IsPlainLoot(row.Info)) return new GroundDecision { Quiet = true };
             if (showAll) return new GroundDecision { Dim = st == "dim" };
             return null;
         }
@@ -264,7 +272,8 @@ namespace Chaos.Core
         {
             text = color;
             // the loot label accent cosmetic sits behind the labels the loot filter highlights; the rarity colour stays (groundlabelslogic.lua GL.style)
-            if (d.Highlight) { border = color; background = accent ?? HighlightBackground; }
+            if (d.Quiet) { border = QuietBorder; background = QuietBackground; }
+            else if (d.Highlight) { border = color; background = accent ?? HighlightBackground; }
             else { border = "#3a3230"; background = PlainBackground; }
         }
 
@@ -278,6 +287,7 @@ namespace Chaos.Core
                 p = (row.Info.U ? 600 : 0) + row.Info.R * 20 + (row.Info.O ? 40 : 0);
                 if (d.Highlight) p += 200;
             }
+            if (d.Quiet) p -= 150;
             if (d.Dim) p -= 1000;
             return p;
         }
