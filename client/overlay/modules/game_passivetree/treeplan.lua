@@ -118,6 +118,33 @@ end
 
 -- The allocated set the planner grows from: the ids shown allocated (a map of id -> node or true) and the ids the
 -- server saved (a set). A saved id the window shows dim still counts as owned, so it is never planned or priced.
+-- every node id to build, in id order (passivetree.lua): the whole table, not a fixed cap. A cap of 700 left the
+-- spell modifier masteries 703-705 (O451) out of the client tree for three lines (V39, 2026-11-27).
+function TreePlan.buildIds(nodes, shown)
+  local ids = {}
+  for id, node in pairs(nodes or {}) do
+    if type(id) == 'number' and (not shown or shown(node)) then ids[#ids + 1] = id end
+  end
+  table.sort(ids)
+  return ids
+end
+
+-- the heights of a mastery's effect buttons and of its choice window (planner.lua openMasteryChoice), from each
+-- button's base height and the height of its wrapped text (nil before the layout gave the button its width): a button
+-- grows to its text plus pad, never shrinks. A 46 px button cut the fourth line of a long effect ("Hallowed Ground")
+-- and a 34 px combo button its third (V39, 2026-11-27). chrome is the window without the list, spacing the gap.
+function TreePlan.choiceHeights(bases, textHeights, pad, spacing, chrome)
+  local heights, total = {}, chrome
+  for i, base in ipairs(bases) do
+    local text = textHeights[i]
+    local h = base
+    if text and text + pad > h then h = text + pad end
+    heights[i] = h
+    total = total + h + spacing
+  end
+  return heights, total
+end
+
 function TreePlan.ownedIds(shown, saved)
   local set = {}
   for id in pairs(shown or {}) do

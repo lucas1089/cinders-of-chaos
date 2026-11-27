@@ -823,14 +823,8 @@ local function buildTree()
 		end
 	end))
 
-	local NODES_MAX = 700
-	local ids = {}
+	local ids = TreePlan.buildIds(treeData.nodes, nodeShown)
 	nodeMap = {}
-	for id = 1, NODES_MAX, 1 do
-		if treeData.nodes[id] and nodeShown(treeData.nodes[id]) then
-			t_insert(ids, id)
-		end
-	end
 
 	t_insert(jobs, slicedJob(ids, function(id)
 		local node = treeData.nodes[id]

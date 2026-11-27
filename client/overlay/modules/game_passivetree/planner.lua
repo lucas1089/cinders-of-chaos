@@ -185,6 +185,9 @@ local function changeSaved(node, choice)
 end
 
 -- the effects of a mastery as buttons; saved: the node is allocated (a change is priced), else it is planned (free)
+-- the choice window: its height without the effect list, the gap between two buttons, the room round a button's text
+CHOICE_CHROME, CHOICE_SPACING, CHOICE_PAD = 130, 6, 10
+
 function openMasteryChoice(node, saved)
   closeMasteryChoice()
   local tree = getTreeWindow()
@@ -197,13 +200,15 @@ function openMasteryChoice(node, saved)
   choiceWindow.hint:setText(saved and tr('Pick another effect. A change costs the single-node refund price.') or
     tr('Pick one effect. You can change it for free until you apply the plan.'))
   local list = choiceWindow.effects
-  local rows = 130
+  local rows = CHOICE_CHROME
+  local bases, buttons = {}, {}
   for i, effect in ipairs(node.masteries or {}) do
     local button = g_ui.createWidget('MasteryEffectButton', list)
     -- a combo mastery (O686 phase 6b) is a short two-line text: its button is lower, so eight effects still fit a 540 px screen
     local combo = effect.customStats and effect.customStats.comboMod
     button:setHeight(combo and 34 or 46)
-    rows = rows + (combo and 40 or 52)
+    rows = rows + (combo and 34 or 46) + CHOICE_SPACING
+    bases[#bases + 1], buttons[#buttons + 1] = combo and 34 or 46, button
     button:setText(string.format('%s%s\n%s', effect.name or ('Effect ' .. i), current == i and '  (chosen)' or '', effectText(effect)))
     button:setOn(current == i)
     button.onClick = function()
@@ -234,6 +239,22 @@ function openMasteryChoice(node, saved)
   choiceWindow:show()
   choiceWindow:raise()
   choiceWindow:focus()
+  -- once the layout gave the buttons their width, each grows to its wrapped text (TreePlan.choiceHeights)
+  local shown = choiceWindow
+  scheduleEvent(function()
+    if choiceWindow ~= shown or shown:isDestroyed() then
+      return
+    end
+    local texts = {}
+    for i, button in ipairs(buttons) do
+      texts[i] = button:getWidth() > 0 and button:getTextSize().height or nil
+    end
+    local heights, total = TreePlan.choiceHeights(bases, texts, CHOICE_PAD, CHOICE_SPACING, CHOICE_CHROME)
+    for i, button in ipairs(buttons) do
+      button:setHeight(heights[i])
+    end
+    shown:setHeight(total)
+  end, 50)
 end
 
 -- ------------------------------------------------------------------------------------------------ clicks and apply

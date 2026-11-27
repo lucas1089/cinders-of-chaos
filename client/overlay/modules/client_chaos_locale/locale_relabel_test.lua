@@ -48,6 +48,50 @@ eq(lvl.text, 'Level 5', 'a formatted text is left for its module')
 M.relabel('pt-BR', 'en')
 eq(close.text, 'Close', 'back to English')
 eq(edit.placeholder, 'Type to search', 'placeholder back to English')
+
+-- V39 (seen in a client): the engine binds setPlaceholder but no getPlaceholder; the .otui text is in the style
+local E = setmetatable({}, { __index = W })
+E.__index = E
+E.getPlaceholder = false
+function E:getStyle() return { placeholder = self.stylePlaceholder, ['__class'] = 'UITextEdit' } end
+local function engineEdit(id, text)
+  local w = setmetatable({ id = id, class = 'UITextEdit', kids = {}, stylePlaceholder = text, placeholder = text }, E)
+  return w
+end
+local search2, say2 = engineEdit('searchText', 'Type to search'), engineEdit('input', 'Say something...')
+search2.text = 'potion'
+root = widget('root', nil, nil, { widget('tradeWindow', nil, nil, { search2 }), widget('npcTalkWindow', nil, nil, { say2 }) })
+eq(M.placeholderOf(search2), 'Type to search', 'no getter: the style placeholder')
+eq(M.relabel('en', 'pt-BR'), 2, 'engine edits: both placeholders swapped')
+eq(search2.placeholder, 'Digite para buscar', 'engine edit: trade placeholder in pt-BR')
+eq(say2.placeholder, 'Diga algo...', 'engine edit: talk placeholder in pt-BR')
+eq(search2.text, 'potion', 'engine edit: typed text kept')
+eq(M.placeholderOf(search2), 'Digite para buscar', 'the swapped placeholder is remembered (the style keeps the first)')
+eq(M.relabel('pt-BR', 'en'), 2, 'and back')
+eq(say2.placeholder, 'Say something...', 'engine edit: back to English')
+
+-- V39: M.watch runs after a switch (a module redraws texts it formats itself); a second watch of a key replaces it
+local seen = {}
+M.watch('trade', function(lang) seen[#seen + 1] = 'a ' .. lang end)
+M.watch('trade', function(lang) seen[#seen + 1] = 'b ' .. lang end)
+M.watch('talk', function() error('a failing watcher does not stop the others') end)
+g_settings = { set = function() end, get = function() end }
+M.set('pt-BR', true)
+eq(table.concat(seen, ','), 'b pt-BR', 'watch: the last function of a key, the new language')
+M.set('pt-BR', true)
+eq(#seen, 1, 'watch: no switch, no call')
+M.watch('trade', nil)
+M.watch('talk', nil)
+M.set('en', true)
+eq(#seen, 1, 'watch: removed')
+-- the watchers draw first, the swap then catches a plain English text one of them took from elsewhere (an item name)
+local card = widget('nameLabel', nil, { text = 'Close' })
+root = widget('root', nil, nil, { card })
+M.watch('trade', function() card.text = 'Close' end)
+M.set('pt-BR', true)
+eq(card.text, 'Fechar', 'watch: runs before the swap')
+M.watch('trade', nil)
+
 g_ui = nil
 eq(M.relabel('en', 'pt-BR'), 0, 'no root: nothing')
 

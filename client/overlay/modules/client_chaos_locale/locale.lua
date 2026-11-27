@@ -171,7 +171,8 @@ end
 
 -- V37: the open windows took their texts from tr() when they were built; swap them for the new language now
 -- (locale_core.lua L.relabelMap). Typed input is never touched (a text edit keeps its text, only its placeholder
--- changes), nor the chat log (consoleBuffer: what players wrote).
+-- changes), nor the chat log (consoleBuffer: what players wrote). Texts a module formats itself ('Buy (3)') are its own:
+-- it redraws them from M.watch (V39).
 local SKIP_SUBTREE = { consoleBuffer = true }
 local function swap(map, get, set, w)
   if not w[get] or not w[set] then return 0 end
@@ -179,6 +180,28 @@ local function swap(map, get, set, w)
   local new = ok and type(s) == 'string' and s ~= '' and map[s]
   if not new then return 0 end
   pcall(w[set], w, new)
+  return 1
+end
+-- V39 (seen in a client): the engine binds setPlaceholder but no getPlaceholder, so the placeholders stayed English.
+-- The text the .otui gave is in the widget's style (`placeholder`, already through tr); one this module set is
+-- remembered on the widget (chaosPlaceholder), as the style keeps the first one.
+function M.placeholderOf(w)
+  if w.getPlaceholder then
+    local ok, s = pcall(w.getPlaceholder, w)
+    return ok and s or nil
+  end
+  local own = w.chaosPlaceholder
+  if type(own) == 'string' then return own end
+  if not w.getStyle then return nil end
+  local ok, style = pcall(w.getStyle, w)
+  return ok and type(style) == 'table' and type(style.placeholder) == 'string' and style.placeholder or nil
+end
+local function swapPlaceholder(map, w)
+  if not w.setPlaceholder then return 0 end
+  local s = M.placeholderOf(w)
+  local new = type(s) == 'string' and s ~= '' and map[s]
+  if not new then return 0 end
+  if pcall(w.setPlaceholder, w, new) then pcall(function() w.chaosPlaceholder = new end) end
   return 1
 end
 function M.relabel(from, to)
@@ -193,9 +216,10 @@ function M.relabel(from, to)
     local okId, id = pcall(w.getId, w)
     if not (okId and SKIP_SUBTREE[id]) then
       local okC, class = pcall(w.getClassName, w)
-      if not (okC and class == 'UITextEdit') then n = n + swap(map, 'getText', 'setText', w) end
+      local isEdit = okC and class == 'UITextEdit'
+      if not isEdit then n = n + swap(map, 'getText', 'setText', w) end
       n = n + swap(map, 'getTooltip', 'setTooltip', w)
-      n = n + swap(map, 'getPlaceholder', 'setPlaceholder', w)
+      if isEdit then n = n + swapPlaceholder(map, w) end
       local okK, kids = pcall(w.getChildren, w)
       if okK and type(kids) == 'table' then
         for i = 1, #kids do stack[#stack + 1] = kids[i] end
@@ -203,6 +227,20 @@ function M.relabel(from, to)
     end
   end
   return n
+end
+
+-- V39: a module whose window shows texts it formats itself redraws them after a switch in game: M.watch(key, fn),
+-- fn(lang) runs before the plain texts are swapped (a second watch with the same key replaces the first: a module reload)
+M.watchers = M.watchers or {}
+function M.watch(key, fn)
+  if type(key) ~= 'string' then return end
+  M.watchers[key] = type(fn) == 'function' and fn or nil
+end
+local function notify(lang)
+  local keys = {}
+  for k in pairs(M.watchers) do keys[#keys + 1] = k end
+  table.sort(keys)
+  for _, k in ipairs(keys) do pcall(M.watchers[k], lang) end
 end
 
 function M.set(lang, quiet)
@@ -215,7 +253,11 @@ function M.set(lang, quiet)
   pcall(g_settings.set, SETTING, lang)
   local baseChanged = syncBase(lang)
   sendHello()
-  if changed then pcall(M.relabel, before, lang) end
+  if changed then
+    -- the modules draw their own texts first; the swap then catches a plain text they took from elsewhere (an item name)
+    notify(lang)
+    pcall(M.relabel, before, lang)
+  end
   if quiet or not (changed or baseChanged) then return true end
   if g_game and g_game.isOnline and g_game.isOnline() then
     reloadOnEnd = true
