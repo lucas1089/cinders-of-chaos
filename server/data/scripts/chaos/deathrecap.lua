@@ -17,7 +17,7 @@
 --   cfg.hideModes lists instance keys whose recaps are hidden on purpose (none by default).
 -- Death advice (O371, deathadvice_core.lua, cfg.advice): each recap carries 1-3 tips (recap.tips) from the same log plus
 -- the healing received (combatlog.lua ChaosCombatLog.healHook), the Everfull potions drunk (potions.lua calls R.onPotion),
--- the level of each monster attacker (getMonsterLevel) and the character's resistance to the element that hit most.
+-- the level of each monster attacker (R.monsterLevel: the shown level) and the character's resistance to the element that hit most.
 -- Privacy: names as the victim saw them; a staff character in ghost mode the victim could not see is
 -- cfg.hiddenName (also as the master of a summon). A character reads only its own recaps.
 --
@@ -105,6 +105,25 @@ local function killerInfo(victim, killer)
 	return {n = name, kind = kind, m = master}
 end
 
+-- the level the player sees after a monster's name: getDisplayLevel (engine patch 0040: the own level, else the hunting
+-- level monster_levels.lua set at spawn), then getMonsterLevel, then ChaosLoot's hunting level. A stock monster has no
+-- own level (getMonsterLevel 0), so the level tip never came for a Dragon Lord [73] that killed a level 12 character
+-- (seen in a client 2026-11-27, V34). nil when none is known.
+function R.monsterLevel(monster)
+	for _, read in ipairs({
+		function() return monster:getDisplayLevel() end,
+		function() return monster:getMonsterLevel() end,
+		function() return ChaosLoot and ChaosLoot.baseMonsterLevel and ChaosLoot.baseMonsterLevel(monster) end,
+	}) do
+		local ok, v = pcall(read)
+		v = ok and tonumber(v) or nil
+		if v and v > 0 then
+			return v
+		end
+	end
+	return nil
+end
+
 -- a hit the character took (combatlog.lua): src = the combat log's attacker source, mana = a mana shield / mana drain
 function R.onTaken(creature, attacker, src, amount, el, critical, now, mana)
 	if not cfg.enabled or not amount or amount <= 0 then
@@ -130,8 +149,7 @@ function R.onTaken(creature, attacker, src, amount, el, critical, now, mana)
 		local okId, id = pcall(function() return attacker:getId() end)
 		cid = okId and id or nil
 		if A.wantLevel(log, key, 2 * cfg.maxAttackers + 4) then
-			local okLv, lv = pcall(function() return attacker:getMonsterLevel() end)
-			A.setLevel(log, key, okLv and lv or nil)
+			A.setLevel(log, key, R.monsterLevel(attacker))
 		end
 	end
 	R.record(log, now or nowMs(), {k = key, n = name, kind = kind, m = master, el = el, a = amount,

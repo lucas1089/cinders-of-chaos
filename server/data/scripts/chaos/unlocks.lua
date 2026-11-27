@@ -201,7 +201,13 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 	elseif msg.action == "seen" then
 		local data = type(msg.data) == "table" and msg.data or msg
 		local i = type(data.key) == "string" and M.index(data.key) or nil
-		if i and M.has(U.getMask(player, "unlocked"), i) then
+		local mask = U.getMask(player, "unlocked")
+		if i and not M.has(mask, i) and C().entries[i].level <= player:getLevel() then
+			-- reached and opened from the menu before its "New" callout came (V34): no callout for it any more
+			mask = M.set(mask, i)
+			U.setMask(player, "unlocked", mask)
+		end
+		if i and M.has(mask, i) then
 			U.setMask(player, "seen", M.set(U.getMask(player, "seen"), i))
 		end
 	end

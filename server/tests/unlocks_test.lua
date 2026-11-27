@@ -254,7 +254,17 @@ end
 do
 	local d = M.state(M.set(0, 1), 0, 8, false)
 	eq(#d.entries, #cfg.entries); eq(d.entries[1].key, "bounty"); eq(d.entries[1].menu, "Bounty Board")
-	eq(#d.unlocked, 1); eq(d.unlocked[1], "bounty"); eq(#d.seen, 0); eq(d.next.key, "seasonpass"); eq(d.all, nil)
+	-- V34: the Market (level 8) waits for its callout but the menu opens it already
+	eq(#d.unlocked, 2); eq(d.unlocked[1], "bounty"); eq(d.unlocked[2], "market"); eq(#d.seen, 0)
+	eq(d.next.key, "seasonpass"); eq(d.all, nil)
+	-- V34: a quiet character (O761) at level 10 with no callout yet: the Season Pass it saw grey at 8 is open, not hidden
+	d = M.state(0, 0, 10, false)
+	local open = {}
+	for _, k in ipairs(d.unlocked) do open[k] = true end
+	ok(open.bounty and open.market and open.seasonpass, "reached entries open before their callout")
+	ok(not open.passive, "an entry above the level stays closed"); eq(d.next.key, "passive")
+	d = M.state(0, 0, 8, false)
+	eq(d.next.key, "seasonpass", "the next one stays grey")
 	d = M.state(M.set(M.set(0, 1), 2), M.set(0, 1), 8, true)
 	eq(#d.seen, 1); eq(d.all, true)
 	d = M.state(M.all(#cfg.entries), 0, 8, false)
@@ -324,7 +334,7 @@ local gaps = flush()
 eq(gaps[1], 1500); eq(gaps[2], 20000)
 local st = take("state")
 ok(#st >= 2, "state at login and after the run")
-eq(#st[1].data.unlocked, 0, "nothing unlocked in the first state")
+eq(#st[1].data.unlocked, 2, "the first state opens the entries of the level (V34), before any callout")
 local nw = take("new")
 eq(#nw, 1, "one per run"); eq(nw[1].data.key, "bounty"); eq(nw[1].data.title, "Bounty Board")
 ok(U.pending[1], "the next waits")
@@ -345,6 +355,24 @@ ok(not M.has(bits(new, "seen"), indexOf("market")), "other opcode ignored")
 events.ChaosUnlocksExtended.onExtendedOpcode(new, 115, {action = "hello"})
 eq(#take("state"), 1, "hello answers with the state")
 eq(take("state")[1].data.seen[1], "bounty")
+-- V34: an entry reached and opened from the menu before its callout: unlocked and seen, no callout for it later
+do
+	local q = mk(7, 10)
+	events.ChaosUnlocksLogin.onLogin(q)
+	queued = {}
+	sent = {}
+	events.ChaosUnlocksExtended.onExtendedOpcode(q, 115, {action = "seen", data = {key = "seasonpass"}})
+	ok(M.has(bits(q, "unlocked"), indexOf("seasonpass")) and M.has(bits(q, "seen"), indexOf("seasonpass")), "opened before the callout")
+	events.ChaosUnlocksExtended.onExtendedOpcode(q, 115, {action = "seen", data = {key = "passive"}})
+	ok(not M.has(bits(q, "unlocked"), indexOf("passive")), "an entry above the level cannot be opened")
+	U.run(q); flush(); flush(); flush()
+	local keys = {}
+	for _, m in ipairs(take("new")) do keys[#keys + 1] = m.data.key end
+	eq(table.concat(keys, ","), "bounty,market", "no callout for the one already opened")
+	players[7] = nil
+	sent = {}
+	queued = {}
+end
 -- a level up: the Season Pass at 10 (O368), then passive at 12
 sent = {}
 new.level = 10

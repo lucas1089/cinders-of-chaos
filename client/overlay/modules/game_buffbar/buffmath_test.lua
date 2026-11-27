@@ -126,4 +126,12 @@ eq(M.iconPath('../x', true), nil, 'painted path is checked too')
 do local c = {}; M.apply(c, 'full', {}, 1); eq(M.activeNames(c, 1) ~= nil, true, 'an empty full list is still a list'); M.clear(c); eq(M.activeNames(c, 1), nil, 'cleared: unknown again') end
 
 if fails > 0 then os.exit(1) end
+-- V34: a long description wraps with the shared Alt help (client_chaos_theme althelp.lua)
+dofile(dir .. '../client_chaos_theme/althelp.lua')
+local longDesc = '+48% experience from monsters for new adventurers. It shrinks with every level and ends at level 50.'
+tip = M.tooltip({ name = 'Newcomer', desc = longDesc, debuff = false, endAt = nil, stacks = 48 }, 1000, true)
+local n, widest = 0, 0
+for line in (tip .. '\n'):gmatch('(.-)\n') do n = n + 1 widest = math.max(widest, #line) end
+eq(n, 5, 'long description: name, two description lines, stacks, time')
+eq(widest <= ChaosAltHelp.WRAP, true, 'long description: no line wider than the wrap')
 print('buff bar tests OK (' .. checks .. ' checks)')

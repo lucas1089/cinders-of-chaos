@@ -215,6 +215,21 @@ do
 	R.onHealed(hero, 50, clock)
 	registry.ChaosDeathRecapDeath.onDeath(hero, nil, fiend, fiend)
 	eq(kinds(stored[#stored].tips or {}), "lvl,res,heal", "potions drunk, healing 5%")
+	-- V34: a stock monster has no own level (getMonsterLevel 0) but shows its hunting level (getDisplayLevel)
+	local drake = mk({id = 0x40000002, name = "Dragon Lord", mlevel = 0})
+	function drake:getDisplayLevel() return 73 end
+	eq(R.monsterLevel(drake), 73, "the shown level of a stock monster")
+	local plain = mk({id = 0x40000003, name = "Rat", mlevel = 0})
+	eq(R.monsterLevel(plain), nil, "no level known: none")
+	eq(R.monsterLevel(fiend), 70, "no display level: the own level")
+	local young = mk({id = 0x10000002, guid = 8, name = "Brenna", player = true, level = 12})
+	for i = 1, 3 do
+		clock = clock + 800
+		hook(young, drake, {n = "Dragon Lord", t = "c"}, 120, "physical", false, clock)
+	end
+	registry.ChaosDeathRecapDeath.onDeath(young, nil, drake, drake)
+	eq(stored[#stored].tips and stored[#stored].tips[1].k, "lvl", "a stock Dragon Lord far above: the level tip")
+	eq(stored[#stored].tips and stored[#stored].tips[1].d, 61, "73 - 12")
 	-- advice off: no tips
 	Chaos.deathRecapConfig.advice.enabled = false
 	hook(hero, fiend, {n = "Fire Fiend", t = "c"}, 100, "fire", false, clock)

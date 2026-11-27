@@ -198,6 +198,26 @@ function L.overlap(a, b)
 end
 
 -- ------------------------------------------------------------------ slots of the first action bar
+-- the slot buttons in slot order. The base names them "<bar>.<slot>" (1.1 .. 1.50); the hotbar moves them inside their
+-- parent (potion socket first, then the shown slots, the utility socket, the rest), so after a death (a fast relog) the
+-- children came back in that moved order and slot 13 was read as slot 11: the bar showed F11, an empty slot, F1..F7 and
+-- F12 (seen in a client 2026-11-27, V34). Sorted by the slot number of the id; a list with an id that is not of that
+-- form stays as it is. idOf(button) -> id
+function L.sortSlots(list, idOf)
+  if type(list) ~= 'table' then return list end
+  local keyed = {}
+  for i, b in ipairs(list) do
+    local id = idOf and idOf(b)
+    local n = type(id) == 'string' and tonumber(id:match('^%d+%.(%d+)$')) or nil
+    if not n then return list end
+    keyed[i] = { n = n, i = i, b = b }
+  end
+  table.sort(keyed, function(a, b) if a.n ~= b.n then return a.n < b.n end return a.i < b.i end)
+  local out = {}
+  for i, k in ipairs(keyed) do out[i] = k.b end
+  return out
+end
+
 -- total: slots the bar has. Returns { shown = {1..count}, potion = index | nil, utility = index | nil, hidden = list }.
 -- The sockets use slots 13 and 14 whatever the count is, so a slot never changes its spell when the count changes.
 function L.slotPlan(total, count)

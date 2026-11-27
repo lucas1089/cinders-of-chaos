@@ -8579,3 +8579,18 @@ Linux main client assembled from current main (base patches to 0214), pair 88, l
 - `game_cosmetics` (O362): collection score 61 before `/storecosmetics`, 1064 after.
 - `game_textmessage` (O364, base patch 0183): Everfull potions by hotkey draw no green text on the game; `game_chaosnotify` shows the DANGER window at the top centre.
 - O367: a level 757 Ninja lives in a level 750 hunt with the helper's Auto setup.
+
+## Seen in a client (2026-11-27, V34: new player rows O368-O374)
+
+Linux main client, local server, a fresh level 8 Warrior raised to 10, 12 and 20. Rows O368 to O374 played through.
+
+- `game_howitworks`: the Passive Tree card came at every login of a level 8 character and was used up. Root cause: the tree window is loaded visible and hidden in the same call, and `watch` looked at once. The attach-time look now waits one event. `howitworks_test.lua`.
+- `game_battlepass`, `game_stash`: no "?" button and no first-open card. They are load-later modules of the base, so their `init` ran before `game_howitworks` loaded. They attach again when the window shows. `battlepass_howlate_test.lua`.
+- `client_chaos_theme` `ChaosAltHelp`: an Alt explanation of a passive node was one long line off the left of the screen. `A.wrap` / `A.wrapText` break help lines at `A.WRAP` (72 bytes), in `A.lines` and in every altTip text. `althelp_test.lua`.
+- `game_buffbar`: the Newcomer Alt text ran past its tooltip. The bar sets its text straight on the icon, so `BuffMath.tooltip` wraps the description. `buffmath_test.lua`.
+- `client_chaos_topbar`: a question in the menu search ("how do i get a mount") said only "Nothing found". The hint now names the Help search and Enter opens it with the words (O373). `topbar_hub_test.lua`.
+- `game_daily`: after a death the Daily Reward opened over the death recap and hid "What to do". It waits for `deathRecapWindow` now (`LOGIN_BLOCKERS`).
+- `game_hotbar`: after a death (a fast relog) the bar showed F11, an empty slot, F1..F7 and F12. Root cause: the adopt read the base buttons in the order a previous adopt had moved them to. `HotbarLogic.sortSlots` puts them in slot order by their ids ("1.13"). `hotbar_test.lua`.
+- Server side: the Season Pass vanished at level 10 and the death advice gave no tip for a stock monster (server/README.md, V34 notes).
+- Fine as built: NPC level gates (Mordecai, Cantor Velith: come back at level 40), the mentor offer at 12, the Main Quest tracker and Next Goals, the Newcomer buff, item and spell Alt help, Alt+F Help search, the level 20 survey and the funnel / survey reports.
+- Not fixed, seen: at a jump of several levels the popups pile up in the centre (New spell available, Want a mentor?, NEW ADVENTURER, the survey). The death recap opens at one place, then moves to the centre.

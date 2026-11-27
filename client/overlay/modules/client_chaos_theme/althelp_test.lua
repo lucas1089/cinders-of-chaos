@@ -94,4 +94,20 @@ assert(A.hovered() == nil, 'no root: nothing hovered')
 -- no keyboard API: never down
 g_keyboard = nil
 assert(A.pressed() == false, 'no keyboard')
+
+-- V34 (seen in a client): one long help line made the tooltip run off the screen; help lines wrap at A.WRAP
+local long = 'Value: 0.8 per point up to 60 points (+21%), then 0.2 per point up to 120 points (+26%). Past the cap the gain shrinks but never stops (soft cap).'
+local parts = A.wrap(long)
+assert(#parts >= 2, 'a long line breaks')
+for _, p in ipairs(parts) do assert(#p <= A.WRAP, 'each part fits: ' .. p) end
+assert(table.concat(parts, ' ') == long, 'no word lost')
+assert(#A.wrap('short line') == 1 and A.wrap('short line')[1] == 'short line', 'a short line stays')
+local ind = A.wrap('  - ' .. long, 40)
+for _, p in ipairs(ind) do assert(p:sub(1, 2) == '  ' and #p <= 40, 'indent kept: ' .. p) end
+assert(A.wrap(string.rep('x', 90))[1] == string.rep('x', 90), 'a long word keeps its line')
+local withAlt = A.lines({ 'Node' }, { long }, true, nil, 'hint')
+assert(withAlt[1] == 'Node' and #withAlt == 1 + #parts, 'help lines wrapped in A.lines')
+assert(#A.lines({ long }, {}, true)[1] == #long, 'short lines are not touched by A.lines')
+assert(A.wrapText('a\n' .. long) == 'a\n' .. table.concat(parts, '\n'), 'wrapText keeps newlines')
+assert(A.wrapText('a\n\nb') == 'a\n\nb', 'empty line kept')
 print('althelp_test: ok')

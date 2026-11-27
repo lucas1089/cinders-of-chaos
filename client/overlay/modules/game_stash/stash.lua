@@ -133,9 +133,18 @@ Stash.Terminate = function()
 	Stash.DestroyFind()
 end
 
+-- game_howitworks: the ? button and the first-open card. This module is a load-later module of the base's game_interface,
+-- which loads before game_howitworks (priority 900), so the attach of the start finds no module: it is tried again when the
+-- window shows (V34: the Supply Stash had neither)
+Stash.AttachHow = function()
+	if Stash.UI and not Stash.UI.howKey then
+		pcall(function() modules.game_howitworks.attach(Stash.UI, 'stash') end)
+	end
+end
+
 Stash.CreateUI = function()
 	Stash.UI = g_ui.displayUI('stash')
-	pcall(function() modules.game_howitworks.attach(Stash.UI, 'stash') end) -- game_howitworks: the ? button
+	Stash.AttachHow()
 	Stash.UI.Overlay:setVisible(false)
 	Stash.UI:hide()
 
@@ -267,6 +276,7 @@ Stash.Reveal = function()
 	Stash.opening = false
 	if Stash.UI then
 		Stash.UI:show()
+		Stash.AttachHow()
 	end
 	local after = Stash.AfterOpen -- Find my item: the Inbox button flashed once the window is there
 	Stash.AfterOpen = nil

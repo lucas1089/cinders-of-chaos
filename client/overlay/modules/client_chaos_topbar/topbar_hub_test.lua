@@ -369,6 +369,19 @@ eq(searchWin.byId.hint.text, 'Enter opens the first result.', 'the hint names En
 eq(searchWin.byId.results.kids[1].byId.favStar.clip ~= nil, true, 'a result shows its star')
 q.onTextChange(q, 'zzzz')
 eq(#searchWin.byId.results.kids, 0, 'no match, no cards'); eq(searchWin.byId.hint.text, 'Nothing found. Try another word.', 'the hint says so')
+-- V34: with the Help search loaded a question that finds no window goes there on Enter
+local asked = {}
+modules = { game_helpsearch = { show = function() asked[#asked + 1] = 'show' end,
+  search = function(t) asked[#asked + 1] = t end } }
+q.onTextChange(q, 'how do i get a mount')
+eq(searchWin.byId.hint.text, 'Nothing found. Enter asks the Help search.', 'the hint names the Help search')
+local enterQ
+for _, b in ipairs(bound) do if b.key == 'Enter' and b.widget == q then enterQ = b.fn end end
+eq(enterQ(), true, 'Enter taken with no result')
+eq(asked[1], 'show', 'the Help search opens'); eq(asked[2], 'how do i get a mount', 'with the typed question')
+eq(searchWin.visible, false, 'the search closed')
+modules = nil
+Hub.toggleTool('search'); q = searchWin.byId.query
 q.onTextChange(q, 'market')
 eq(searchWin.byId.results.kids[1].byId.name.text, 'Market', 'a card of another hub')
 -- Enter opens the first result, closing the search

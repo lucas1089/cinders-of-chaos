@@ -15,7 +15,9 @@ local Time, TimerCheckEvent, dailyData, lastPos, waitEvent
 -- (server daily.lua, ChaosLoginWindows) and opens the next login window when this one reports "closed". Here the
 -- window also waits while a server modal dialog (the new-player welcome, the tutorial) or another login window listed
 -- in LOGIN_BLOCKERS is on screen, so it never opens on top of them.
-local LOGIN_BLOCKERS = { 'patchNotesWindow' } -- widget ids of other windows that open by themselves at login
+-- widget ids of other windows that open by themselves at login. The death recap opens at the login after a death: the
+-- reward window on top of it hid "What to do" (seen in a client 2026-11-27, V34), so it waits for the recap too.
+local LOGIN_BLOCKERS = { 'patchNotesWindow', 'deathRecapWindow' }
 local WAIT_MS = 500
 
 local function otherWindowOpen()
