@@ -287,6 +287,7 @@ python3 -I client/tools/toolscan_patch_test.py && python3 -I client/tools/gen_mo
 python3 -I client/tools/ambient_light_patch_test.py   # default ambient light 60 % (owner 2026-11-26), client base patch 0214: dataset.lua default 40 -> 60, settings.lua moves a saved 40 to 60 once per install (flag chaosAmbientLight60V1), a player's own value stays; the migration runs in Lua on a fake g_settings
 python3 -I client/tools/modal_choices_patch_test.py   # modal dialog choices keep 44 characters and the dialog grows to the widest (V35), client base patch 0215: the story chapter's "(new)" in the Archivist's list; the width rule runs in Lua on fake widgets
 python3 -I client/tools/tooltip_clamp_patch_test.py   # a tooltip flipped left or up stays on the screen (V39), client base patch 0216: the passive tree mastery tooltip lost its left part; the clamp runs in Lua after the base flip rule
+python3 -I client/tools/death_relog_patch_test.py   # Ok on the death window logs in again after the dead player's connection timed out (V38, O770), client base patch 0217: no error box while the window is open, the window survives the game end; the old and the new death module run in Lua on a fake engine
 ```
 
 Every `.lua` must parse in Lua 5.3 and LuaJIT. Run Python tools with `-I`.

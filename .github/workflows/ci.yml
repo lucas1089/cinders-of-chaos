@@ -923,6 +923,9 @@ jobs:
       - name: Tooltips stay on the screen (base patch 0216)
         run: python3 -I client/tools/tooltip_clamp_patch_test.py
 
+      - name: Death window relogs after the timeout (base patch 0217)
+        run: python3 -I client/tools/death_relog_patch_test.py
+
       - name: HD sprite overlay maths (C++; header from base patch 0196)
         run: |
           d=$(mktemp -d)
