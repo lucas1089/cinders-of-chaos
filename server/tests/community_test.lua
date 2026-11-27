@@ -424,8 +424,19 @@ local function mkPlayer(name, guid, group, pos)
 	function p:sendExtendedOpcode(op, data) self.ops[#self.ops + 1] = {op, data} return true end
 	function p:registerEvent(ev) self.events[ev] = true end
 	function p:getItemCount(id) return self.items[id] or 0 end
-	function p:addItem(id, nn) self.items[id] = (self.items[id] or 0) + (nn or 1) return true end
-	function p:getInbox() return nil end
+	function p:addItem(id, nn)
+		if self.bagFull then return nil end
+		self.items[id] = (self.items[id] or 0) + (nn or 1) return true
+	end
+	-- the engine's inbox (Inbox::queryAdd) takes nothing without FLAG_NOLIMIT (V36): a plain addItem returns nil
+	p.inbox = {}
+	function p:getInbox()
+		return {addItem = function(_, id, nn, index, flags)
+			if flags ~= (FLAG_NOLIMIT or 1) then return nil end
+			p.inbox[id] = (p.inbox[id] or 0) + nn
+			return {}
+		end}
+	end
 	players[#players + 1] = p
 	return p
 end
@@ -646,6 +657,13 @@ registry.ChaosCommunityLogin.onLogin(bryn)
 eq(bryn.items[29856], 2, "token: 2 Orbs of Upheaval")
 eq(bryn.items[29857], 1, "token: an Orb of Fate")
 check(queried("SET `rewarded` = 1 WHERE `period` = 20261005 AND `player_id` = 503"), "marked as rewarded")
+-- V36: a full backpack sends the token items to the inbox with FLAG_NOLIMIT, they are never lost
+local fullBag = mkPlayer("Brynja", 504, 1)
+fullBag.bagFull = true
+registry.ChaosCommunityLogin.onLogin(fullBag)
+eq(fullBag.inbox[29856], 2, "V36: the Orbs of Upheaval went to the inbox")
+eq(fullBag.inbox[29857], 1, "V36: the Orb of Fate went to the inbox")
+eq(fullBag.items[29856], nil, "V36: nothing in the full backpack")
 local tt = titleSources.community(bryn)
 check(tt and tt.text == cfg.goal.rewards.title, "the title on the name plate")
 check(titleSources.community(hero) == nil, "no title for Hero (not logged in again)")

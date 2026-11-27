@@ -399,6 +399,15 @@ function newItem(id, container)
 	function it:getSize() return #self.items end
 	function it:getItem(k) return self.items[k + 1] end
 	function it:getCorpseOwner() return self.owner end
+	-- the engine's inbox (Inbox::queryAdd) takes nothing without FLAG_NOLIMIT (V36): a plain addItem returns nil
+	function it:addItem(id2, n, index, flags)
+		if self.full or flags ~= (FLAG_NOLIMIT or 1) then return nil end
+		local made = newItem(id2)
+		made.count = n or 1
+		made.parent = self
+		self.items[#self.items + 1] = made
+		return made
+	end
 	function it:addItemEx(item)
 		if self.full then return 99 end
 		item.parent = self
@@ -504,6 +513,18 @@ check(events.ChaosMainQuestKill == nil, "the player's kill event is gone: the mo
 eq(sweep.ms, cfg.sweepMs)
 check(events.ChaosMainQuestExtended == nil, "no second handler on opcode 178")
 local key = function(name) return cfg.storage.base + cfg.storage[name] end
+
+-- V36: a step reward with a full backpack goes to the inbox with FLAG_NOLIMIT, it is never lost
+do
+	local fullBag = newPlayer(77, 8)
+	local giveBefore = Chaos.giveItem
+	Chaos.giveItem = function() return 0 end
+	W.reward(fullBag, S.orb, "en")
+	Chaos.giveItem = giveBefore
+	eq(#fullBag.inbox.items, 1, "V36: the step's orbs went to the inbox")
+	eq(fullBag.inbox.items[1] and fullBag.inbox.items[1].id, 29856, "V36: the orb in the inbox")
+	eq(fullBag.inbox.items[1] and fullBag.inbox.items[1].count, 2, "V36: both orbs")
+end
 
 -- a brand-new character at level 8
 local p = newPlayer(1, 8)

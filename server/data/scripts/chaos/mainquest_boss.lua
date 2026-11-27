@@ -272,7 +272,7 @@ B.hook = {
 			if (tonumber(given) or 0) < it[2] then
 				local okI, inbox = pcall(function() return player:getInbox() end)
 				if okI and inbox then
-					inbox:addItem(it[1], it[2] - (tonumber(given) or 0))
+					inbox:addItem(it[1], it[2] - (tonumber(given) or 0), INDEX_WHEREEVER or -1, FLAG_NOLIMIT or 1)
 				end
 			end
 		end

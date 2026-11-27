@@ -253,7 +253,7 @@ local function giveItems(player, id, count)
 	if left > 0 then
 		local ok, inbox = pcall(function() return player:getInbox() end)
 		if ok and inbox then
-			inbox:addItem(id, left)
+			inbox:addItem(id, left, INDEX_WHEREEVER or -1, FLAG_NOLIMIT or 1)
 		end
 	end
 end

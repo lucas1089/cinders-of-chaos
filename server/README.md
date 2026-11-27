@@ -30238,6 +30238,8 @@ dialog).
 Assumptions (not run on a live server): the base server's `kill` CreatureEvent fires for the killer; `Chaos.pay`
 takes from the backpack and the bank; the main city's temple (town 2, Cinderhold, "Main city") has a free tile at one of the offsets (else set `brazier.pos`).
 
+**Inbox with a full backpack (V36 follow-up):** the token items go to the backpack, the rest to the inbox; the engine's inbox takes nothing without `FLAG_NOLIMIT` (Inbox::queryAdd, seen with the professions in V36), so a plain `inbox:addItem(id, n)` returned nil and a full backpack lost the items. It passes `INDEX_WHEREEVER, FLAG_NOLIMIT` now. `tests/community_test.lua` (the mock inbox refuses without the flag, a token login with a full backpack).
+
 ## The Ashen Chronicle (`chronicle.lua`, `chronicle_core.lua`, `chronicle_config.lua`, `chronicle_text.lua`, `sql/chaos_chronicle.sql`, client `game_chronicle`)
 
 Owner-approved design (2026-10-14): a server-wide story per season that advances with what the whole realm does. The
@@ -32064,6 +32066,8 @@ first, then new ones, then done ones. Modal windows 7170-7171. Storages 7101500 
 7101599 (slots 20-39); a slot per tale, append only, never reuse one. No spoken `!command`. Pure logic:
 `tales_core.lua`; tests: `tests/tales_test.lua`. Not run on a live server.
 
+**Inbox with a full backpack (V36 follow-up):** reward items and the lore book go to the backpack, else the inbox; the engine's inbox takes nothing without `FLAG_NOLIMIT` (Inbox::queryAdd, seen with the professions in V36), so a plain `inbox:addItem(id, n)` returned nil and a full backpack lost the items. It passes `INDEX_WHEREEVER, FLAG_NOLIMIT` now, and the book gets its text only when it was placed. `tests/tales_test.lua` (the mock inbox refuses without the flag, a lore book with a full backpack).
+
 ## First hour (`firsthour.lua`, `firsthour_core.lua`, `firsthour_config.lua`)
 
 Hints for a character, English and Brazilian Portuguese, at levels 1, 4, 8, 12, 20, 30, 50 and 100: hunting marks,
@@ -32383,6 +32387,8 @@ The pt-BR script the owner reads is `docs/ROTEIRO_QUEST_PRINCIPAL.md`, generated
     `goals_test.lua` (the two hooks), client `goalsview_test.lua`. Not run on a live server.
 - **Not done.** The Unity client; own sprites for the quest items (they wear the look of their stock item: a tusk, a dust, a gear wheel); English versions of Ysolde's completion lines (the English text is "Step done."); a quest item in the depot or the stash (the stash and the guild stash refuse it).
 
+**Inbox with a full backpack (V36 follow-up):** step items go to the backpack, the rest to the inbox; the engine's inbox takes nothing without `FLAG_NOLIMIT` (Inbox::queryAdd, seen with the professions in V36), so a plain `inbox:addItem(id, n)` returned nil and a full backpack lost the items. It passes `INDEX_WHEREEVER, FLAG_NOLIMIT` now. `tests/mainquest_test.lua` (the mock inbox refuses without the flag, the orb step reward with a full backpack).
+
 ## Vael's attacks (O554, `mainquest_boss_config.lua`, `mainquest_boss_attacks_core.lua`, `mainquest_boss.lua`)
 
 Follow-up B of the main quest (O551): Vael Ashmourn no longer fights with generic hits and the class family's floor mechanics alone. He has six named attacks, each a floor shape
@@ -32421,6 +32427,8 @@ and the same walking and fairness code (`G.makeFair`, `G.isFair`) as the world b
   attack, the resistance, a fallen or shielded character, Vael gone, the run over, an unfair plan not cast, no attack without a mark (or the sprite marks without the module);
   `tools/mainquest_boss_model_test.py`. Not run on a live server.
 - **Not done.** A line charge in which Vael moves (the lance is a beam); a cast bar over Vael (the `mech` action of the monster bar); Unity (the floor marks are the client's `game_telegraph`).
+
+**Inbox with a full backpack (V36 follow-up):** Vael's reward orbs (`mainquest_boss.lua` `B.hook.won`) go to the backpack, the rest to the inbox; the engine's inbox takes nothing without `FLAG_NOLIMIT` (Inbox::queryAdd, seen with the professions in V36), so a plain `inbox:addItem(id, n)` returned nil and a full backpack lost the items. It passes `INDEX_WHEREEVER, FLAG_NOLIMIT` now. `tests/mainquest_boss_test.lua` (the mock inbox refuses without the flag, the win with a full backpack).
 
 ## Quiet first login (O761, `intros.lua`, `intros_core.lua`, `intros_config.lua`)
 
@@ -32513,6 +32521,8 @@ so nobody was protected. `tools/prod_config.py` now writes `protectionLevel = 50
 battleground, the siege and the Scorched Marches start at 100-150): below level 50 a player can neither attack a player nor
 be attacked by one (the engine's rule; the script spells ask `ChaosSpell.canAttack`, which reads the same setting).
 `tools/prod_config_test.py` checks it. A server already set up gets it at the next `prod_config.py` run.
+
+**Inbox with a full backpack (V36 follow-up):** step items go to the backpack, the rest to the inbox; the engine's inbox takes nothing without `FLAG_NOLIMIT` (Inbox::queryAdd, seen with the professions in V36), so a plain `inbox:addItem(id, n)` returned nil and a full backpack lost the items. It passes `INDEX_WHEREEVER, FLAG_NOLIMIT` now. `tests/welcomepath_test.lua` (the mock inbox refuses without the flag, the bounty step reward with a full backpack).
 
 ## Server texts in pt-BR (Chaos.t)
 `i18n_core.lua` (ChaosI18n, pure) puts the helpers on `Chaos`: `Chaos.t(player, "English %s pattern", ...)`, the text in
@@ -32822,6 +32832,8 @@ activity gives **Ember points**; any mix fills the same bar. Adventure > Ember C
   the quote, the offer, the daily cap and the next day), client `game_embercache/cacheview_test.lua` (the confirmation
   texts). Not run on a live server.
 
+**Inbox with a full backpack (V36 follow-up):** milestone items and offered orbs given back go to the backpack, else the inbox; the engine's inbox takes nothing without `FLAG_NOLIMIT` (Inbox::queryAdd, seen with the professions in V36), so a plain `inbox:addItem(id, n)` returned nil and a full backpack lost the items. It passes `INDEX_WHEREEVER, FLAG_NOLIMIT` now. The inbox count in the message counts a stack only when the add returned an item (before, a nil return counted as placed). `tests/embercache_test.lua` (the mock inbox refuses without the flag, the milestone with a full backpack).
+
 ## Restock (`restock.lua`, `restock_core.lua`, `restock_config.lua`, client `game_hunt` Restock button)
 
 Owner goal (2026-10-15): fewer dead trips. Back in town, the **Restock** button of the Hunt Tracker buys back the potions,
@@ -32836,6 +32848,8 @@ the gold carried and then the bank.
   buys nothing until more is used; a session reset starts over. Items go to the backpack, else the inbox.
 - Shares the hunt opcode 241 with `hunt.lua` (actions `restockQuote` / `restock`). No storages.
 - Tests: `tests/restock_test.lua`. Not run on a live server.
+
+**Inbox with a full backpack (V36 follow-up):** The engine's inbox takes nothing without `FLAG_NOLIMIT` (Inbox::queryAdd, seen with the professions in V36), so a plain `inbox:addItem(id, n)` returned nil and a full backpack lost the items. It passes `INDEX_WHEREEVER, FLAG_NOLIMIT` now. The "went to your inbox" count counts a stack only when the add returned an item (before, a nil return counted as placed). `tests/restock_test.lua` (the mock inbox refuses without the flag, the full backpack case).
 
 ## Party shared experience: why it is off (`party_xp.lua`, `party_xp_core.lua`, `tests/party_xp_test.lua`)
 
@@ -34477,6 +34491,8 @@ Entering a dungeon (`dungeons.lua`, after `startRun`) or a rift (`rift.lua`, aft
 ### The party bonus on the party frame
 
 `party_xp_core.lua` `bonusPercent(lines)` is the stock share rule (`Party:onShareExperience`, the class lines counted by `tools/patch_base_classes.py`): +20% for one class line, else n x (5 (n - 1) + 10) percent for n lines, at most 5 lines (+150%). `partyframes.lua` adds `xp {p, on}` to the party state (`on` 1 the share works, 2 the leader switched it on but a member breaks its rules, 0 not switched on) and the frame header shows "+20% XP" in green, "XP share broken" in red or "XP share off" in grey, with a tooltip. The state signature includes it, so a change is sent at once. Tests: `tests/party_xp_test.lua`, `tests/partyframes_test.lua`, client `partymath_test.lua`.
+
+**Inbox with a full backpack (V36 follow-up):** The engine's inbox takes nothing without `FLAG_NOLIMIT` (Inbox::queryAdd, seen with the professions in V36), so a plain `inbox:addItem(id, n)` returned nil and a full backpack lost the items. It passes `INDEX_WHEREEVER, FLAG_NOLIMIT` now. The inbox count of the chest message counts a stack only when the add returned an item (before, a nil return counted as placed). `tests/weeklychest_test.lua` (the mock inbox refuses without the flag, the chest with a full backpack).
 
 ## Early spike, pity, drop feed and personal records (O260) (`retention_loot.lua`, `retention_loot_core.lua`, `retention_loot_config.lua`, `tools/patch_drops_channel.py`, client `game_dropfeed`)
 

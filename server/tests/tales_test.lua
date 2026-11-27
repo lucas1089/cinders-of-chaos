@@ -468,11 +468,24 @@ local function mkPlayer(id, level, at)
 	function p:getItemCount(id) return self.items[id] or 0 end
 	function p:removeItem(id, count) if (self.items[id] or 0) < count then return false end; self.items[id] = self.items[id] - count; return true end
 	function p:addItem(id, count)
+		if self.bagFull then return nil end
 		self.items[id] = (self.items[id] or 0) + count
 		local it = {id = id, attr = {}}
 		function it:setAttribute(k, v) self.attr[k] = v end
 		self.lastItem = it
 		return it
+	end
+	-- the engine's inbox (Inbox::queryAdd) takes nothing without FLAG_NOLIMIT (V36): a plain addItem returns nil
+	p.inbox = {}
+	function p:getInbox()
+		return {addItem = function(_, id, count, index, flags)
+			if flags ~= (FLAG_NOLIMIT or 1) then return nil end
+			p.inbox[id] = (p.inbox[id] or 0) + count
+			local it = {id = id, attr = {}}
+			function it:setAttribute(k, v) self.attr[k] = v end
+			p.inboxLast = it
+			return it
+		end}
 	end
 	function p:addExperience(x) self.xp = self.xp + x end
 	function p:getBankBalance() return self.bank end
@@ -537,6 +550,16 @@ eq(hero.lastItem.attr[ITEM_ATTRIBUTE_TEXT]:sub(1, 12), "Ashen Crypt\n", "the boo
 eq(factionGains[1][2], 600)
 events.ChaosTalesModal.onModalWindow(hero, cfg.modal.tale, 3, 0)
 eq(hero.bank, 150000, "no second reward")
+-- V36: a full backpack sends the lore book to the inbox with FLAG_NOLIMIT, it is never lost
+do
+	local full = mkPlayer(77, 230)
+	full.bagFull = true
+	local lore
+	for _, t in ipairs(cfg.tales) do lore = lore or t.rewards.book end
+	assert(T.giveBook(full, lore, "en"), "V36: the book is given")
+	eq(full.inbox[1950], 1, "V36: the book went to the inbox"); eq(full.items[1950], nil, "V36: nothing in the full backpack")
+	assert(full.inboxLast and full.inboxLast.attr[ITEM_ATTRIBUTE_TEXT] ~= nil, "V36: the inbox book has its text")
+end
 
 -- Portuguese, a delivery
 local ana = mkPlayer(4, 560)

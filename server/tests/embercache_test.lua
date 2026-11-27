@@ -195,7 +195,7 @@ local function mkPlayer(guid, level, pos)
 	function p:getBankBalance() return self.bank end
 	function p:setBankBalance(val) self.bank = val end
 	function p:addItem(id, n) if self.full then return nil end self.items[id] = (self.items[id] or 0) + n return {} end
-	function p:getInbox() local me = self return {addItem = function(_, id, n) me.inbox[id] = (me.inbox[id] or 0) + n return true end} end
+	function p:getInbox() local me = self return {addItem = function(_, id, n, index, flags) if flags ~= (FLAG_NOLIMIT or 1) then return nil end me.inbox[id] = (me.inbox[id] or 0) + n return true end} end
 	function p:registerEvent(n) self.events[n] = true end
 	function p:sendExtendedOpcode(op, s) self.ops[#self.ops + 1] = {op = op, msg = s} end
 	online[#online + 1] = p
@@ -256,6 +256,7 @@ eq(E.st[a:getId()].dayPoints, 50, "a tower run without a floor")
 ChaosTower.recordRun(a, 5, 100)
 eq(E.st[a:getId()].dayPoints, 66, "tower run (8, doubled)")
 -- the first milestone: the backpack is full, the items go to the inbox
+-- V36: the mock inbox refuses an addItem without FLAG_NOLIMIT, as the engine's Inbox::queryAdd does
 a.full = true
 local bankBefore = a.bank
 E.credit(a, "worldboss", 5) -- 75 raw, 7 left of the bonus: 82 -> 148

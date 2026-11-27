@@ -100,7 +100,7 @@ local mkPlayer = function()
 		self.items[id] = (self.items[id] or 0) + (sub and 1 or n)
 		return {}
 	end
-	function p:getInbox() local me = self return {addItem = function(_, id, n) me.inbox[id] = (me.inbox[id] or 0) + 1 return true end} end
+	function p:getInbox() local me = self return {addItem = function(_, id, n, index, flags) if flags ~= (FLAG_NOLIMIT or 1) then return nil end me.inbox[id] = (me.inbox[id] or 0) + 1 return true end} end
 	function p:sendTextMessage(t, m) self.said[#self.said + 1] = m end
 	function p:sendCancelMessage(m) self.cancels[#self.cancels + 1] = m end
 	function p:sendExtendedOpcode() end
@@ -158,6 +158,7 @@ eq(sent[#sent].data.why, "money", "no money")
 say("restock")
 check(p.cancels[#p.cancels]:find("gold", 1, true) ~= nil, "money refusal told")
 -- a reset of the session (a new supplies table): starts over; a full backpack goes to the inbox
+-- V36: the mock inbox refuses an addItem without FLAG_NOLIMIT, as the engine's Inbox::queryAdd does
 p.money, p.bankGold = 0, 100000
 s.supplies = {[7618] = {n = 5}}
 p.full = true
