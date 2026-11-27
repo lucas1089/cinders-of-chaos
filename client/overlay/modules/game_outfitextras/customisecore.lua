@@ -629,3 +629,20 @@ function C.stripRows(ctx)
   end
   return out
 end
+
+-- V37: at 1280x720 the 690 px window ran 4 px past the bottom under the menu bar and cut Ok / Cancel.
+-- The window's height for a screen: the style height when it fits, else the free height below the menu bar
+-- less a margin, never below the phone height. want = style height, rootH = root height, barBottom = the
+-- bottom of the menu bar or nil.
+C.FIT_MARGIN, C.FIT_MIN = 8, 520
+function C.fitHeight(want, rootH, barBottom)
+  want = tonumber(want)
+  if not want or want ~= want or want <= 0 then return nil end
+  rootH = tonumber(rootH)
+  if not rootH or rootH ~= rootH or rootH <= 0 then return want end
+  local top = tonumber(barBottom)
+  if not top or top ~= top or top < 0 or top >= rootH then top = 0 end
+  local free = math.floor(rootH - top - 2 * C.FIT_MARGIN)
+  if want <= free then return want end
+  return math.max(math.min(want, C.FIT_MIN), free)
+end
