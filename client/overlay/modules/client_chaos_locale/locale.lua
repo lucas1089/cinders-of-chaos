@@ -10,7 +10,7 @@
 -- * Where to change it: Options > Interface > Language (base patch 0053), the login screen and the character list
 --   (client_chaos_login, client_chaos_charselect): ChaosLocale.showMenu(widget) opens the choice.
 -- * A change reloads the modules at once when not in game (windows built from OTUI read their texts when loaded); in
---   game it says that the rest follows at the next login and reloads them when the game ends.
+--   game the open windows' plain texts are swapped at once (M.relabel, V37) and the modules reload when the game ends.
 -- * The server writes its texts in the player's language too: the language goes with the display scale hello on
 --   opcode 157 ({action = 'hello', lang}) at every game start and at a change (server i18n.lua, Chaos.t).
 
@@ -169,20 +169,58 @@ function M.name(lang)
   return L.NAMES[lang or M.lang] or tostring(lang)
 end
 
+-- V37: the open windows took their texts from tr() when they were built; swap them for the new language now
+-- (locale_core.lua L.relabelMap). Typed input is never touched (a text edit keeps its text, only its placeholder
+-- changes), nor the chat log (consoleBuffer: what players wrote).
+local SKIP_SUBTREE = { consoleBuffer = true }
+local function swap(map, get, set, w)
+  if not w[get] or not w[set] then return 0 end
+  local ok, s = pcall(w[get], w)
+  local new = ok and type(s) == 'string' and s ~= '' and map[s]
+  if not new then return 0 end
+  pcall(w[set], w, new)
+  return 1
+end
+function M.relabel(from, to)
+  local root = g_ui and g_ui.getRootWidget and g_ui.getRootWidget()
+  if not root then return 0 end
+  local other = (from ~= 'en' and from) or (to ~= 'en' and to) or nil
+  local map = L.relabelMap(other and M.tables[other], from, to)
+  if next(map) == nil then return 0 end
+  local n, stack = 0, { root }
+  while #stack > 0 do
+    local w = table.remove(stack)
+    local okId, id = pcall(w.getId, w)
+    if not (okId and SKIP_SUBTREE[id]) then
+      local okC, class = pcall(w.getClassName, w)
+      if not (okC and class == 'UITextEdit') then n = n + swap(map, 'getText', 'setText', w) end
+      n = n + swap(map, 'getTooltip', 'setTooltip', w)
+      n = n + swap(map, 'getPlaceholder', 'setPlaceholder', w)
+      local okK, kids = pcall(w.getChildren, w)
+      if okK and type(kids) == 'table' then
+        for i = 1, #kids do stack[#stack + 1] = kids[i] end
+      end
+    end
+  end
+  return n
+end
+
 function M.set(lang, quiet)
   lang = L.normalize(lang)
   if not lang then return false end
   local changed = lang ~= M.lang
+  local before = M.lang
   M.lang = lang
   M.table = lang ~= 'en' and M.tables[lang] or nil
   pcall(g_settings.set, SETTING, lang)
   local baseChanged = syncBase(lang)
   sendHello()
+  if changed then pcall(M.relabel, before, lang) end
   if quiet or not (changed or baseChanged) then return true end
   if g_game and g_game.isOnline and g_game.isOnline() then
     reloadOnEnd = true
     if displayInfoBox then
-      displayInfoBox(tr('Language'), tr('Language: %s. New windows and the server messages use it now; the rest follows at the next login.', M.name(lang)))
+      displayInfoBox(tr('Language'), tr('Language: %s. The open windows and the server messages use it now; a few texts follow at the next login.', M.name(lang)))
     end
   else
     reload()

@@ -3252,7 +3252,7 @@ ChaosLocaleStrings['pt-BR'] = {
   ["That did not work."] = "Não deu certo.",
   -- client_chaos_locale (the language choice: login screen, character list, Options > Interface)
   ["Language: %s"] = "Idioma: %s",
-  ["Language: %s. New windows and the server messages use it now; the rest follows at the next login."] = "Idioma: %s. As novas janelas e as mensagens do servidor já usam esse idioma; o resto muda no próximo login.",
+  ["Language: %s. The open windows and the server messages use it now; a few texts follow at the next login."] = "Idioma: %s. As janelas abertas e as mensagens do servidor já usam esse idioma; alguns textos mudam no próximo login.",
   ["The language of the client and of the server messages"] = "O idioma do cliente e das mensagens do servidor",
   -- client_chaos_theme (the interface skin: Options > Interface, base patch 0159)
   ["Classic"] = "Clássico",

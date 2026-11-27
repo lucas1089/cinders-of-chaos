@@ -126,5 +126,19 @@ end
 ok(n > 2000, 'the table has its entries (' .. n .. ')')
 eq(L.translate(L.prepare(pt), nil, 'Close'), 'Fechar', 'Close')
 
+-- V37: live switch map
+do
+  local tbl = { Close = 'Fechar', Search = 'Buscar', Find = 'Buscar', ['Level %d'] = 'N\237vel %d', Same = 'Same' }
+  local m = L.relabelMap(tbl, 'en', 'pt-BR')
+  eq(m.Close, 'Fechar', 'relabel en -> pt: Close')
+  eq(m['Level %d'], nil, 'relabel: a pattern is left out')
+  eq(m.Same, nil, 'relabel: a text equal to its key is left out')
+  local r = L.relabelMap(tbl, 'pt-BR', 'en')
+  eq(r.Fechar, 'Close', 'relabel pt -> en: Fechar')
+  eq(r.Buscar, nil, 'relabel pt -> en: a text of two keys is left out')
+  eq(next(L.relabelMap(tbl, 'en', 'en')), nil, 'relabel: same language, nothing')
+  eq(next(L.relabelMap(nil, 'en', 'pt-BR')), nil, 'relabel: no table, nothing')
+end
+
 if fails > 0 then error(string.format('locale_core_test: %d of %d checks failed', fails, checks)) end
 print('locale_core_test: ok (' .. checks .. ' checks)')

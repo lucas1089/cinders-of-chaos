@@ -200,4 +200,28 @@ function L.hello(lang)
   return { action = 'hello', lang = L.normalize(lang) or 'en' }
 end
 
+-- ---------------------------------------------------------------- live switch (V37)
+-- The texts a window took from tr() when it was built, swapped for the new language without a reload: a map
+-- {old text = new text} of the plain entries (no % conversions). from / to: the languages, tbl: the prepared table of
+-- the non-English language. A text that two keys share in the reverse direction is left out (not sure which one).
+function L.relabelMap(tbl, from, to)
+  from, to = L.normalize(from), L.normalize(to)
+  local map = {}
+  if not from or not to or from == to or type(tbl) ~= 'table' then return map end
+  local dup = {}
+  for k, v in pairs(tbl) do
+    if type(k) == 'string' and type(v) == 'string' and not k:find('%', 1, true) and k ~= v then
+      if from == 'en' then
+        map[k] = v
+      elseif map[v] ~= nil and map[v] ~= k then
+        dup[v] = true
+      else
+        map[v] = k
+      end
+    end
+  end
+  for v in pairs(dup) do map[v] = nil end
+  return map
+end
+
 return L
