@@ -117,7 +117,7 @@ namespace Chaos.Core.Tests
             // every message type of the server maps to a style
             check(ToastKinds.MessageTypes.Values.All(v => ToastKinds.Styles.ContainsKey(v)), "toast: every message type has a style");
             check(ToastKinds.MessageTypes["worldevent"] == "WORLD_EVENT", "toast: a world event is no invasion (V35)");
-            check(ToastKinds.Styles.Count == 21, "toast: the 21 toast types of the main client");
+            check(ToastKinds.Styles.Count == 22, "toast: the 22 toast types of the main client (WORLD_EVENT, V35)");
         }
 
         // ------------------------------------------------------------------------------------ buff bar
