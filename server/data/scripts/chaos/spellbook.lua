@@ -1190,7 +1190,7 @@ Book.clients = Book.clients or {} -- player id -> true: that client has the Spel
 -- (vocation, level, learned) and done go out, without the throttle; otherwise the whole list, at most once every
 -- Book.openCooldown seconds. Book.sendList is the client's background fetch after login; Book.sendTo is the player
 -- opening the window (the new-player tutorial hooks only that one).
-function Book.sendList(player, have)
+function Book.sendList(player, have, quiet)
 	local pid = player:getId()
 	local packed = packedFor(player)
 	local unchanged = type(have) == "string" and have == packed.sig
@@ -1215,8 +1215,10 @@ function Book.sendList(player, have)
 		learned = learnedNames(player, Book.spells or {}),
 		vocationNames = Book.vocationList or {}
 	})
+	-- quiet (Book.refresh, a class change): the client updates the window but never opens it (O774)
+	local refresh = quiet and true or nil
 	if unchanged then
-		Chaos.send(player, OPCODE, "done", {total = packed.total, sig = packed.sig})
+		Chaos.send(player, OPCODE, "done", {total = packed.total, sig = packed.sig, refresh = refresh})
 		return true
 	end
 	-- one chunk per server tick: sent together they end up in a single ~80 KB packet, which the client misreads
@@ -1231,7 +1233,7 @@ function Book.sendList(player, have)
 	addEvent(function()
 		local p = Player(pid)
 		if p then
-			Chaos.send(p, OPCODE, "done", {total = packed.total, sig = packed.sig})
+			Chaos.send(p, OPCODE, "done", {total = packed.total, sig = packed.sig, refresh = refresh})
 		end
 	end, (#chunks + 1) * Book.chunkDelay)
 	return true
@@ -1244,12 +1246,14 @@ end
 -- A class change (class_spells.lua): the Spellbook window of that client learns the new vocation, level and learned
 -- spells at once. The list itself does not depend on the character (the client filters it), so the client keeps its
 -- cached list (header only, no throttle). Nothing is sent to a client that never opened the Spellbook.
+-- O774: the answer carries refresh = true, so the client updates a shown window and never opens a closed one (seen in a
+-- client: the Spellbook popped open after an ascension; docs/CLASSES.md: a class change refreshes the Spellbook).
 function Book.refresh(player)
 	if not player or not Book.clients[player:getId()] then
 		return false
 	end
 	local packed = packedFor(player)
-	return Book.sendList(player, packed and packed.sig)
+	return Book.sendList(player, packed and packed.sig, true)
 end
 
 -- The stock spellbook text, for a client without the Spellbook window: "Spells for Level n" and "words - name : mana".

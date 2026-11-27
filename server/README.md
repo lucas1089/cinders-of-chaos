@@ -287,6 +287,9 @@ server/
   src-patches/0095-online-time-once.patch   engine: players.onlinetime counts each online second once, from the login
                                       (Player::onlineCountedAt; see "Online time counted once (engine patch 0095)";
                                       tools/online_time_patch_test.py)
+  src-patches/0096-base-xp-gain.patch       engine: the stats packet sends the player's base XP gain (default 100) in place of a
+                                      fixed 100; Player:getBaseXpGain / Player:setBaseXpGain(1..65535, resends the stats
+                                      on a change); see "XP gain rate display" (O774; tools/base_xp_gain_patch_test.py)
     remote_cmd.lua    remote_cmd_core.lua    remote_cmd_config.lua  (remote admin commands by file, see "Remote admin commands")
     spectate.lua      spectate_core.lua      spectate_config.lua    (the admin app's live view of a character, see "Live spectator")
     helpai.lua  helpai_core.lua  helpai_config.lua (Ember answers questions in the Help channel through the sidecar
@@ -32946,6 +32949,18 @@ stamina bonus taken out (the client multiplies it in again). The first kill afte
 it keeps the last value. Assumed engine API, guarded and not verified on a running server: `Player:setBaseXpGain`,
 `Player:getStaminaXpBoost`. Tests: `tests/xp_rate_display_test.lua` (the percent maths).
 
+**O774 (F48, seen in a client: "XP Gain Rate 100%" with the Pact on).** The engine had no `Player:setBaseXpGain` and wrote
+a fixed 100 into the stats packet, so the guarded call never ran. `src-patches/0096-base-xp-gain.patch` adds the field
+(default 100), `Player:getBaseXpGain` and `Player:setBaseXpGain` (clamped to 1..65535, stats resent only on a change) and
+sends it. The line also follows a bonus that starts or ends between kills: systems that hold a standing multiplier
+register it in `ChaosXpRateDisplay.providers` (`pact` from `pact_perks.lua` `PP.expMult`, `world` from
+`shop_services.lua` `buffMult("xp")`); `R.refreshGain(killGain, standingAtKill, standingNow)` moves the last kill's rate
+by the change of their product, and before the first kill the product alone is shown. A login sends it after 2 s
+(`ChaosXpRateLogin`); granting Pact days and the Pact's minute check (`ChaosPactPerksThink`: a Pact or World
+Experience that ran out) call `ChaosXpRateDisplay.refresh`. Seen: 110% with the Pact, 100% after it.
+Tests: `tests/xp_rate_display_test.lua` (product, refresh, the login and the Pact's end on a mocked engine),
+`tools/base_xp_gain_patch_test.py` (the patch text and an apply with `--fuzz=0`; `SRC_TREE=DIR` for a real tree).
+
 ## Autoloot gold goes to the bank (`autoloot.lua`, `tests/autoloot_gold_test.lua`)
 
 Owner 2026-10-18 ("mande todo o gold que for auto looted pro banco"): when a coin (gold, platinum or crystal coin) is on
@@ -39680,7 +39695,7 @@ Linux main client from this branch, pair 88, a local server, two testers and one
 
 - Weekly Challenge (O390): `WC.info` also sends the week's layout `seed`; the Dungeons window shows it. Seen: a run posts its time on the weekly board. A test run under 10 s (monsters thinned by a staff command) was taken by the weekly board while the records refuse runs under `minSeconds`; not changed (no real run is that short).
 - Invasions (O393): `finish` sends the final HUD before every `end` line. Seen: the HUD ended on the shares and the warlord's 100% of the last 5 s refresh (58% / 42% against rewards of 27% / 73%); now it ends on the rewarded shares with the horde at 100%. `tests/invasion_test.lua` holds the order.
-- Tavern rumours (O394): Dorrin Alewright sells the rumour of the hour for gold (the world boss portals by the temples between two times, server time); the portals opened by the temple at the hour he said. Dorrin stands half hidden behind a pillar at 32364,32238 (map, not changed).
+- Tavern rumours (O394): Dorrin Alewright sells the rumour of the hour for gold (the world boss portals by the temples between two times, server time); the portals opened by the temple at the hour he said. Dorrin stood half hidden behind a pillar at 32364,32238; moved by the placement rule of O774 ("F48 fixes (O774)").
 - Wandering Merchant (O399): the trade line says "One of each per customer" (`data/npc/Wandering Merchant.xml`, pt-BR in `i18n_strings.lua`), and a refused buy also goes to the status line (`wandering_merchant.lua` `overLimit`; `tests/wandering_merchant_test.lua`). The XML's comment named the old 20-minute event. Seen: prices about 2.5 times the old ones, a second buy of one item refused with the minutes left. World events (`worldevents.lua` `announce`) sent their toast through `ChaosInvasion.announce`, titled INVASION; they keep its chat line and send their own toast kind `worldevent` (client WORLD EVENT; `tests/invasion_test.lua`). He stood in Thornmere and, after a server restart in the same 3-hour stop, in Cinderhold; `merchantArea` promises the same area after a restart, so this may have been an earlier staff move in the session. Not chased here.
 - Tales (O415): the story saga sorts first in the Tales list (`tales_core.lua`). Seen on a fresh character: the quiet first login (O761) opens the Daily Reward only, then the main quest's first step; Archivist Maelis carries the gold !.
 
@@ -39715,3 +39730,25 @@ client on a local server (video in the task report, not committed).
   22,900, experience 16,100. `tune_monsters.py` now adds a missing `<level>` after `<look>`. `survival_model.py` and
   `pack_model.py` pass `--check` and `--today`. Seen: the same level 1500 tester (12,000 health, no gear) lost 8,000
   health to the Death Mage in 4 s and died to a Bloom Husk of the band in 3 s.
+
+## F48 fixes (O774)
+
+Six faults seen in a client (task F48). The client side is in client/MANIFEST.md under the same heading.
+
+- **XP gain rate.** Engine patch 0096 and the standing multipliers: "XP gain rate display" above.
+- **Spellbook after an ascension.** docs/CLASSES.md: a class change "refreshes the Spellbook", it does not open it. The
+  refresh (`Book.refresh`, class change, ascension, a spell learned) pushed the list with the same open / spells / done
+  messages as the player's own open, and the client opened the window on a `done` it had not asked for.
+  `Book.sendList(player, have, quiet)` adds `refresh = true` to `done` on a refresh (both the unchanged and the chunked
+  path). `tests/spellbook_test.lua`.
+- **Raid window back after Close.** Every `info` opened the window: the replies to buy and leave, and every step on the
+  Raid portal (a held arrow key steps on it again and again). `X.sendInfo(player, show)` adds `show = true` only to the
+  `open` request and to a portal step, and a portal step shows the window at most once in
+  `raid_config.lua` `portal.reopenSeconds` (20; `K.portalOpens(lastShown, now, seconds)`, cleared at logout).
+  `tests/raid_test.lua`.
+- **Dorrin Alewright behind a pillar.** `npc_place_core.lua` spec field `inView` with `covers(dx, dy)`: the client draws a
+  solid object (a pillar, a wall) over the tiles north and west of it, so with `inView` a spot whose east, south or
+  south-east tile holds one is taken only after every other spot (`K.covered`). `npc_place.lua` gives `covers` (a tile
+  with a solid item) and `opts.inView`; `service_npcs_config.lua` `inView = true` for the service NPCs. Seen: Dorrin moved
+  from 32364,32238 (offset -5, -3, pillar south-east of him) to 32369,32238 in the open. No base data edited.
+  `tests/npc_place_test.lua`, `tests/service_npcs_test.lua`.

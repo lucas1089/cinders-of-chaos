@@ -721,9 +721,10 @@ namespace Chaos.Core
             switch (action)
             {
                 case "info":
+                    // O774: only an info with show opens the window (the portal step, the open request); a reply to a
+                    // buy or a leave refreshes it when it is open and never brings a closed window back
                     Info = d;
-                    if (!Visible) Message = "";
-                    Visible = true;
+                    if (!Visible && Json.Truthy(d, "show")) { Message = ""; Visible = true; }
                     break;
                 case "journal": JournalBosses = Json.Get(d, "bosses") as List<object> ?? new List<object>(); break;
                 case "hud": Hud = d; HudAt = Now; break;

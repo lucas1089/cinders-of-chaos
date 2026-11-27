@@ -684,6 +684,14 @@ xpCb.onGainExperience = function(self, source, exp, rawExp)
 end
 xpCb:register(5)
 
+-- O774: World Experience holds outside a kill: the XP gain rate of the Skills window counts it from the login
+-- (xp_rate_display_core.lua R.providers; buffMult gives 1 to a season character)
+ChaosXpRateDisplay = ChaosXpRateDisplay or {}
+ChaosXpRateDisplay.providers = ChaosXpRateDisplay.providers or {}
+ChaosXpRateDisplay.providers.world = function(player)
+	return S.buffMult("xp", player)
+end
+
 local skillCb = EventCallback
 skillCb.onGainSkillTries = function(self, skill, tries)
 	local mult = S.buffMult("skill", self) -- not for season characters

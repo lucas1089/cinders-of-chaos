@@ -283,5 +283,55 @@ eq(L.ownFarewell('ash', 'Ash', 'Good bye!'), true, 'own good bye, any case')
 eq(L.ownFarewell('Bo', 'Ash', 'bye'), false, 'another player')
 eq(L.ownFarewell('Ash', 'Ash', 'bye bye shop'), false, 'not a farewell')
 eq(L.ownFarewell('Ash', '', 'bye'), false, 'no name')
+-- O774: the talk window moves off an NPC's own window (bank, Candlemarks, Gambler, the store)
+do
+  local screen = { x = 0, y = 0, width = 1280, height = 720 }
+  local shop = { x = 400, y = 100, width = 500, height = 450 }
+  eq(L.overlaps({ x = 0, y = 0, width = 10, height = 10 }, { x = 10, y = 0, width = 5, height = 5 }), false, 'touching edges do not overlap')
+  eq(L.overlaps({ x = 0, y = 0, width = 11, height = 10 }, { x = 10, y = 0, width = 5, height = 5 }), true, 'one pixel overlaps')
+  eq(L.clearOf({ x = 10, y = 10, width = 300, height = 300 }, shop, screen, 8), nil, 'apart: stays')
+  local p = L.clearOf({ x = 450, y = 200, width = 300, height = 300 }, shop, screen, 8)
+  eq(p and p.x, 92, 'nearer the left half: left of the shop (400 - 8 - 300)')
+  eq(p and p.y, 200, 'same height')
+  p = L.clearOf({ x = 700, y = 200, width = 300, height = 300 }, shop, screen, 8)
+  eq(p and p.x, 908, 'nearer the right half: right of the shop')
+  p = L.clearOf({ x = 700, y = 200, width = 380, height = 300 }, shop, screen, 8)
+  eq(p and p.x, 12, 'no room on the right: left of it')
+  p = L.clearOf({ x = 450, y = 200, width = 300, height = 150 }, { x = 100, y = 100, width = 1080, height = 300 }, screen, 8)
+  eq(p and p.y, 408, 'no room beside: below')
+  eq(L.clearOf({ x = 0, y = 0, width = 1280, height = 720 }, shop, screen, 8), nil, 'no spot fits: nil')
+  p = L.clearOf({ x = 450, y = 500, width = 300, height = 300 }, shop, screen, 8)
+  eq(p and p.y, 420, 'kept on the screen (720 - 300)')
+  -- seen in the client at 1280x720: the Gambler window (685 px wide) leaves no free side for the talk window (310 px);
+  -- it goes to the side where the least of it lies under the Gambler window
+  local gamble = { x = 300, y = 85, width = 685, height = 600 }
+  p = L.clearOf({ x = 95, y = 60, width = 310, height = 480 }, gamble, screen, 8)
+  eq(p and p.x, 0, 'no free side: left edge of the screen (10 px under the Gambler window, 15 on the right)')
+  eq(p and p.y, 60, 'same height')
+  eq(L.overlapArea({ x = 0, y = 60, width = 310, height = 480 }, gamble), 10 * 455, 'overlap area')
+  eq(L.overlapArea({ x = 0, y = 0, width = 10, height = 10 }, gamble), 0, 'no overlap: 0')
+  -- then the Gambler window steps right, just clear of the talk window
+  local q = L.shiftOther({ x = 0, y = 60, width = 310, height = 480 }, gamble, screen, 8)
+  eq(q and q.x, 318, 'the other window moves right of the talk window (0 + 310 + 8)')
+  eq(q and q.y, 85, 'at its own height')
+  q = L.shiftOther({ x = 970, y = 60, width = 310, height = 480 }, gamble, screen, 8)
+  eq(q and q.x, 277, 'a talk window on the right: the other window moves left of it (970 - 8 - 685)')
+  eq(L.shiftOther({ x = 0, y = 60, width = 700, height = 480 }, gamble, screen, 8), nil, 'no room on the screen: nil')
+  eq(L.shiftOther({ x = 0, y = 60, width = 290, height = 480 }, gamble, screen, 8), nil, 'apart: nil')
+end
+
+-- the placement functions are defined when the file loads, before any other function of it runs (they once sat inside
+-- L.ownFarewell and existed only after a farewell was checked)
+do
+  local saved = rawget(_G, 'NpcTalkLogic')
+  local ok, mod = pcall(dofile, dir .. 'npctalk_logic.lua') -- a new table, nothing of it called yet
+  local fresh = ok and mod or {}
+  eq(type(fresh.clearOf), 'function', 'clearOf at load')
+  eq(type(fresh.overlaps), 'function', 'overlaps at load')
+  eq(type(fresh.overlapArea), 'function', 'overlapArea at load')
+  eq(type(fresh.shiftOther), 'function', 'shiftOther at load')
+  _G.NpcTalkLogic = saved
+end
+
 print(string.format('npctalk_logic: %d checks, %d failures', checks, fails))
 if fails > 0 then os.exit(1) end

@@ -16,6 +16,9 @@ C.towns = {2}
 C.delayMs = 4000 -- after the other startup NPCs, like Osric the Chandler (3500)
 -- next to the temple, only when an NPC has no stall in the hub (npc_place.lua)
 C.offsets = {{-5, -3}, {5, -3}, {-5, 3}, {5, 3}, {-4, -5}, {4, 5}, {-7, -2}, {7, -2}, {-7, 2}, {7, 2}}
+-- O774: an NPC next to the temple never stands where a pillar or a wall east or south of it draws over it
+-- (npc_place_core.lua inView; seen in a client 2026-11-27: Dorrin Alewright behind a temple pillar at offset -5, -3)
+C.inView = true
 
 -- key -> NPC. `name` is also the file data/npc/<name>.xml; `script` the file it names. `window`: what the NPC opens
 -- ({opcode = key of ChaosOpcodes, json = the message the module's client handles, "npc" action}); nil: no window.

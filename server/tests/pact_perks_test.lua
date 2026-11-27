@@ -175,7 +175,12 @@ do
 	eq(ChaosShopServices.unlocks.autoSeller.owned(pl), true, "a bought unlock is owned")
 	-- the Pact runs out: the minute check takes the lent things back
 	activeUntil = 0
+	local refreshed = 0
+	ChaosXpRateDisplay.refresh = function(p) if p == pl then refreshed = refreshed + 1 end end
 	registered.ChaosPactPerksThink.onThink(60000)
+	eq(refreshed, 1, "O774: the minute check refreshes the XP gain rate (the Pact's +10% leaves the Skills window)")
+	eq(ChaosXpRateDisplay.providers.pact(pl), 1, "O774: the Pact provider reads 1 once it ended")
+	ChaosXpRateDisplay.refresh = nil
 	eq(pl.st[7100101], 1, "the bought Auto Seller stays")
 	eq(pl.st[7100106], -1, "Rarity Autoloot stays unset")
 	eq(PP.staminaMult(pl), 1, "ended: stamina x1")

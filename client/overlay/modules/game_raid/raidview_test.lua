@@ -98,5 +98,11 @@ eq(V.alertSeconds('kill'), 6, 'kill stays longer'); eq(V.alertSeconds('mech'), 4
 eq(V.lootSummary({ boss = 'B', eligible = true, lines = { 'x', 'y' } }), 'Spoils of B: x, y', 'loot')
 eq(V.lootSummary({ boss = 'B' }), 'B slain. You looted it already this week: no spoils until the reset.', 'helped')
 
+-- O774: info opens the window only with show = true
+eq(V.opensOnInfo(false, { show = true }), true, 'show opens a closed window')
+eq(V.opensOnInfo(false, {}), false, 'a reply without show keeps it closed')
+eq(V.opensOnInfo(true, { show = true }), false, 'already shown: nothing to open')
+eq(V.opensOnInfo(false, nil), false, 'no data: closed')
+
 if fails > 0 then os.exit(1) end
 print('raid view tests OK (' .. checks .. ' checks)')

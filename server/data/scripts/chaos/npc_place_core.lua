@@ -24,7 +24,11 @@
 --           free(dx, dy) -> bool           nobody stands there now (default: true)
 --           keepClear(dx, dy) -> bool      a tile no NPC may take (default: none)
 --           offsets = {{dx, dy}, ...}, others = {{dx, dy}, ...} (the other NPCs), radius, spacing, minFromTemple,
---           minOpen}
+--           minOpen,
+--           inView, covers(dx, dy) -> bool  O774: with inView, a spot whose east, south or south-east tile holds a solid
+--                                           object (covers: a pillar, a wall) is taken only when nothing else is left.
+--                                           The client draws a tall object over the tiles north and west of it: seen in a
+--                                           client 2026-11-27, Dorrin Alewright stood behind a temple pillar}
 --   ChaosNpcPlaceCore.keepClearRects(portalsCfg, temple) -> {{x1, y1, x2, y2, z}, ...}   the tiles of the temple portal
 --           gallery of the town whose temple is `temple` (temple_portals_config.lua): both wings and the entrance between
 --           them, from the portal row to the last carpet row
@@ -137,14 +141,26 @@ function K.pick(spec)
 		end
 		return not needOpen or openSides(spec, x, y) >= minOpen
 	end
-	for _, needOpen in ipairs({true, false}) do
+	local passes = {{true, false}, {false, false}}
+	if spec.inView and spec.covers then
+		passes = {{true, true}, {false, true}, {true, false}, {false, false}}
+	end
+	for _, pass in ipairs(passes) do
 		for _, c in ipairs(list) do
-			if ok(c[1], c[2], needOpen) then
+			if ok(c[1], c[2], pass[1]) and not (pass[2] and K.covered(spec, c[1], c[2])) then
 				return c[1], c[2]
 			end
 		end
 	end
 	return nil
+end
+
+-- O774: a solid object east, south or south-east of the tile draws over a creature standing there
+function K.covered(spec, x, y)
+	if not spec.covers then
+		return false
+	end
+	return spec.covers(x + 1, y) or spec.covers(x, y + 1) or spec.covers(x + 1, y + 1) or false
 end
 
 function K.keepClearRects(portalsCfg, temple)

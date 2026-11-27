@@ -1780,6 +1780,16 @@ do
 	setMode("off")
 end
 
+-- O774: the city portal opens the window once per approach
+do
+	local K = ChaosRaidCore
+	eq(K.portalOpens(nil, 1000, 20), true, "portal: first step opens")
+	eq(K.portalOpens(990, 1000, 20), false, "portal: again within 20 s: stays closed")
+	eq(K.portalOpens(980, 1000, 20), true, "portal: after 20 s: opens")
+	eq(K.portalOpens(999, 1000, 0), true, "portal: no cooldown set: opens")
+	check((tonumber(cfg.portal.reopenSeconds) or 0) >= 5, "portal: reopenSeconds set")
+end
+
 print(string.format("raid_test: %d checks, %d failures", count, failures))
 if failures > 0 then
 	os.exit(1)

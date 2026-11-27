@@ -156,6 +156,11 @@ function PP.installHooks()
 				if not ok then
 					log("after a purchase: " .. tostring(err))
 				end
+				-- O774: the Skills window's XP gain rate shows the +10% at once (xp_rate_display.lua)
+				local D = rawget(_G, "ChaosXpRateDisplay")
+				if D and D.refresh then
+					pcall(D.refresh, player)
+				end
 			end
 			return (table.unpack or unpack)(r)
 		end
@@ -184,6 +189,14 @@ xpCb.onGainExperience = function(self, source, exp, rawExp)
 end
 xpCb:register((perks() or {}).expIndex or 7)
 
+-- O774: the Pact's +10% holds outside a kill: the XP gain rate of the Skills window counts it from the login
+-- (xp_rate_display_core.lua R.providers)
+ChaosXpRateDisplay = ChaosXpRateDisplay or {}
+ChaosXpRateDisplay.providers = ChaosXpRateDisplay.providers or {}
+ChaosXpRateDisplay.providers.pact = function(player)
+	return PP.expMult(player)
+end
+
 local login = CreatureEvent("ChaosPactPerksLogin")
 function login.onLogin(player)
 	addEvent(function(cid)
@@ -203,8 +216,14 @@ login:register()
 local think = GlobalEvent("ChaosPactPerksThink")
 function think.onThink(interval)
 	PP.installHooks()
+	-- O774: a Pact that ended (or a World Experience that ran out) leaves the XP gain rate within a minute; the
+	-- engine resends the stats only when the value changes (src-patch 0096)
+	local D = rawget(_G, "ChaosXpRateDisplay")
 	for _, p in ipairs(Game.getPlayers()) do
 		pcall(PP.apply, p)
+		if D and D.refresh then
+			pcall(D.refresh, p)
+		end
 	end
 	return true
 end

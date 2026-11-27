@@ -191,7 +191,7 @@ namespace Chaos.Core.Tests
             var s = r.E.Raid;
             s.Query();
             check(r.Last() == "213 {\"action\":\"query\",\"data\":{}}", "raid: query on start");
-            r.In(213, "{\"action\":\"info\",\"data\":{\"level\":900,\"minLevel\":800,\"maxPlayers\":15,\"marks\":1234,\"kills\":7,\"clears\":2,\"best\":845,\"lock\":{\"looted\":1,\"total\":3,\"reset\":93700,\"bosses\":[{\"n\":\"Ash\",\"l\":true},{\"n\":\"Cinder\",\"l\":false}]},\"saved\":[{\"id\":5,\"leader\":\"Ana\",\"done\":1,\"killed\":[true,false,false],\"next\":\"Cinder\",\"open\":true},{\"id\":6,\"leader\":\"Bo\",\"done\":3,\"killed\":[true,true,true],\"cleared\":true}],\"vendor\":[{\"key\":\"k1\",\"n\":\"Helm\",\"kind\":\"gear\",\"rarity\":4,\"level\":125,\"mods\":[\"+1\",\"+2\"],\"price\":100,\"bought\":0,\"weekly\":1}]}}");
+            r.In(213, "{\"action\":\"info\",\"data\":{\"show\":true,\"level\":900,\"minLevel\":800,\"maxPlayers\":15,\"marks\":1234,\"kills\":7,\"clears\":2,\"best\":845,\"lock\":{\"looted\":1,\"total\":3,\"reset\":93700,\"bosses\":[{\"n\":\"Ash\",\"l\":true},{\"n\":\"Cinder\",\"l\":false}]},\"saved\":[{\"id\":5,\"leader\":\"Ana\",\"done\":1,\"killed\":[true,false,false],\"next\":\"Cinder\",\"open\":true},{\"id\":6,\"leader\":\"Bo\",\"done\":3,\"killed\":[true,true,true],\"cleared\":true}],\"vendor\":[{\"key\":\"k1\",\"n\":\"Helm\",\"kind\":\"gear\",\"rarity\":4,\"level\":125,\"mods\":[\"+1\",\"+2\"],\"price\":100,\"bought\":0,\"weekly\":1}]}}");
             check(s.Visible, "raid: info opens the window");
             check(RaidView.LockSummary(s.Info) == "1 of 3 bosses looted this week. Lockouts reset in 1d 2h." && Eg.ResetText(3700) == "1h 1m", "raid: lock summary and reset text");
             var rows = RaidView.LockRows(s.Info);
@@ -239,6 +239,11 @@ namespace Chaos.Core.Tests
             s.Notice = t => noticed = t;
             r.In(213, "{\"action\":\"msg\",\"data\":{\"text\":\"Refused\"}}");
             check(!s.Visible && noticed == "Refused", "raid: closeInfo hides it and a message with the window closed goes to the log");
+            // O774: a reply that refreshes the info (a buy, a leave, a second portal step) never reopens a closed window
+            r.In(213, "{\"action\":\"info\",\"data\":{\"level\":900,\"marks\":1200}}");
+            check(!s.Visible && Json.Number(s.Info, "marks") == 1200, "raid: an info without show keeps the window closed and stores the info");
+            r.In(213, "{\"action\":\"info\",\"data\":{\"show\":true,\"level\":900}}");
+            check(s.Visible, "raid: an info with show (the portal, the open request) opens it");
         }
 
         // ------------------------------------------------------------------------------------ Descent

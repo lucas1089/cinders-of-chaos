@@ -1,7 +1,7 @@
 -- Pure helpers of the raid window and HUD (no client calls; tested by raidview_test.lua): the lockout rows, the saved
 -- raids, the boss journal, the vendor rows, the HUD lines and the call-out colours.
 -- Server messages (extended opcode 213, server/data/scripts/chaos/raid.lua):
---   info {name, minLevel, level, minPlayers, maxPlayers, lock = {bosses = [{k, n, l}], looted, total, reset}, saved =
+--   info {show, name, minLevel, level, minPlayers, maxPlayers, lock = {bosses = [{k, n, l}], looted, total, reset}, saved =
 --         [{id, killed = [bool], done, next, leader, members, cleared, open, inside, mine}], marks, kills, clears, best,
 --         vendor = {marks, stock = [{k, n, kind, price, weekly, bought, can, level, rarity, mods, items, cid}]}, inRaid, pz}
 --   journal {bosses = [{k, n, intro, roles, phases = [{n, at}], mech = [text], enrage, final, loot = {gold, items, gear,
@@ -12,6 +12,13 @@
 local function tr(s, ...) local g = (rawget(_G, 'tr') or (rawget(_G, 'ChaosLocale') or {}).tr) if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
 RaidView = {}
+
+-- O774: an info message opens the window only when the server says the player asked (show = true: the menu, the city
+-- portal); otherwise a closed window stays closed (seen in a client: it reopened after the player closed it)
+function RaidView.opensOnInfo(visible, d)
+  if visible then return false end
+  return type(d) == 'table' and d.show == true
+end
 
 local function num(v)
   v = tonumber(v)

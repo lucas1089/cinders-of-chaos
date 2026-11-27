@@ -199,7 +199,7 @@ namespace Chaos.Core
 
         // ------------------------------------------------------------------------------------ 213 raid (raid.lua X.sendInfo, vendorView, X.sendJournal)
         static FakeMsg RaidInfo() => M(RaidState.Opcode, "info",
-            "{'name':'Ashen Sepulchre','minLevel':120,'level':310,'minPlayers':1,'maxPlayers':15,'lock':{'looted':1,'total':4,'reset':200000,'bosses':[{'n':'Gorrak','l':true},{'n':'Vorn the Hollow','l':false},{'n':'Sister Cinder','l':false},{'n':'The Sepulchre King','l':false}]}," +
+            "{'show':true,'name':'Ashen Sepulchre','minLevel':120,'level':310,'minPlayers':1,'maxPlayers':15,'lock':{'looted':1,'total':4,'reset':200000,'bosses':[{'n':'Gorrak','l':true},{'n':'Vorn the Hollow','l':false},{'n':'Sister Cinder','l':false},{'n':'The Sepulchre King','l':false}]}," +
             "'saved':[{'id':7,'leader':'Mira','done':1,'cleared':false,'killed':[true,false,false,false],'open':true,'mine':true}],'marks':42,'kills':5,'clears':1,'best':1500," +
             "'vendor':{'marks':42,'stock':[{'k':'orbs','n':'Orb Pouch','kind':'bundle','price':10,'weekly':3,'bought':1,'items':[{'n':'Orb of Upheaval','c':5,'cid':3043}],'cid':3043,'can':true}," +
             "{'k':'helm','n':'Sepulchre Helm','kind':'gear','price':30,'weekly':1,'bought':0,'level':130,'rarity':3,'mods':['+8% fire (T4)'],'cid':3035}]},'pz':true}", Sc + "raid.lua (X.sendInfo and vendorView)");

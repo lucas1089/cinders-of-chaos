@@ -273,6 +273,14 @@ function Core.visibleIndexes(spells, ctx, filter, text, kind)
 end
 
 -- seconds left of a cooldown that ends at `endsAt` (ms clock), nil when it is over
+-- The server's "done" ends an answer. The window opens on it only when nobody asked (request nil: staff /spells) and it is
+-- not a refresh (a class change pushes the new vocation with refresh = true; it must not pop the window open, O774: seen
+-- in a client after an ascension; docs/CLASSES.md "A class change ... refreshes the Spellbook").
+function Core.opensOnDone(request, data)
+  if request ~= nil then return false end
+  return not (type(data) == 'table' and data.refresh == true)
+end
+
 function Core.cooldownLeft(endsAt, now)
   endsAt, now = tonumber(endsAt), tonumber(now)
   if not endsAt or not now or endsAt <= now then return nil end
