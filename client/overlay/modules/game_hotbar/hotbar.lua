@@ -293,6 +293,12 @@ local function applyOrbs()
   if metrics.globes then pcall(fx.setOrbDock, metrics.orb, false) else pcall(fx.setOrbDock, nil, true) end
 end
 
+-- the base status line (cancel and failure texts) above the bar; nil puts it back at the base margin (V41)
+local function setStatusMargin(margin)
+  local tm = modules.game_textmessage
+  if tm and type(tm.updateActionBarMessageMargin) == 'function' then pcall(tm.updateActionBarMessageMargin, margin) end
+end
+
 local function placeFrame()
   if not alive(frame) then return end
   local left, right, rect = region()
@@ -301,6 +307,7 @@ local function placeFrame()
   frame:setSize({ width = metrics.width, height = metrics.height })
   frame:setMarginLeft(placed.left - rect.x)
   frame:setMarginBottom(placed.bottom)
+  setStatusMargin(L.statusMargin(placed, metrics.height))
 end
 
 -- the bottom area of the classic layout makes way: the map takes the height. What it changes is kept (savedBottom) and
@@ -647,6 +654,7 @@ local function disable()
   if fx and type(fx.setOrbDock) == 'function' then pcall(fx.setOrbDock, nil, false) end
   releaseBar()
   clearParts()
+  setStatusMargin(nil)
   if alive(frame) then frame:destroy() end
   frame, bar, slotParent, buttons, plan, drag = nil, nil, nil, nil, nil, nil
 end

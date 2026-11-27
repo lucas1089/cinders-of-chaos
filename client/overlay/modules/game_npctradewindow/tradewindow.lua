@@ -155,6 +155,19 @@ local function tradable(item)
   return sellQuantity(item.ptr) > 0
 end
 
+-- how many of the seller's goods the player carries and may sell (the cards of the Sell tab)
+local function sellableCount()
+  local n = 0
+  for _, item in ipairs(st.items[M.SELL] or {}) do
+    if sellQuantity(item.ptr) > 0 then n = n + 1 end
+  end
+  return n
+end
+
+local function tabCounts()
+  view:setTabCounts(#st.items[M.BUY], sellableCount(), #st.items[M.SELL])
+end
+
 local function ctx()
   return { type = st.tab, items = st.items[st.tab], search = st.search, sort = prefs.sort, factsOf = factsOf,
     owned = ownedOf, tradable = tradable, money = getMoney(), freeCapacity = st.freeCap,
@@ -191,6 +204,7 @@ end
 refresh = function(rebuild)
   if not st or not alive(window) or not window:isVisible() then return end
   local c = ctx()
+  tabCounts() -- what the player carries changes as he buys and sells
   local pre, all = M.cards(c)
   st.cardsByKey = {}
   for _, card in ipairs(all) do st.cardsByKey[card.key] = card end
@@ -534,8 +548,8 @@ local function showShop()
   view:setSort(prefs.sort)
   view:setOptions(prefs)
   view:setSearch('')
-  local buyN, sellN = #st.items[M.BUY], #st.items[M.SELL]
-  view:setTabCounts(buyN, sellN)
+  local buyN = #st.items[M.BUY]
+  tabCounts()
   st.tab = buyN > 0 and M.BUY or M.SELL
   view:setTab(st.tab)
   refresh(true)
@@ -547,7 +561,7 @@ local function relabelShop()
   if not (st and alive(window) and window:isVisible()) then return end
   view:setHeader(headerSpec())
   view:setSort(prefs.sort)
-  view:setTabCounts(#st.items[M.BUY], #st.items[M.SELL])
+  tabCounts()
   view:setTab(st.tab)
   st.chipSig = nil
   refresh(true)

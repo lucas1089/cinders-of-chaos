@@ -89,6 +89,18 @@ eq(BoardPick.saved('bad', 'Ash Knight'), nil, 'bad node')
 eq(BoardPick.saved({ ['ash knight'] = 5 }, 'Ash Knight'), nil, 'bad value')
 eq(next(BoardPick.remember(nil, '', 'rift')), nil, 'empty name')
 
+-- the hint line under a weekly board (V41)
+local k, a = BoardPick.hint({ title = 'Tireless', classAwards = true, noReward = true })
+eq(k, 'Top 3 of every class on Monday: Conquest Tokens.', 'class awards: tokens, no title, no orbs'); eq(a, nil, 'no argument')
+k, a = BoardPick.hint({ title = 'Greater Delver', noReward = true })
+eq(k, 'Top 3 on Monday: the title %s for a week.', 'title only'); eq(a, 'Greater Delver', 'its title')
+k, a = BoardPick.hint({ title = 'Bossbane' })
+eq(k, 'Top 3 on Monday: the title %s for a week, orbs to the inbox.', 'title and orbs'); eq(a, 'Bossbane', 'title')
+k, a = BoardPick.hint({ title = '' })
+eq(k, 'Top 3 on Monday: orbs to the inbox.', 'no title: never an empty one'); eq(a, nil, 'no argument')
+eq((BoardPick.hint({ noReward = true })), 'Nothing is awarded on this board.', 'neither')
+eq((BoardPick.hint(nil)), 'Top 3 on Monday: orbs to the inbox.', 'bad board')
+
 if fails > 0 then
   print(fails .. ' failure(s)')
   os.exit(1)

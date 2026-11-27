@@ -440,6 +440,7 @@ TILESTATE_TELEPORT, TILESTATE_MAGICFIELD = 5, 6
 CONST_ME_POFF, CONST_ME_MAGIC_BLUE, CONST_ME_MAGIC_GREEN, CONST_ME_FIREWORK_YELLOW = 10, 11, 12, 13
 CONST_ANI_SMALLSTONE, CONST_ANI_ENERGY, CONST_ANI_FIRE = 20, 21, 22
 RETURNVALUE_NOERROR, RETURNVALUE_NOTPOSSIBLE = 0, 5
+MESSAGE_STATUS_WARNING, MESSAGE_INFO_DESCR = 18, 22
 CONTAINER_POS = 0xFFFF
 MESSAGE_STATUS_SMALL = 30
 ITEM_ATTRIBUTE_CORPSEOWNER = 99
@@ -674,7 +675,11 @@ function PlayerMT:getId() return self.id end
 function PlayerMT:getParty() return self.party end
 function PlayerMT:getPosition() return self.pos end
 function PlayerMT:sendCancelMessage(t) self.cancel[#self.cancel + 1] = t end
-function PlayerMT:sendTextMessage(_, t) self.texts[#self.texts + 1] = t end
+function PlayerMT:sendTextMessage(mode, t)
+	self.texts[#self.texts + 1] = t
+	self.modes = self.modes or {}
+	self.modes[#self.modes + 1] = mode
+end
 function Player(id)
 	if type(id) == "string" then -- by name (O671: the tester join)
 		for _, p in pairs(players) do
@@ -877,7 +882,11 @@ local potion = looseOf(7618)[1].item
 local toBp = {x = CONTAINER_POS, y = 3, z = 0}
 local fromGround = {x = 101, y = 101, z = 7}
 eq(X.onMoveItem(stranger, potion, 3, fromGround, toBp), RETURNVALUE_NOTPOSSIBLE, "a stranger may not take the killer's loot")
-ok(#stranger.cancel == 1 and stranger.cancel[1]:find("more seconds"), "and is told how long it is not theirs: " .. tostring(stranger.cancel[1]))
+local told = stranger.texts[#stranger.texts]
+ok(type(told) == "string" and told:find("more seconds") ~= nil, "and is told how long it is not theirs: " .. tostring(told))
+-- V41: a warning line, never a cancel message (the engine's "Sorry, not possible." for the returned value overwrote it)
+eq(#stranger.cancel, 0, "the refusal is not a cancel message")
+eq(stranger.modes[#stranger.modes], MESSAGE_STATUS_WARNING, "it is a warning line")
 ok(potion.attrs.chaos_loot ~= nil, "a refused move leaves the record")
 eq(X.onMoveItem(friend, potion, 3, fromGround, toBp), RETURNVALUE_NOERROR, "a party member may take it")
 ok(potion.attrs.chaos_loot == nil and potion.attrs.lf_loot == nil, "it leaves the ground with no record (it stacks again)")

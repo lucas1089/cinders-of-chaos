@@ -8654,3 +8654,16 @@ Linux main client from this branch (origin/main with the V38 branch merged), loc
 - O336: the seven monsters spawned one by one, each on its own outfit with name and level.
 - O338: seven Kilnforged pieces worn, every tooltip whole. No set bonus line: `ChaosGearSets.PAIR58` is still off (server/README.md "Relic sets").
 - Not fixed, seen: with eight effects and "Hallowed Ground" on four lines, the mastery choice window is about 580 px tall, more than a 540 px phone screen. The bow tooltip shows "Speed 1.95s" beside "Attack Interval 3s" (not looked into). The heal loop of the test ended and asuras killed the tester in the hunt; the relog after it timed out as in V38.
+
+## Seen in a client (2026-11-27, V41: Customise Character, small fixes, trade and talk, loot explosion, fusion, weekly ranking)
+
+Linux main client from this branch, local server, one tester. Rows O562, O576, O571, O669, O544 and O409 played through. What was wrong is fixed here.
+
+- `game_lookpreview`, `game_outfitextras` (O562): at 1280x720 the preview stage was cut under the controls. `LookPreviewCore.compactFits` / `controlsHeight` pick compact controls when the stage does not fit; the pet line sits 18 px above them.
+- `game_npctalk` (O571): a greeting such as "fine weapons I sell" had no Trade button. `TRADE_WORDS` now holds sell, buy, shop, goods, barter and the like.
+- `game_npctradewindow` (O571): the price coin is a coin pile (count 100, no number); the Sell tab count is what the player can sell (`sellableCount`, `TradeView.setTabCounts`), not the whole sell list.
+- `game_hotbar` (O669, game wide): the cancel and status line of `game_textmessage` lay 10 px from the bottom, behind the central hotbar. `HotbarLogic.statusMargin(place, height)` (bar bottom + height + 4) goes to `updateActionBarMessageMargin` on every placement; off when the bar is off.
+- `game_leaderboard` (O409): the class board's hint read "the title  for a week, orbs to the inbox.". `BoardPick.hint(b)` reads `classAwards`, `noReward` and `title` (server `leaderboard.lua` sends `noReward`); four pt-BR lines.
+- `game_passivetree` (O409): Trending Builds cut its footer and the descenders of the row names. Rows 48 px, window 440x432, footer anchored above Close.
+- Seen, fine: the Divine beam is the loudest; Angelic Wings centred on the Mage look; fusion kept the unique, rare and set copies; the day 7 login claim gave Devoted Labels.
+- Not fixed, seen: the trade window lies over the talk window; "bye" did not close the talk window; "Capacity after" has no thousands separator; the How it works card comes back after each restart; the helper hint text overlaps the minimap; Beastmaster rows are grouped under Ranger on the class board (class base).

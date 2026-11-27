@@ -74,6 +74,17 @@ local function setItemId(widget, id)
   end
 end
 
+-- the currency's coin beside a price: drawn as a pile (count 100, no number), as the header draws it. V41 (seen in a
+-- client): a single gold coin is a few pixels of its 32 px sprite, and at 14 px it was a dot
+local function setCoin(widget, id)
+  setItemId(widget, id)
+  if alive(widget) and id and id > 0 then
+    if widget.setItemCount then widget:setItemCount(100) end
+    if widget.setShowCount then widget:setShowCount(false) end
+  end
+end
+V.setCoin = setCoin
+
 -- ---------------------------------------------------------------- the window
 function V.new(window)
   local view = { window = window, ui = {}, cards = {}, chips = {}, on = {}, state = {}, unit = 'oz' }
@@ -137,11 +148,7 @@ function V:setHeader(h)
   ui.currencyLabel:setText(tr('Currency') .. ': ' .. h.name)
   ui.currencyLabel:removeTooltip()
   if h.fullName and h.fullName ~= h.name then ui.currencyLabel:setTooltip(h.fullName) end
-  setItemId(ui.currencyItem, h.item)
-  if alive(ui.currencyItem) and h.item then
-    ui.currencyItem:setItemCount(100)
-    ui.currencyItem:setShowCount(false)
-  end
+  setCoin(ui.currencyItem, h.item)
   self.state.gold = h.gold == true
   self.state.currencyItem = h.item
   self.state.caption = h.caption
@@ -156,11 +163,13 @@ function V:setBalance(n)
   self.ui.balanceLabel:setTooltip(V.fmt.exact(n))
 end
 
-function V:setTabCounts(buyN, sellN)
+-- sellN: what the player can sell now (the cards the Sell tab shows); sellListN: what the seller buys at all, which keeps
+-- the tab on (V41, seen in a client: "Sell (37)" over a list of 2, the count was the seller's whole list)
+function V:setTabCounts(buyN, sellN, sellListN)
   self.ui.buyTab:setText(tr('Buy') .. ' (' .. buyN .. ')')
   self.ui.sellTab:setText(tr('Sell') .. ' (' .. sellN .. ')')
   self.ui.buyTab:setEnabled(buyN > 0)
-  self.ui.sellTab:setEnabled(sellN > 0)
+  self.ui.sellTab:setEnabled((sellListN or sellN) > 0)
 end
 
 function V:setSort(sort)
@@ -206,7 +215,7 @@ function V:setCards(all)
     if ItemsDatabase and ItemsDatabase.setTier then pcall(ItemsDatabase.setTier, slot, card.item.ptr) end
     w:getChildById('nameLabel'):setText(clip(card.name, V.CARD_NAME_MAX))
     w:getChildById('priceLabel'):setText(V.fmt.short(card.price))
-    setItemId(w:getChildById('coin'), self.state.currencyItem or (self.state.gold and GOLD_ITEM) or nil)
+    setCoin(w:getChildById('coin'), self.state.currencyItem or (self.state.gold and GOLD_ITEM) or nil)
     w:setTooltip(cardTooltip(card, self.unit, V.fmt.exact))
     w.onClick = function() self:fire('select', card.key) end
     w.onMouseRelease = function(_, pos, button)
@@ -320,7 +329,7 @@ function V:setSelection(card, d, ctx)
     if tostring(ui.amountText:getText()) ~= tostring(d.amount) then ui.amountText:setText(tostring(d.amount)) end
   end)
   ui.totalValue:setText(V.fmt.exact(d.total))
-  setItemId(ui.totalCoin, self.state.currencyItem or (self.state.gold and GOLD_ITEM) or nil)
+  setCoin(ui.totalCoin, self.state.currencyItem or (self.state.gold and GOLD_ITEM) or nil)
   local caption = self.state.caption or tr('Gold')
   ui.afterCaption:setText(caption == tr('Gold') and tr('Gold after') or tr('Balance after'))
   ui.afterValue:setText(V.fmt.exact(d.after))

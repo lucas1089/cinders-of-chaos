@@ -70,6 +70,8 @@ view:setHeader({ name = 'Gold Coin', item = 3031, caption = 'Gold', balance = 10
 
 view:setTabCounts(3, 0)
 eq(ui.buyTab.text, 'Buy (3)', 'buy count'); eq(ui.sellTab.enabled, false, 'a seller that buys nothing: the Sell tab is off')
+view:setTabCounts(3, 0, 4)
+eq(ui.sellTab.text, 'Sell (0)', 'V41: the Sell tab counts what the player can sell'); eq(ui.sellTab.enabled, true, 'and stays on while the seller buys something')
 view:setTabCounts(3, 2)
 view:setTab(M.BUY)
 eq(ui.buyTab.checked, true, 'buy tab checked'); eq(ui.sellTab.checked, false, 'sell tab not')
@@ -106,6 +108,9 @@ view:update({ visible = visible, selected = nil, tab = M.BUY })
 local first = ui.list.kids[1]
 eq(first:getChildById('nameLabel').text, 'Mana Potion', 'proper-case name, sorted by name')
 eq(first:getChildById('priceLabel').text, '5.0k', 'short price'); eq(first:getChildById('coin').itemId, 3031, 'coin icon on the price')
+-- V41 (seen in a client): one coin was a dot at 14 px; the price coin is a pile with no number, as the header's
+eq(first:getChildById('coin').count, 100, 'the price coin is a pile'); eq(first:getChildById('coin').showCount, false, 'with no number')
+eq(ui.currencyItem.count, 100, 'the header coin too')
 eq(first.opacity, 0.55, 'a card the player cannot afford is greyed'); eq(first:getChildById('nameLabel').color, '#6b6258', 'grey name')
 eq(ui.list.kids[3].opacity, 1, 'the others are not')
 eq(ui.list.kids[2]:getChildById('metaLabel').text, '120.00 oz', 'weight, no owned count when none')

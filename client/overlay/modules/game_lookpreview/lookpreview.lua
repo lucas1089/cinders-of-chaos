@@ -779,6 +779,67 @@ function Preview:syncControls()
   c.compare:setChecked(settings.compare)
   c.compare:setVisible(self.fx ~= nil and self.fx.hasStock == true)
   self.syncing = false
+  self:fitControls()
+end
+
+-- V41: the controls' height for the form in use (P.controlsHeight); the stage takes the rest. Only a panel whose window
+-- called setCompact: the others keep the height their window gave them (the store's 28 px, the phone's 30 px)
+function Preview:fitControls()
+  local c = self.widget and self.widget.controls
+  if not c or self.compact == nil then return end
+  local h = P.controlsHeight(self.compact == true, c.compare:isVisible())
+  if c:getHeight() ~= h then c:setHeight(h) end
+end
+
+-- V41 (seen in a client): a short window asks for the compact controls (P.compactFits): the boxes in one row, so the
+-- stage gains about 60 px. When they do not fit across, the panel keeps the full form. Returns whether it is compact.
+function Preview:setCompact(on)
+  if not alive(self.widget) then return false end
+  local c = self.widget.controls
+  local boxes = { c.autoTurn, c.walk, c.simple }
+  if on then
+    local widths = {}
+    for i, b in ipairs(boxes) do
+      local ok, size = pcall(b.getTextSize, b)
+      local off = b.getTextOffset and b:getTextOffset() or { x = 22 }
+      widths[i] = (tonumber(off and off.x) or 22) + (ok and size and size.width or 0) + 2
+    end
+    if not P.compactFits(widths, c:getWidth()) then on = false end
+    if on then
+      for i, b in ipairs(boxes) do
+        b:breakAnchors()
+        b:addAnchor(AnchorTop, 'turnLeft', AnchorBottom)
+        if i == 1 then
+          b:addAnchor(AnchorLeft, 'parent', AnchorLeft)
+        else
+          b:addAnchor(AnchorLeft, boxes[i - 1]:getId(), AnchorRight)
+        end
+        b:setMarginTop(P.CONTROLS_ROW_GAP)
+        b:setMarginLeft(i == 1 and 0 or P.COMPACT_GAP)
+        b:setWidth(widths[i])
+      end
+      c.compare:breakAnchors()
+      c.compare:addAnchor(AnchorTop, 'autoTurn', AnchorBottom)
+      c.compare:addAnchor(AnchorLeft, 'parent', AnchorLeft)
+      c.compare:addAnchor(AnchorRight, 'parent', AnchorRight)
+    end
+  end
+  if not on and self.compact then
+    -- back to the style's form: each box under the one before, full width
+    local prev = 'turnLeft'
+    for _, b in ipairs({ c.autoTurn, c.walk, c.simple, c.compare }) do
+      b:breakAnchors()
+      b:addAnchor(AnchorTop, prev, AnchorBottom)
+      b:addAnchor(AnchorLeft, 'parent', AnchorLeft)
+      b:addAnchor(AnchorRight, 'parent', AnchorRight)
+      b:setMarginTop(prev == 'turnLeft' and 6 or 4)
+      b:setMarginLeft(0)
+      prev = b:getId()
+    end
+  end
+  self.compact = on and true or false
+  self:fitControls()
+  return self.compact
 end
 
 function Preview:animate()

@@ -171,6 +171,14 @@ function L.place(p)
            bottom = L.BOTTOM_GAP + lift }
 end
 
+-- the bottom margin of the base status line (game_textmessage statusLabel: cancel and failure texts such as "That loot
+-- belongs to someone else for 25 more seconds.") so it sits just above the bar, not behind it (V41, 2026-11-27: the line
+-- was drawn at 10 px from the bottom, under the bar, and no refusal could be read)
+L.STATUS_GAP = 4
+function L.statusMargin(place, height)
+  return math.floor((num(place and place.bottom) or 0) + (num(height) or 0) + L.STATUS_GAP)
+end
+
 -- the place while the bar is dragged by its handle: where it was at the press plus the mouse travel
 -- (start = { left, lift, mouseX, mouseY })
 function L.dragPlace(start, mouseX, mouseY, regionLeft)

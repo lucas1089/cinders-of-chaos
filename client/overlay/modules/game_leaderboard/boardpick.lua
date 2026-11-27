@@ -87,3 +87,22 @@ function BoardPick.remember(node, charName, key)
   if k and key ~= nil then out[k] = tostring(key) end
   return out
 end
+
+-- the line under a weekly board: what its top 3 get on Monday (V41, 2026-11-27: Weekly Experience showed "the title  for a
+-- week, orbs to the inbox." with an empty title, though it pays Conquest Tokens per class, and the title-only boards promised
+-- orbs). Returns the English text and its argument for tr(); meta flags from the server (leaderboard.lua sendMeta):
+--   classAwards  the top 3 of every class tab get Conquest Tokens (weekly_class_config.lua), no title, no orbs
+--   noReward     the title only
+function BoardPick.hint(b)
+  b = type(b) == 'table' and b or {}
+  if b.classAwards then
+    return 'Top 3 of every class on Monday: Conquest Tokens.', nil
+  end
+  local title = type(b.title) == 'string' and b.title ~= '' and b.title or nil
+  if b.noReward then
+    if title then return 'Top 3 on Monday: the title %s for a week.', title end
+    return 'Nothing is awarded on this board.', nil
+  end
+  if title then return 'Top 3 on Monday: the title %s for a week, orbs to the inbox.', title end
+  return 'Top 3 on Monday: orbs to the inbox.', nil
+end

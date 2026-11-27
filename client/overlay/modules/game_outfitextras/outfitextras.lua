@@ -681,6 +681,9 @@ local function buildWindow()
   end
 end
 
+-- the pet stands this far above the preview's controls (outfitextras.otui: margin-bottom 124 over controls of 106)
+local PET_ABOVE_CONTROLS = 18
+
 -- V37: the window's height for this screen (CustomiseCore.fitHeight): at 1280x720 the style height ran past the bottom
 local function fitToScreen()
   if mobile or not styleHeight then return end
@@ -691,6 +694,15 @@ local function fitToScreen()
   if ok and bar and not bar:isDestroyed() and bar:isVisible() then barBottom = bar:getY() + bar:getHeight() end
   local h = C.fitHeight(styleHeight, root:getHeight(), barBottom)
   if h and h ~= window:getHeight() then window:setHeight(h) end
+  -- V41 (seen in a client): at 1280 x 720 the stage was 99 px tall and a ring aura or a hood was cut off; a short window
+  -- puts the preview's boxes in one row (game_lookpreview setCompact), the stage gains about 60 px
+  local short = h ~= nil and h < styleHeight
+  if preview and preview.setCompact and (short or preview.compact) then
+    preview:setCompact(short)
+    local c = preview.widget and preview.widget.controls
+    local pet = child('petView')
+    if c and pet then pet:setMarginBottom(c:getHeight() + PET_ABOVE_CONTROLS) end
+  end
 end
 
 -- ---------------------------------------------------------------- opening
