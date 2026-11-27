@@ -36,8 +36,44 @@ def run(argv):
     return code, out.getvalue()
 
 
+def own_blocks():
+    """V44 (seen in a client, 2026-11-27): the store sold "Ananne Window Wings". The marked Chaos blocks our installers
+    write into wings.xml / auras.xml are ours: a base line outside the block gets the new name, the block stays."""
+    root = tempfile.mkdtemp(prefix='base_texts_blocks_')
+    try:
+        data = os.path.join(root, 'data')
+        os.makedirs(os.path.join(data, 'XML'))
+        wx = os.path.join(data, 'XML', 'wings.xml')
+        block = ('\t<!-- Chaos wings (server/tools/install_outfits.py, do not edit by hand) -->\n'
+                 '\t<wing id="96" clientid="2451" name="Zorgfell Window Wings" speed="20" />\n'
+                 '\t<!-- end of the Chaos wings -->\n')
+        open(wx, 'w').write('<?xml version="1.0"?>\n<wings>\n\t<wing id="1" clientid="937" name="Zorgfell Wings" />\n'
+                            + block + '</wings>\n')
+        ax = os.path.join(data, 'XML', 'auras.xml')
+        ablock = ('\t<!-- Chaos auras (server/tools/install_auras.py, do not edit by hand) -->\n'
+                  '\t<aura id="64" clientid="2508" name="Zorgfell Hairpin" speed="20" />\n'
+                  '\t<!-- end of the Chaos auras -->\n')
+        open(ax, 'w').write('<auras>\n' + ablock + '\t<aura id="2" clientid="9" name="Zorgfell Glow" />\n</auras>\n')
+        names = os.path.join(root, 'names.csv')
+        open(names, 'w').write('sha256,name,kind,match\n%s,Ashfell,place,word\n' % L.digest('Zorgfell'))
+        npc = os.path.join(root, 'npc.csv')
+        open(npc, 'w').write('sha256,name,kind,match\n')
+        mon = os.path.join(root, 'mon.csv')
+        open(mon, 'w').write('sha256,name,kind\n')
+        args = [data, '--no-map', '--names', names, '--npc-names', npc, '--monster-names', mon]
+        code, out = run(args)
+        w, a = open(wx).read(), open(ax).read()
+        check(code == 0 and 'name="Ashfell Wings"' in w and 'name="Ashfell Glow"' in a, 'base lines renamed: %s' % out)
+        check(block in w and ablock in a, 'the Chaos blocks stay as written: %s %s' % (w, a))
+        code, _out = run(args)
+        check(code == 0 and open(wx).read() == w and open(ax).read() == a, 'a second run changes nothing')
+        check(T.outside_own_blocks('x' + block + 'y', str.upper) == 'X' + block + 'Y', 'outside_own_blocks keeps the block')
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
 def main():
-    root = tempfile.mkdtemp(prefix='base_texts_test_')
+    root =tempfile.mkdtemp(prefix='base_texts_test_')
     try:
         data = os.path.join(root, 'data')
         os.makedirs(os.path.join(data, 'world'))
@@ -96,6 +132,7 @@ def main():
             check(open(mp, 'rb').read() == orig and os.path.exists(mp + '.tmp'), '%s: the map is as it was, the .tmp stays' % name)
     finally:
         shutil.rmtree(root, ignore_errors=True)
+    own_blocks()
     print('patch_base_texts_test: %s' % ('OK' if not failed else '%d FAILED' % failed))
     return 1 if failed else 0
 

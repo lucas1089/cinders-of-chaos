@@ -13165,6 +13165,16 @@ of `items.xml` stay. Names the data looks things up by stay too: item, monster a
 NPC yields where the NPC is meant, written with a capital letter). Our own files are skipped (`data/scripts/chaos`,
 `data/spells/chaos`, `data/lib/chaos_*.lua`, the Chaos monster folders, `server/data/npc`).
 
+**Our blocks in base XML files (V44).** Seen in a client 2026-11-27: the store sold "Ananne Window Wings" (Rose Window Wings),
+"Rednath Pipe Wings" (Reed Pipe), "Melette Sap Wings" (Amber Sap) and the auras "Fire Bryna Hairpin" (Fire Lily), "Tesenna Wing
+Capelet" (Dove Wing). Cause: our installers write our wings, auras, outfits, mounts and shaders into the base `wings.xml`,
+`auras.xml`, `outfits.xml`, `mounts.xml`, `shaders.xml` between `<!-- Chaos ... (server/tools/...) -->` and
+`<!-- end of the Chaos ... -->`; this step ran over the whole file, and an English word of our names that a `match = cap`
+row knows (written with a capital letter in a title-case name) was renamed. Now such a marked block is copied as it is
+(`outside_own_blocks`); the base lines round it change as before. `install_all.py` runs `outfits` and `auras` before
+`worldtexts`, so the admin app's Update button (every step) gives a live server its names back. Test:
+`tools/patch_base_texts_test.py` (`own_blocks`).
+
 **Raid spawns (O294).** Owner log 2026-10-27: `[Error] Raids: Cant create monster <name>`. A raid file names its boss in
 `<singlespawn name="..."/>` and `<areaspawn><monster name="..."/>`; that is a monster type name, and the monster files
 keep their base name. When the tool did not find the monster type (a boss defined where `monster/` scans do not look),
@@ -14947,6 +14957,8 @@ price of the item price table: the classic creature products (vendor loot by des
 26158-26179 and the scarab ocarina 27432, which no base NPC buys (the Loot Buyer pays the table's price).
 
 ### Orbs in the Orbs Pouch of the purse (O719)
+
+Seen in a client (2026-11-27, V44): no orb in the backpack, 4-8 orbs in an Orbs Pouch in the purse; the forge's materials row shows them, the item menu entry "Forge item" opens the forge with the sword placed, Redo all spends one Orb of Upheaval from the pouch (7 to 6). Minor: the cost line counts the purse pouch as "backpack" ("7 backpack, 0 stash").
 
 Owner 2026-11-22 (pt-BR): the forge showed 0 for every orb while they lay in the orb bag. Cause: a pouch the store delivers lies
 in the purse (the store inbox), outside inventory slots 1-10, and `player:getItemCount` / `removeItem` never walk it (only the
@@ -37987,6 +37999,8 @@ Client pair 73 holds 3 creature outfits, 3527 to 3529, of 4x4 and 5x5 tiles, mad
 
 ## Talath's lair (O616; `scripts/chaos/bosslair.lua`, `bosslair_core.lua`, `bosslair_config.lua`, `tools/areaplan/rooms/shard_hollow.json`)
 
+Seen in a client (2026-11-27, V44): The Rotmother, Vhoss the Hexmaw and Talath on their tile, every frame (idle 16 / 19 / 12 and walk 21 / 15 / 12 phases at 83 ms, the box within 1 px of the foot tile, by numbers on pair 88); Talath's lair: the portal at 16794,14352 leads to the Rime Ledge and Talath waits in the lair.
+
 Owner 2026-11-17: "Talath: put a spawn of it." Talath had a file, ice mechanics and a new look, but no spawn. Now it has one map spawn.
 
 - **Place**: The Shard Hollow, a small ice area of its own. Origin 15840, 15500, 7 in the annex row, 72 x 84 tiles, 567 walkable.
@@ -38371,6 +38385,8 @@ status holds, an end once. Players and monsters alike.
 
 
 ## Look swaps (O619; `data/monster/monster_o619_looks.csv`, `o619_look_facts.csv`, install step `monsterswaplooks`, mounts in `install_outfits.py`)
+
+Seen in a client (2026-11-27, V44): Golden Dragon, Ice Dragon, Death Mage, Risen Skeleton, Evil Man and Captain Bloodbeard on their swapped looks, and the five donor mounts (looks 2999, 3096, 3121, 3314, 3207) ridden standing and walking; frames and foot point also checked by numbers on pair 88.
 
 Owner 2026-11-17 (translated): "The mounts can just be swapped, the monsters can be swapped too, I know we have many. The fun costumes can stay.
 Keep everything at the same quality band." The O610 audit measured every outfit, mount and monster look of pair 71 against the stock bar
@@ -39538,6 +39554,8 @@ monster was 2000 (Pyre Stork, Pyrewing Tyrant), the hunts of 2150-2500 used 1700
   `chaos-ctl.sh client-pair set 84` or the admin app, and the install.
 
 ## Monster looks that match the name (O768) (`data/monster/monster_relook_looks.csv`, install step `monsterrelooklooks`, client pair 86)
+
+Seen in a client (2026-11-27, V44): Banshee, Werelion, Leaf Golem, White Lion and Hellhound stand and walk with the new looks. Minor: the Banshee's idle frames sit about 6 px left of its walk frames.
 
 Owner 2026-11-25 (pt-BR): "banshee, white lion, hellhound, werelion, leaf golem ficaram ruins ou não condizentes com o nome.
 talath pode ser maior". Options were shown in a video (V5b); the owner's picks:
