@@ -895,6 +895,17 @@ function L.fitCaption(text, width, measure)
   return cut .. '.'
 end
 
+-- The value of a stat tile (V45): the text when it fits; else without its trailing " (...)" part (the swings per second of
+-- an interval under a second: "0.86s (1.2/s)" ran past the Interval tile of a dual-wield Thief dagger and was cut to
+-- "0.86s (1.2/"); else the text as it is (a number is never cut). measure(text) -> px; width: the room in px
+function L.fitValue(text, width, measure)
+  text = tostring(text or '')
+  if type(measure) ~= 'function' or not width or measure(text) <= width then return text end
+  local short = text:gsub('%s*%b()$', '')
+  if short ~= '' then return short end
+  return text
+end
+
 -- which base rows become tiles, in this order: the damage and speed of a weapon, then the protection of the rest
 L.TILE_ORDER = { 'dps', 'attack', 'speed', 'range', 'armor', 'defense', 'extradefense', 'hitchance' }
 
