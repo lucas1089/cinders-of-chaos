@@ -6642,6 +6642,8 @@ Owner, 2026-11-23 (pt-BR, translated): "The old death effects can be removed com
 
 Seen in a client (2026-11-27, V31): score 64 to 72 after a purchase, Try on works, a cosmetic seen by a second character; the cut tab labels were a client fix.
 
+Seen in a client (2026-11-27, V40): the store has no Emotes chip; the other O564 previews are in client/MANIFEST.md "Store cosmetics fixes (O564)".
+
 ## Wardrobe catalogue (`wardrobe.lua`, `wardrobe_core.lua`, client `game_unlocks`, base patch 0060)
 
 The 10.98 outfit window packet lists only what the character owns; the Customise Character window shows everything
@@ -12751,6 +12753,8 @@ server or in a client.
   `client_chaos_topbar` tests, `tools/ci/check_topbar_tree.py`.
 
 Seen in a client (2026-11-25): three looted cards went into the deck by themselves. Ancestral, Abyssal and Blade Flurry switched on in the window. Thirain came on a hit, was sent away, then Blackfang came. Blade Flurry hit as fire.
+
+Seen in a client (2026-11-27, V40): cards added to a level 1500 tester's backpack were gone from it within 4 s and counted in the Deck (3 of 76, then 6), one "New card" message each; the client filters work (client/MANIFEST.md `game_carddeck`).
 
 ## Tile labels (`tile_labels.lua`, `tile_labels_core.lua`, `tile_labels_config.lua`)
 

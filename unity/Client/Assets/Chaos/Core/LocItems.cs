@@ -43,7 +43,7 @@ namespace Chaos.Core
             // store
             { "Store", "Loja" }, { "Search the store", "Buscar na loja" }, { "History", "Histórico" }, { "Chaos Coins: {0}", "Moedas do Caos: {0}" },
             { "Chaos Coins are added on the website.", "As Moedas do Caos são adicionadas no site." }, { "Transaction history", "Histórico de compras" },
-            { "Search \"{0}\": {1} offers", "Busca \"{0}\": {1} ofertas" }, { "Loading the store...", "Carregando a loja..." },
+            { "Search \"{0}\": {1} offers", "Busca \"{0}\": {1} ofertas" }, { "Search \"{0}\": 1 offer", "Busca \"{0}\": 1 oferta" }, { "Loading the store...", "Carregando a loja..." },
             { "Previous", "Anterior" }, { "Next", "Próxima" }, { "Page {0} of {1}", "Página {0} de {1}" }, { "{0} ({1} coins)", "{0} ({1} moedas)" },
             { "was {0}", "era {0}" }, { "Owned", "Já tem" }, { "Yes", "Sim" }, { "No", "Não" },
             { "Do you want to buy {0} for {1} Chaos Coins?", "Quer comprar {0} por {1} Moedas do Caos?" },

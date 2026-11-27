@@ -59,6 +59,11 @@ MiniWindow
 
   MiniWindowContents
     padding: 2
+    // 4 cells of 34 + 3 gaps of 2 = 142 px: in the side dock (window 164 px) the contents are 145 px wide while
+    // the scrollbar shows (a 20-slot page and the Loot Bag section at 720 px high), so a padding of 2 on both sides
+    // left 141 px and every grid fell to 3 columns (seen in a client 2026-11-27, V40). 1 + 0 leaves 144 px.
+    padding-left: 1
+    padding-right: 0
 
     Panel
       id: tabRow
@@ -246,6 +251,9 @@ MiniWindow
         cell-spacing: 2
         flow: true
 
+    // the three buttons share the row (Purse takes what Sort and Pin leave): at 60 + 50 + 42 px they were 160 px wide and
+    // Pin ran under the scrollbar of the 144 px contents (seen in a client 2026-11-27, V40); now 58 + 2 + 42 + 2 + 40 = 144
+    // (pt-BR "Ordenar" and "Bolsa" fit, held by client/tools/check_text_fit.py)
     Panel
       id: buttons
       anchors.top: pages.bottom
@@ -258,7 +266,7 @@ MiniWindow
         id: sortButton
         anchors.top: parent.top
         anchors.left: parent.left
-        width: 60
+        width: 58
         !text: tr('Sort')
         !tooltip: tr('Puts the items of this page in order: by item, then the bigger stack first.')
         @onClick: modules.game_bagpanel.sort()
@@ -267,8 +275,9 @@ MiniWindow
         id: purseButton
         anchors.top: parent.top
         anchors.left: sortButton.right
-        margin-left: 4
-        width: 50
+        anchors.right: pinButton.left
+        margin-left: 2
+        margin-right: 2
         !text: tr('Purse')
         !tooltip: tr('Shows your purse in this panel. What you buy in the store is delivered there.')
         @onClick: modules.game_bagpanel.openPurse()
@@ -276,9 +285,8 @@ MiniWindow
       BagPanelButton
         id: pinButton
         anchors.top: parent.top
-        anchors.left: purseButton.right
-        margin-left: 4
-        width: 42
+        anchors.right: parent.right
+        width: 40
         !text: tr('Pin')
         !tooltip: tr('Pins the bag shown: it stays open, no other bag replaces it, and it opens again when you log in. Right click a bag button to pin it too.')
         @onClick: modules.game_bagpanel.togglePin()

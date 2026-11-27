@@ -206,9 +206,19 @@ eq(id('rail'):getChildren()[1]:isChecked(), true, 'Home is open')
 eq(id('home'):isVisible(), true, 'the home page shows')
 eq(id('offers'):isVisible(), false, 'not the cards')
 eq(id('points'):getText(), '150', 'the balance')
-local n = 0
-for _, s in ipairs(sent) do if s.action == 'get_page' then n = n + 1 end end
-eq(n, 3, 'the pages of the weekly offers, the starter packs and the bundles are asked for')
+local function pagesAsked()
+  local n = 0
+  for _, s in ipairs(sent) do if s.action == 'get_page' then n = n + 1 end end
+  return n
+end
+-- V40: one page at once, the others ShopView.HOME_GAP_MS apart (the server drops a get_page within 100 ms of another)
+eq(pagesAsked(), 1, 'the first page at once')
+local homeRetry
+for _, s in ipairs(scheduled) do
+  if s.ms < ShopView.HOME_RETRY_MS then s.fn() elseif s.ms >= ShopView.HOME_RETRY_MS then homeRetry = s end
+end
+eq(pagesAsked(), 3, 'the pages of the weekly offers, the starter packs and the bundles are asked for')
+eq(homeRetry ~= nil, true, 'a check for pages that did not come')
 eq(id('chips'):getHeight(), 0, 'no chips on the home page')
 -- the weekly timer on its rail entry and its strip
 eq(id('rail'):getChildren()[3].count:getText(), '1d 01h', 'the weekly entry shows its timer')
@@ -218,6 +228,9 @@ for i = 1, 5 do weekly[i] = item('Week ' .. i, 10 * i, i == 1 and { tags = { 'Fe
 feed('category_page', { category = 2, page = 1, offers = weekly })
 feed('category_page', { category = 3, page = 1, offers = { item('Frostborn Set', 400, { tags = { 'New' } }), item('Infernal Set', 500) } })
 feed('category_page', { category = 1, page = 1, offers = { item('Novice Pack', 20), item('Adventurer Pack', 90) } })
+local before = #sent
+homeRetry.fn()
+eq(#sent, before, 'every page came: nothing asked again')
 local sections = id('home'):getChildren()
 eq(#sections, 3, 'three sections on the home page')
 eq(sections[1].title:getText(), 'This week', 'the weekly strip on top')
@@ -382,11 +395,28 @@ eq(sent[#sent].data.category, 4, 'openCategory shows that category')
 eq(id('rail'):getChildren()[5]:isChecked(), true, 'in its group')
 
 -- closing and opening again: the home page, not the last category
+local mark = #scheduled
 hide()
 toggle()
 feed('category_groups', groups)
 feed('categories', cats, { points = 900 })
 eq(id('home'):isVisible(), true, 'opening again: the home page')
+-- V40: the server dropped the bundles page (a get_page within 100 ms of another): the check asks for it again
+do
+  local retry
+  for i = mark + 1, #scheduled do
+    local s = scheduled[i]
+    if s.ms >= ShopView.HOME_RETRY_MS then retry = s else s.fn() end
+  end
+  feed('category_page', { category = 2, page = 1, offers = { item('Week 1', 10) } })
+  feed('category_page', { category = 1, page = 1, offers = { item('Novice Pack', 20) } })
+  sent = {}
+  retry.fn()
+  eq(sentActions(), 'get_page', 'one page asked again')
+  eq(sent[1].data.category, 3, 'the bundles page, the one that did not come')
+  feed('category_page', { category = 3, page = 1, offers = { item('Frostborn Set', 400) } })
+  eq(#id('home'):getChildren()[3].grid:getChildren(), 1, 'the bundles strip fills when it comes')
+end
 -- a refresh while a category is open keeps it (a purchase)
 local pot = id('rail'):getChildren()[5]
 pot.onMousePress(pot, nil, 1)
@@ -401,6 +431,12 @@ feed('categories', { { name = 'Wings', size = 3, type = 'item', item = 1, pages 
 eq(#id('rail'):getChildren(), 2, 'a flat server: two entries, no Home')
 eq(id('home'):isVisible(), false, 'no home page')
 eq(id('pathLabel'):getText(), 'Wings', 'the first category')
+-- one result: "1 offer", not "1 offers" (V40)
+id('searchText').props.text = 'gale'
+onSearchChange()
+scheduled[#scheduled].fn()
+feed('search_results', { text = 'gale', offers = { item('Gale Ring', 250, { at = { category = 2, page = 1, offer = 1 }, path = { 'Auras' } }) } })
+eq(id('pathLabel'):getText(), 'Search "gale": 1 offer', 'one offer in the singular')
 
 if fails > 0 then print(fails .. ' of ' .. checks .. ' checks FAILED') os.exit(1) end
 print('shop_ui_test: ' .. checks .. ' checks OK')

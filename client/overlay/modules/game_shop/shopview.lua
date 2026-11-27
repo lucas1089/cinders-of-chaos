@@ -129,6 +129,31 @@ function V.homeSections(nodes)
   return out
 end
 
+-- Asking for the pages of the home page. The server answers one get_page every 100 ms per character (server shop.lua,
+-- ratelimit.lua "shop.get_page") and drops a quicker one without a word: the three pages asked at once came back as
+-- one, and the Bundles strip stayed empty under its "See all (6)" (seen in a client 2026-11-27, V40). The pages go out
+-- V.HOME_GAP_MS apart (V.homeDelay); a page that has not come V.HOME_RETRY_MS after the last one went out is asked again
+-- (V.homeMissing), V.HOME_TRIES rounds in all.
+V.HOME_GAP_MS = 150
+V.HOME_RETRY_MS = 500
+V.HOME_TRIES = 3
+
+-- the delay of the i-th request of a round (the first goes at once)
+function V.homeDelay(i, gap)
+  return math.max(0, (tonumber(i) or 1) - 1) * (tonumber(gap) or V.HOME_GAP_MS)
+end
+
+-- the category indexes of `sections` (V.homeSections) whose first page has not come yet (`arrived[index]` true when
+-- it came), in the order of the sections
+function V.homeMissing(sections, arrived)
+  local out = {}
+  arrived = arrived or {}
+  for _, s in ipairs(sections or {}) do
+    if s.index and not arrived[s.index] then out[#out + 1] = s.index end
+  end
+  return out
+end
+
 -- how many cards a home section shows: the weekly strip all (up to 2 rows), the others one row
 function V.homeLimit(key, columns)
   columns = math.max(1, tonumber(columns) or 1)
@@ -161,6 +186,20 @@ function V.chipsArea(count, columns, cellH, gap, maxRows)
   local rows = math.ceil(count / columns)
   local shown = math.min(rows, math.max(1, tonumber(maxRows) or rows))
   return { height = shown * cellH + (shown - 1) * gap, overflow = rows > shown }
+end
+
+-- the scroll of the chips area (px) that brings the chip at `pos` (1-based) into the `maxRows` rows it shows: 0 while
+-- it is in the first rows, else its row on the last line shown. The chips are made again on every pick, which put the
+-- area back on top: a chip of the third row (Cosmetics > Rare Loot Effects) went out of sight once picked (seen in a
+-- client 2026-11-27, V40).
+function V.chipScroll(pos, columns, cellH, gap, maxRows)
+  pos = tonumber(pos)
+  if not pos or pos < 1 then return 0 end
+  columns = math.max(1, tonumber(columns) or 1)
+  maxRows = math.max(1, tonumber(maxRows) or 1)
+  local row = math.floor((pos - 1) / columns)
+  if row < maxRows then return 0 end
+  return (row - maxRows + 1) * (cellH + gap)
 end
 
 -- the height of a grid of `count` cards in `columns` columns
