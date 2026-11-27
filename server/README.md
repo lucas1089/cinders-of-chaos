@@ -27144,8 +27144,10 @@ other bytes than the server wrote, and drops the rest of that server message, a 
   fist and 800+ weapon nodes: 40762 nodes): 0 disagree (with base patch 0174 in the client). `--write-table` rewrites `item_wire.csv` from an installed items.otb and the pair (rows already in
   the file stay, worked out again): run it after a new pair, a `prune_pair.py` prune or restore, or a new item block, then
   commit. CI: `check_item_wire_test.py` and `patch_item_wire_test.py` (rules, table, tool, installer hook, synthetic) and, in
-  the live-pair job, `check_item_wire.py --table-check` (every row against the live dat, no server needed). What CI cannot
-  see: a NEW node that disagrees and is not in the table yet.
+  the live-pair job, `check_item_wire.py --table-check` (every row against the live dat, no server needed). Since V43 (2026-11-27)
+  `--table-check` also checks the `new` rows of our item manifests (data/items/*.csv with client_id, server_id, otb_group,
+  otb_flags, mode and extra) with the table applied, so a missing row of our own items fails too. What CI cannot see: a NEW
+  base node that disagrees and is not in the table yet.
 - **Restoring pruned art.** `prune_pair.py restore` brings a thing back with its phases: run `--write-table` again, the row
   flips to `animation 1`, the next install (or `--only itemwire` plus the item step) turns the flag back on.
 - **Creature refresh on a tile (engine patch `0083-creature-refresh-by-id.patch`).** `ProtocolGame::sendUpdateTileCreature`
@@ -38158,6 +38160,8 @@ a hit or projectile too small or dim to read on grass and stone, a projectile wi
 
 ## Effects for roles that had none (O606; `data/lib/chaos_gapfx.lua`, `data/lib/chaos_gapfx_ids.lua`, `scripts/chaos/gapfx.lua`, client pair 73)
 
+**Seen in a client (2026-11-27, V43):** ten roles; the boss warning pulse sends the strike circle.
+
 47 effects of a purchased effect set at the ids 5190..5236. The art is in the sprite pair only: client/MANIFEST.md, docs/CREDITS.md.
 O613 (owner 2026-11-17): the "Jackpot" effect (a unique won from a roulette) is gone, with its sender in `prizes.lua`. The rows after it moved up one id.
 Each goes to an event that sent no effect of its own: nothing, a stock puff or the shared yellow firework.
@@ -38242,6 +38246,8 @@ Looks only. No damage, no timing, no area changes.
 | 5235 | 175 | `gx_summon_gate` | 5 x 5, 24 | uber.lua: adds (the stock teleport puff before); guildboss.lua: adds (nothing before) |
 | 5236 | 179 | `gx_rift_seal` | 3 x 3, 24 | rift.lua: on the arrival point of a run, once (nothing before) |
 ## Area bursts, beams and markers (O607, O609, O613; `data/lib/chaos_area_fx.lua`, `data/lib/chaos_area_fx_ids.lua`, client pair 73)
+
+**Seen in a client (2026-11-27, V43):** beams, long beams in one piece, the slowed gravity press, the clock face rows and the markers.
 
 The owner approved the review O604. Looks only: no damage, no timing, no area changes.
 
@@ -38469,6 +38475,8 @@ The kit of docs/SPELL_UPGRADES.md 3.4, drawn by code: `client/tools/sprites/gen_
 
 ## Bolt from the sky (O614; `data/lib/chaos_lightning_fx.lua`, `data/lib/chaos_lightning_fx_ids.lua`, client pair 73)
 
+**Seen in a client (2026-11-27, V43):** plain and heavy bolts.
+
 Owner 2026-11-17: "For the lightning falling from the sky, make the tool to draw the lightning."
 The bolt is drawn by code: `client/tools/sprites/gen_lightning_fx.py`, client/MANIFEST.md. Looks only. No damage, timing or area changes.
 
@@ -38499,6 +38507,8 @@ The bolt is drawn by code: `client/tools/sprites/gen_lightning_fx.py`, client/MA
 - **Open.** Not seen in a client. The holy and dark tints have no sender and are not in the pair.
 
 ## Decor flames (pair 74) (`install_decor_flames.py`, step `decorflames`, O623)
+
+**Seen in a client (2026-11-27, V43):** all five flames animate. Bug found: the temple torch 48544 (client 44544) has 12 phases since pair 74, but its items.otb node kept no FLAG_ANIMATION and `item_wire.csv` had no row for it. The client read a phase byte the server never sent, lost the rest of the map packet ("ProtocolGame parse message exception ... eof") and drew the screen black past the torch. Fix: the row `48544,44544,1,` in `data/items/item_wire.csv` (install_temple_art.py and step `itemwire` apply it). `check_item_wire.py --table-check` now also checks the `new` rows of our item manifests, so a missing row fails CI.
 
 Owner 2026-11-17: animated decor flames from pixelfx, fitted by `client/tools/sprites/gen_decor_flames.py` (client/MANIFEST.md
 "Decor flames (O623)"). Four items, appended to pair 74 after the 44,559 items of pair 73: client ids 44560 to 44563, server ids

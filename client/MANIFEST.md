@@ -7185,6 +7185,8 @@ The other 49 spells keep today's effects. One pack is left of five. The table we
 - **Previews** (never committed): one MP4 of the three kept spells, before and after.
 ## Area bursts, beams and markers of the pair 36 packs (O607, `tools/sprites/gen_area_fx.py`, `art_import/area_fx.csv`; joins pair 73; owner 2026-11-17)
 
+**Seen in a client (2026-11-27, V43):** Lance of Vigil beams in each heading; the long beams of Soulrend Beam and Dawnbreaker Shot in one piece in 8 headings (O609); the gravity press on slowed monsters and the clock face on Veil of Whispers and Tear in the Weave (O613); the five markers.
+
 The owner approved the review O604. Five of our area bursts are faint. The beam spells draw balls on a line. The packs have markers we lack.
 42 effects then. Not in a live pair yet, not seen in a client.
 
@@ -7538,6 +7540,8 @@ So three creatures stay, all for bosses. The four humanoids, the winged angel an
 
 ## Effects for roles that had none (O606, `tools/sprites/gen_gap_fx.py`, `art_import/gap_fx.csv`; joins pair 73; owner 2026-11-17)
 
+**Seen in a client (2026-11-27, V43):** ten gap effects in their roles; the boss warning pulse (Thalcyra sky lance) sends the strike circle.
+
 The owner watched the O603 previews of the fourth volume of a purchased effect set. The first volume is in pair 36.
 Rule: replace nothing that works. An effect is imported only for an event that sends no effect of its own today.
 One owner order goes past that rule: the boss warning pulse becomes the set's strike circle.
@@ -7885,6 +7889,8 @@ else changes (the build is `mode=replace`).
 
 ## Bolt from the sky, drawn by code (O614, `tools/sprites/gen_lightning_fx.py`, `art_import/lightning_fx.csv`; joins pair 73; owner 2026-11-17)
 
+**Seen in a client (2026-11-27, V43):** plain and heavy bolts; Thalcyra storm marks mix them.
+
 Owner: "For the lightning falling from the sky, make the tool to draw the lightning." Our own art, drawn by code, as the wings of O581.
 No art file is read. No purchased art, no AI service. **Status: tool, table, server lib and previews. Not seen in a client. The owner can still say no.**
 
@@ -7927,6 +7933,8 @@ No art file is read. No purchased art, no AI service. **Status: tool, table, ser
 - **Unity.** Not done. The Unity client has no effect 5321+. `FrontFxIds.cs` and the ground list follow the client tables, which did not change.
 
 ## Decor flames (O623; `tools/sprites/gen_decor_flames.py`, `art_import/decor_flames.csv`; owner 2026-11-17; joins pair 74)
+
+**Seen in a client (2026-11-27, V43):** the campfire of the ashfall hamlet camp animates; torch, brazier, candle and cold spirit animate when placed (no map places them yet). The temple torch first cut the map packet short: its node lacked FLAG_ANIMATION (server/README.md "Decor flames (pair 74)"); fixed by an `item_wire.csv` row.
 
 Five animated fire props from pixelfx (https://github.com/patch-gg/pixelfx, commit 5294518, MIT, Copyright (c) 2026 Patch, Hugo Duprez;
 docs/CREDITS.md). The owner said yes to the O622 fit. Built into pair 74 (O647, "Pair 74, the real build").
