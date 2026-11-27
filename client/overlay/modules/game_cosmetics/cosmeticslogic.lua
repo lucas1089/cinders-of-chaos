@@ -215,14 +215,39 @@ function CL.milestoneLines(view)
   return out
 end
 
--- what the points come from: "Outfits 12 (34 points), Mounts 3 (27 points) ..." in the server's order
-function CL.groupLine(view)
+-- what the points come from, one entry per group: "Outfits 12 (34)" in the server's order
+function CL.groupEntries(view)
   local out = {}
   for _, g in ipairs(type(view) == 'table' and type(view.groups) == 'table' and view.groups or {}) do
     local name = CL.GROUP_NAMES[g.g]
     if name then out[#out + 1] = tr(name) .. ' ' .. whole(g.n) .. ' (' .. whole(g.p) .. ')' end
   end
-  return table.concat(out, ', ')
+  return out
+end
+
+-- "Outfits 12 (34), Mounts 3 (27) ..." on one line
+function CL.groupLine(view)
+  return table.concat(CL.groupEntries(view), ', ')
+end
+
+-- V42 (seen in a client): the "Unlocked - Outfits 11 (47), ..." line wrapped in the middle of an entry ("Loot labels 1" /
+-- "(4)"). The entries are laid out in lines of whole entries instead: head first, ", " between entries, a new line when the
+-- next entry does not fit maxWidth (measure(text) -> its width in the label's font). An entry wider than a line gets one.
+function CL.wrapEntries(head, entries, maxWidth, measure)
+  local lines, line = {}, tostring(head or '')
+  local started = false
+  for _, e in ipairs(entries or {}) do
+    local candidate = started and (line .. ', ' .. e) or (line .. e)
+    if started and measure(candidate) > maxWidth then
+      lines[#lines + 1] = line .. ','
+      line = e
+    else
+      line = candidate
+    end
+    started = true
+  end
+  lines[#lines + 1] = line
+  return table.concat(lines, '\n')
 end
 CL.GROUP_NAMES = { outfit = 'Outfits', mount = 'Mounts', wings = 'Wings', aura = 'Auras', shader = 'Shaders', frame = 'Plate frames',
   spellskin = 'Spell skins', killfx = 'Kill effects', levelfx = 'Level-up effects', rarefx = 'Rare loot effects',
@@ -236,7 +261,7 @@ function CL.scoreRow(view)
   return { id = CL.SCORE_ROW, key = 'score', collection = true, owned = true, kind = 'score',
     name = tr('Collection score: %d', whole(view.score)),
     desc = table.concat(lines, '\n'),
-    how = CL.groupLine(view) }
+    how = CL.groupLine(view), howEntries = CL.groupEntries(view) }
 end
 
 -- ---------------------------------------------------------------- chat name colours

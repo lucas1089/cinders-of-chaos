@@ -56,13 +56,24 @@ local function goldId()
 end
 
 -- ---------------------------------------------------------------- where the window opens (one place: O572)
+-- beside the NPC talk window when it shows (V41: the trade window covered it; L.besideTalk)
+local function talkRect(root)
+  local talk = modules.game_npctalk
+  local ok, r = pcall(function() return talk and talk.getWindowRect and talk.getWindowRect() end)
+  if not ok or type(r) ~= 'table' then return nil end
+  return { x = r.x - root:getX(), y = r.y - root:getY(), w = r.width, h = r.height }
+end
+
 local function placeWindow(w)
   local root = rootPanel()
   if not alive(w) or not alive(root) then return end
-  local g = L.geometry(root:getWidth(), root:getHeight(), 0)
+  local g, talkAt = L.besideTalk(root:getWidth(), root:getHeight(), 0, talkRect(root))
   if w:getParent() ~= root then w:setParent(root, true) end
   w:setSize({ width = g.w, height = g.h })
   w:setPosition({ x = root:getX() + g.x, y = root:getY() + g.y })
+  if talkAt then
+    pcall(modules.game_npctalk.moveWindow, { x = root:getX() + talkAt.x, y = root:getY() + talkAt.y })
+  end
 end
 
 -- ---------------------------------------------------------------- the player's goods

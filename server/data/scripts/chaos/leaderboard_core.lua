@@ -251,3 +251,26 @@ function LB.groups(vocIds, baseOf, demotion)
 	end
 	return out
 end
+
+-- one tab per class (V41, seen in a client: the Beastmaster rows were in the Ranger tab of the weekly class board):
+-- vocation ids -> ordered groups {{base = line base, class = id, ids = {id}}}, the lines in base id order, inside a line
+-- the base class first, then its ascended classes in id order
+function LB.classTabs(vocIds, baseOf, demotion)
+	local out = {}
+	for _, g in ipairs(LB.groups(vocIds, baseOf, demotion)) do
+		local ids = {}
+		for _, id in ipairs(g.ids) do
+			ids[#ids + 1] = id
+		end
+		table.sort(ids, function(a, b)
+			if (a == g.base) ~= (b == g.base) then
+				return a == g.base
+			end
+			return a < b
+		end)
+		for _, id in ipairs(ids) do
+			out[#out + 1] = {base = g.base, class = id, ids = {id}}
+		end
+	end
+	return out
+end

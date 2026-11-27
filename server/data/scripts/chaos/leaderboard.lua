@@ -5,8 +5,9 @@
 -- ChaosLeaderboard.record). They reset on Monday at resetHour (the bounty board's week rule). At the reset the top 3 of
 -- every weekly board get the board's title for the week that starts (look text, the board) and orbs in the inbox
 -- (players offline at the reset get them at their next login), and the winners are broadcast.
--- All-time Class Ladder: highest level per class, read from the players table (cached cacheSeconds), grouped by base
--- class (Chaos.classes.baseOf, else the vocation's demotion chain); class names come from Vocation(id):getName().
+-- All-time Class Ladder: highest level per class, read from the players table (cached cacheSeconds), one tab per class
+-- (ladder.tabs "class", V41; "line" groups a base class with its ascensions through Chaos.classes.baseOf, else the
+-- vocation's demotion chain); class names come from Vocation(id):getName().
 --
 -- Public API (any script):
 --   ChaosLeaderboard.record(board, who, value, mode)
@@ -319,10 +320,9 @@ local function vocationName(id)
 	return v and v:getName() or ("Vocation " .. id)
 end
 
-function LB.classGroups()
-	if LB.groupsCache then
-		return LB.groupsCache
-	end
+-- the class tabs: one per class by default (ladder.tabs, V41); LB.lineGroups() keeps one per base class and its ascended
+-- classes for what is kept by line (trending builds: the passive tree is the line's)
+local function buildGroups(perClass)
 	-- the ids of data/XML/vocations.xml (Vocation(id) of a missing id prints an engine warning), else a scan
 	local ids, seen = {}, {}
 	local f = io.open(cfg.ladder.vocationsFile, "r")
@@ -346,17 +346,33 @@ function LB.classGroups()
 		end
 	end
 	local baseOf = cfg.ladder.baseOf or (Chaos.classes and Chaos.classes.baseOf)
-	local groups = LB.groups(ids, baseOf, function(id)
+	local demotion = function(id)
 		local v = Vocation(id)
 		local d = v and v.getDemotion and v:getDemotion()
 		return d and d:getId() or nil
-	end)
-	for _, g in ipairs(groups) do
-		g.name = vocationName(g.base)
-		g.key = g.base
 	end
-	LB.groupsCache = groups
+	local groups = perClass and LB.classTabs(ids, baseOf, demotion) or LB.groups(ids, baseOf, demotion)
+	for _, g in ipairs(groups) do
+		local key = perClass and g.class or g.base
+		g.name = vocationName(key)
+		g.key = key
+	end
 	return groups
+end
+
+-- ladder.tabs "class": a tab per class (the key is the vocation id); "line": a tab per base class and its ascensions
+function LB.classGroups()
+	if not LB.groupsCache then
+		LB.groupsCache = buildGroups(cfg.ladder.tabs ~= "line")
+	end
+	return LB.groupsCache
+end
+
+function LB.lineGroups()
+	if not LB.lineGroupsCache then
+		LB.lineGroupsCache = buildGroups(false)
+	end
+	return LB.lineGroupsCache
 end
 
 local function groupByKey(key)

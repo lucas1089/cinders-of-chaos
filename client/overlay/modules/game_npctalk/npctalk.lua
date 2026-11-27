@@ -586,7 +586,17 @@ local function deliverNpcLine(name, mode, text, pos)
   return handled
 end
 
+-- the player's own "bye" in Local Chat (V41: the window stayed open): the NPC heard it already, the window closes
+local function ownFarewell(name, text)
+  if not conv then return false end
+  local me = g_game.getCharacterName and g_game.getCharacterName() or ''
+  if not L.ownFarewell(name, me, text) then return false end
+  endConversation(false)
+  return true
+end
+
 local function onTalkSignal(name, _, mode, text, _, pos)
+  if ownFarewell(name, text) then return end
   local ok, err = pcall(deliverNpcLine, name, mode, text, pos)
   if not ok then warn('onTalk', err) end
 end
@@ -612,6 +622,7 @@ end
 local function onConsoleLocalTalk(text)
   if not text then return end
   if L.isGreeting(text) then suppressAllUntil = 0 end
+  if conv and L.isFarewell(text) then endConversation(false) end -- "bye" in the Default tab (V41)
 end
 
 local function onEndNpcConversation(...)
@@ -811,3 +822,14 @@ function getConversation()
   return { name = conv.name, id = conv.id, turn = conv.turn, said = conv.said }
 end
 function getWindow() return window end
+-- the talk window's rect while a conversation shows it (game_npctradewindow puts the trade window beside it, V41), else nil
+function getWindowRect()
+  if not conv or not alive(window) or not window:isVisible() then return nil end
+  return window:getRect()
+end
+-- move the talk window (the trade window makes room beside it); the window stays where it is put for the conversation
+function moveWindow(pos)
+  if not alive(window) or type(pos) ~= 'table' then return end
+  window:setPosition({ x = pos.x, y = pos.y })
+  if conv then conv.placed = true end
+end

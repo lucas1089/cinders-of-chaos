@@ -140,6 +140,21 @@ eq(groups[1].base, 1, "group order")
 eq(table.concat(groups[1].ids, ","), "1,5,10", "group ids")
 eq(table.concat(groups[3].ids, ","), "11,12,13", "thief line")
 eq(groups[4].base, 30, "unmapped vocation")
+-- V41: one tab per class, the base class first in its line
+local tabs = LB.classTabs({15, 7, 3, 13, 1, 4, 8, 5, 10, 11, 12, 14}, {[1] = 1, [5] = 1, [10] = 1, [3] = 3, [7] = 3,
+	[15] = 3, [4] = 4, [8] = 4, [14] = 4, [11] = 11, [12] = 11, [13] = 11}, nil)
+eq(#tabs, 12, "a tab per class")
+local order = {}
+for i, t in ipairs(tabs) do
+	order[i] = t.class
+	eq(#t.ids, 1, "one vocation per tab " .. i)
+	eq(t.ids[1], t.class, "the tab's own vocation " .. i)
+end
+eq(table.concat(order, ","), "1,5,10,3,7,15,4,8,14,11,12,13", "lines in base order, the base first")
+eq(tabs[6].class, 15, "the Beastmaster has its own tab")
+eq(tabs[6].base, 3, "in the Ranger line")
+eq(tabs[4].class, 3, "the Ranger tab holds the Ranger")
+eq(table.concat(tabs[4].ids, ","), "3", "and nobody else")
 
 -- "min" boards (the Cinderheart's fastest kills, uber.lua): the lowest value wins and ranks first
 local f = LB.merge(nil, 300, "min", 10)
