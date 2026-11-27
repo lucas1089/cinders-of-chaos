@@ -46,5 +46,12 @@ eq(v.mitigation.text, '+0.0%', 'mitigation clamps at 0')
 v = V.build({ defense = 1, armor = 1, mitigation = 7 })
 eq(v.mitigation.text, '+100.0%', 'mitigation clamps at 1')
 
+-- short row names (V31): "Damage/Healing 183" did not fit a 140 px row, the full name fits a wide one
+eq(V.nameFits(98, 22, 150, 23), true, 'fits with room')
+eq(V.nameFits(98, 22, 140, 23), false, 'Damage/Healing and its number overlap')
+eq(V.nameFits(110, 33, 0, 11), true, 'a row not laid out is left alone')
+eq(V.SHORT_NAMES.damageHealing.value, 'damageHealingLabel', 'the damage value label')
+eq(V.SHORT_NAMES.offlineTraining.short, 'Offline', 'offline training short name')
+
 print(fails == 0 and 'skillstatsview_test: ok' or ('skillstatsview_test: ' .. fails .. ' failed'))
 os.exit(fails == 0 and 0 or 1)

@@ -74,4 +74,8 @@ eq(V.shelfRows({ shelf = { { key = 'x', marks = 1 } } })[1].name, 'x', 'the key 
 local slot = V.shelfRows({ marks = 500, shelf = { { key = 'foot_ember', name = 'Ember Footprints', marks = 200, monthly = true, endsAt = 1 } } })[1]
 eq(slot.name, 'Ember Footprints (this month)', 'the month slot is named') eq(slot.monthly, true, 'flag kept') eq(slot.canBuy, true, 'and bought like the others')
 eq(V.shelfRows({ shelf = { { key = 'x', marks = 1 } } })[1].monthly, false, 'a fixed row is not monthly')
+-- V31: the Perk column takes the room the number columns leave
+eq(V.perkWidth(608, 4), 608 - 274 - 16, 'a 640 px window: the perk column grows')
+eq(V.perkWidth(0, 4), 186, 'not laid out yet: the old width')
+eq(V.perkWidth(400, 4), 186, 'never under 186')
 print('pactview_test: ' .. n .. ' checks OK')

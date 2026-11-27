@@ -208,5 +208,12 @@ eq(V.pageText(2, 5), '2 / 5', 'page text')
 eq(V.pageText(1, 1), '', 'one page: none')
 eq(V.pageText(9, 3), '3 / 3', 'clamped')
 
+-- V31: the old price beside the chip only when both fit
+eq(V.oldPriceFits('499', '598', true), true, '30 days: 499 598 fits beside -17%')
+eq(V.oldPriceFits('1.35k', '1.69k', true), false, '90 days: 1.35k 1.69k would run under the chip')
+eq(V.oldPriceFits('2.5k', '3.2k', true), false, '180 days: 2.5k 3.2k would run under the chip')
+eq(V.oldPriceFits('1.35k', '1.69k', false), true, 'no chip: always')
+eq(V.oldPriceFits('90', '100', true), true, 'short prices fit')
+
 if fails > 0 then print(fails .. ' of ' .. checks .. ' checks FAILED') os.exit(1) end
 print('shopview_test: ' .. checks .. ' checks OK')

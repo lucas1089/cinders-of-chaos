@@ -63,10 +63,11 @@ local function fillLimits()
   local head = window.limitsHead
   head:destroyChildren()
   local titles = { tr('Perk'), tr('Free'), tr('Chaos Pact'), tr('Bought'), tr('Yours') }
+  local list = window.limits
+  COLS[1] = V.perkWidth(list:getWidth(), 4) -- V31: the Perk column takes the room the number columns leave
   for i, t in ipairs(titles) do
     cell(head, t, COLS[i], '#e8b84a', i == 1 and AlignLeft or nil)
   end
-  local list = window.limits
   list:destroyChildren()
   for _, r in ipairs(V.limitRows(status)) do
     local row = g_ui.createWidget('PactLimitRow', list)

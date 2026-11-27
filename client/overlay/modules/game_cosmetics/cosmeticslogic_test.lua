@@ -162,4 +162,21 @@ eq(ch.list[4][2] + ch.list[4][3], 0, 'an outline only: nothing worn')
 ch = CL.wearChanges({ full = true, names = { Bob = { h = 3590 }, Cy = { o = 'gold' }, Ed = { h = -4, c = 1.5 } } })
 eq(ch.clear, true, 'a full list clears first') eq(#ch.list, 1, 'then only the characters that wear something')
 eq(#CL.wearChanges(nil).list, 0, 'junk') eq(#CL.wearChanges({ names = { [''] = { h = 1 } } }).list, 0, 'no name')
+
+-- tab widths from their text (V31): the English row of 11 tabs fits with a padding of 16
+local en = { 84, 72, 77, 84, 70, 54, 66, 66, 33, 39, 65 }
+local w = CL.tabWidths(en, 961, 4)
+eq(w[1], 100, 'Spell Effects: text and 16') eq(w[9], 49, 'Head')
+local function total(t) local s = 0 for _, v in ipairs(t) do s = s + v end return s + 4 * (#t - 1) end
+eq(total(w) <= 961, true, 'the row fits')
+-- pt-BR is longer: the padding shrinks, no text is cut
+local pt = { 100, 98, 92, 80, 50, 60, 85, 55, 42, 36, 48 }
+w = CL.tabWidths(pt, 961, 4)
+eq(total(w) <= 961, true, 'pt-BR fits')
+eq(w[1] >= 100 + CL.TAB_PAD_MIN, true, 'pt-BR text whole')
+-- far too narrow: shares of the text, still inside
+w = CL.tabWidths(en, 500, 4)
+eq(total(w) <= 500, true, 'cut row fits') eq(w[1] > w[9], true, 'longer text, wider tab')
+eq(#CL.tabWidths({}, 900, 4), 0, 'no tabs')
+
 print('cosmeticslogic_test: ' .. n .. ' checks OK')

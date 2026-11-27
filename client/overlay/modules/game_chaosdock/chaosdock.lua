@@ -185,6 +185,20 @@ local function keepColumn()
   end
 end
 
+-- a window keepColumn hid in the right column: it is open, only the column hides it. The dock takes it as an open one
+-- and leaves its menu entry alone (V31, seen in a client 2026-11-27: the Skills entry toggles by the state of its side
+-- button, which still says open, so running it closed the window and the dock showed "not available"). Taken out of
+-- the list: its release puts it back open and keepColumn hides it again.
+local function takeFromColumn(w)
+  for i, h in ipairs(columnHidden) do
+    if same(h.widget, w) then
+      table.remove(columnHidden, i)
+      return true
+    end
+  end
+  return false
+end
+
 local function giveColumnBack()
   local list = columnHidden
   columnHidden = {}
@@ -232,7 +246,9 @@ local function findSpec(spec)
     end
     for _, var in ipairs(spec.vars or {}) do
       local w = rawget(m, var)
-      if type(w) == 'userdata' and alive(w) then return w end
+      -- a widget (userdata in the client; a table with the widget calls on the test's fake engine)
+      local widgetLike = type(w) == 'userdata' or (type(w) == 'table' and type(w.getClassName) == 'function')
+      if widgetLike and alive(w) then return w end
     end
   end
   local w = known[spec.entry]
@@ -435,7 +451,13 @@ local function release(rec)
     end
     w:setSize(rec.size)
     if not rec.mini and rec.pos then w:setPosition(rec.pos) end
-    w:setVisible(rec.wasVisible == true)
+    if rec.wasVisible ~= true and rec.mini and type(w.close) == 'function' then
+      -- a side window the dock opened through its entry closes the way its module does (its onClose): hidden only, the
+      -- module still thought it open and its next toggle closed it (V31: Skills "not available" on the second visit)
+      w:close()
+    else
+      w:setVisible(rec.wasVisible == true)
+    end
     if alive(rec.home) and rec.home.fitAll then pcall(rec.home.fitAll, rec.home, w) end
   end)
   releasing = false
@@ -656,6 +678,7 @@ local function showCurrent()
   relayout()
   if not spec then return end
   local w = findSpec(spec)
+  if w and not w:isVisible() and takeFromColumn(w) then adopt(w, spec, true) return end
   if w and (w:isVisible() or spec.hidden) then adopt(w, spec, w:isVisible()) return end
   -- not open: its menu entry opens it (the module fills it as it always does), then the dock takes it
   local before = windowsNow()

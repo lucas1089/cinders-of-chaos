@@ -78,3 +78,19 @@ function V.build(data, short)
   end
   return out
 end
+
+-- Row names too long for the narrow Skills column (V31, seen in a client 2026-11-27: "Damage/Healing" ran into its
+-- number and "Offline Training" into its 12:00). A row whose full name and value do not fit side by side shows the short
+-- name; the full name goes to the tooltip. row id -> { value label id, short name }.
+V.SHORT_NAMES = {
+  damageHealing = { value = 'damageHealingLabel', short = 'Dmg/Heal' },
+  offlineTraining = { value = 'value', short = 'Offline' },
+}
+V.NAME_GAP = 4 -- pixels kept free between the name and the number
+
+-- the name, the value and their margins fit inside the row (widths in pixels); a row not laid out yet (0) is left alone
+function V.nameFits(nameWidth, valueWidth, rowWidth, margins)
+  rowWidth = tonumber(rowWidth) or 0
+  if rowWidth <= 0 then return true end
+  return (tonumber(nameWidth) or 0) + (tonumber(valueWidth) or 0) + (tonumber(margins) or 0) + V.NAME_GAP <= rowWidth
+end

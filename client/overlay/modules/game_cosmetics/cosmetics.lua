@@ -253,12 +253,31 @@ local function pick(id)
   showDetail()
 end
 
+-- each shown tab as wide as its text (CL.tabWidths), so no label is cut in English or pt-BR
+-- (the list is filled before the window shows, when the row has no width yet: show() runs it again a frame later)
+local function fitTabs()
+  if not window or not state then return end
+  local shown, texts = {}, {}
+  for _, k in ipairs(CL.KINDS) do
+    local b = tabButtons[k.key]
+    if b and CL.tabShown(state.rows, k.key) then
+      shown[#shown + 1] = b
+      texts[#texts + 1] = b:getTextSize().width
+    end
+  end
+  local avail = window.tabs:getWidth()
+  if avail <= 0 then return end -- not laid out yet: the next list fill sizes it
+  local widths = CL.tabWidths(texts, avail, 4)
+  for i, b in ipairs(shown) do b:setWidth(widths[i]) end
+end
+
 local function showList()
   if not window or not state then return end
   for key, b in pairs(tabButtons) do
     b:setChecked(key == currentTab)
     b:setVisible(CL.tabShown(state.rows, key)) -- head pieces and capes: only from pair 83 (O747)
   end
+  fitTabs()
   window.list:destroyChildren()
   rowWidgets = {}
   local rows = tabRows()
@@ -345,6 +364,7 @@ function show()
   window:show()
   window:raise()
   window:focus()
+  addEvent(fitTabs)
 end
 
 function hide()
@@ -623,7 +643,7 @@ function init()
   for _, k in ipairs(CL.KINDS) do
     local b = g_ui.createWidget('ChaosTabButton', window.tabs)
     b:setText(tr(k.name))
-    b:setWidth(82) -- 11 tabs (O747: head and cape) in the row beside the checkbox
+    b:setWidth(82) -- until fitTabs sizes the row from the texts (11 tabs, O747: head and cape)
     local key = k.key
     b.onClick = function() selectTab(key) end
     tabButtons[key] = b
