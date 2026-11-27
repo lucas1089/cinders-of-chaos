@@ -5,8 +5,10 @@
     python3 -I gen_relook_monsters.py check                       # the table, the sums, the words, the pictures, the monsters and the map
     python3 -I gen_relook_monsters.py looks [--check]             # server/data/monster/monster_relook_looks.csv from the files and the table
     python3 -I gen_relook_monsters.py drop-import DIR [NAME=KEY...]   # PixelLab v3 downloads DIR/<key>/ -> art_import/relook_monsters/<key>/
+    python3 -I gen_relook_monsters.py realign [KEY...]            # idle and walk moved onto the standing picture by the body (O770)
     python3 -I gen_relook_monsters.py table [--write]             # measure the rows from the committed pictures, print (or write) table and sums
     python3 -I gen_relook_monsters.py build DAT SPR OUT_DIR       # pair 85 in (3,743 outfits, its dat md5), 3 outfits more out (OUT_DIR new)
+    python3 -I gen_relook_monsters.py relook DAT SPR OUT_DIR      # pair 88 -> 89: the outfits of pair 86 rewritten in place as built now (O770)
     python3 -I gen_relook_monsters.py live DAT SPR                # the pair holds every outfit at its id, as the sums say
     python3 -I gen_relook_monsters.py quality DAT SPR             # sprite_quality.py check --kind creature of every outfit
     python3 -I gen_relook_monsters.py preview OUT.mp4 --dat D --spr S   # the looks in game at true size (never committed)
@@ -21,7 +23,9 @@ oblique mode drew people in costume for these words), view low top-down, 4 direc
 walking-8-frames and breathing-idle, the four directions each. The v3 view is upright, so `drop-import` shears every picture to the
 game's angle (O728: oblique_lean.shear, k 0.25, the feet line of the standing picture of the direction) before it writes them; the
 committed pictures are at the angle and the build never shears (lean 0.00). The idle is PixelLab's breath of 4, colours pulled to the
-standing pictures and moved onto them by the feet, as read_drop does for the walk.
+standing pictures and moved onto them by the feet, as read_drop does for the walk. O770: then every idle and walk direction is moved
+across onto the standing picture by the body (align_bodies: the upper half of the figure), since the feet of a ghost are a hem of mist
+and a stride puts a foot far out; `check` holds the committed pictures to it (body_problems).
 
 Everything else is gen_drive_monsters.py's (the redraw rows of O726 / O729): the 3x3 canvas, the O585 / O640 standing point, hard alpha,
 idle 4 phases of 300 ms, walk 8 of 100 ms, the lean rule of O728 (9-26 px in south or east), the append of gen_wst_outfits.build. The
@@ -194,6 +198,46 @@ def build(dat, spr, out_dir, root=None, want=ROWS, first=FIRST_NEW, dat_md5=PAIR
     return D.build(dat, spr, out_dir, [], want=want, first=first, log=log, redraw=ROOT if root is None else root)
 
 
+OLD_SUMS = os.path.join(ART, 'relook_monsters.pair86.sums')   # the three outfits as pairs 86-88 hold them (before O770)
+PAIR_BODY = 89                      # client_pair.PAIR_RELOOK_BODY: the pair that holds them on the standing picture by the body (O770)
+
+
+def relook(dat, spr, out_dir, table=None, sums=None, old=None, root=None, log=print):
+    """pair in (88, with the outfits 3744-3746 as pair 86 built them, or some already as the table builds them now) -> pair out in OUT_DIR:
+    every outfit in the old form (relook_monsters.pair86.sums) gets its entry as the committed pictures build it now (O770: idle and walk
+    on the standing picture by the body); one already as relook_monsters.sums is left; any other refuses. Every other thing byte for
+    byte (gen_pixellab_monsters.rewrite_outfits). Returns the ids rewritten (none: nothing written)."""
+    from datspr import Dat, Spr
+    t = rows() if table is None else table
+    s = read_sums() if sums is None else sums
+    o = read_sums(OLD_SUMS) if old is None else old
+    d, sp = Dat(dat), Spr(spr)
+    if len(d.outfits) < int(t[-1]['new']):
+        raise SystemExit('refused: the pair has %d outfits, the relook monsters end at %s' % (len(d.outfits), t[-1]['new']))
+    ms = {r['new']: (r, placed) for r, placed in measured(ROOT if root is None else root, tuple((None, r['key'], 'redraw') for r in t),
+                                                          int(t[0]['new']))}
+    changes = {}
+    for r in t:
+        dg = W.digest(d, sp, int(r['new']))
+        if dg == s.get(r['new']):
+            log('%s (%s): as the table builds it already' % (r['new'], r['key']))
+            continue
+        if dg != o.get(r['new']):
+            raise SystemExit('refused: outfit %s (%s) is neither the pair 86 form nor the one of relook_monsters.sums: another pair'
+                             % (r['new'], r['key']))
+        r2, placed = ms[r['new']]
+        groups = D.groups_of(r2, placed)
+        if W.spec_digest(groups) != s.get(r['new']) or any(r2[k] != r.get(k) for k in D.HEADER):
+            raise SystemExit('refused: %s does not build as the table and the sums say (run table --write)' % r['key'])
+        fb, fl = D.P.flags_of(r2)
+        changes[int(r['new'])] = (fb, fl, groups)
+        log('%s (%s): rewritten, displacement %s' % (r['new'], r['key'], r2['disp']))
+    if not changes:
+        log('nothing to do: every outfit is as the table builds it, nothing written')
+        return []
+    return D.P.rewrite_outfits(dat, spr, out_dir, changes, log=log)
+
+
 def live(dat, spr, table=None, sums=None, first=FIRST_NEW, log=print):
     t = rows() if table is None else table
     return D.live(dat, spr, table=t, sums=read_sums() if sums is None else sums, first=first, log=log)
@@ -289,6 +333,97 @@ def shear_drop(d, k=SHEAR_K):
     return out
 
 
+BODY_SHARE = 0.5                    # the upper half of a figure's rows: head and torso, above the legs, the hem and the mist
+BODY_TOL = 1.0                      # px the median body column of an idle or a walk direction may stand off the standing picture's
+
+
+def body_x(a, share=BODY_SHARE):
+    """the column of a figure's body: the mean x of its opaque pixels in the upper `share` of its rows (None when it is empty)"""
+    import numpy as np
+    ys, xs = np.nonzero(a[..., 3] > 0)
+    if not len(ys):
+        return None
+    top, bot = int(ys.min()), int(ys.max())
+    sel = ys <= top + share * (bot - top)
+    return float(xs[sel].mean())
+
+
+def body_offsets(d):
+    """{(group, direction): px the median body column of the group's pictures stands right of the standing picture's}"""
+    import numpy as np
+    out = {}
+    for dn in L.DROP_DIRS:
+        sx = body_x(d['stand'][dn])
+        for g in ('idle', 'walk'):
+            got = [x for x in (body_x(a) for a in d[g][dn]) if x is not None]
+            if got and sx is not None:
+                out[(g, dn)] = float(np.median(got)) - sx
+    return out
+
+
+def align_bodies(d):
+    """O770: every idle and walk direction moved by one whole pixel shift so its median body column (body_x) stands on the standing
+    picture's. The drop's frames were put on the standing picture by the feet (oblique_lean.align_to_standing): a ghost has no feet
+    (Banshee, a hem of mist that sways) and a stride puts one foot far out, so the idle of the Banshee stood 8 px right of its walk
+    facing north and 3 px left of it facing south. Rows stay as they are (the feet keep their row). Returns {(group, dir): dx}."""
+    moves = {}
+    for (g, dn), off in body_offsets(d).items():
+        dx = -int(round(off))
+        if dx:
+            d[g][dn] = [L.moved(a, dx, 0) for a in d[g][dn]]
+        moves[(g, dn)] = dx
+    return moves
+
+
+def read_pictures(key, root=None):
+    """{'stand': {d: picture}, 'idle': {d: [...]}, 'walk': {d: [...]}} of the committed pictures of a key"""
+    import glob
+    import numpy as np
+    from PIL import Image
+    base = os.path.join(ROOT if root is None else root, key)
+    out = {'stand': {}, 'idle': {}, 'walk': {}}
+    for dn, f in zip(D.DIRS, D.STANDING):
+        out['stand'][dn] = np.array(Image.open(os.path.join(base, f)).convert('RGBA'))
+        for g in ('idle', 'walk'):
+            out[g][dn] = [np.array(Image.open(p).convert('RGBA')) for p in sorted(glob.glob(os.path.join(base, g, dn, '*.png')))]
+    return out
+
+
+def write_pictures(key, d, root=None):
+    """the idle and walk frames of `d` over the committed ones of a key (the standing pictures are the reference and stay)"""
+    from PIL import Image
+    base = os.path.join(ROOT if root is None else root, key)
+    for dn in D.DIRS:
+        for g in ('idle', 'walk'):
+            for i, a in enumerate(d[g][dn]):
+                Image.fromarray(a, 'RGBA').save(os.path.join(base, g, dn, 'frame_%03d.png' % i))
+
+
+def body_problems(root=None, keys=KEYS):
+    """the committed pictures: every idle and walk direction of every key stands on its standing picture by the body (BODY_TOL)"""
+    out = []
+    for key in keys:
+        if not os.path.isdir(os.path.join(ROOT if root is None else root, key)):
+            continue
+        for (g, dn), off in sorted(body_offsets(read_pictures(key, root)).items()):
+            if abs(off) > BODY_TOL:
+                out.append('%s: the %s %s body stands %+.1f px off the standing picture (run realign, O770)' % (key, g, dn, off))
+    return out
+
+
+def realign(keys=KEYS, root=None, log=print):
+    """align_bodies on the committed pictures of the keys, written back; a second run moves nothing. Returns {key: moves}"""
+    done = {}
+    for key in keys:
+        d = read_pictures(key, root)
+        moves = align_bodies(d)
+        if any(moves.values()):
+            write_pictures(key, d, root)
+        log('%s: %s' % (key, ', '.join('%s %s %+d' % (g, dn, dx) for (g, dn), dx in sorted(moves.items()) if dx) or 'nothing to move'))
+        done[key] = moves
+    return done
+
+
 def drop_import(drop, names=None, root=None, log=print):
     """DROP/<name>/ (an unzipped PixelLab v3 download; names {folder: key}, default the keys) -> art_import/relook_monsters/<key>/:
     the four standing pictures, idle/<dir>/frame_000..003.png, walk/<dir>/frame_000..007.png, sheared to the game's angle (the old
@@ -303,6 +438,7 @@ def drop_import(drop, names=None, root=None, log=print):
             continue
         try:
             d = shear_drop(read_upright(src), SHEAR_K_OF.get(key, SHEAR_K))
+            align_bodies(d)
         except (ValueError, L.LostPixel) as e:
             raise SystemExit('refused %s: %s' % (name, e))
         dst = os.path.join(root, key)
@@ -327,7 +463,7 @@ def main(argv):
     a = list(argv)
     cmd = a.pop(0) if a else ''
     if cmd == 'check':
-        p = problems() + words_problems() + monster_problems() + write_map(check=True)
+        p = problems() + words_problems() + monster_problems() + write_map(check=True) + body_problems()
         if not p:
             p += built_problems()
         for line in p:
@@ -344,6 +480,10 @@ def main(argv):
         names = dict(x.split('=', 1) for x in a[1:]) or None
         keys = drop_import(a[0], names)
         print('drop-import: %d characters (%s); now `table --write`' % (len(keys), ', '.join(keys)))
+        return 0
+    if cmd == 'realign':
+        realign(tuple(a) or KEYS)
+        print('realign: now `table --write`')
         return 0
     if cmd == 'table':
         ms = measured()
@@ -364,6 +504,15 @@ def main(argv):
         for line in p:
             print('PROBLEM', line)
         print('built %d outfits %d to %d' % (len(ids), ids[0], ids[-1]))
+        return 1 if p else 0
+    if cmd == 'relook' and len(a) == 3:
+        ids = relook(*a)
+        if not ids:
+            return 0
+        p = live(os.path.join(a[2], 'Tibia.dat'), os.path.join(a[2], 'Tibia.spr'))
+        for line in p:
+            print('PROBLEM', line)
+        print('relook: outfits %s rewritten in place' % ', '.join(map(str, ids)))
         return 1 if p else 0
     if cmd == 'live' and len(a) == 2:
         p = live(*a)

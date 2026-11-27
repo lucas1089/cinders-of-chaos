@@ -28,6 +28,18 @@ function O.blinkFrames(blinkMs, stepMs)
   return frames
 end
 
+-- Where the hint sits (V41 / V42, seen in a client: the hint grew right from the button's left edge, out of the Helper
+-- window and over the minimap). Its right edge is the button's right edge, so it grows left over the window's own header;
+-- a hint wider than the room from the window's inner left edge to there wraps to that width. All numbers are screen x:
+-- textW the hint's one-line width, innerLeft the window's content left edge, buttonRight the button's right edge.
+-- Returns {width, wrap}: the label's width and whether it wraps (one line when it fits).
+function O.hintFit(textW, innerLeft, buttonRight)
+  textW, innerLeft, buttonRight = tonumber(textW) or 0, tonumber(innerLeft) or 0, tonumber(buttonRight) or 0
+  local room = math.max(40, buttonRight - innerLeft)
+  if textW <= room then return { width = textW, wrap = false } end
+  return { width = room, wrap = true }
+end
+
 local blinkEvent = nil
 
 local function stop()
@@ -69,8 +81,19 @@ function O.open(data)
   hint:setColor(O.GOLD)
   hint:setTextAutoResize(true)
   hint:addAnchor(AnchorBottom, ChaosAutoSetupUI.BUTTON_ID, AnchorTop)
-  hint:addAnchor(AnchorLeft, ChaosAutoSetupUI.BUTTON_ID, AnchorLeft)
+  hint:addAnchor(AnchorRight, ChaosAutoSetupUI.BUTTON_ID, AnchorRight)
   hint:setMarginBottom(2)
+  -- inside the Helper window: grows left from the button's right edge, wraps when the line is wider than the window (O.hintFit)
+  pcall(function()
+    local fit = O.hintFit(hint:getTextSize().width, win:getX() + win:getPaddingLeft(), b:getX() + b:getWidth())
+    if fit.wrap then
+      hint:setTextAutoResize(false)
+      hint:setTextWrap(true)
+      hint:setTextAlign(AlignRight)
+      hint:setWidth(fit.width)
+      if hint.setTextVerticalAutoResize then hint:setTextVerticalAutoResize(true) end
+    end
+  end)
   b.chaosOnboardColor = b:getColor()
   local own = b.chaosOnboardColor
   local frames, i = O.blinkFrames(O.blinkMs, O.stepMs), 0

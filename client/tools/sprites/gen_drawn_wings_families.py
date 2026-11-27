@@ -1269,9 +1269,11 @@ def mirror_strip(v):
     return out
 
 
-def model_strip(sp, d):
-    """the one wing of a face-on view as a left wing with its root on the column x = 0: the longer of the measured
-    left wing and the measured right wing mirrored (the left one when they are as long)"""
+NORTH_DROP_MAX = 7.5     # px the body of the north strip may hang under the south strip's (alpha centre row)
+NORTH_HANG_MAX = 8.0     # px the drawn north picture may sit under the south picture (alpha centre, mean of 16 frames)
+
+
+def _measured_strip(sp, d):
     l, r = sp.strips[d]
     cands = []
     if l is not None:
@@ -1283,6 +1285,38 @@ def model_strip(sp, d):
     for i in X_INDEX:
         v[i] -= root
     return v
+
+
+def north_drop(sp):
+    """px the body of the measured north wing hangs under the south wing's: the centre row of each strip's body,
+    both rooted on the same point"""
+    def centre(d):
+        return float(np.nonzero(st.Strip(_measured_strip(sp, d), -1, (float(st.MEET[0]), float(st.MEET[1]))).body())[0].mean())
+    key = (sp.key, str(sp.strips))
+    if key not in _DROP:
+        _DROP[key] = centre('north') - centre('south')
+    return _DROP[key]
+
+
+_DROP = {}
+
+
+def strip_view(sp, d):
+    """the view whose measured strip draws view d. O770: the old art's north strips of some rows point down (the
+    tip 13-34 px under the root while the south tip stands 22-34 px over it), so the back view hung over the hips
+    (Vampire 940 +26 px, Gravecrow 2141 +29 under the south picture, alpha centres). Seen from behind, a pair has the outline it has
+    from the front: a north strip whose body hangs more than NORTH_DROP_MAX under the south one is drawn from the
+    south strip (mirror pair, so its mirror is itself)."""
+    if d == 'north' and north_drop(sp) > NORTH_DROP_MAX:
+        return 'south'
+    return d
+
+
+def model_strip(sp, d):
+    """the one wing of a face-on view as a left wing with its root on the column x = 0: the longer of the measured
+    left wing and the measured right wing mirrored (the left one when they are as long); a hanging north strip is
+    the south one (strip_view, O770)"""
+    return _measured_strip(sp, strip_view(sp, d))
 
 
 def side_strip(v, rise):
@@ -2554,6 +2588,13 @@ def main(argv):
             raise SystemExit('--base DAT SPR goes with live --keep-painted')
         base = (args[i + 1], args[i + 2])
         del args[i:i + 3]
+    only = None
+    if '--only' in args:                                  # apply: only these wings ids are drawn again, every other look kept (O770)
+        i = args.index('--only')
+        if cmd != 'apply' or i + 1 >= len(args):
+            raise SystemExit('--only WINGS[,WINGS...] goes with apply')
+        only = {int(w) for w in args[i + 1].split(',') if w}
+        del args[i:i + 2]
     args = [a for a in args if a not in ('--check', '--new', '--keep-painted', '--painted-sides', '--sides-only')]
     if keep_painted and '--src' in args:
         raise SystemExit('--keep-painted and --src exclude each other')
@@ -2604,8 +2645,18 @@ def main(argv):
         print(text, end='')
         return 0
     if cmd == 'apply':
-        apply(args[0], args[1], args[2], specs=[sp for sp in load() if sp.wings in sides] if sides_only else None,
-              extra=new_rows() if with_new else (), keep=keep, sides=sides)
+        specs = [sp for sp in load() if sp.wings in sides] if sides_only else load()
+        extra = new_rows() if with_new else []
+        if only is not None:
+            known = {sp.wings for sp in load()} | {e[1] for e in extra}
+            if only - known:
+                raise SystemExit('--only: no row has wings id %s (the six of O581 phase 2 need --new)' % sorted(only - known))
+            if only & keep:
+                raise SystemExit('--only: rows %s are kept painted rows' % sorted(only & keep))
+            specs = [sp for sp in specs if sp.wings in only]
+            extra = [e for e in extra if e[1] in only]
+            sides = set()
+        apply(args[0], args[1], args[2], specs=specs, extra=extra, keep=keep, sides=sides)
         return 0
     if cmd == 'live':
         bad = check_pair(args[0], args[1], keep=keep, base=base, sides=sides, pack=pack_art_looks())
@@ -2781,7 +2832,8 @@ SIDE_HANG_MAX = 0.25        # the most of a side wing that may lie under the anc
 
 
 def layout_problems(sp, frames, merged=None, sides=None):
-    """the layout of O714 on one row: a face-on pair is the same left and right about the anchor column, west is east
+    """the layout of O714 on one row: a face-on pair is the same left and right about the anchor column, the north
+    pair stands as high as the south pair (at most NORTH_HANG_MAX lower, O770), west is east
     mirrored (exactly, for a row drawn by code), a side wing rises from the join and trails behind the body (east to the
     left, west to the right) and does not hang under the anchor row. The painted rows (O620) hold their own checks
     of the same facts (gen_pixellab_wings.py)."""
@@ -2794,6 +2846,9 @@ def layout_problems(sp, frames, merged=None, sides=None):
                 if (m ^ k.mirrored(m))[:, 1:].sum() > LOPSIDED * max(1, int(m.sum())):
                     bad.add('%s: the pair is not the same left and right' % d)
                     break
+        hang = k.north_hang(merged['north'], merged['south'])
+        if hang > NORTH_HANG_MAX:                         # O770: the back view hung over the hips
+            bad.add('north: the pair sits %.1f px under the south picture' % hang)
         for (be, fe), (bw, fw) in zip(frames['east'], frames['west']):
             if not (np.array_equal(k.mirrored(be), bw) and np.array_equal(k.mirrored(fe), fw)):
                 bad.add('west is not east mirrored')

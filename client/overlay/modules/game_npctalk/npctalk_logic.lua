@@ -110,6 +110,14 @@ function L.isFarewell(text)
   return FAREWELLS[norm(text)] == true
 end
 
+-- V41 (seen in a client): "bye" said in Local Chat (the console's Default tab, or g_game.talk) reached the NPC, which said
+-- goodbye, but the window stayed open: only the window's own input and the console's NPCs tab ended it. A line of the
+-- local player (speaker = me) that is a farewell ends the conversation wherever it was said.
+function L.ownFarewell(speaker, me, text)
+  if type(speaker) ~= 'string' or type(me) ~= 'string' or me == '' then return false end
+  return L.sameName(speaker, me) and L.isFarewell(text)
+end
+
 -- ---------------------------------------------------------------- quick buttons and keyword chips
 -- V41 (seen in a client): the shop NPCs of the base map greet with "See the fine {weapons} I sell." and never say "trade",
 -- so their window had no Trade button. A greeting that speaks of buying or selling is a shop too.

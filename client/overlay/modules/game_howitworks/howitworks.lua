@@ -119,9 +119,19 @@ function autoOn()
   return st.getBoolean(AUTO_KEY) and true or false
 end
 
+-- V41 / V42 (seen in a client): the card came back after every restart. The seen marks and the check box lived only in
+-- the settings in memory, written to disk at a clean exit; a client that is killed, crashes or loses its display never
+-- wrote them. Both are on disk at once now (g_settings.save, as game_partyframes and game_dpsmeter do).
+local function saveNow(st)
+  if st and st.save then pcall(st.save) end
+end
+
 function setAuto(on)
   local st = rawget(_G, 'g_settings')
-  if st then st.set(AUTO_KEY, on and true or false) end
+  if st then
+    st.set(AUTO_KEY, on and true or false)
+    saveNow(st)
+  end
 end
 
 -- true the first time this character opens the card's window (and remembers it)
@@ -134,6 +144,7 @@ local function firstOpen(key)
   local name = game and game.getCharacterName and game.getCharacterName() or nil
   if not H.firstOpen(seen, H.charKey(name), key) then return false end
   st.setNode(SEEN_NODE, seen)
+  saveNow(st)
   return true
 end
 

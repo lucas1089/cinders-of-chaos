@@ -85,6 +85,9 @@ def main():
     sys.path.insert(0, os.path.join(A.REPO, 'server', 'tools'))
     import client_pair
     check(client_pair.PAIR_RELOOK_MONSTERS == A.PAIR, 'client_pair.PAIR_RELOOK_MONSTERS is the pair of the outfits')
+    check(client_pair.PAIR_RELOOK_BODY == A.PAIR_BODY == 89, 'client_pair.PAIR_RELOOK_BODY is the pair of the body alignment (O770)')
+    check(sorted(A.read_sums(A.OLD_SUMS)) == ['3744', '3745', '3746'] and not set(A.read_sums(A.OLD_SUMS).values()) & set(A.read_sums().values()),
+          'the pair 86 form of the three outfits is kept for relook and differs from the new one')
 
     tmp = tempfile.mkdtemp(prefix='o768test')
     try:
@@ -135,6 +138,30 @@ def main():
                   for f in fs), 'no stray in the imported pictures')
         check(len(os.listdir(os.path.join(root, 'alpha', 'idle', 'south'))) == 4 and
               len(os.listdir(os.path.join(root, 'alpha', 'walk', 'west'))) == 8, 'idle 4 and walk 8 frames')
+        check(A.body_problems(root, ('alpha', 'beta')) == [], 'drop-import puts every idle and walk on the standing picture by the body: %s'
+              % A.body_problems(root, ('alpha', 'beta')))
+
+        # ---- O770: idle and walk on the standing picture by the body (the Banshee's idle stood 8 px off its walk facing north)
+        pd = A.read_pictures('alpha', root)
+        check(abs(A.body_x(pd['stand']['south']) - A.body_x(pd['idle']['south'][0])) <= A.BODY_TOL, 'body_x of the idle is the standing one')
+        legs = np.zeros((80, 80, 4), np.uint8)
+        legs[10:40, 30:40] = (90, 90, 90, 255)                # the body
+        legs[40:70, 20:24] = (60, 60, 60, 255)                # a leg far out: the feet column moves, the body column does not
+        legs[40:70, 44:48] = (60, 60, 60, 255)
+        check(abs(A.body_x(legs) - 34.5) < 1e-9, 'body_x reads the upper half only (%.1f)' % A.body_x(legs))
+        for dn in A.L.DROP_DIRS:
+            pd['walk'][dn] = [A.L.moved(a, -6, 0) for a in pd['walk'][dn]]
+            pd['idle'][dn] = [A.L.moved(a, 3, 0) for a in pd['idle'][dn]]
+        A.write_pictures('alpha', pd, root)
+        bad = A.body_problems(root, ('alpha',))
+        check(len(bad) == 8 and any('walk north body stands -6.0 px' in x for x in bad) and any('idle south body stands +3.0 px' in x for x in bad),
+              'body_problems names a walk 6 px left and an idle 3 px right: %s' % bad)
+        moves = A.realign(('alpha',), root, log=lambda *_: None)['alpha']
+        check(moves[('walk', 'north')] == 6 and moves[('idle', 'east')] == -3, 'realign moves them back: %s' % moves)
+        check(A.body_problems(root, ('alpha',)) == [] and not any(A.realign(('alpha',), root, log=lambda *_: None)['alpha'].values()),
+              'after realign the bodies stand on the standing picture, a second run moves nothing')
+        check(A.body_problems() == [], 'the committed pictures stand on their standing pictures: %s' % A.body_problems())
+
         want = ((None, 'alpha', 'redraw'), (None, 'beta', 'redraw'))
         ms = A.measured(root, want, first=3)
         tbl = [r for r, _p in ms]
@@ -161,6 +188,35 @@ def main():
         A.build(odat, ospr, out2, root, want, first=3, dat_md5=None, log=lambda *_: None)
         check(open(paths[0], 'rb').read() == open(os.path.join(out2, 'Tibia.dat'), 'rb').read() and
               open(paths[1], 'rb').read() == open(os.path.join(out2, 'Tibia.spr'), 'rb').read(), 'same pair twice')
+        # ---- O770 relook: a pair built from pictures off by the body is rewritten in place as the realigned pictures build
+        root2 = os.path.join(tmp, 'root2')
+        shutil.copytree(root, root2)
+        for key in ('alpha', 'beta'):
+            pd2 = A.read_pictures(key, root2)
+            pd2['walk']['north'] = [A.L.moved(a, -5, 0) for a in pd2['walk']['north']]
+            A.write_pictures(key, pd2, root2)
+        ms_old = A.measured(root2, want, first=3)
+        old_out = os.path.join(tmp, 'old')
+        A.build(odat, ospr, old_out, root2, want, first=3, dat_md5=None, log=lambda *_: None)
+        old_sums = A.D.pack_sums(ms_old)
+        A.realign(('alpha', 'beta'), root2, log=lambda *_: None)
+        ms_new = A.measured(root2, want, first=3)
+        t_new, s_new = [r for r, _p in ms_new], A.D.pack_sums(ms_new)
+        check(old_sums != s_new, 'the shifted walk builds other outfits')
+        rel = os.path.join(tmp, 'rel')
+        p_old = (os.path.join(old_out, 'Tibia.dat'), os.path.join(old_out, 'Tibia.spr'))
+        got = A.relook(*p_old, rel, table=t_new, sums=s_new, old=old_sums, root=root2, log=lambda *_: None)
+        p_rel = (os.path.join(rel, 'Tibia.dat'), os.path.join(rel, 'Tibia.spr'))
+        check(got == [3, 4] and A.live(*p_rel, table=t_new, sums=s_new, first=3, **quiet) == [], 'relook rewrites both outfits, live passes')
+        check(A.relook(*p_rel, os.path.join(tmp, 'rel2'), table=t_new, sums=s_new, old=old_sums, root=root2, log=lambda *_: None) == []
+              and not os.path.exists(os.path.join(tmp, 'rel2')), 'relook of a pair already in the new form writes nothing')
+        try:
+            A.relook(*p_old, os.path.join(tmp, 'rel3'), table=t_new, sums=s_new, old={}, root=root2, log=lambda *_: None)
+        except SystemExit as e:
+            check('neither' in str(e), 'relook refuses a pair in neither form: %s' % e)
+        else:
+            check(False, 'relook did not refuse a pair in neither form')
+
         for args, kw, text in (((odat, ospr, out, root, want), dict(first=3, dat_md5=None), 'exists'),
                                ((odat, ospr, os.path.join(tmp, 'o2'), root, want), dict(first=5, dat_md5=None), 'pair 85'),
                                ((odat, ospr, os.path.join(tmp, 'o3'), root, want), dict(first=3), 'md5'),

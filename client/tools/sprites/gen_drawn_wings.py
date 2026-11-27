@@ -47,6 +47,8 @@ with this kit. Their commands, handed over from here:
                                --keep-painted --painted-sides: and their east / west become the PixelLab side strips of
                                gen_painted_sides.py (drawn_wings/painted_sides, O724); north / south stay as the pair has them;
                                --sides-only: only those ten looks change, every other look byte for byte (pair 79 -> 80)
+                               --only WINGS,...: only the rows of these wings ids (the six: --new) are drawn again, every
+                               other look byte for byte (pair 88 -> 89, O770: the north views that hung over the hips)
   live DAT SPR [--new] [--keep-painted [--painted-sides] [--base DAT SPR]]   a built pair holds them (kept rows: equal to --base, else skipped)
                                the 73 rows that took purchased pack art in pair 83 (O747, drawn_wings/art_by_row.csv `pack`)
                                are skipped: gen_wst_wear.py live holds them. Pair 83 on: live DAT SPR --keep-painted
@@ -125,14 +127,27 @@ def vdot(a, b):
     return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
 
 
-def project(p, d, pivot=0.0, depth=DEPTH):
+def project(p, d, pivot=0.0, depth=DEPTH, level=False):
     """model point -> (screen x, screen y, depth); depth > 0 is nearer than the body. `pivot` is the height at
     which the art sits on the leaning body: it leans with the body up to there and by LEAN_ART about it. `depth`:
-    px down per px towards the viewer (a higher camera shows more of what lies towards and away from it)"""
+    px down per px towards the viewer (a higher camera shows more of what lies towards and away from it). `level`
+    (a wing, O770): facing north it is px down per px towards the body's front, so a wing that reaches back stands as
+    high from behind as from the front; a ring or a chain round the body (Void Orbit, Grave Lanterns) keeps the camera's"""
     a = rad(DIR_ANGLE[d] + VIEW_YAW[d])
     xr = p[0] * math.cos(a) + p[2] * math.sin(a)
     zr = -p[0] * math.sin(a) + p[2] * math.cos(a)
-    return (ANCHOR[0] + xr + LEAN * pivot + LEAN_ART * (p[1] - pivot), ANCHOR[1] - p[1] + depth * zr, zr)
+    lift = -zr if level and d == 'north' else zr          # O770: from behind a wing stands as high as from the front
+    return (ANCHOR[0] + xr + LEAN * pivot + LEAN_ART * (p[1] - pivot), ANCHOR[1] - p[1] + depth * lift, zr)
+
+
+def north_hang(north, south):
+    """px the north picture sits under the south picture: the alpha centre row of the merged frames, mean of the
+    frames (O770). Before, a wing that reaches back stood depth * reach px lower from behind (Ember Pinions 3555
+    +11.5 px), and some old north strips pointed down (Vampire 940 +26): the back view hung over the hips."""
+    def centre(frames):
+        rows = [np.nonzero(img[..., 3] > 0)[0] for img in frames]
+        return float(np.mean([r.mean() for r in rows if len(r)])) if any(len(r) for r in rows) else 0.0
+    return centre(north) - centre(south)
 
 
 # ------------------------------------------------------------------------------------------------ the kit: masks
@@ -509,8 +524,9 @@ class Canvas:
 class Scene:
     """the two layers of a frame"""
 
-    def __init__(self, outline, d, f, pivot=0.0, side_depth=None):
+    def __init__(self, outline, d, f, pivot=0.0, side_depth=None, level=False):
         self.pivot = pivot
+        self.level = level      # O770: a wing stands as high from behind as from the front (project)
         self.depth = side_depth if side_depth is not None and d in ('east', 'west') else DEPTH
         self.back = Canvas(outline)
         self.front = Canvas(outline)
@@ -529,7 +545,7 @@ class Scene:
             x, y, _ = project(p, 'south', self.pivot, self.depth)
             x, y = self.xf(min(x, 2 * ANCHOR[0] - x), y)
             return (x, y, -1.0)
-        return project(p, self.d, self.pivot, self.depth)
+        return project(p, self.d, self.pivot, self.depth, self.level)
 
     def leaf3(self, canvas, base, tip, wdir, hw, knots, shader, ramp, bend=0.0, minw=1.2, dim=0, line=None):
         """a long piece between two model points; wdir is the model direction of its width"""
@@ -826,7 +842,7 @@ def bladefan(sc):
     x, y, z = sc.P(hub)
     canvas = sc.layer(z + 0.02)
     m = disc_mask(x, y, 3.1)
-    canvas.piece(m, sphere_shade(x, y, 3.6), GEM)
+    canvas.piece(m, sphere_shade(x, y, 3.6), STEEL if d == 'north' else GEM)   # O770: from behind the steel back of the hub
 
 
 RIME_OUT = (14, 32, 74)
@@ -1084,7 +1100,7 @@ def render_frame(key, d, f):
     if d == 'east' and key in SIDE_WINGS:
         return side_frame(key, f)[0]
     _, _, outline, fn, pivot = design(key)
-    sc = Scene(outline, d, f, pivot)
+    sc = Scene(outline, d, f, pivot, level=key in SIDE_WINGS)
     fn(sc)
     return sc.result(pair=d in ('south', 'north'))
 

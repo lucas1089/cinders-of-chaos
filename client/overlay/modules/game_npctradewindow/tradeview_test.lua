@@ -14,7 +14,15 @@ dofile(here .. 'trademodel.lua')
 dofile(here .. 'tradeview.lua')
 local M, V = TradeModel, TradeView
 V.fmt = { short = function(x) return x >= 1000 and string.format('%.1fk', x / 1000) or tostring(x) end,
-  exact = function(x) return (tostring(x):reverse():gsub('(%d%d%d)', '%1,'):reverse():gsub('^,', '')) end }
+  exact = function(x)  -- comma_value's grouping (client_chaos_numbers), English form
+    local t, k = tostring(x), 0
+    repeat t, k = t:gsub('^(-?%d+)(%d%d%d)', '%1,%2') until k == 0
+    return t
+  end }
+-- V41: "Capacity after" groups its thousands like the prices (the language's form comes from comma_value)
+eq(V.weightText(12345.678, 'oz'), '12,345.68 oz', 'thousands grouped, two decimals')
+eq(V.weightText(-1234, 'oz'), '-1,234.00 oz', 'a negative capacity after (too heavy)')
+eq(V.weightText(86, 'oz'), '86.00 oz', 'a small weight as before')
 
 -- ---------------------------------------------------------------- the ids the code looks up are in the file
 local win = windowOf('TradeWindow')

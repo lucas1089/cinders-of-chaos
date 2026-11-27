@@ -77,8 +77,10 @@ end
 -- the class tabs: the leaderboard's (base class and its ascensions), else the base classes seen
 function BT.groups()
 	local LB = ChaosLeaderboard
-	if LB and LB.classGroups then
-		local ok, groups = pcall(LB.classGroups)
+	-- by line: the snapshot is kept per base class (class_base), the leaderboard's class tabs are one per class since V41
+	local fn = LB and (LB.lineGroups or LB.classGroups)
+	if fn then
+		local ok, groups = pcall(fn)
 		if ok and groups and #groups > 0 then
 			return groups
 		end

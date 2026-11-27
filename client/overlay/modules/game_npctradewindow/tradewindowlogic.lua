@@ -19,6 +19,31 @@ function L.geometry(rootW, rootH, top)
   return { x = x, y = y, w = w, h = h }
 end
 
+-- The trade window beside the NPC talk window (V41, seen in a client: the trade window opened in the middle of the view,
+-- over the talk window, so the NPC's answers were hidden). talk = the talk window's {x, y, w, h} on the same root (nil when
+-- it is not shown). Both go side by side and centred, tops aligned (the talk window left, its own size kept; the trade
+-- window narrows to its minimum to make room). On a view too narrow for both at the trade window's minimum width the talk
+-- window keeps the left edge and the trade window the right one: they overlap as little as the view allows.
+-- Returns trade {x, y, w, h} and talk {x, y} (nil: the talk window is not moved).
+L.PAIR_GAP = 8
+L.PAIR_EDGE = 8
+function L.besideTalk(rootW, rootH, top, talk)
+  local g = L.geometry(rootW, rootH, top)
+  if type(talk) ~= 'table' or (tonumber(talk.w) or 0) <= 0 then return g, nil end
+  rootW, rootH, top = tonumber(rootW) or 0, tonumber(rootH) or 0, tonumber(top) or 0
+  local tw, th = tonumber(talk.w), tonumber(talk.h) or 0
+  local room = rootW - 2 * L.PAIR_EDGE - L.PAIR_GAP - tw
+  local w = math.max(L.MIN_WIDTH, math.min(g.w, room))
+  local y = g.y
+  local talkY = math.max(top, math.min(y, rootH - th))
+  local total = tw + L.PAIR_GAP + w
+  if total <= rootW - 2 * L.PAIR_EDGE then
+    local x0 = math.floor((rootW - total) / 2)
+    return { x = x0 + tw + L.PAIR_GAP, y = y, w = w, h = g.h }, { x = x0, y = talkY }
+  end
+  return { x = math.max(0, rootW - w), y = y, w = w, h = g.h }, { x = 0, y = talkY }
+end
+
 -- ---------------------------------------------------------------------------------------------------------------
 -- A currency other than gold (owner beta 2026-10-24: the azure NPC's window said "Currency: Gold Coin" and priced its
 -- sets "30" next to the player's gold). The 10.98 shop packet carries no currency, so the server says it first on

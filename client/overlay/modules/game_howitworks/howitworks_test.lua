@@ -150,12 +150,14 @@ eq(showForUnlock('tower'), false, 'after terminate nothing shows')
 
 -- first open: the card opens by itself once per character and window, never with the setting off
 local store = {}
+saves = 0
 g_settings = {
   exists = function(k) return store[k] ~= nil end,
   getBoolean = function(k) return store[k] == true end,
   set = function(k, v) store[k] = v end,
   getNode = function(k) return store[k] end,
   setNode = function(k, v) store[k] = v end,
+  save = function() saves = saves + 1 end,
 }
 local handlers = {}
 function connect(w, t) handlers[w] = t end
@@ -166,6 +168,7 @@ hide()
 local tower = widget('TowerWindow')
 attach(tower, 'tower')
 eq(root.visible, true, 'a visible window opens its card the first time')
+eq(saves, 1, 'the seen mark is on disk at once (V41: a killed client brought the card back)')
 hide()
 tower:hide(); tower:show(); handlers[tower].onVisibilityChange(tower, true)
 eq(root.visible, false, 'not the second time')
@@ -179,8 +182,10 @@ siege:show(); handlers[siege].onVisibilityChange(siege, true)
 eq(root.visible, true, 'and opens its card when shown')
 hide()
 g_game = { getCharacterName = function() return 'Bo' end }
+local before = saves
 setAuto(false)
 eq(autoOn(), false, 'setting off')
+eq(saves, before + 1, 'the check box is on disk at once')
 attach(widget('TowerWindow'), 'tower')
 eq(root.visible, false, 'no card with the setting off')
 setAuto(true)

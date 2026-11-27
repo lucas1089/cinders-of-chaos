@@ -137,7 +137,19 @@ eq(#lines, 5, 'a line per milestone') eq(lines[1], '[x] 20 points: Title Collect
 eq(lines[4], "[ ] 220 points: Chat colour Collector's Gold", 'one ahead') eq(lines[5], '[ ] 400 points: Title Connoisseur and a plate frame', 'with a frame')
 eq(lines[2], '[x] 60 points: Footprints Laurel Steps', 'footprints')
 eq(CL.groupLine(view), 'Outfits 3 (18), Mounts 2 (18)', 'groups in the server order, unknown ones skipped')
+-- V42: whole entries per line, never a break inside "Loot labels 1 (4)"
+local function chars(t) return #t * 7 end
+local entries = { 'Outfits 11 (47)', 'Kill effects 1 (4)', 'Level-up effects 3 (11)', 'Loot labels 1 (4)', 'Chat colours 2 (8)' }
+local wrapped = CL.wrapEntries('Unlocked - ', entries, 70 * 7, chars)
+eq(wrapped, 'Unlocked - Outfits 11 (47), Kill effects 1 (4),\nLevel-up effects 3 (11), Loot labels 1 (4), Chat colours 2 (8)',
+  'lines of whole entries')
+for l in wrapped:gmatch('[^\n]+') do eq(chars(l) <= 70 * 7, true, 'each line fits: ' .. l) end
+eq(CL.wrapEntries('Unlocked - ', entries, 9999, chars), 'Unlocked - ' .. table.concat(entries, ', '), 'one line when it fits')
+eq(CL.wrapEntries('Unlocked - ', {}, 100, chars), 'Unlocked - ', 'no entries')
+eq(CL.wrapEntries('U - ', { 'a very long entry indeed' }, 5, chars), 'U - a very long entry indeed', 'the first entry stays on the head line')
+eq(#CL.groupEntries(view), 2, 'an entry per known group')
 local row = CL.scoreRow(view)
+eq(#row.howEntries, 2, 'the score row carries its entries')
 eq(row.id, 'x:score', 'row id') eq(row.collection, true, 'never usable') eq(row.name, 'Collection score: 142', 'name')
 eq(CL.canUse(row), false, 'not usable') eq(CL.subText(row), 'Rewards for owning cosmetics', 'sub text')
 eq(CL.scoreRow(nil), nil, 'no row without a score') eq(CL.scoreRow({}), nil, 'no row for junk')

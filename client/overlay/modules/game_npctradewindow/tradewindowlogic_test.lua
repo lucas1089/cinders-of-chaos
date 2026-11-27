@@ -23,6 +23,27 @@ eq(g.w, 560, 'tiny view: minimum width'); eq(g.h, 380, 'tiny view: minimum heigh
 g = L.geometry(nil, nil, nil)
 eq(g.w, 560, 'bad input: minimum'); eq(g.x, 0, 'bad input x')
 
+-- ---------------------------------------------------------------- beside the talk window (V41: it lay over it)
+local function apart(a, b) return a.x + a.w <= b.x or b.x + b.w <= a.x end
+local t, k = L.besideTalk(1280, 640, 0, { x = 300, y = 100, w = 480, h = 480 })
+eq(t.w, 720, '1280 wide: the trade window keeps its width')
+eq(k.x, 36, 'the pair centred: talk window at the left'); eq(t.x, 36 + 480 + 8, 'the trade window right of it')
+eq(apart(t, { x = k.x, w = 480 }), true, 'side by side, no overlap')
+eq(k.y, t.y, 'tops aligned')
+t, k = L.besideTalk(1100, 640, 0, { x = 300, y = 100, w = 480, h = 480 })
+eq(t.w, 1100 - 16 - 8 - 480, 'narrower view: the trade window gives up width')
+eq(apart(t, { x = k.x, w = 480 }), true, 'still side by side')
+eq(t.x + t.w <= 1100 - 8, true, 'inside the view')
+t, k = L.besideTalk(960, 540, 0, { x = 0, y = 0, w = 380, h = 340 })
+eq(t.w, 560, 'phone view: the minimum width'); eq(k.x, 0, 'talk window at the left edge'); eq(t.x, 400, 'trade at the right edge')
+eq(apart(t, { x = k.x, w = 380 }), true, 'the phone view still fits both')
+t, k = L.besideTalk(800, 540, 0, { x = 0, y = 0, w = 380, h = 340 })
+eq(t.x, 240, 'too narrow: the trade window at the right edge'); eq(k.x, 0, 'the talk window at the left edge')
+t, k = L.besideTalk(1280, 640, 30, { x = 0, y = 600, w = 480, h = 480 })
+eq(k.y >= 30, true, 'the talk window under the menu bar')
+t, k = L.besideTalk(1280, 640, 0, nil)
+eq(k, nil, 'no talk window: nothing moved'); eq(t.x, 280, 'the trade window centred as before')
+
 -- ---------------------------------------------------------------- a currency other than gold
 local JSON = {
   azure = { action = 'currency', data = { code = 'AZ', name = 'Azure Coin', item = 24124, amount = 42 } },

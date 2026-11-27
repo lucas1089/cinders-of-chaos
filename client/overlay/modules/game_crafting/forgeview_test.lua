@@ -189,7 +189,7 @@ local mats = V.materials(ctx())
 eq(#mats, 10, 'one entry per material')
 eq(mats[1].name, 'Ember Orb', 'a short name') eq(mats[2].name, 'Reforging', '"Orb of" left off')
 eq(mats[1].count, 7, 'bag plus stash') eq(mats[1].dim, false, 'owned: lit') eq(mats[9].dim, true, 'none owned: dim')
-has(mats[1].tip, '3 in backpack, 4 in stash', 'the tip counts both') has(mats[1].tip, 'Raises a modifier one tier.', 'the tip has what it does')
+has(mats[1].tip, '3 in purse and backpack, 4 in stash', 'the tip counts both') has(mats[1].tip, 'Raises a modifier one tier.', 'the tip has what it does')
 
 -- ---------------------------------------------------------------- the steps
 local cur, done = V.step(ctx({}, nil, none))
@@ -232,7 +232,7 @@ eq(req ~= nil, true, 'a whole-item action needs no modifier') eq(req.mod, nil, '
 -- ---------------------------------------------------------------- the bottom bar
 local bar = V.bar(ctx({ orb = 'ember', mod = 'a2' }, ex))
 eq(bar.can, true, 'forge on') eq(bar.tag, 'safe', 'tag') has(bar.summary, 'Raise tier', 'summary') has(bar.summary, '+58 maximum Life', 'names the modifier')
-has(bar.detail, 'Guaranteed: tier 3 to tier 4.', 'the server words') has(bar.cost, 'Costs 1 Ember Orb (backpack first, then stash)', 'cost')
+has(bar.detail, 'Guaranteed: tier 3 to tier 4.', 'the server words') has(bar.cost, 'Costs 1 Ember Orb (purse and backpack first, then stash)', 'cost')
 eq(bar.confirm, nil, 'a safe action asks nothing')
 local ex2 = { orb = 'excision', mod = 'a2', sig = 'S1', ok = true, tag = 'risky', text = 'Guaranteed: this modifier is removed. The others stay.' }
 bar = V.bar(ctx({ orb = 'excision', mod = 'a2' }, ex2))
@@ -244,7 +244,7 @@ bar = V.bar(ctx({}))
 eq(bar.can, false, 'no action: forge off') has(bar.why, 'Pick an action', 'says so')
 bar = V.bar(ctx({}, nil, none))
 has(bar.why, 'Put an item', 'no item')
-eq(V.costLine(V.find(V.actions(ctx({ mod = 'a2' })), 'ember')), 'Cost: 1 Ember Orb. You have 7 (3 in backpack, 4 in stash).', 'the cost line with both counts')
+eq(V.costLine(V.find(V.actions(ctx({ mod = 'a2' })), 'ember')), 'Cost: 1 Ember Orb. You have 7 (3 in purse and backpack, 4 in stash).', 'the cost line with both counts')
 eq(V.resultLine({ ok = true, text = 'Done.', from = 'stash' }), 'Done. (the orb came from the stash)', 'result from the stash')
 eq(V.resultLine({ ok = true, text = 'Done.', from = 'bag' }), 'Done.', 'result from the bag')
 eq(V.explainText(refused), 'Every modifier of this item is bound.', 'a refusal in the server words')
@@ -321,7 +321,7 @@ eq(V.compare({ ok = true, text = 'x' }), nil, 'no change table: no compare row (
 eq(V.compare({ ok = false, change = { kind = 'bind' } }), nil, 'a refusal: no compare row')
 eq(V.compare({ ok = true, change = { kind = 'mystery' } }), nil, 'an unknown change: none')
 local cr = V.costRow(V.find(V.actions(ctx({ mod = 'a2' })), 'ember'))
-eq(cr.name, 'Cost: 1 Ember Orb', 'cost name') eq(cr.have, 'you have 7: 3 backpack, 4 stash', 'cost have')
+eq(cr.name, 'Cost: 1 Ember Orb', 'cost name') eq(cr.have, 'you have 7: 3 purse and bag, 4 stash', 'cost have')
 -- the FORGE button and the bottom lines
 local go = V.go(ctx({ orb = 'ember', mod = 'a2' }, ex))
 eq(go.enabled, true, 'enabled') eq(go.risky, false, 'safe') eq(go.sub, 'spends 1 Ember Orb', 'sub line')

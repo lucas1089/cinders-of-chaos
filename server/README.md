@@ -14646,6 +14646,18 @@ A weekly board of the experience gained from monsters, ranked per class. Board `
 (`LB.hasClassTabs`), but the boards with `noClassTabs` (siege, factions, professions: guild and gathering scores).
 `byClass` boards keep their tabs either way. Awards stay overall for those boards.
 
+**One tab per class (O771, seen in a client V41-V44).** The tabs were the class lines (`class_base`): the Beastmaster
+rows sat under Ranger. `leaderboard_config.lua` `ladder.tabs = "class"` (the default) gives every vocation its own tab:
+`LB.classTabs(vocIds, baseOf, demotion)` in `leaderboard_core.lua` returns one group `{base, class, ids = {id}}` per
+vocation, the lines in base order and the base class first (Mystic, Elementalist, Illusionist, Ranger, Deadeye,
+Beastmaster, ...). `LB.classGroups()` (cached in `LB.groupsCache`) is what every user of the class groups reads: the
+weekly boards, the Weekly Challenge, the season ladder, the Greater Rift ladder and the records. The group key is the
+vocation id and its name the vocation's name. `ladder.tabs = "line"` brings back the old line tabs. `LB.lineGroups()`
+keeps the line grouping for `build_trends.lua`, whose snapshot is keyed by `class_base`.
+Effects: the weekly class podium and the Weekly Challenge pay the top of every one of the 21 classes, not of every line,
+so more Conquest Tokens go out each week; podium rows of earlier weeks keep their base id as the class. Test:
+`tests/leaderboard_test.lua` (order, Beastmaster alone).
+
 **Tests:** `tests/weekly_class_test.lua` (board flags, tabs, buffer, tops, awards, texts, Discord kind on both ends, the
 SQL file, the mocked engine: monster kills only, flush, logout, the week end, no double pay);
 `website/tests/chaos_leaderboards_page_test.php`.

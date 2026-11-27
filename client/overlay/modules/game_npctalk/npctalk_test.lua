@@ -42,10 +42,12 @@ g_mouse = { pushCursor = function() end, popCursor = function() end }
 g_settings = { getNode = function() return {} end, setNode = function() end }
 EVENT_TEXT_CLICK, EVENT_TEXT_HOVER = 1, 2
 KeyboardFocusReason = 1
-MessageModes = { NpcFrom = 20, NpcFromStartBlock = 21, NpcTo = 22 }
+MessageModes = { Say = 1, NpcFrom = 20, NpcFromStartBlock = 21, NpcTo = 22 }
 NPC_NAME_CHAT = 'NPCs'
 ThingCategoryCreature = 1
-connect, disconnect = function() end, function() end
+local gameSignals = {}
+connect = function(obj, t) if obj == g_game then gameSignals = t end end
+disconnect = function() end
 
 local function pos(x, y) return { x = x, y = y, z = 7 } end
 local ppos = pos(1000, 1000)
@@ -173,6 +175,20 @@ MS = MS + 5000
 gi.talkToNpc(maelis)
 eq(keys[win].Escape(), true, 'Esc is taken while the window is open'); eq(win.visible, false, 'and closes it')
 eq(keys[win].Escape(), false, 'Esc with no conversation is left alone')
+-- V41: "bye" in Local Chat (not the window's input) closes the window too; the NPC heard it, nothing more is said
+MS = MS + 5000
+gi.talkToNpc(maelis)
+eq(win.visible, true, 'talking again')
+local before = #sent
+gameSignals.onTalk('Ash', 5, MessageModes.Say, 'bye', 0, ppos)
+eq(win.visible, false, 'the player\'s own bye in Local Chat closes the window')
+eq(#sent, before, 'and says nothing more')
+MS = MS + 5000
+gi.talkToNpc(maelis)
+gameSignals.onTalk('Someone Else', 5, MessageModes.Say, 'bye', 0, ppos)
+eq(win.visible, true, 'another player\'s bye leaves it open')
+trade.onNpcConversationAttempt('Bye!')
+eq(win.visible, false, 'the console\'s Default tab: bye closes it')
 -- the dialogue off in the options: no window, the talk stays in the console
 modules.client_settings = { getOption = function() return true end }
 MS = MS + 5000

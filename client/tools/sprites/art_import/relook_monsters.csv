@@ -1,4 +1,4 @@
 key,src,art,new,tiles,scale,lean,disp,float,idle,idle_ms,walk,walk_ms,walk_src,west,east,idle_frames,walk_frames,colours,pixels
-banshee,75378b2013d0,redraw,3744,3x3,1.00,0.00,-27:-1,0,4,300,8,100,walk,own,own,4/4/4/4,8/8/8/8,60,97508
+banshee,75378b2013d0,redraw,3744,3x3,1.00,0.00,-32:-1,0,4,300,8,100,walk,own,own,4/4/4/4,8/8/8/8,60,97508
 werelion,16b47108061e,redraw,3745,3x3,1.00,0.00,-32:0,0,4,300,8,100,walk,own,own,4/4/4/4,8/8/8/8,80,104991
 leafgolem,ed8c65f289c1,redraw,3746,3x3,1.00,0.00,-32:0,0,4,300,8,100,walk,own,own,4/4/4/4,8/8/8/8,73,101812

@@ -232,6 +232,21 @@ local function showDetail()
   local how = r.how or ''
   if r.id == 0 then
     how = ''
+  elseif isScore and r.howEntries then
+    -- whole entries per line (V42: the line wrapped inside "Loot labels 1 (4)")
+    local label = d.howLabel
+    local width = label:getWidth() - label:getPaddingLeft() - label:getPaddingRight()
+    local probe = g_ui.createWidget('UILabel', label)
+    probe:setFont(label:getFont())
+    probe:setTextAutoResize(true)
+    probe:setVisible(false)
+    local function measure(text)
+      probe:setText(text)
+      return probe:getTextSize().width
+    end
+    how = width > 40 and CL.wrapEntries(tr('Unlocked') .. ' - ', r.howEntries, width, measure)
+      or (tr('Unlocked') .. ' - ' .. how)
+    probe:destroy()
   elseif r.owned then
     how = r.source == 'store' and tr('Unlocked for your account') or (tr('Unlocked') .. ' - ' .. how)
   end

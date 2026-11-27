@@ -117,6 +117,10 @@ return {
 		-- mapping is grouped through Vocation(id):getDemotion() down to its base. Group names are read from the
 		-- server: Vocation(base):getName().
 		baseOf = nil,
+		-- the class tabs of every board with them (the ladder, the weekly boards, the class podium of weekly_class.lua, the
+		-- Weekly Challenge, the season ladders, trending builds): "class" = one tab per class, the Beastmaster apart from
+		-- the Ranger (V41, 21 tabs); "line" = one tab per base class with its two ascended classes (before)
+		tabs = "class",
 		vocationsFile = "data/XML/vocations.xml", -- the class list: the vocation ids of this file (that the engine knows)
 		maxVocationId = 30 -- fallback when the file cannot be read: ids 1..this are asked from the engine
 	}

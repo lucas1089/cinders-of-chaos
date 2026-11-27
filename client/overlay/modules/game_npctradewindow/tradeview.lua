@@ -59,8 +59,10 @@ V.clip = clip
 V.CARD_NAME_MAX = 22   -- a card's name line holds about this many characters of the 11 px face
 V.ROW_NAME_MAX = 40
 
+-- V41 (seen in a client): "Capacity after" read 12345.67 oz. The thousands are grouped like the prices (V.fmt.exact:
+-- comma_value of client_chaos_numbers, in the language's form: 12,345.67 oz / pt-BR 12.345,67 oz)
 local function weightText(w, unit)
-  return string.format('%.2f', tonumber(w) or 0) .. ' ' .. (unit or 'oz')
+  return V.fmt.exact(string.format('%.2f', tonumber(w) or 0)) .. ' ' .. (unit or 'oz')
 end
 V.weightText = weightText
 

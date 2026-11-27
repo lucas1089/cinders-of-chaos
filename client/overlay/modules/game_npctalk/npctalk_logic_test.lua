@@ -277,5 +277,11 @@ eq(L.isDuplicate(last, 'Loot Buyer', 'Anything else?', 1000), false, 'other word
 eq(L.isDuplicate(last, 'Gambler', 'Welcome.', 1000), false, 'other speaker')
 eq(L.isDuplicate(nil, 'Loot Buyer', 'Welcome.', 1000), false, 'no line before')
 
+-- V41: the player's own farewell, wherever said, ends the conversation
+eq(L.ownFarewell('Ash', 'Ash', 'bye'), true, 'own bye')
+eq(L.ownFarewell('ash', 'Ash', 'Good bye!'), true, 'own good bye, any case')
+eq(L.ownFarewell('Bo', 'Ash', 'bye'), false, 'another player')
+eq(L.ownFarewell('Ash', 'Ash', 'bye bye shop'), false, 'not a farewell')
+eq(L.ownFarewell('Ash', '', 'bye'), false, 'no name')
 print(string.format('npctalk_logic: %d checks, %d failures', checks, fails))
 if fails > 0 then os.exit(1) end
