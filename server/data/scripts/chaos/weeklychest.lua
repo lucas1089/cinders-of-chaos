@@ -99,8 +99,11 @@ local function giveItems(player, list)
 		local ok, item = pcall(function() return player:addItem(it.id, it.count, false) end)
 		if not ok or not item then
 			local box = player:getInbox()
-			local okBox = box and pcall(function() return box:addItem(it.id, it.count) end)
-			if okBox then
+			local okBox, added = false, nil
+			if box then
+				okBox, added = pcall(function() return box:addItem(it.id, it.count, INDEX_WHEREEVER or -1, FLAG_NOLIMIT or 1) end)
+			end
+			if okBox and added then
 				inbox = inbox + 1
 			else
 				log("could not give " .. it.count .. "x " .. it.id .. " to " .. player:getName())

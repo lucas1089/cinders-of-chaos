@@ -172,6 +172,15 @@ local function newPlayer(id, level, group)
 	function pl:getSlotItem(slot) local id = self.slots[slot]; return id and {getId = function() return id end} or nil end
 	function pl:getBankBalance() return self.bank end
 	function pl:setBankBalance(v) self.bank = v end
+	-- the engine's inbox (Inbox::queryAdd) takes nothing without FLAG_NOLIMIT (V36): a plain addItem returns nil
+	pl.inbox = {}
+	function pl:getInbox()
+		return {addItem = function(_, id2, n, index, flags)
+			if flags ~= (FLAG_NOLIMIT or 1) then return nil end
+			pl.inbox[id2] = (pl.inbox[id2] or 0) + n
+			return {}
+		end}
+	end
 	byId[id] = pl
 	return pl
 end
@@ -198,6 +207,17 @@ eq(events.ChaosWelcomePathKill.t, "kill", "a kill event")
 eq(sweep.ms, cfg.sweepMs, "the sweep interval")
 check(events.ChaosWelcomePathExtended == nil, "no second handler on opcode 178 (goals.lua is the one)")
 local key = function(name) return cfg.storage.base + cfg.storage[name] end
+
+-- V36: a step reward with a full backpack goes to the inbox with FLAG_NOLIMIT, it is never lost
+do
+	local fullBag = newPlayer(77, 20)
+	local giveBefore = Chaos.giveItem
+	Chaos.giveItem = function() return 0 end
+	W.reward(fullBag, S.bounty, "en")
+	Chaos.giveItem = giveBefore
+	eq(fullBag.inbox[29851], 2, "V36: the step's orbs went to the inbox")
+	eq(fullBag.items[29851], nil, "V36: nothing in the full backpack")
+end
 local monster = {isMonster = function() return true end, getMaster = function() return nil end}
 local summon = {isMonster = function() return true end, getMaster = function() return {} end}
 

@@ -68,6 +68,15 @@ local function newPlayer(id, level)
 	function pl:sendTextMessage(_, t) self.msgs[#self.msgs + 1] = t end
 	function pl:getBankBalance() return self.bank end
 	function pl:setBankBalance(v) self.bank = v end
+	-- the engine's inbox (Inbox::queryAdd) takes nothing without FLAG_NOLIMIT (V36): a plain addItem returns nil
+	pl.inbox = {}
+	function pl:getInbox()
+		return {addItem = function(_, id2, n, index, flags)
+			if flags ~= (FLAG_NOLIMIT or 1) then return nil end
+			pl.inbox[id2] = (pl.inbox[id2] or 0) + n
+			return {}
+		end}
+	end
 	byId[id] = pl
 	return pl
 end
@@ -184,6 +193,14 @@ do
 	eq(lines[1], cfg.vael.victory.en, "Vael's last line")
 	B.hook.won(pl, tr)
 	eq(pl.bank, cfg.boss.reward.gold, "paid once")
+	-- V36: a full backpack sends the boss reward to the inbox with FLAG_NOLIMIT, it is never lost
+	local full = newPlayer(603, 500)
+	local giveBefore = Chaos.giveItem
+	Chaos.giveItem = function() return 0 end
+	B.hook.won(full, tr)
+	Chaos.giveItem = giveBefore
+	eq(full.inbox[29857], 2, "V36: the Orbs of Fate went to the inbox"); eq(full.inbox[24692], 1, "V36: the Orb of Sockets too")
+	eq(full.items[29857], nil, "V36: nothing in the full backpack")
 	local pl2 = newPlayer(601, 500)
 	B.hook.failed(pl2, tr, "failed")
 	ok(pl2.store[key("cooldown")] and pl2.store[key("cooldown")] > os.time(), "a failed run closes the door")

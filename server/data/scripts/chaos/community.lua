@@ -553,7 +553,7 @@ local function giveItems(player, items)
 		if got < it.count then
 			local inbox = player:getInbox()
 			if inbox then
-				inbox:addItem(it.id, it.count - got)
+				inbox:addItem(it.id, it.count - got, INDEX_WHEREEVER or -1, FLAG_NOLIMIT or 1)
 			end
 		end
 	end

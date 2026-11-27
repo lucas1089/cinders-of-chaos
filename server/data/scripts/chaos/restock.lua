@@ -142,8 +142,11 @@ local function give(player, r)
 			return
 		end
 		local box = player:getInbox()
-		local okBox = box and pcall(function() return box:addItem(r.id, subType or count) end)
-		if okBox then
+		local okBox, added = false, nil
+		if box then
+			okBox, added = pcall(function() return box:addItem(r.id, subType or count, INDEX_WHEREEVER or -1, FLAG_NOLIMIT or 1) end)
+		end
+		if okBox and added then
 			toInbox = toInbox + 1
 		else
 			log("could not give " .. count .. "x " .. r.id .. " to " .. player:getName())
