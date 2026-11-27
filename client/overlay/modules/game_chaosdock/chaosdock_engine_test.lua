@@ -365,6 +365,36 @@ battle:show()
 runEvents()
 eq(battle.visible, false, 'the column keeps only the minimap')
 
+-- V37 (seen in a client 2026-11-27): a chest on the ground opened, its container window went to the right column and the
+-- column hid it at once. Now it is lifted out of the column, left of the dock under the minimap, shown and movable; a
+-- second one stacks under it; turned off, they go back to a side panel; a closed one leaves the list
+local addedToPanels = {}
+modules.game_interface.addToPanels = function(w, room) addedToPanels[#addedToPanels + 1] = room w:setParent(container) return true end
+local chest = widget('UIMiniWindow', 'container2', container)
+chest.width, chest.height = 178, 90
+runEvents()
+eq(chest.visible, true, 'the chest window stays shown'); eq(chest.parent, gameRoot, 'lifted out of the column')
+eq(chest.x, 1102 - L.LIFT_GAP - 178, 'left of the column'); eq(chest.y, 182, 'under the minimap')
+local corpse = widget('UIMiniWindow', 'container3', container)
+corpse.width, corpse.height = 178, 60
+runEvents()
+eq(corpse.parent, gameRoot, 'a second one lifted'); eq(corpse.y, 182 + 90 + L.LIFT_GAP, 'stacked under the chest')
+eq(chest.y, 182, 'the first stays')
+local bagWindow = widget('UIMiniWindow', 'container4', container) -- a bag of the backpack: the bag panel hides it itself
+bagWindow.visible = false
+runEvents()
+eq(bagWindow.parent, container, 'a hidden bag window is left alone'); eq(bagWindow.visible, false, 'still hidden')
+chest:destroy(); runEvents()
+local bagShownLift = bagShown
+D.setEnabled(false)
+eq(corpse.parent, container, 'off: back in a side panel'); eq(addedToPanels[1], 'always', 'the way the client opens it')
+eq(corpse.chaosDockLifted, nil, 'no longer lifted'); eq(#addedToPanels, 1, 'the closed chest is not put back')
+D.setEnabled(true); runEvents()
+eq(corpse.parent, gameRoot, 'on again: lifted again')
+corpse:destroy(); bagWindow:destroy()
+bagShown = bagShownLift
+modules.game_interface.addToPanels = nil
+
 -- Skills (V31): open but hidden by the column, the dock takes it without running its entry (which would close it)
 local ranBefore = #ran
 eq(D.route('Skills'), true, 'skills routed'); runEvents()

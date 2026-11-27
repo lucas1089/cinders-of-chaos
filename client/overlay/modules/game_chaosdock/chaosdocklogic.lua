@@ -236,6 +236,32 @@ function L.hidesInColumn(id, heldIds)
   return true
 end
 
+-- a container window of the right column that the column must not hide (V37, seen in a client 2026-11-27: a chest on the
+-- ground opened on the server and its window was hidden at once, as if it never opened). The bag panel hides the windows
+-- of its own bags and the purse itself, so a container window still visible there is another one: a chest, a corpse,
+-- the depot. It is lifted out of the column and stands left of it (L.liftPlaces)
+function L.liftsFromColumn(id)
+  return tostring(id or ''):match('^container%d+$') ~= nil
+end
+
+L.LIFT_GAP = 4
+
+-- the places of the lifted windows: right-aligned against the column's left edge (colX), stacked down from top; a window
+-- that would reach below bottom starts a new stack further left. sizes: { { width, height } } in order -> { { x, y } }
+function L.liftPlaces(colX, top, bottom, sizes)
+  local out = {}
+  local right, y, stackW = colX - L.LIFT_GAP, top, 0
+  for i, s in ipairs(sizes or {}) do
+    if y > top and y + s.height > bottom then
+      right, y, stackW = right - stackW - L.LIFT_GAP, top, 0
+    end
+    out[i] = { x = math.max(0, right - s.width), y = y }
+    stackW = math.max(stackW, s.width)
+    y = y + s.height + L.LIFT_GAP
+  end
+  return out
+end
+
 -- a bag opened by a click (game_bagpanel): the dock shows the Inventory. Not while the login restores the bags, not a
 -- pinned bag's reopen, not in the first L.LOGIN_GRACE_MS of the game (the backpack the login opens)
 function L.bagOpensDock(st, restoring, quiet, sinceStart)
