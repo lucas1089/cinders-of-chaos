@@ -16,7 +16,11 @@ return {
 		{-2, 3}, {3, -2}, {-3, -2}},
 		-- positions: a fixed tile per town: Cinderhold's is an alcove of the temple's portal gallery
 		-- (temple_portals_config.lua `portals`; tests/cityportals_test.lua checks it); a town without one uses `offsets`
-		positions = {{town = 2, x = 32375, y = 32245, z = 7}}},
+		positions = {{town = 2, x = 32375, y = 32245, z = 7}},
+		-- O774: the portal opens the window once per approach; a step on it again within this many seconds only pushes
+		-- the player back (seen in a client: the raid window reopened after the player closed it, a held arrow key
+		-- walked into the alcove again and again)
+		reopenSeconds = 20},
 	minLevel = 800,
 	minPlayers = 1, -- the raid opens for one player alone up to a party of 15 inside partyRange of the opener
 	-- (owner 2026-10-24: all content solo). basePlayers = the group the boss numbers below were measured for (5, the old

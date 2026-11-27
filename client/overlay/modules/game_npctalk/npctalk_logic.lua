@@ -118,6 +118,75 @@ function L.ownFarewell(speaker, me, text)
   return L.sameName(speaker, me) and L.isFarewell(text)
 end
 
+-- O774: the talk window and an NPC's own window (trade, bank, Candlemarks, Gambler, the store) never cover each other
+-- (seen in a client: the talk window covered the shop). The trade window places itself beside the talk window (V41,
+-- tradewindowlogic.lua besideTalk); for the others the talk window moves: the rects overlap -> the spot beside the other
+-- window (left or right, the side nearer the talk window first; then below or above), inside `screen`; nil when they do
+-- not overlap; with no free spot, the side where the least of it is covered. Rects are {x, y, width, height}.
+function L.overlaps(a, b)
+  if type(a) ~= 'table' or type(b) ~= 'table' then return false end
+  return a.x < b.x + b.width and b.x < a.x + a.width and a.y < b.y + b.height and b.y < a.y + a.height
+end
+
+function L.clearOf(talk, other, screen, gap)
+  if not L.overlaps(talk, other) or type(screen) ~= 'table' then return nil end
+  gap = tonumber(gap) or 8
+  local w, h = talk.width, talk.height
+  local function clampY(y) return math.max(screen.y, math.min(y, screen.y + screen.height - h)) end
+  local function clampX(x) return math.max(screen.x, math.min(x, screen.x + screen.width - w)) end
+  local left = { x = other.x - gap - w, y = clampY(talk.y) }
+  local right = { x = other.x + other.width + gap, y = clampY(talk.y) }
+  local below = { x = clampX(talk.x), y = other.y + other.height + gap }
+  local above = { x = clampX(talk.x), y = other.y - gap - h }
+  local order
+  if talk.x + w / 2 < other.x + other.width / 2 then
+    order = { left, right, below, above }
+  else
+    order = { right, left, below, above }
+  end
+  for _, p in ipairs(order) do
+    local r = { x = p.x, y = p.y, width = w, height = h }
+    if r.x >= screen.x and r.y >= screen.y and r.x + w <= screen.x + screen.width and r.y + h <= screen.y + screen.height
+        and not L.overlaps(r, other) then
+      return { x = p.x, y = p.y }
+    end
+  end
+  -- no spot fits (a 1280x720 screen and the Gambler window): the side, left or right inside the screen, where the least
+  -- of the talk window lies under the other window; nil when that is no better than where it is
+  local best, bestArea = nil, L.overlapArea(talk, other)
+  for _, p in ipairs(order) do
+    if p == left or p == right then
+      local r = { x = clampX(p.x), y = p.y, width = w, height = h }
+      local a = L.overlapArea(r, other)
+      if a < bestArea then best, bestArea = { x = r.x, y = r.y }, a end
+    end
+  end
+  return best
+end
+
+-- after the talk window took its best spot (clearOf) and still lies partly under the other window: the spot of the other
+-- window moved sideways just clear of the talk window (away from it), when that stays inside `screen`; nil otherwise
+-- (seen at 1280x720: the talk window at the left edge and the Gambler window 10 px over it; the Gambler moves 18 px right)
+function L.shiftOther(talk, other, screen, gap)
+  if not L.overlaps(talk, other) or type(screen) ~= 'table' then return nil end
+  gap = tonumber(gap) or 8
+  local x
+  if talk.x + talk.width / 2 <= other.x + other.width / 2 then
+    x = talk.x + talk.width + gap
+  else
+    x = talk.x - gap - other.width
+  end
+  if x < screen.x or x + other.width > screen.x + screen.width then return nil end
+  return { x = x, y = other.y }
+end
+
+function L.overlapArea(a, b)
+  if not L.overlaps(a, b) then return 0 end
+  local w = math.min(a.x + a.width, b.x + b.width) - math.max(a.x, b.x)
+  local h = math.min(a.y + a.height, b.y + b.height) - math.max(a.y, b.y)
+  return w * h
+end
+
 -- ---------------------------------------------------------------- quick buttons and keyword chips
 -- V41 (seen in a client): the shop NPCs of the base map greet with "See the fine {weapons} I sell." and never say "trade",
 -- so their window had no Trade button. A greeting that speaks of buying or selling is a shop too.

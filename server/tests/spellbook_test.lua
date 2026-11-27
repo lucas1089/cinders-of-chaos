@@ -260,6 +260,7 @@ registry["ChaosSpellbookExtended"].onExtendedOpcode(p, 219, {action = "open", da
 eq(#sent, n + 2, "unchanged: open and done only")
 eq(sent[n + 1].data.unchanged, true, "unchanged flag"); eq(sent[n + 1].data.chunks, 0, "no chunks")
 eq(sent[n + 1].data.sig, sig, "same signature"); eq(sent[n + 2].action, "done", "done after the header")
+eq(sent[n + 2].data.refresh, nil, "the player's own open: no refresh flag (O774)")
 n = #sent
 registry["ChaosSpellbookExtended"].onExtendedOpcode(p, 219, {action = "open", data = {have = "0-stale"}})
 eq(#sent, n, "a stale signature inside the throttle: nothing")
@@ -290,6 +291,8 @@ n = #sent
 eq(B.refresh(fresh), true, "refresh: a client with the window")
 eq(#sent, n + 2, "refresh: open (header) and done only"); eq(sent[n + 1].action, "open", "refresh: the header")
 eq(sent[n + 1].data.unchanged, true, "refresh: the client keeps its cached list"); eq(sent[n + 1].data.chunks, 0, "refresh: no chunks")
+-- O774: the refresh's done says so, the client then never opens a closed window (the Spellbook popped open after an ascension)
+eq(sent[n + 2].action, "done", "refresh: done"); eq(sent[n + 2].data.refresh, true, "refresh: done carries refresh")
 registry["ChaosSpellbookLogout"].onLogout(fresh)
 n = #sent
 eq(B.refresh(fresh), false, "refresh: a client without the window gets nothing"); eq(#sent, n, "refresh: nothing sent")

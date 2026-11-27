@@ -44,6 +44,17 @@ K.key = key
 
 -- ===================================================================== week
 -- the lockout week of t: the YYYYMMDD of the day the week started (resetDay at resetHour, local time)
+-- O774: does a step on the city portal open the raid window? Once per approach: not again within `seconds` of the
+-- last time it did (a player who closed it stays closed; Adventure > Raid opens it at any time)
+function K.portalOpens(lastShown, now, seconds)
+	lastShown, now = tonumber(lastShown), tonumber(now) or 0
+	seconds = tonumber(seconds) or 0
+	if not lastShown or seconds <= 0 then
+		return true
+	end
+	return now - lastShown >= seconds
+end
+
 function K.weekKey(t, day, hour)
 	day, hour = day or 2, hour or 6
 	local d = os.date("*t", t - hour * 3600)

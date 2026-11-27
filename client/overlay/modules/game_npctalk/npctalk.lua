@@ -31,6 +31,11 @@ local SUPPRESS_MS = 3000       -- after a goodbye, the NPC's farewell goes to th
 local SWITCH_GAP_MS = 1500     -- Talk to another NPC: "bye" to the first, "hi" this much later
 local IDLE_MS = 120000         -- the stock NpcHandler forgets an idle player after 120 s; so does the window
 local TICK_MS = 20
+-- O774: the windows an NPC opens next to its talk (bank, Candlemarks, Gambler, the store, the trade window); the talk
+-- window moves off one that covers it or that it covers (L.clearOf), checked every PARTNER_MS while it shows
+local PARTNERS = { 'tradeWindow', 'amountWindow', 'candlemarkWindow', 'gambleWindow', 'shopWindow', 'payWindow' }
+local PARTNER_MS = 250
+local partnerAt = 0
 local MAX_TRANSCRIPT = 40
 
 local window, view
@@ -255,6 +260,38 @@ local function screenLimits()
   return limits
 end
 
+-- O774: the talk window off the NPC's own windows (L.clearOf); the first visible one that overlaps it wins
+local function rectOf(w)
+  local r = w:getRect()
+  return { x = r.x, y = r.y, width = r.width, height = r.height }
+end
+
+local function clearPartners()
+  if not alive(window) or not window:isVisible() then return end
+  local root = rawget(_G, 'rootWidget') or g_ui.getRootWidget()
+  if not root then return end
+  local r = rootPanel():getRect()
+  local screen = { x = r.x, y = math.max(r.y, screenLimits().top or r.y), width = r.width }
+  screen.height = r.y + r.height - screen.y
+  for _, id in ipairs(PARTNERS) do
+    local other = root:getChildById(id)
+    if alive(other) and other:isVisible() then
+      local spot = L.clearOf(rectOf(window), rectOf(other), screen, 8)
+      if spot then
+        window:setPosition(spot)
+        if conv then conv.placed = true end
+      end
+      -- no free side on a small screen: the other window steps aside the rest of the way
+      local aside = L.shiftOther(rectOf(window), rectOf(other), screen, 8)
+      if aside then
+        if other.breakAnchors then other:breakAnchors() end -- a window centred by its .otui anchors keeps the new spot
+        other:setPosition(aside)
+      end
+      if spot or aside then return end
+    end
+  end
+end
+
 -- Where the window opens (one place for it: O572): beside the NPC on the side away from the player, never over either of
 -- them, inside the part of the map the player sees; the middle of that part when the NPC is not on screen. Done once per
 -- conversation: the window is draggable and stays where the player puts it.
@@ -290,6 +327,7 @@ local function placeWindow()
   window:setPosition(spot)
   conv.placed = true
   layoutContent()
+  clearPartners() -- O774: never over a shop the NPC already opened
 end
 
 local function hideWindow()
@@ -513,6 +551,10 @@ local function tick()
       local status = (#conv.turn == 0 and now() - conv.lastActivity > 4000) and tr('No answer yet.')
         or (conv.hint and tr('Click a gold word to say it.')) or ''
       if view:status() ~= status then setStatus(status) end
+      if now() - partnerAt >= PARTNER_MS then
+        partnerAt = now()
+        clearPartners()
+      end
     end
   end
   if not conv and not approach then stopTicking() end

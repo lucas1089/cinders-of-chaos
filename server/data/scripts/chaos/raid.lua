@@ -21,7 +21,7 @@
 --
 -- Protocol (extended opcode ChaosOpcodes.raid = 213, JSON {action, data}, sent through Chaos.sendChunked):
 --   client -> server  open | start | continue {id} | join {id} | leave | buy {key} | journal | query
---   server -> client  info {...}      the raid window: lockouts, saved raids, marks, the vendor's stock
+--   server -> client  info {...}      the raid window: lockouts, saved raids, marks, the vendor's stock; show = true opens it (O774)
 --                     journal {bosses} the boss journal (mechanics with their numbers, loot preview)
 --                     hud {...}       the in-raid HUD (raid_core.lua K.hud), alert {text, kind} (a mechanic call-out)
 --                     loot {boss, eligible, lines}, end {text}, msg {text, ok}, closeInfo
@@ -92,6 +92,7 @@ end
 
 X.runs = X.runs or {} -- slot -> run
 X.runOf = X.runOf or {} -- player id -> run
+X.portalShown = X.portalShown or {} -- player id -> when the city portal last opened the window (O774)
 X.monsterRun = X.monsterRun or {} -- monster id -> run
 X.built = X.built or {}
 X.bad = X.bad or {}
@@ -2389,7 +2390,13 @@ function step.onStepIn(creature, item, position, fromPosition)
 		return true
 	end
 	player:teleportTo(fromPosition, true)
-	X.sendInfo(player)
+	-- O774: once per approach (raid_core.lua K.portalOpens); the window is shown, the replies to its own buttons only
+	-- update it
+	local pid = player:getId()
+	if K.portalOpens(X.portalShown[pid], os.time(), cfg.portal.reopenSeconds) then
+		X.portalShown[pid] = os.time()
+		X.sendInfo(player, true)
+	end
 	return true
 end
 step:aid(ChaosRaidConfig.aid.exit, ChaosRaidConfig.aid.portal)
@@ -2490,7 +2497,9 @@ local function vendorView(guid)
 	return {marks = row.marks, stock = list}
 end
 
-function X.sendInfo(player)
+-- show = true: the client opens the window (the player asked: the menu's open, the city portal); without it a closed
+-- window stays closed and a shown one is updated (O774: the window reopened after the player closed it)
+function X.sendInfo(player, show)
 	local cfg = C()
 	local guid = player:getGuid()
 	local now = os.time()
@@ -2516,7 +2525,7 @@ function X.sendInfo(player)
 	send(player, "info", {name = cfg.name, minLevel = cfg.minLevel, level = player:getLevel(), minPlayers = cfg.minPlayers,
 		maxPlayers = cfg.maxPlayers, lock = K.lockView(cfg, set, now), saved = saved, marks = row.marks, kills = row.kills,
 		clears = row.clears, best = row.best, vendor = vendorView(guid), inRaid = X.runOf[player:getId()] ~= nil or nil,
-		pz = inProtectionZone(player) or nil})
+		pz = inProtectionZone(player) or nil, show = show and true or nil})
 end
 
 -- the fixed vendor gear (factions.lua F.makeGear's way: rarity, item level, these modifiers at these tiers)
@@ -2608,7 +2617,7 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 	local a = msg.action
 	if a == "open" then
 		if rate(player, "open", 500) then
-			X.sendInfo(player)
+			X.sendInfo(player, true)
 		end
 	elseif a == "journal" then
 		if rate(player, "journal", 1000) then
@@ -2799,6 +2808,7 @@ login:register()
 
 local logout = CreatureEvent("ChaosRaidLogout")
 function logout.onLogout(player)
+	X.portalShown[player:getId()] = nil
 	local run = X.runOf[player:getId()]
 	if run then
 		if run.fight and inCombat(player) and K.inRoom(run.L, run.fight.idx, player:getPosition()) then

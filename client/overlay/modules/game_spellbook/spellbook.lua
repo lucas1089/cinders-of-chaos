@@ -867,7 +867,8 @@ local function onExtendedOpcode(protocol, opcode, buffer)
     end
     local was = request
     request = nil
-    if was == nil then show() end -- the server opened it (staff /spells)
+    -- the server opened it (staff /spells); a class change's refresh only updates it (O774)
+    if Core.opensOnDone(was, data) then show() end
   end
 end
 

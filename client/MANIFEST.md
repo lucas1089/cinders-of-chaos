@@ -8775,3 +8775,33 @@ task report, not committed). The server ones are in server/README.md "F47 fixes 
   list's children rect, so the scroll range ends a gap below it; `TreePlan.choiceContent(heights, spacing, tail)` is the
   list's content, and with the tail the content plus the chrome is `TreePlan.choiceHeights`' total. Measured: bar 30 -> 36,
   last button bottom 485 -> 479 against the list's 485. `treelinks_test.lua`.
+
+## F48 fixes (O774)
+
+Six faults seen in a client, each seen again in the Linux main client on a local server (video in the task report, not
+committed). The server side is in server/README.md under the same heading.
+
+- XP Gain Rate (`game_skills`, Cyclopedia): stayed at 100% with the Pact. No client change: the engine sent a fixed 100 as
+  the base XP gain; server patch 0096 sends the real rate (server/README.md "XP gain rate display"). Seen: 110% with the
+  Pact.
+- `game_spellbook`: the window opened by itself after an ascension or a class change. `ChaosSpellCore.opensOnDone(request,
+  data)` opens it only on a `done` with no request of the player's own and no `refresh` flag (a refresh of the server only
+  updates the list). `spellbook_core_test.lua`. Unity: `Core/Spells.cs` never opens a window on `done` (no change).
+- `game_raid`: the window came back after Close. `RaidView.opensOnInfo(visible, d)`: an `info` opens a closed window only
+  with `show` (the Raid portal step, the open request); else it refreshes the data of a window that is open.
+  `raidview_test.lua`. Unity: `RaidState.Handle` "info" opens only with `show`; `Core/FakeModulesP12.cs` RaidInfo carries
+  `show`; `Core.Tests/EndgameTests.cs` Raid: the first info carries `show`, two new checks (an info without `show` keeps
+  the window closed and stores the info; with `show` it opens), checked by hand (dotnet not available here).
+- `game_npctalk`: the talk window could cover the bank, the Gambler, the Candlemarks, the trade, the amount, the shop or
+  the pay window. The O771 rule placed it once; now `NpcTalkLogic.clearOf(talk, other, screen, gap)` moves it to the
+  nearer side of such a window (left or right, then below, then above) on the screen, at placement and every 250 ms while
+  both are open. With no free side (1280x720 and the 685 px Gambler window) it takes the side where the least of it is
+  covered (`NpcTalkLogic.overlapArea`) and the other window steps aside the rest of the way when it fits on the screen
+  (`NpcTalkLogic.shiftOther`). The placement functions are defined at load (a test holds it: they first sat inside
+  `L.ownFarewell`). Seen: the talk window at the left edge, the Gambler window right of it. `npctalk_logic_test.lua`,
+  `npctalk_test.lua`.
+- Map view shift with big windows: not reproduced in this build. A probe opened and closed about 44 windows of the hub menu
+  (Shop, Cosmetics, Market, Passive Tree, Pact, Stash, Cyclopedia, Wardrobe and the rest) with the dock on and off, open
+  and closed, at 1280x720 and 1024x600; the map panel rect, the visible tiles (17x11), the zoom, the side panel widths
+  and the bottom splitter never changed, and a screenshot of the map edges before and after each window was the same
+  (extended view: the side panels lie over the map). No code change.

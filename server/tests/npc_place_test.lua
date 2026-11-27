@@ -344,6 +344,33 @@ do
 	check(dx == 5 and dy == 6, "without the rule the gallery offset would win (the bug)")
 end
 
+-- O774: a pillar east, south or south-east of the first offset draws over the NPC there (Dorrin Alewright, -5, -3)
+do
+	local svc = dofile("data/scripts/chaos/service_npcs_config.lua")
+	check(svc.inView == true, "the service NPCs ask for a spot in view")
+	local function open(dx, dy) return math.abs(dx) <= 12 and math.abs(dy) <= 8 and not (dx == -4 and dy == -2) end
+	local pillar = function(dx, dy) return dx == -4 and dy == -2 end
+	local spec = {walkable = open, door = function() return false end, offsets = {{-5, -3}, {5, -3}}, others = {},
+		radius = 14, covers = pillar}
+	local dx, dy = K.pick(spec)
+	check(dx == -5 and dy == -3, "without inView the spot behind the pillar is taken (the bug)")
+	spec.inView = true
+	dx, dy = K.pick(spec)
+	check(dx == 5 and dy == -3, "with inView the next offset in view wins")
+	check(K.covered(spec, -5, -3), "-5, -3 is covered by the pillar south-east of it")
+	check(K.covered(spec, -4, -3) and K.covered(spec, -5, -2), "the tiles north and west of the pillar are covered")
+	check(not K.covered(spec, -3, -2) and not K.covered(spec, -4, -1), "east of it and south of it are not")
+	-- every offset covered: an uncovered tile near the offsets comes before a covered offset
+	spec.offsets = {{-5, -3}}
+	dx, dy = K.pick(spec)
+	check(dx ~= nil and not K.covered(spec, dx, dy), "a tile in view near the offset is picked instead")
+	-- nothing in view anywhere: a covered tile is still taken rather than none
+	spec.covers = function() return true end
+	dx, dy = K.pick(spec)
+	check(dx == -5 and dy == -3, "everything covered: the first offset after all")
+	check(not K.covered({}, 0, 0), "no covers function: never covered")
+end
+
 if failures > 0 then
 	error(string.format("%d of %d checks failed", failures, checks))
 end

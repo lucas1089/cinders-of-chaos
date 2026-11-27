@@ -40,7 +40,9 @@ function M.placeNpcs()
 		for _, id in ipairs(cfg.towns) do
 			local town = Town(id)
 			local temple = town and town:getTemplePosition()
-			if temple and try("place " .. npc.name, ChaosNpcPlace.place, npc.name, temple, cfg.offsets) then
+			-- O774: never behind a pillar (npc_place_core.lua inView: Dorrin Alewright stood behind one)
+			if temple and try("place " .. npc.name, ChaosNpcPlace.place, npc.name, temple, cfg.offsets,
+					{inView = cfg.inView ~= false}) then
 				placed = placed + 1
 			else
 				missed[#missed + 1] = npc.name .. "/" .. tostring(id)

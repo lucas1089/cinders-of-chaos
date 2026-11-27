@@ -193,6 +193,8 @@ end
 local function onInfo(d)
   info = d
   if not window then return end
+  -- O774: only an info the player asked for (show) opens the window; a reply to its buttons only updates it
+  if not window:isVisible() and not V.opensOnInfo(false, d) then return end
   if not window:isVisible() then child(window, 'message'):setText('') end
   render()
   window:show()

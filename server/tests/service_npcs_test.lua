@@ -350,8 +350,10 @@ check(lines >= 40, "the texts were found (" .. lines .. ")")
 
 -- ---------------------------------------------------------------- the placement at startup
 local placed = {}
-ChaosNpcPlace = {place = function(name, temple, offsets)
+local inView = {}
+ChaosNpcPlace = {place = function(name, temple, offsets, opts)
 	placed[#placed + 1] = name .. "@" .. temple.id
+	inView[name] = opts and opts.inView
 	return name ~= "Pell Ashmere" -- one NPC cannot be placed
 end}
 Town = function(id) return {getTemplePosition = function() return {id = id} end} end
@@ -368,6 +370,11 @@ for _, p in ipairs(placed) do
 	check(p:sub(-2) == "@2", "only the main city: " .. p)
 end
 eq(ChaosServiceNpcs.placeNpcs(), 5, "a failed placement is not counted")
+-- O774: every service NPC asks for a spot no pillar draws over (Dorrin Alewright stood behind one)
+for name, v in pairs(inView) do
+	check(v == true, "in view: " .. name)
+end
+check(inView["Dorrin Alewright"] == true, "the rumourmonger is placed in view")
 
 print(string.format("service_npcs_test: %d checks, %d failures", checks, failures))
 os.exit(failures == 0 and 0 or 1)

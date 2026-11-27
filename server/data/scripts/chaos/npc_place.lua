@@ -107,6 +107,16 @@ function NP.spot(temple, offsets, name, opts)
 			return t ~= nil and not t:getTopCreature()
 		end,
 		keepClear = function(x, y) return K.inRects(clear, temple.x + x, temple.y + y, temple.z) end,
+		-- O774 (opts.inView): a solid object besides the ground (a pillar, a wall) draws over the tiles north and west of it
+		covers = function(x, y)
+			local t = tileAt(x, y)
+			if not t or not prop(t, CONST_PROP_BLOCKSOLID) then
+				return false
+			end
+			local okI, list = pcall(function() return t:getItems() end)
+			return okI and type(list) == "table" and #list > 0
+		end,
+		inView = opts.inView,
 		offsets = offsets, others = others, radius = radius, spacing = spacing,
 		minFromTemple = opts.minFromTemple, minOpen = opts.minOpen
 	})

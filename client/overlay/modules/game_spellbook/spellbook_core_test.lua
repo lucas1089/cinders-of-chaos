@@ -382,4 +382,11 @@ do
   C.questByName = nil
 end
 
+-- O774: the done of a class change refresh never opens the window; staff /spells (nobody asked) still does
+eq(C.opensOnDone(nil, { refresh = true }), false, 'a refresh does not open the window')
+eq(C.opensOnDone(nil, {}), true, 'an answer nobody asked for (staff /spells) opens it')
+eq(C.opensOnDone(nil, nil), true, 'no data: as before')
+eq(C.opensOnDone('user', {}), false, 'the player opened it: already shown')
+eq(C.opensOnDone('prefetch', { refresh = true }), false, 'the login prefetch: never')
+
 print('spellbook_core_test: ' .. n .. ' checks ok')
