@@ -1,0 +1,99 @@
+# Chaos: a pack wing's four moves handed in at once, the east and west views included (O784; client/BASE.md "0218";
+# src/client/chaospiecesides.h (new, pure), luafunctions_client.cpp; after 0001-0217, 0217 unchanged).
+# After the north fix of 0217 the purchased wings of pair 83 (O747) still hung under the south view facing east (4.8 to 9.8 px
+# on pair 90) and west (1.0 to 6.5 px). client_chaos_wingfit/wear_pieces.lua `shifts` now names a north, an east and a west move
+# per wings look (gen_wst_wear.py shifts, from the pair). Outfit::draw already adds the row of the drawn direction (0217), so the
+# draw is not touched: setOutfitPackShifts(look, "nx ny ex ey sx sy wx wy") hands in a look's four moves in one call, all or
+# nothing, and replaces the look's whole row (eight zeros remove it); getOutfitPackShifts(look) reads the row back in that text.
+# A client with 0217 only takes the same rows one by one through setOutfitPackShift.
+diff -ruN a/src/client/chaospiecesides.h b/src/client/chaospiecesides.h
+--- /dev/null
++++ b/src/client/chaospiecesides.h
+@@ -0,0 +1,66 @@
++// Cinders of Chaos (base patch 0218): a pack wing's four moves handed in at once, the side views included (O784).
++// Pure and header-only so client/tools/chaospiecesides_test.cpp can run it without the engine; it uses Point2 of chaospiece.h
++// (base patch 0209) and the table of chaospieceshift.h (base patch 0217), which Outfit::draw already reads for the drawn
++// direction (north, east, south or west).
++// After the north fix of 0217 the side views of the purchased wings of pair 83 (O747) still hung under the south one: on
++// pair 90 4.8 to 9.8 px facing east, 1.0 to 6.5 px facing west (the pack's four rows turn one picture drawn from above).
++// client_chaos_wingfit/wear_pieces.lua `shifts` now names a north, an east and a west move per wings look
++// (client/tools/sprites/gen_wst_wear.py shifts); setShifts takes a look's four moves in one call, so a look never keeps a
++// stale direction of an earlier table: the row is replaced whole, or not at all.
++#ifndef CHAOSPIECESIDES_H
++#define CHAOSPIECESIDES_H
++
++#include "chaospiece.h"
++#include "chaospieceshift.h"
++
++#include <array>
++#include <sstream>
++#include <string>
++
++namespace chaos {
++namespace piece {
++
++// "nx ny ex ey sx sy wx wy": the move of a wings look's picture facing north, east, south and west, eight whole sprite px
++// at 1x, each at most kMaxShiftPx. All or nothing: a bad text sets nothing and keeps the look's earlier row. Eight zeros
++// remove the look's row (it draws at its anchor tile again).
++inline bool setShifts(int look, const std::string& text)
++{
++    if (look <= 0)
++        return false;
++    std::istringstream in(text);
++    std::array<Point2, kDirections> row{};
++    bool any = false;
++    for (int dir = 0; dir < kDirections; ++dir) {
++        int dx = 0, dy = 0;
++        if (!(in >> dx >> dy))
++            return false;
++        if (dx < -kMaxShiftPx || dx > kMaxShiftPx || dy < -kMaxShiftPx || dy > kMaxShiftPx)
++            return false;
++        row[static_cast<size_t>(dir)] = Point2{ dx, dy };
++        any = any || dx != 0 || dy != 0;
++    }
++    std::string rest;
++    if (in >> rest)
++        return false;
++    if (any)
++        shifts()[look] = row;
++    else
++        shifts().erase(look);
++    return true;
++}
++
++// the four moves of a look in the text of setShifts; eight zeros without a row
++inline std::string shiftsText(int look)
++{
++    std::ostringstream out;
++    for (int dir = 0; dir < kDirections; ++dir) {
++        const Point2 s = shift(look, dir);
++        out << (dir ? " " : "") << s.x << ' ' << s.y;
++    }
++    return out.str();
++}
++
++}  // namespace piece
++}  // namespace chaos
++
++#endif
+diff -ruN a/src/client/luafunctions_client.cpp b/src/client/luafunctions_client.cpp
+--- a/src/client/luafunctions_client.cpp
++++ b/src/client/luafunctions_client.cpp
+@@ -59,6 +59,7 @@
+ #include "chaospiece.h"
+ #include "chaoswear.h"
+ #include "chaospieceshift.h"
++#include "chaospiecesides.h"
+ #include "healthbars.h"
+ #include "uigrid.h"
+ 
+@@ -526,6 +527,9 @@
+     // Chaos (base patch 0217): a pack wing's picture moved per direction (client_chaos_wingfit, wear_pieces.lua shifts)
+     g_lua.bindGlobalFunction("setOutfitPackShift", chaos::piece::setShift);
+     g_lua.bindGlobalFunction("clearOutfitPackShifts", chaos::piece::clearShifts);
++    // Chaos (base patch 0218): a pack wing's four moves at once, the side views included (client_chaos_wingfit, O784)
++    g_lua.bindGlobalFunction("setOutfitPackShifts", chaos::piece::setShifts);
++    g_lua.bindGlobalFunction("getOutfitPackShifts", chaos::piece::shiftsText);
+     // Chaos (base patch 0210): who wears which head piece and cape (game_cosmetics, the cosmetics "looks")
+     g_lua.bindGlobalFunction("setCreatureWear", chaos::wear::set);
+     g_lua.bindGlobalFunction("clearCreatureWear", chaos::wear::clear);

@@ -182,21 +182,57 @@ ok(C.levitationOn(nil) and C.levitationOn(true) and C.levitationOn('true'), 'flo
 ok(not C.levitationOn(false) and not C.levitationOn('false'), 'float off when saved off')
 
 -- O779 (base patch 0217): the north view of every pack wing moves up onto the south one's height (pack_wear_shift.csv,
--- pair 90: 8 to 13 px up, 2 to 5 px right); no other direction moves, a bad row is skipped, the Float option leaves them
-ok(type(P.shifts) == 'table' and #P.shifts == 74, 'a north move per pack wing: ' .. tostring(P.shifts and #P.shifts))
+-- pair 90: 8 to 13 px up, 2 to 5 px right); O784 (base patch 0218): the east view 5 to 10 px up and the west view 1 to 6 px
+-- up, never across; south never moves, a bad row is skipped, the Float option leaves them
+local nWings = 0
+for _ in pairs(P.lifts) do nWings = nWings + 1 end
+ok(type(P.shifts) == 'table' and #P.shifts >= 2 * nWings and #P.shifts <= 3 * nWings,
+  'a north, an east and a west move per pack wing (a row of no move left out): ' .. tostring(P.shifts and #P.shifts))
 local wingLooks = {}
 for look in pairs(P.lifts) do wingLooks[look] = true end
 local turned = {}
 local ns = C.applyShifts(P, function(look, d, dx, dy) turned[#turned + 1] = { look, d, dx, dy } end)
-ok(ns == 74 and #turned == 74, 'every row handed in: ' .. ns)
-local pearl
+ok(ns == #P.shifts and #turned == #P.shifts, 'every row handed in: ' .. ns)
+local pearl, perDir = {}, { [0] = 0, 0, 0, 0 }
 for _, t in ipairs(turned) do
   ok(wingLooks[t[1]], 'a moved look is a pack wing ' .. t[1])
-  ok(t[2] == 0, 'only facing north ' .. t[1])
-  ok(t[4] <= -8 and t[4] >= -13 and t[3] >= 2 and t[3] <= 5, 'up 8-13 px, right 2-5 px: ' .. t[1] .. ' ' .. t[3] .. ' ' .. t[4])
-  if t[1] == 2442 then pearl = t end
+  perDir[t[2]] = perDir[t[2]] + 1
+  if t[2] == 0 then
+    ok(t[4] <= -8 and t[4] >= -13 and t[3] >= 2 and t[3] <= 5, 'north up 8-13 px, right 2-5 px: ' .. t[1] .. ' ' .. t[3] .. ' ' .. t[4])
+  elseif t[2] == 1 then
+    ok(t[3] == 0 and t[4] <= -5 and t[4] >= -10, 'east up 5-10 px, not across: ' .. t[1] .. ' ' .. t[3] .. ' ' .. t[4])
+  else
+    ok(t[2] == 3 and t[3] == 0 and t[4] <= -1 and t[4] >= -6, 'west up 1-6 px, not across: ' .. t[1] .. ' ' .. t[2] .. ' ' .. t[4])
+  end
+  if t[1] == 2442 then pearl[t[2]] = t end
 end
-ok(pearl and pearl[3] == 2 and pearl[4] == -9, 'Pearl Scallop Wings 2442: 2 right, 9 up (it hung 9.2 px low)')
+ok(perDir[0] == nWings and perDir[1] == nWings and perDir[2] == 0, 'every wing north and east, none south')
+ok(pearl[0] and pearl[0][3] == 2 and pearl[0][4] == -9, 'Pearl Scallop Wings 2442: 2 right, 9 up facing north (it hung 9.2 px low)')
+ok(pearl[1] and pearl[1][4] < 0 and pearl[3] and pearl[3][4] < 0, 'Pearl Scallop Wings 2442: up facing east and west')
+
+-- O784 (base patch 0218): the rows grouped by look as "nx ny ex ey sx sy wx wy", one call per pack wing
+local texts = {}
+local nl2 = C.applyShiftTexts(P, function(look, text) texts[#texts + 1] = { look, text } end)
+ok(nl2 == nWings and #texts == nWings, 'one text per pack wing: ' .. nl2)
+for _, t in ipairs(texts) do
+  local v = {}
+  for n in t[2]:gmatch('%-?%d+') do v[#v + 1] = tonumber(n) end
+  ok(#v == 8 and v[5] == 0 and v[6] == 0 and v[3] == 0 and v[7] == 0, 'eight numbers, south still, no side move across: ' .. t[2])
+  if t[1] == 2442 then
+    ok(v[1] == pearl[0][3] and v[2] == pearl[0][4] and v[4] == pearl[1][4] and v[8] == pearl[3][4], 'Pearl text = its rows ' .. t[2])
+  end
+end
+-- a later row wins, a direction without a row is 0 0, bad rows skipped, looks in first-row order
+local got = {}
+C.applyShiftTexts({ shifts = { { 9, 0, 1, -9 }, { 4, 3, 0, -2 }, { 9, 1, 0, -5 }, { 9, 1, 0, -6 }, { 9, 4, 0, 1 }, { 0, 1, 0, 1 }, 'x' } },
+  function(look, text) got[#got + 1] = look .. ':' .. text end)
+ok(#got == 2 and got[1] == '9:1 -9 0 -6 0 0 0 0' and got[2] == '4:0 0 0 0 0 0 0 -2', 'grouped texts: ' .. table.concat(got, ' | '))
+ok(C.applyShiftTexts(nil, error) == 0 and C.applyShiftTexts({ pieces = {} }, error) == 0, 'no shifts: no text')
+-- an old table of O779 (north rows only) still loads, both ways
+local old = { shifts = { { 2442, 0, 2, -9 }, { 2390, 0, 3, -12 } } }
+local oldRows, oldTexts = {}, {}
+ok(C.applyShifts(old, function(l, d, x, y) oldRows[#oldRows + 1] = { l, d, x, y } end) == 2 and oldRows[2][4] == -12, 'O779 rows load')
+ok(C.applyShiftTexts(old, function(l, t) oldTexts[l] = t end) == 2 and oldTexts[2442] == '2 -9 0 0 0 0 0 0', 'O779 rows as texts')
 local good = 0
 ns = C.applyShifts({ shifts = { { 5, 0, 1, -9 }, { 0, 0, 1, 1 }, { 6, 4, 0, 1 }, { 7, 0, 0.5, 1 }, { 8, 0, 0, -25 }, { 9, 2 }, 'x' } },
   function(look) good = good + 1; ok(look == 5, 'only the good row ' .. look) end)

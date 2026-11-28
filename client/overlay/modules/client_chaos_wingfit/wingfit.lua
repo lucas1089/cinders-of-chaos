@@ -33,9 +33,12 @@ function applyPieces()
   if not piecesSupported() then return end
   WingFitCore.applyPieces(ChaosWearPieces, function(look, ax, ay) setOutfitPackPiece(look, ax, ay) end,
     function(look, text) setOutfitWingsLift(look, text) end, isLevitation())
-  -- O779 (base patch 0217): the north view of a pack wing moved up to the south one's height; a client without the
-  -- patch has no setOutfitPackShift and draws the pack's place
-  if setOutfitPackShift then
+  -- O779 / O784 (base patches 0217, 0218): the north, east and west views of a pack wing moved up to the south one's
+  -- height; with 0218 a look's four moves go in at once, with 0217 only row by row (the same result); a client without
+  -- either patch draws the pack's place
+  if setOutfitPackShifts then
+    WingFitCore.applyShiftTexts(ChaosWearPieces, function(look, text) setOutfitPackShifts(look, text) end)
+  elseif setOutfitPackShift then
     WingFitCore.applyShifts(ChaosWearPieces, function(look, dir, dx, dy) setOutfitPackShift(look, dir, dx, dy) end)
   end
 end

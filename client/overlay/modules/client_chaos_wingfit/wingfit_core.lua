@@ -168,25 +168,52 @@ function M.applyPieces(data, setPiece, setLift, levitate)
 end
 
 -- O779 (base patch 0217): wear_pieces.lua `shifts` {look, dir, dx, dy} moves a pack wing's picture facing a direction
--- (dir 0 north .. 3 west, px at 1x, at most 24): the pack draws from above, so its north view hung 8-13 px low. setShift(look,
--- dir, dx, dy) for each good row, in table order; returns how many. The Float option does not touch them.
+-- (dir 0 north .. 3 west, px at 1x, at most 24): the pack draws from above, so its north view hung 8-13 px low, and (O784)
+-- its east and west views 1-10 px low. setShift(look, dir, dx, dy) for each good row, in table order; returns how many. The
+-- Float option does not touch them. A table of O779 (north rows only) loads the same way.
 M.MAX_SHIFT = 24
+local function goodShift(row)
+  local ok = type(row) == 'table'
+  for i = 1, 4 do
+    ok = ok and type(row[i]) == 'number' and row[i] == math.floor(row[i])
+  end
+  return ok and row[1] >= 1 and row[2] >= 0 and row[2] <= 3 and math.abs(row[3]) <= M.MAX_SHIFT
+    and math.abs(row[4]) <= M.MAX_SHIFT
+end
+
 function M.applyShifts(data, setShift)
   if type(data) ~= 'table' or type(data.shifts) ~= 'table' then return 0 end
   local n = 0
   for _, row in ipairs(data.shifts) do
-    local ok = type(row) == 'table'
-    for i = 1, 4 do
-      ok = ok and type(row[i]) == 'number' and row[i] == math.floor(row[i])
-    end
-    ok = ok and row[1] >= 1 and row[2] >= 0 and row[2] <= 3 and math.abs(row[3]) <= M.MAX_SHIFT
-      and math.abs(row[4]) <= M.MAX_SHIFT
-    if ok then
+    if goodShift(row) then
       setShift(row[1], row[2], row[3], row[4])
       n = n + 1
     end
   end
   return n
+end
+
+-- O784 (base patch 0218): the same good rows grouped by look, for setOutfitPackShifts(look, text): text "nx ny ex ey sx sy
+-- wx wy", a direction without a row 0 0, a later row of a look and direction wins (as with setShift). Looks in the order of
+-- their first row; returns how many looks.
+function M.applyShiftTexts(data, setShifts)
+  if type(data) ~= 'table' or type(data.shifts) ~= 'table' then return 0 end
+  local order, moves = {}, {}
+  for _, row in ipairs(data.shifts) do
+    if goodShift(row) then
+      local m = moves[row[1]]
+      if not m then
+        m = { 0, 0, 0, 0, 0, 0, 0, 0 }
+        moves[row[1]] = m
+        order[#order + 1] = row[1]
+      end
+      m[row[2] * 2 + 1], m[row[2] * 2 + 2] = row[3], row[4]
+    end
+  end
+  for _, look in ipairs(order) do
+    setShifts(look, table.concat(moves[look], ' '))
+  end
+  return #order
 end
 
 -- the levitation setting of this client (g_settings value): on unless it was switched off
