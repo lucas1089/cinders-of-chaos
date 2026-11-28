@@ -1,0 +1,52 @@
+{
+ "clamp": 56,
+ "client_id": 15128,
+ "element": null,
+ "frames": 12,
+ "kept_1x1": false,
+ "layers": [
+  {
+   "amount": 0,
+   "colour": [
+    210,
+    230,
+    80
+   ],
+   "effect": "pulse",
+   "repeats": 1,
+   "strength": 1.0
+  },
+  {
+   "amount": 4,
+   "colour": [
+    210,
+    230,
+    80
+   ],
+   "effect": "motes",
+   "repeats": 1,
+   "strength": 1.0
+  }
+ ],
+ "ms": 100,
+ "n": 23,
+ "name": "yellow glowing mushroom",
+ "option": "A",
+ "pad": true,
+ "pair": {
+  "dat_md5": "ab6f6fe60ca3697ec05df614a06a1ad8",
+  "item": 15128
+ },
+ "patterns": [
+  1,
+  1
+ ],
+ "seed": 0,
+ "size": [
+  64,
+  64
+ ],
+ "soft": false,
+ "theme": null,
+ "tool": "gen_idle_loops.py (idle_loop.py layers)"
+}

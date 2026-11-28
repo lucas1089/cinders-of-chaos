@@ -1,0 +1,37 @@
+{
+ "clamp": 56,
+ "client_id": 3036,
+ "element": null,
+ "frames": 12,
+ "kept_1x1": false,
+ "layers": [
+  {
+   "amount": 3,
+   "colour": null,
+   "effect": "glint",
+   "repeats": 1,
+   "strength": 1.0
+  }
+ ],
+ "ms": 100,
+ "n": 19,
+ "name": "violet gem",
+ "option": "A",
+ "pad": false,
+ "pair": {
+  "dat_md5": "ab6f6fe60ca3697ec05df614a06a1ad8",
+  "item": 3036
+ },
+ "patterns": [
+  1,
+  1
+ ],
+ "seed": 0,
+ "size": [
+  32,
+  32
+ ],
+ "soft": false,
+ "theme": null,
+ "tool": "gen_idle_loops.py (idle_loop.py layers)"
+}

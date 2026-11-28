@@ -74,5 +74,15 @@ with tempfile.TemporaryDirectory() as d:
     bad, _n, _m = W.manifest_check(paths, things, {48544: (49999, 1, None)})
     check(len(bad) == 1, 'a table row for another client id does not apply')
 
+# O787: the idle loops' own gated table. A row says animation 1; on a pair of one phase it is pending (not stale) only
+# while the gate is not reached, and stale once it is.
+things[2917] = (False, False, False, None, 1)
+check(W.table_check([(2047, 2917, 1, None)], things, pending=True) == [], 'idle row on the still pair: pending')
+check(len(W.table_check([(2047, 2917, 1, None)], things)) == 1, 'idle row on the still pair after the gate: stale')
+things[2917] = (False, False, False, None, 12)
+check(W.table_check([(2047, 2917, 1, None)], things) == [], 'idle row on the loop pair: current')
+check(len(W.table_check([(2047, 2917, 0, None)], things, pending=True)) == 1, 'an idle row without the flag is stale')
+check(os.path.basename(W.IDLE_TABLE) == 'item_wire_idle.csv', 'the idle table is data/items/item_wire_idle.csv')
+
 print('check_item_wire_test: %s' % ('OK' if not failed else '%d FAILED' % failed))
 sys.exit(1 if failed else 0)

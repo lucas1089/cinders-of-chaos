@@ -39783,3 +39783,21 @@ toast merge rests on the toast kinds `ChaosNotify.send` already sends: bestiary,
 battlePassComplete, newcard and achievement are merged on the client; a new server toast kind is shown on its own unless the
 client adds it to `notifyview.lua` `V.ROUTINE_TYPES`. A unique drop stays a screen message (`loot_config.lua`
 `unique.message`), not a toast.
+
+## Idle loops (pair 92) (`install_idle_loops.py`, step `idleloops`, `data/items/item_wire_idle.csv`, O787)
+
+Owner 2026-11-28 ("Todos a"): option A of the X1 preview for all 24 items. Pair 92 animates them in place
+(client/MANIFEST.md "Idle loops in the pair (O787)"): the same client ids and server items, the flags byte for byte, more
+than one phase. Nothing is added to the map, no item, no name, no light changes.
+
+- **Wire bytes.** The client reads a phase byte after a thing with more than one phase. The 25 server nodes of these 24
+  client ids (2917 has two: 2047 and 41622) are in `data/items/item_wire_idle.csv` (server, client, animation 1). The step
+  `idleloops` (right after `itemwire`) gives them FLAG_ANIMATION when `config.lua chaosClientPair` is 92 or more
+  (`client_pair.PAIR_IDLE_LOOPS`), and takes it off below: a client on pair 91 or older reads no phase byte for them.
+  A second run changes nothing. A run of `--only orbs` alone rewrites the three orb nodes without it: run `idleloops` after.
+- **Checks.** `check_item_wire.py --table-check DAT` reads this table too (`--idle CSV`): on a pair that draws the loops a row
+  must say animation 1; on an older pair the rows are pending while `PAIR_ASSETS` is below 92. `--write-table` leaves these
+  server ids out of `item_wire.csv`. Run on the installed items.otb of a server with pair 92 recorded: 40,923 nodes, 0 disagree.
+- **Owner steps.** After the client package with pair 92 is published: admin app Comandos > "Par do cliente" > Gravar 92
+  (shell: `chaos-ctl.sh client-pair set 92`), then the install update runs the step. Until then the step keeps the nodes as
+  they are and prints a warning.

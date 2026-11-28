@@ -22,6 +22,10 @@ the dat's flag. `--write-table` writes it from an installed items.otb and the pa
 their values worked out again; a node it cannot fix with the table, a stackable or quiver mismatch, is listed and exit 1).
 Run it after a new pair, a prune / restore or a new item block, then commit the file. `--table-check` needs only the dat
 (CI, live-pair job): every row is a pure function of the dat thing, so a stale row is found without a server.
+The idle loop nodes of pair 92 (O787) are in their own table, data/items/item_wire_idle.csv (`--idle CSV`): the
+install step `idleloops` applies it only once the client has pair 92, so `--table-check` holds its rows to the dat (a
+thing of one phase is pending while client_pair.PAIR_ASSETS is older than PAIR_IDLE_LOOPS), applies it with the main table
+to the manifest rows, and `--write-table` leaves its server ids out of item_wire.csv.
 A missing row is not stale, so `--table-check` also checks the `new` rows of our item manifests (data/items/*.csv with
 client_id, server_id, otb_group, otb_flags, mode and extra: what install_temple_art.py, install_decor_flames.py and the
 other item installers write) with the table applied, as the installers apply it (V43, 2026-11-27: the temple torch
@@ -41,6 +45,7 @@ sys.path.insert(0, os.path.join(HERE, '..', '..', 'client', 'tools', 'sprites'))
 from item_wire_table import FLAG_ANIMATION, GROUP_SPLASH, GROUP_FLUID, TABLE, adjust_rows, read_table, table_text  # noqa: E402
 
 MANIFEST_DIR = os.path.join(os.path.dirname(HERE), 'data', 'items')
+IDLE_TABLE = os.path.join(MANIFEST_DIR, 'item_wire_idle.csv')   # the nodes of the idle loops (O787), gated by PAIR_IDLE_LOOPS
 MANIFEST_COLUMNS = ('client_id', 'server_id', 'otb_group', 'otb_flags', 'mode', 'extra')
 
 FLAG_STACKABLE = 1 << 7
@@ -112,13 +117,16 @@ def make_table(nodes, things, old):
     return rows, stuck
 
 
-def table_check(rows, things):
-    """problems of table rows (server id, client id, animation, group) against the dat things"""
+def table_check(rows, things, pending=False):
+    """problems of table rows (server id, client id, animation, group) against the dat things; pending: a gated table
+    (item_wire_idle.csv) on a pair older than its gate, whose one-phase things are not stale yet"""
     bad = []
     for sid, cid, anim, grp in rows:
         t = things.get(cid)
         if t is None:
             bad.append('server %d / client %d: no client thing' % (sid, cid))
+        elif pending and wanted(t) == (0, grp) and anim == 1:
+            continue
         elif wanted(t) != (anim, grp):
             bad.append('server %d / client %d: table says animation %s group %s, the dat wants %s' % ((sid, cid, anim, grp) + (wanted(t),)))
     return bad
@@ -188,6 +196,7 @@ def main(argv=None):
     ap.add_argument('--write-table', nargs='?', const=TABLE, metavar='CSV')
     ap.add_argument('--table-check', action='store_true')
     ap.add_argument('--manifests', default=MANIFEST_DIR, metavar='DIR', help='with --table-check: the folder of the item manifests')
+    ap.add_argument('--idle', default=IDLE_TABLE, metavar='CSV', help='the idle loop table of pair 92 (O787); "" for none')
     a = ap.parse_args(argv)
     if a.table_check:
         if not 1 <= len(a.files) <= 2:
@@ -199,6 +208,23 @@ def main(argv=None):
         for line in bad[:a.examples]:
             print(line)
         print('check_item_wire --table-check: %d rows, %d stale' % (len(table), len(bad)))
+        idle = read_table(a.idle) if a.idle else {}
+        if idle:
+            import client_pair
+            pending = client_pair.PAIR_ASSETS < client_pair.PAIR_IDLE_LOOPS
+            twice = sorted(set(idle) & set(table))
+            ibad = table_check([(s, c, an, g) for s, (c, an, g) in sorted(idle.items())], things, pending)
+            ibad += ['server %d is in both tables' % s for s in twice]
+            ibad += ['%s server %d: animation %d (the idle loops have phases: 1)' % (os.path.basename(a.idle), s, an)
+                     for s, (_c, an, _g) in sorted(idle.items()) if an != 1]
+            for line in ibad[:a.examples]:
+                print(line)
+            print('check_item_wire --table-check: %d idle loop rows (%s), %d stale%s' % (
+                len(idle), os.path.basename(a.idle), len(ibad), ', pending' if pending else ''))
+            bad += ibad
+            if not pending:   # the manifest rows get the phase byte with the pair that draws the loops
+                table = dict(table)
+                table.update(idle)
         mbad, n, missing = manifest_check(manifest_paths(a.manifests), things, table)
         for line in mbad[:a.examples]:
             print(line)
@@ -210,6 +236,8 @@ def main(argv=None):
     nodes, things = load(*a.files)
     if a.write_table:
         old = read_table(a.write_table)
+        idle = read_table(a.idle) if a.idle else {}
+        nodes = [nd for nd in nodes if nd[0] not in idle]   # the idle loop nodes follow their own gated table
         rows, stuck = make_table(nodes, things, old)
         for sid, cid, what in stuck[:a.examples]:
             print('server %d / client %d: %s' % (sid, cid, what))

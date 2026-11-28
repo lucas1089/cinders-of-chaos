@@ -557,6 +557,9 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
   itemwire     tools/patch_item_wire.py          the items.otb nodes of data/items/item_wire.csv write the bytes the client pair
                reads (FLAG_ANIMATION only on a dat thing with more than one phase, group splash / fluid where the dat says so;
                README "Item wire bytes"; after every step that writes item nodes)
+  idleloops    tools/install_idle_loops.py       the server nodes of the 24 idle loops of pair 92 (data/items/item_wire_idle.csv) get
+               FLAG_ANIMATION once config.lua chaosClientPair is 92 or more, and lose it below (client_pair.PAIR_IDLE_LOOPS; README
+               "Idle loops (pair 92)", O787; right after itemwire)
   equiprules   tools/install_equip_rules.py      data/lib/chaos_equip_rules.lua: the level, magic level and class list each item is
                held to, read from the installed movements.xml and weapons.xml; the item tooltip names those classes (O490, README
                "Equip rules in the tooltip (O490)"; nothing about who can wear what changes; after every step that writes
@@ -2046,6 +2049,15 @@ def step_itemwire(server, data, ctx):
 
 
 STEPS.insert(STEPS.index('sql'), 'itemwire')  # last of the item steps: the table fixes the nodes the others wrote (and the base's own)
+
+
+def step_idleloops(server, data, ctx):
+    # the client pair guard (config.lua chaosClientPair >= 92) is in the tool; below it the nodes keep no phase byte
+    args = [tool('install_idle_loops.py'), data] + (['--dry-run'] if ctx['dry'] else [])
+    return tool_result_warn(run_tool(args, 'install_idle_loops.py'))
+
+
+STEPS.insert(STEPS.index('itemwire') + 1, 'idleloops')  # right after itemwire: the 24 idle loops follow the pair 92 gate
 
 
 def step_equiprules(server, data, ctx):

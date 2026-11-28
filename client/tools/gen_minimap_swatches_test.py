@@ -100,6 +100,13 @@ check(roof[12, 12, 0] > 200 and roof[12, 12, 1] < 40, 'cell 0 (red) is bottom ri
 check(roof[12, 4, 1] > 200 and roof[12, 4, 0] < 40, 'cell 1 (green) is bottom left')
 check(roof[4, 12, 2] > 200, 'cell 2 (blue) is top right')
 check(roof[4, 4, 0] > 200 and roof[4, 4, 1] > 200, 'cell 3 (yellow) is top left')
+# O787: an idle loop item padded to 2x2 keeps the swatch of its own tile, the bottom right cell
+own = g.render_swatch(items[5], spr, own_tile=True)
+check(own.shape == (8, 8, 4) and own[4, 4, 0] > 200 and own[4, 4, 1] < 40, 'own tile: 8 x 8 of cell 0 (red)')
+check(3523 in g.padded_ids() and 2917 not in g.padded_ids() and 26689 not in g.padded_ids(),
+      'the padded idle loop items come from idle_loops.csv (a kept 1x1 or a 2x2 item is not one)')
+_png, _text = g.build(dat, spr, [CID['roof']], padded={CID['roof']})
+check(g.parse_index(_text)[1][0][3:5] == (1, 1), 'a padded item is 1x1 in the index')
 
 # ---- pack, build, index
 ids = sorted(CID.values())

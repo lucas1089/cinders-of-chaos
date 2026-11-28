@@ -50,6 +50,7 @@ What the X1 preview on 24 still items of pair 90 changed (O783):
 - `--clamp N`: N colours a 32 px cell of the source, median cut (`item_post.clamp`), before anything else. Stock stills had up to 1642 colours in a 2 x 2. 56 leaves room for the layer ramps under the cap of 68.
 - `--pad`: grows a smaller sprite to 64 x 64, body at the bottom right, as our 2 x 2 things stand. Flames and motes of a 1 x 1 item get room to rise.
   - It changes the thing size. The strip is imported as a 2 x 2 thing, not 1 x 1.
+  - Never on a pickupable item (O787): a container slot draws a 2 x 2 thing at half size in its corner. Those stay 1 x 1.
 - Source by pair thing: `make --pair DAT SPR --item CLIENT_ID OUT.png`. Reads the item's first phase, south, base layer, as `datspr.render_thing` does.
 - The json keeps clamp, pad and the source: the PNG sha256, or the client id and the dat md5.
   - `remake OUT.json STRIP.png --png IN.png` or `--pair DAT SPR` rebuilds the same strip. A PNG or dat with another digest is refused.
@@ -98,7 +99,7 @@ Prompt recipes for item, pack, walls and walk. Text only. No service is called. 
 2. Clean: `pixel_grid.py clean DROP.png CLEAN.png`.
 3. Cut: `sheet_cut.py pack` or `sheet_cut.py walls`, then `room` to judge a wall set.
 4. Items: `item_post.py`. Creatures: `walk_sheet.py engine`, `walk_sheet.py fit`, `oblique_lean.py`.
-5. Idle loop for decor or items: `idle_loop.py make`.
+5. Idle loop for decor or items: `idle_loop.py make`. Into the pair: a recipe of `gen_idle_loops.py` (O787, pair 92).
 6. Always: `style_check.py check`, `sprite_quality.py check`, then the import tools. Nothing skips them.
 
 Rules stay as in docs/SPRITE_STYLE.md and docs/AI_TOOLS.md.

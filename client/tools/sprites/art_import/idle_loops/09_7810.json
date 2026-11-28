@@ -1,0 +1,52 @@
+{
+ "clamp": 56,
+ "client_id": 7810,
+ "element": "ice",
+ "frames": 12,
+ "kept_1x1": false,
+ "layers": [
+  {
+   "amount": 0,
+   "colour": [
+    110,
+    200,
+    255
+   ],
+   "effect": "frost",
+   "repeats": 1,
+   "strength": 1.0
+  },
+  {
+   "amount": 2,
+   "colour": [
+    110,
+    200,
+    255
+   ],
+   "effect": "glint",
+   "repeats": 1,
+   "strength": 1.0
+  }
+ ],
+ "ms": 100,
+ "n": 9,
+ "name": "crystal",
+ "option": "A",
+ "pad": false,
+ "pair": {
+  "dat_md5": "ab6f6fe60ca3697ec05df614a06a1ad8",
+  "item": 7810
+ },
+ "patterns": [
+  2,
+  2
+ ],
+ "seed": 0,
+ "size": [
+  32,
+  32
+ ],
+ "soft": false,
+ "theme": null,
+ "tool": "gen_idle_loops.py (idle_loop.py layers)"
+}

@@ -8931,3 +8931,58 @@ Tests on synthetic pictures: `*_test.py` of each (ci.yml art job, fx venv). Outp
 - **Switch on (done)**: `PAIR_ASSETS` 91 and its dat md5 in `server/tools/client_pair.py`, `PAIR_STIPPLE_GLOW` 91. Tables regenerated from pair 91 (only the md5 line changes): `outfit_anchors.lua`, `info_lifts.lua` and `InfoLiftData.cs`, `wing_centres.lua`, `head_centres.lua`, `foot_marks.lua`. `check_content.py` `PAIR_NAME` 'pair 91'.
 - **Seen**: not in a client. The changed effects 3902, 3892, 3945, 4062, 3900, 3901, 2000 and 744 were rendered from the two pairs, pair 90 beside pair 91 with the dat timing on dark tiles at 4x (3x for the 160 px ones), 56 s; the video is not committed.
 - **Owner steps**: a client package with pair 91, then admin app Comandos > "Par do cliente" > Gravar 91 (`chaos-ctl.sh client-pair set 91`). No server step: the effects keep their ids.
+
+## Idle loops in the pair (O787, `tools/sprites/gen_idle_loops.py`, `art_import/idle_loops/`; pair 92)
+
+Owner 2026-11-28 ("Todos a"): option A of the X1 preview (O783) for all 24 items. Each item animates in place: the same
+client id and server item, its flags byte for byte, its still as the base of every frame.
+- **Recipes**: `art_import/idle_loops/NN_ID.json`, the idle_loop.py layers, seed, frames and timing of the A pick, drawn on
+  pair 91 (dat md5 in each json). Text only: the frames are drawn again from the pair by the tool, no picture is committed.
+  `gen_idle_loops.py recipe X1_A.json OUT.json --pair DAT SPR [--keep-1x1]` made them from the X1 jsons of pair 90.
+  All 24 pass the house rules of idle_loop.py on pair 91, every pattern.
+- **Size**: 6 decor items padded to 2 x 2 (exact size 64): 39120 Golden brazier, 39133 Golden candle, 39173 Haunted lantern
+  post, 3523 altar, 15128 yellow glowing mushroom, 39176 Witch cauldron. The still stays at the bottom right of the 64 x 64
+  canvas; the client anchors a thing at its bottom right tile, so each stands on its own tile pixel for pixel and the flames
+  or motes rise over the tiles north and west. No flag changes, so walkability and blocking stay.
+- **Kept 1 x 1**: the 7 pickupable items the X1 pick padded (2917 candlestick, 2933 small oil lamp, 10289 red lantern,
+  24513 Idol of the forge, 44551 Orb of Binding, 44559 Void Orb, 25049 Mythic Essence). A container slot draws a 2 x 2
+  thing at half size in its corner, so their loops are clamped to 32 x 32 (`kept_1x1`; the flames of the candlestick and
+  the lamp are shorter, the motes stay on the tile). `recipe` refuses a padded pickupable item.
+- **Patterns**: 26689 Frosthold Crystal (2 x 2) and 7810 crystal (1 x 1) have 2 x 2 position patterns: one loop per
+  pattern, each over that pattern's still, the same recipe.
+- **Frames**: 23 items 12 frames of 100 ms; 24702 distorted heart 16 of 80 ms. Animator async, loop forever, from phase 0.
+  Table `art_import/idle_loops.csv` (tiles, pad, kept_1x1, patterns, frames, ms, exact, layers, clamp) and
+  `idle_loops.sums` (per item and pattern: sha256 of the pair 91 still and of the loop frames).
+- **Wire bytes**: a thing with phases is read with a phase byte. The 25 server nodes are in
+  `server/data/items/item_wire_idle.csv` and get FLAG_ANIMATION from `chaosClientPair` 92 only (step `idleloops`,
+  server/README.md "Idle loops (pair 92)"); `check_item_wire.py --table-check` reads it.
+- **Commands**: `make DAT SPR [--write]` (pair 91: draw, hold, write table and sums), `build P91/Tibia.dat P91/Tibia.spr OUT`
+  (pair 91 only, refuses another dat md5 or loops that differ from the sums; runs `live` on its output), `live DAT SPR`
+  (job "Live sprite pair"; the still form passes as pending while `PAIR_ASSETS` < 92), `check` (no pair: recipes, table,
+  sums, wire rows). Test: `gen_idle_loops_test.py` on a synthetic pair.
+- **Minimap**: a padded item draws its swatch from its bottom right cell only (`gen_minimap_swatches.py` reads
+  `idle_loops.csv`), so the HD minimap atlas keeps one tile per item; `swatches.png` and `index.txt` were rebuilt from
+  pair 92 (11 swatches changed: the padded and the redrawn 1 x 1 stills).
+- **Seen**: not in a client. `o787_idle_pair92.mp4` (scratchpad, not committed): the 24 items, pair 91 still beside the
+  pair 92 loop on a stone floor at 3x, 4 groups of 6, 12 s each (48 s).
+
+## Pair 92 (O787; 2026-11-28, on windows-assets 72ff70d3, `PAIR_ASSETS` 92)
+- **What it holds**: pair 91 (windows-assets 37cebe3b) + `gen_idle_loops.py build`: the owner's 24 idle loops (option A of
+  every X1 pick, "Todos a") animated in place ("Idle loops in the pair (O787)" above). Every other entry byte for byte the same.
+- **Build**: `gen_idle_loops.py build P91/Tibia.dat P91/Tibia.spr P92`: 524 sprite records appended (1,713,476 -> 1,714,000);
+  56,797 entries byte-identical, 24 items rewritten (same flags, new group: size, phases, durations). A second build gives
+  the same bytes.
+- **Pair 92**: dat md5 ffd3c876ae417f2eb688804abe203bcc (15,234,776 bytes), spr md5 8afbf9b850aeac44324e38926cfc3f04 (1,892,527,663 bytes).
+- **Archive**: `tar --owner=0 --group=0 --numeric-owner --mtime='2026-11-28 00:00:00' -cf - Tibia.dat Tibia.spr | xz -9 -T2`, `split -b 99614720 -d -a 2`: sha256 6d026adf8e05e226849d98a360317f56dba5f9fbfffd0d54617beb802bed7187. Parts `things-1098.tar.xz.part00` 99,614,720 bytes 1fe7c6142312a2715a7a52cd116bbffb404064bcf68b90d39af69abccd6c8b38, `part01` 99,614,720 bytes 8691db09d0cad2fbae444e819e4a9ad1f88fd88019d33882735ce81b77cde4d7, `part02` 20,904,592 bytes 6567bc71f81d25232e54dbf3fdec883bddb3291b67be2b30ad1150cf121b1729. Read back from the remote: the parts unpack to the md5s above.
+- **Held**: `check_pair.py P92 --old P91 --allow-changed` the 24 items of `idle_loops.csv`: 0 errors, 5,263 warnings (pair 91's).
+  `check_item_wire.py --table-check`: 424 rows and the 25 idle rows, 0 stale; the manifest check 0 disagree. An items.otb
+  with the step `idleloops` at pair 92 agrees with the pair 92 dat (0 disagree); without it the 25 idle nodes disagree.
+  Every step of the CI job "Live sprite pair" passes on it with `PAIR_ASSETS` 92 (42 steps, the new idle loops step included).
+- **windows-assets**: the three parts and their `SHA256SUMS.parts` lines are on windows-assets 72ff70d3 (parent 37cebe3b). Nothing else changed.
+- **Switch on (done)**: `PAIR_ASSETS` 92 and its dat md5 in `server/tools/client_pair.py`, `PAIR_IDLE_LOOPS` 92. Tables
+  regenerated from pair 92 (only the md5 line changes): `outfit_anchors.lua`, `info_lifts.lua` and `InfoLiftData.cs`,
+  `wing_centres.lua`, `head_centres.lua`, `foot_marks.lua`; the HD minimap atlas (above). `check_content.py` `PAIR_NAME` 'pair 92'.
+- **Owner steps**: a client package with pair 92, then admin app Comandos > "Par do cliente" > Gravar 92
+  (`chaos-ctl.sh client-pair set 92`), then the next install update (the save run, or Painel > Atualizar servidor > Aplicar
+  e reiniciar) runs the step `idleloops`, which gives the 25 nodes FLAG_ANIMATION. Between the new client and that install
+  the wire bytes of these items disagree: do both in one maintenance window.

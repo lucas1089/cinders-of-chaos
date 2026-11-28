@@ -1,0 +1,25 @@
+n,client_id,name,tiles,pad,kept_1x1,patterns,frames,ms,exact,layers,clamp
+1,39120,Golden brazier,2x2,1,0,1x1,12,100,64,flames 5 + motes 4 + pulse,56
+2,2917,candlestick,1x1,0,1,1x1,12,100,32,flames 2 + pulse,56
+3,39133,Golden candle,2x2,1,0,1x1,12,100,64,flames 5 + motes 4 + pulse,56
+4,2933,small oil lamp,1x1,0,1,1x1,12,100,32,flames 3 + pulse,56
+5,10289,red lantern,1x1,0,1,1x1,12,100,32,pulse + motes 3,56
+6,39173,Haunted lantern post,2x2,1,0,1x1,12,100,64,motes 4 + pulse,56
+7,26689,Frosthold Crystal,2x2,0,0,2x2,12,100,45,frost + glint 2,56
+8,15166,huge red crystal,2x2,0,0,1x1,12,100,57,pulse + glint 3,56
+9,7810,crystal,1x1,0,0,2x2,12,100,32,frost + glint 2,56
+10,3523,altar,2x2,1,0,1x1,12,100,64,flames 5 + motes 4 + pulse,56
+11,1841,blue shrine stone,2x2,0,0,1x1,12,100,57,rim 2 + glint 2 + pulse,56
+12,25584,majesty altar,2x2,0,0,1x1,12,100,59,shine + glint 2 + pulse,56
+13,2199,obelisk,2x2,0,0,1x1,12,100,63,rim 2 + glint 2 + pulse,56
+14,24513,Idol of the forge,1x1,0,1,1x1,12,100,32,pulse + motes 4,56
+15,44551,Orb of Binding,1x1,0,1,1x1,12,100,32,rim 2 + glint 2 + pulse,56
+16,44556,Crown Orb,1x1,0,0,1x1,12,100,32,shine + glint 2 + pulse,56
+17,44559,Void Orb,1x1,0,1,1x1,12,100,32,motes 4 + pulse,56
+18,8646,large glowing gem,1x1,0,0,1x1,12,100,32,pulse + glint 3,56
+19,3036,violet gem,1x1,0,0,1x1,12,100,32,glint 3,56
+20,25049,Mythic Essence,1x1,0,1,1x1,12,100,32,shine + glint 2 + pulse,56
+21,26888,azure frostlight shard,1x1,0,0,1x1,12,100,32,frost + glint 2,56
+22,24702,distorted heart,1x1,0,0,1x1,16,80,32,pulse x2,56
+23,15128,yellow glowing mushroom,2x2,1,0,1x1,12,100,64,pulse + motes 4,56
+24,39176,Witch cauldron,2x2,1,0,1x1,12,100,64,motes 5 + pulse,56

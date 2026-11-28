@@ -23,6 +23,8 @@ Outputs (client/overlay/data/minimap_hd/): swatches.png (RGBA atlas, 2048 px wid
 flags: 1 solid (blocks walking, not ground or border: walls, rock, trees; drawn with the alpha boost), 2 tall (solid and blocks
 missiles: casts a shadow), 4 water ground (minimap colour 51), 8 lava ground (minimap colour 192).
 Limits (checked): the png stays under 4 MB, the index lists exactly the ids of ids.txt.
+Idle loops (O787, pair 92): a 1 x 1 item padded to 2 x 2 for its loop (client/tools/sprites/art_import/idle_loops.csv, pad 1)
+keeps a 1 x 1 swatch of its own tile, the bottom right cell: the object, not the flames or motes over the next tiles.
 """
 import argparse
 import hashlib
@@ -44,6 +46,7 @@ CELL = 8                 # atlas px per tile cell
 SRC = 32                 # sprite px
 ATLAS_W = 2048
 MAX_PNG_BYTES = 4 * 1000 * 1000
+IDLE_TABLE = os.path.join(HERE, 'sprites', 'art_import', 'idle_loops.csv')
 WATER_COLOUR = 51        # dat minimap colour of water ground
 LAVA_COLOUR = 192
 F_SOLID, F_TALL, F_WATER, F_LAVA = 1, 2, 4, 8
@@ -111,9 +114,19 @@ def sprite_at(t, ww, hh):
     return t.sprites[idx] if idx < len(t.sprites) else 0
 
 
-def render_swatch(t, spr):
-    """straight RGBA uint8 array (h * CELL, w * CELL, 4), or None for an item without a pixel"""
-    w, h = t.w, t.h
+def padded_ids(path=IDLE_TABLE):
+    """client ids of the idle loop items padded from 1 x 1 to 2 x 2 (O787): their swatch is their own tile"""
+    import csv
+    if not os.path.exists(path):
+        return set()
+    with open(path, newline='', encoding='utf-8') as fh:
+        return {int(r['client_id']) for r in csv.DictReader(fh) if r['pad'] == '1'}
+
+
+def render_swatch(t, spr, own_tile=False):
+    """straight RGBA uint8 array (h * CELL, w * CELL, 4), or None for an item without a pixel; own_tile: the bottom right
+    cell only (1 x 1)"""
+    w, h = (1, 1) if own_tile else (t.w, t.h)
     big = Image.new('RGBA', (w * SRC, h * SRC), (0, 0, 0, 0))
     for hh in range(h):
         for ww in range(w):
@@ -159,14 +172,15 @@ def pack(items):
     return placed, y + shelf
 
 
-def build(dat, spr, ids):
+def build(dat, spr, ids, padded=None):
+    padded = padded_ids() if padded is None else padded
     items = []
     for cid in ids:
         i = cid - 100
         if i < 0 or i >= len(dat.items):
             continue
         t = dat.items[i]
-        arr = render_swatch(t, spr)
+        arr = render_swatch(t, spr, own_tile=cid in padded)
         if arr is not None:
             items.append((cid, item_flags(t), arr))
     placed, height = pack(items)
