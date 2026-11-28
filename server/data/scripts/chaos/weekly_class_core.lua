@@ -3,12 +3,12 @@
 --
 --   K.add(buf, guid, exp)                  experience gained, kept per character until the next flush
 --   K.take(buf, guid)                      the kept amount (0 when none), cleared
---   K.classTop(ranked, groups, n, filter, minValue)   per class tab the first n of a ranked board (value >= minValue)
+--   K.classTop(ranked, groups, n, filter, minValue)   per class line the first n of a ranked board (value >= minValue)
 --   K.awards(cfg, tops)                    the token grants of the week's end
 --   K.compact(n)                           "1.23M" / "45.6K" / "812" (the Discord post and the broadcast)
 --   K.weekLabel(week)                      "2026-11-02" of a week key 20261102
 --   K.discordSections(cfg, tops)           {{name = class, value = "1. A 1.23M\n2. ..."}} for the Discord post
---   K.broadcastText(tops, boardName, lang) the line naming the 1st of every class
+--   K.broadcastText(tops, boardName, lang) the line naming the 1st of every class line
 --   K.schemaSql(tbl)                       CREATE TABLE IF NOT EXISTS (sql/chaos_weekly_class.sql)
 
 ChaosWeeklyClassCore = ChaosWeeklyClassCore or {}
@@ -49,7 +49,7 @@ function K.take(buf, guid)
 end
 
 -- ---------------------------------------------------------------- the week's end
--- ranked: a ranked board (leaderboard_core.lua LB.rank, entries with voc); groups: {{key, name, ids}} (LB.classGroups);
+-- ranked: a ranked board (leaderboard_core.lua LB.rank, entries with voc); groups: {{key, name, ids}} (the class lines: LB.lineGroups, O778);
 -- filter(ranked, ids): LB.filterClass. -> per group {key, name, rows = the first n with value >= minValue}
 function K.classTop(ranked, groups, n, filter, minValue)
 	local out = {}
@@ -106,7 +106,7 @@ function K.weekLabel(week)
 	return string.format("%04d-%02d-%02d", floor(week / 10000), floor(week / 100) % 100, week % 100)
 end
 
--- one Discord field per class with someone on the podium
+-- one Discord field per class line with someone on the podium
 function K.discordSections(cfg, tops)
 	local out = {}
 	for _, g in ipairs(tops or {}) do
@@ -133,7 +133,7 @@ function K.broadcastText(tops, boardName, lang)
 	if #parts == 0 then
 		return nil
 	end
-	return T(lang, "%s, the best of every class last week - %s.", T(lang, boardName or "Weekly Experience"),
+	return T(lang, "%s, the best of every class line last week - %s.", T(lang, boardName or "Weekly Experience"),
 		table.concat(parts, "; "))
 end
 

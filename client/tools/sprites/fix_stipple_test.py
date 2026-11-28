@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Tests of fix_stipple.py and the unstipple op of anim_fixes.py on a small synthetic pair (no real pair needed), and of the
-committed table (O769).
+committed tables (O769, and stage 2 of O777: the 1/16 stage and the glow lattice).
 
 python3 -I client/tools/sprites/fix_stipple_test.py
 """
@@ -210,11 +210,222 @@ def test_committed_table():
     t.expect(client_pair.PAIR_STIPPLE == FS.PAIR == 88, 'client_pair.PAIR_STIPPLE is the pair of the redraw')
 
 
+# ------------------------------------------------------------------------------------------------ stage 2 (O777)
+def plus5(x, y):
+    """the glow lattice of effect 708: a '+' of five pixels in every 4x4 cell (5/16, under half density)"""
+    return (y % 4 == 0 and x % 4 in (0, 2, 3)) or (x % 4 == 3 and y % 4 in (1, 3))
+
+
+def stage16(x, y):
+    """the 1/16 Bayer stage: one hole in every 4x4 cell"""
+    return (x % 4, y % 4) != (1, 1)
+
+
+SQ = range(10, 22)
+
+
+def glow_body(lo=SQ, lat=plus5, span=range(6, 26)):
+    """a solid body (12x12) inside a glow lattice four to six pixels wide"""
+    px = {y * 32 + x: DIM for y in span for x in span if lat(x, y)}
+    px.update({y * 32 + x: BODY for y in lo for x in lo})
+    return px
+
+
+def test_stage2_rule():
+    img = canvas(body(stage16))
+    t.expect(FS.redraw(img)[1] == 0, 'stage 1 leaves the 1/16 stage (partners 4 px apart)')
+    new, f, d = FS.redraw(img, 2)
+    holes = sum(1 for y in range(5, 27) for x in range(5, 27) if not stage16(x, y))
+    t.expect(f == holes and d == 0, 'stage 2 fills the 1/16 holes: %d of %d' % (f, holes))
+    t.expect((new[4:28, 4:28, 3] == 255).all() and (new[4:28, 4:28, :3] == BODY[:3]).all(), 'the 1/16 body is one solid colour')
+    one = canvas(body(lambda x, y: (x, y) not in ((13, 13), (17, 13))))
+    t.expect(FS.redraw(one, 2)[1:] == (0, 0), 'two drawn holes 4 px apart (one partner) stay')
+    lone = canvas(body(lambda x, y: (x, y) != (15, 15)))
+    t.expect(FS.redraw(lone, 2)[1:] == (0, 0), 'a lone drawn hole stays in stage 2')
+    g = canvas(glow_body())
+    new, f, d = FS.redraw(g, 2)
+    a = new[..., 3] > 0
+    near = FS.dilate(np.pad(np.ones((12, 12), bool), ((10, 10), (10, 10))), 1)
+    t.expect((new[10:22, 10:22] == g[10:22, 10:22]).all(), 'the body inside the glow keeps every pixel')
+    t.expect(not (a & ~near).any() and d > 60, 'the glow lattice under half density goes (%d dropped, %d left out of the body '
+             'and its edge)' % (d, int((a & ~near).sum())))
+    t.expect(FS.redraw(new, 2)[1:] == (0, 0), 'stage 2 on its own result finds nothing')
+    q = canvas(glow_body(lat=lambda x, y: x % 2 == 0 and y % 2 == 0))
+    new, _f, d = FS.redraw(q, 2)
+    t.expect(not ((new[..., 3] > 0) & ~near).any(), 'the 1/4 Bayer stage (dots two apart) round a body goes too (%d)' % d)
+    mid = canvas(body(lambda x, y: not (y % 4 == 1 and x % 4 in (1, 2))))
+    t.expect(FS.redraw(mid)[1] == 0, 'stage 1 leaves holes of two pixels (three art sides)')
+    new, f, d = FS.redraw(mid, 2)
+    t.expect((new[6:26, 6:26, 3] == 255).all() and f > 50, 'a lattice over half density fills solid in stage 2 (%d)' % f)
+    t.expect(set(map(tuple, new[6:26, 6:26, :3].reshape(-1, 3).tolist())) == {BODY[:3]}, 'with the colour of the body')
+    # what stage 2 must leave: lines, small rings, sparks, solid round shapes, drawn holes
+    keep = {}
+    hl = canvas({})
+    hl[10, 3:29] = BODY
+    keep['a one pixel straight line'] = hl
+    dl = canvas({})
+    for i in range(3, 29):
+        dl[i, i] = BODY
+    keep['a one pixel diagonal line'] = dl
+    rg = canvas({})
+    for y, x in ((14, 15), (14, 16), (14, 17), (15, 14), (16, 14), (17, 14),
+                 (18, 15), (18, 16), (18, 17), (15, 18), (16, 18), (17, 18)):
+        rg[y, x] = SPARK
+    keep['a small ring'] = rg
+    sp = canvas({})
+    for x in range(2, 30, 2):
+        sp[9, x] = SPARK
+    keep['a row of sparks two apart'] = sp
+    disc = canvas({y * 32 + x: BODY for y in range(32) for x in range(32) if (x - 15.5) ** 2 + (y - 15.5) ** 2 <= 120})
+    keep['a solid disc'] = disc
+    ol = canvas({y * 32 + x: EDGE for y in range(32) for x in range(32) if 9 <= ((x - 15.5) ** 2 + (y - 15.5) ** 2) ** 0.5 < 10})
+    keep['a round outline'] = ol
+    for name, img in keep.items():
+        t.expect(FS.redraw(img, 2)[1:] == (0, 0), 'stage 2 leaves %s: %r' % (name, FS.redraw(img, 2)[1:]))
+
+
+def parts2():
+    """stage 2 pair (FS.STOCK and FS.BAYER_LAST patched to 1 and 6): effects 1 a stock look with a glow lattice (guard), 2 a
+    body with the 1/16 stage (listed), 3 a body in a glow lattice (listed), 4 effect 1's art with other timing (a stock copy:
+    guard), 5 a small body in a wide glow (mostly glow: guard), 6 a solid body with a drawn hole and a line (nothing), 7 a
+    glow lattice after the Bayer cut era (guard)"""
+    s7 = body(lambda x, y: (x, y) != (15, 15))
+    for x in range(4, 28):
+        s7[1 * 32 + x] = EDGE
+    small = glow_body(lo=range(14, 18), span=range(2, 30))
+    recs = [t.record(glow_body()), t.record(body(stage16)), t.record(small), t.record(s7)]
+    ms = [80, 80] * 2
+    ms2 = [120, 120] * 2
+    effects = [t.entry(b'', [t.group([1, 1], phases=2, anim=(0, 0, 0, ms))]),
+               t.entry(b'', [t.group([2, 2], phases=2, anim=(0, 0, 0, ms))]),
+               t.entry(b'', [t.group([1], phases=1)]),
+               t.entry(b'', [t.group([1, 1], phases=2, anim=(0, 0, 0, ms2))]),
+               t.entry(b'', [t.group([3], phases=1)]),
+               t.entry(b'', [t.group([4], phases=1)]),
+               t.entry(b'', [t.group([1], phases=1)])]
+    return recs, [t.entry(bytes([17]), [t.group([1])])], [t.entry(b'', [t.group([1], gtype=0)], outfit=True)], effects, []
+
+
+def test_stage2_scan_build_check(c):
+    keep = (FS.STOCK, FS.BAYER_LAST)
+    FS.STOCK, FS.BAYER_LAST = {'effect': 1, 'missile': 0}, {'effect': 6, 'missile': 0}
+    try:
+        _test_stage2(c)
+    finally:
+        FS.STOCK, FS.BAYER_LAST = keep
+        FX._FORMS.clear()
+
+
+def _test_stage2(c):
+    dat, spr = c.pair(*parts2())
+    # effect 3 is one phase of effect 1's art: not a copy (other frames); effect 7 the same art after the era
+    rows, text = quiet(FS.scan, dat, spr, stage=2)
+    t.expect([r['id'] for r in rows] == [2, 3], 'stage 2 lists effects 2 and 3: %r %s' % ([r['id'] for r in rows], text))
+    t.expect('2 stock or stock copies' in text and '1 after the Bayer cut' in text
+             and '1 mostly glow' in text, 'the guards name the stock look, its copy, the late id and the glow: %s' % text)
+    t.expect(all('stage=2' in r['args'] and r['reason'].startswith('O777') for r in rows), 'stage 2 rows: stage=2, O777')
+    tab, sums = os.path.join(c.dir, 'stipple_p90.csv'), os.path.join(c.dir, 'stipple_p90.sums')
+    FS.write_table(rows, tab)
+    out = os.path.join(c.dir, 'out90')
+    got, text = quiet(FS.build, dat, spr, out, write=True, table=tab, sums_path=sums, stage=2)
+    t.expect(len(got) == 2 and 'verified' in text and '(O777)' in open(sums).read().splitlines()[0]
+             and 'pair 89' in open(sums).read().splitlines()[0], 'stage 2 build writes its sums and verifies: %s' % text)
+    od, os_ = os.path.join(out, 'Tibia.dat'), os.path.join(out, 'Tibia.spr')
+    r = cp.check(od, os_, auras=set(), old=(dat, spr), allow_changed=cp.parse_allow('effect:2,3'))
+    t.expect(r.ok, 'check_pair append-only passes on the stage 2 pair: ' + r.text())
+    t.expect(quiet(FS.scan, od, os_, stage=2)[0] == [], 'a stage 2 scan of the built pair lists nothing')
+    t.expect(quiet(FS.check, od, os_, assets=89, sums_path=sums, stage=2)[0] == 0, 'stage 2 check: the built pair is redrawn')
+    r89, text = quiet(FS.check, dat, spr, assets=89, sums_path=sums, stage=2)
+    t.expect(r89 == 0 and 'pending' in text and 'O777' in text, 'stage 2 check: pending while windows-assets has pair 89')
+    t.expect(quiet(FS.check, dat, spr, assets=90, sums_path=sums, stage=2)[0] == 1, 'stage 2 check: due from pair 90')
+    # chained forms: an O769 thing redrawn again by stage 2 still counts as redrawn for O769 and fix_pack_fx
+    b2, a2 = FX.read_sums(sums)[('effect', 3)]
+    s1 = os.path.join(c.dir, 's1.sums')
+    with open(s1, 'w') as f:
+        f.write('# test\neffect 3 000000000000000000000000 %s\n' % b2)
+    pk = os.path.join(c.dir, 'pk.sums')
+    with open(pk, 'w') as f:
+        f.write('# test\neffect 3 111111111111111111111111 000000000000000000000000\n')
+    real = (FX.stipple_sums, FX.stipple2_sums)
+    try:
+        FX.stipple2_sums = lambda: FX.read_sums(sums)
+        FX.stipple_sums = lambda: FX.read_sums(s1)
+        FX._FORMS.clear()
+        t.expect(FS.forms(od, os_, s1, stage=1)[('effect', 3)] == 'after',
+                 'O769 forms: its redrawn form redrawn again is redrawn')
+        t.expect(quiet(FS.check, od, os_, assets=90, sums_path=s1, stage=1)[0] == 0, 'O769 check passes on the stage 2 pair')
+        t.expect(FX.forms(od, os_, FX.read_sums(pk))[('effect', 3)] == 'after', 'fix_pack_fx: fixed, O769, then O777 is fixed')
+        t.expect(FX.forms(od, os_, FX.read_sums(pk), stipple='late')[('effect', 3)] is None, "fix_pack_fx 'late': stage 2 only")
+    finally:
+        FX.stipple_sums, FX.stipple2_sums = real
+        FX._FORMS.clear()
+    _, text = quiet(FS.build, od, os_, os.path.join(c.dir, 'out91'), table=tab, sums_path=sums, stage=2)
+    t.expect('nothing to do' in text, 'a second stage 2 run writes nothing')
+    bad = os.path.join(c.dir, 'bad2.csv')
+    for name, row in (('another count', ['effect', 2, 'unstipple', 'fill=1;drop=0;stage=2', 'test', '']),
+                      ('no such stage', ['effect', 2, 'unstipple', 'fill=1;drop=0;stage=3', 'test', ''])):
+        with open(bad, 'w', newline='', encoding='utf-8') as f:
+            w = csv.writer(f, lineterminator='\n')
+            w.writerow(AF.SPEC_COLS)
+            w.writerow(row)
+        try:
+            quiet(FS.build, dat, spr, None, dry_run=True, table=bad, sums_path=os.path.join(c.dir, 'bad2.sums'), stage=2)
+            t.expect(False, 'refused: ' + name)
+        except SystemExit:
+            pass
+    with open(bad, 'w', newline='', encoding='utf-8') as f:
+        w = csv.writer(f, lineterminator='\n')
+        w.writerow(AF.SPEC_COLS)
+        w.writerow(rows[0][k] for k in AF.SPEC_COLS)
+        w.writerow(['effect', 3, 'unstipple', 'fill=1;drop=0', 'test', ''])
+    try:
+        quiet(FS.build, dat, spr, None, dry_run=True, table=bad, sums_path=os.path.join(c.dir, 'bad3.sums'))
+        t.expect(False, 'refused: rows of two stages')
+    except SystemExit:
+        pass
+
+
+def test_committed_table2():
+    rows = AF.read_spec(FS.TABLE2)
+    sums = FX.read_sums(FS.SUMS2)
+    keys = sorted({(r['kind'], r['id']) for r in rows})
+    t.expect(len(rows) == len(keys) and len(rows) > 100, 'the stage 2 table: one row a thing (%d)' % len(rows))
+    t.expect(all(r['op'] == 'unstipple' and AF.args_of(r['args']).get('stage') == '2' for r in rows), 'unstipple rows of stage 2')
+    t.expect(sorted(sums) == keys and all(b != a for b, a in sums.values()), 'the stage 2 sums name every row, each changes')
+    extra = FS.owned_extra()
+    t.expect(not any(FS.owned(k, i) or (k, i) in extra for k, i in keys), 'no stage 2 row names a thing another tool holds')
+    t.expect(all(FS.STOCK[k] < i <= FS.BAYER_LAST[k] for k, i in keys), 'stage 2 rows: after the stock ids, in the Bayer cut era')
+    for want in (708, 3896, 719, 720, 721, 722, 723, 724, 725, 726):
+        t.expect(('effect', want) in sums, 'effect %d (V45) is in the stage 2 table' % want)
+    s1 = FX.read_sums(FS.SUMS)
+    import fix_dissolve_tail as FD
+    tail = FX.read_sums(FD.SUMS)
+    pack = FX.read_sums()
+    for k in keys:
+        if k in s1:
+            t.expect(sums[k][0] == s1[k][1], '%s %d: stage 2 starts from its O769 form' % k)
+        elif k in tail:
+            t.expect(sums[k][0] == tail[k][1], '%s %d: stage 2 starts from its tail cut form' % k)
+        elif k in pack:
+            t.expect(sums[k][0] == pack[k][1], '%s %d: stage 2 starts from its fixed form' % k)
+    import re
+    src = open(os.path.join(FS.HERE, 'gen_effects.py'), encoding='utf-8').read()
+    m = re.search(r'^STOCK_EFFECTS, STOCK_MISSILES = (\d+), (\d+)', src, re.M)
+    t.expect(m and (int(m.group(1)), int(m.group(2))) == (FS.STOCK['effect'], FS.STOCK['missile']),
+             'FS.STOCK is gen_effects.STOCK_*')
+    sys.path.insert(0, os.path.join(FS.HERE, '..', '..', '..', 'server', 'tools'))
+    import client_pair
+    t.expect(client_pair.PAIR_STIPPLE_LATTICE == FS.PAIR2 == 90, 'client_pair.PAIR_STIPPLE_LATTICE is the pair of stage 2')
+
+
 def main():
     c = t.Case()
     test_rule()
     test_scan_build_check(c)
     test_committed_table()
+    test_stage2_rule()
+    test_stage2_scan_build_check(c)
+    test_committed_table2()
     if t.FAILS:
         print('%d failed' % len(t.FAILS))
         return 1

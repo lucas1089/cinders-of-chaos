@@ -3,9 +3,10 @@
 --     ChaosWeeklyClassConfig = dofile("data/scripts/chaos/weekly_class_config.lua")
 -- A weekly leaderboard board ranked per class: the experience every character gains from monsters this week. It is a
 -- board of leaderboard_config.lua (weekly_xp, classAwards: no overall title, no orbs); this file feeds it and closes its
--- week: at the leaderboard reset (Monday, leaderboard_config.lua resetHour) the top of every class tab gets Conquest
--- Tokens, a broadcast names the class winners and the Discord queue gets one "weekly_class" post with the podium of
--- every class. Fair: each class competes with itself, so a class that levels faster never takes every reward.
+-- week: at the leaderboard reset (Monday, leaderboard_config.lua resetHour) the top of every class line (a base class
+-- and its two ascended classes, LB.lineGroups; O778, the owner's "Paga por linha": not every one of the 21 class tabs)
+-- gets Conquest Tokens, a broadcast names the line winners and the Discord queue gets one "weekly_class" post with the
+-- podium of every line. Fair: each line competes with itself, so a line that levels faster never takes every reward.
 -- Lua 5.1 / LuaJIT and Lua 5.3 compatible.
 return {
 	enabled = true,
@@ -23,18 +24,18 @@ return {
 	flushSeconds = 60,
 
 	-- ------------------------------------------------------------------ the week's end
-	-- the 1st, 2nd and 3rd of every class tab (base class and its ascensions) get these Conquest Tokens (conquest.lua,
-	-- log source "weekly_class"). The same amounts as the Weekly Challenge's class rewards: 7 classes x 60 = at most 420
-	-- tokens a week on the whole server, 60 for one character.
+	-- the 1st, 2nd and 3rd of every class line (base class and its two ascended classes, O778) get these Conquest Tokens
+	-- (conquest.lua, log source "weekly_class"). The same amounts as the Weekly Challenge's rewards: 7 lines x 60 = at
+	-- most 420 tokens a week on the whole server (not 21 classes x 60 = 1260), 60 for one character.
 	tokens = {30, 20, 10},
 	rewardTop = 3,
 	-- a character needs at least this much experience this week to be rewarded or posted (no reward for a quiet week)
 	minValue = 1000,
-	-- the Discord post (discord_core.lua D.weeklyClass; discord_config.lua events.weekly_class): the top 3 of each class
+	-- the Discord post (discord_core.lua D.weeklyClass; discord_config.lua events.weekly_class): the top 3 of each line
 	discordTop = 3,
-	-- one broadcast line with the 1st of every class
+	-- one broadcast line with the 1st of every class line
 	broadcast = true,
-	-- table of the podium (server/sql/chaos_weekly_class.sql): one row per week, board, class and rank. It also keeps
+	-- table of the podium (server/sql/chaos_weekly_class.sql): one row per week, board, class line (class_base) and rank. It also keeps
 	-- the reset from paying twice (a /leaderboard reset of the same week finds its rows and skips)
 	table = "chaos_weekly_class_podium",
 	keepWeeks = 12

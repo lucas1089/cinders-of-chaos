@@ -1544,7 +1544,7 @@ return {
 		-- O409: the login streak cosmetics (daily.lua, daily_core.lua) and the weekly class podium (weekly_class_core.lua)
 		["the cosmetic \"%s\""] = "o cosmético \"%s\"",
 		["Login streak of %d days: the cosmetic %s is yours. Choose it in the Wardrobe."] = "Sequência de login de %d dias: o cosmético %s é seu. Escolha-o no Guarda-roupa.",
-		["%s, the best of every class last week - %s."] = "%s, os melhores de cada classe na semana passada - %s.",
+		["%s, the best of every class line last week - %s."] = "%s, os melhores de cada linha de classe na semana passada - %s.",
 		["Weekly Experience"] = "Experiência Semanal",
 		["Week completed! Bonus reward collected."] = "Semana completa! Recompensa bônus recebida.",
 		["A grace charge kept your streak alive (%d left)."] =
@@ -9513,10 +9513,10 @@ return {
 			"Seu melhor, grupo: tier %d em %s.",
 		["You have not sealed a Greater Rift this season. A tier 15 guardian may leave a Greater Rift Key, or %d omen fragments bind one (Bind Greater Key)."] =
 			"Você ainda não selou um Greater Rift nesta temporada. Um guardião de tier 15 pode deixar uma Greater Rift Key, ou %d fragmentos de omen forjam uma (Bind Greater Key).",
-		["Top, solo, your class:"] =
-			"Melhores, solo, sua classe:",
-		["Top, party, your class:"] =
-			"Melhores, grupo, sua classe:",
+		["Top, solo, your class line:"] =
+			"Melhores, solo, sua linha de classe:",
+		["Top, party, your class line:"] =
+			"Melhores, grupo, sua linha de classe:",
 		["The season ends in %d days."] =
 			"A temporada termina em %d dias.",
 		["Greater Rift season %d has ended. Season %d begins."] =

@@ -52,9 +52,11 @@ function G.currentSeason(now)
 	return number, finish
 end
 
+-- the class lines (a base class and its two ascended classes): the season brackets pay one board per mode and line, and
+-- the shown top is that board (O778, the owner's "Paga por linha"; the 21 class tabs of LB.classGroups are a view)
 local function groups()
 	local LB = ChaosLeaderboard
-	return LB and LB.classGroups and LB.classGroups() or {}
+	return LB and LB.lineGroups and LB.lineGroups() or {}
 end
 
 -- the vocation id of a character: online, else the players table
@@ -221,7 +223,7 @@ function G.text(player)
 	end
 	for _, mode in ipairs({"solo", "party"}) do
 		local top = K.board(G.rowsOf(season, mode), gs, mine, rc.greater.ladder.staffGroup, rc.greater.ladder.rows)
-		lines[#lines + 1] = Chaos.t(player, mode == "solo" and "Top, solo, your class:" or "Top, party, your class:")
+		lines[#lines + 1] = Chaos.t(player, mode == "solo" and "Top, solo, your class line:" or "Top, party, your class line:")
 		if #top == 0 then
 			lines[#lines + 1] = "  -"
 		end

@@ -233,6 +233,68 @@ eq(total, 30 + 20 + 10 + 30, "token total")
 -- day's cap of the dungeon clear source of conquest_config.lua
 local cq = dofile("data/scripts/chaos/conquest_config.lua")
 ok(2 * cfg.tokens[1] <= cq.sources.dungeon_clear.cap, "a week's tokens of one character stay under one day's dungeon clear cap")
+-- O778 (the owner's "Paga por linha", 2026-11-28): the top 3 of every class line on each board, not of every one of the
+-- 21 class tabs (V41): a full week of both boards pays 7 lines x 2 boards x 60 = 840 Conquest Tokens, the pre-O771 count
+do
+	local baseOf = {[1] = 1, [5] = 1, [10] = 1, [3] = 3, [7] = 3, [15] = 3, [4] = 4, [8] = 4, [14] = 4, [11] = 11, [12] = 11,
+		[13] = 11, [17] = 17, [18] = 17, [19] = 17, [20] = 20, [21] = 20, [22] = 20, [23] = 23, [24] = 23, [25] = 23}
+	local vocs = {}
+	for id in pairs(baseOf) do
+		vocs[#vocs + 1] = id
+	end
+	table.sort(vocs)
+	local lines, classTabs = LB.groups(vocs, baseOf), LB.classTabs(vocs, baseOf)
+	for _, g in ipairs(lines) do
+		g.key = g.base
+	end
+	for _, g in ipairs(classTabs) do
+		g.key = g.class
+	end
+	local solo, party, guid = {}, {}, 100
+	for _, id in ipairs(vocs) do
+		for k = 1, 4 do
+			guid = guid + 1
+			solo[guid] = {value = 200 + guid, at = guid, name = "S" .. guid, voc = id}
+			party[guid] = {value = 150 + guid, at = guid, name = "P" .. guid, voc = id}
+		end
+	end
+	local rs, rp = LB.rank(solo, 4, true), LB.rank(party, 4, true)
+	local function pay(gs)
+		local list = W.awards(cfg, {{board = "challenge_solo", groups = W.classTop(rs, gs, 3, LB.filterClass)},
+			{board = "challenge_party", groups = W.classTop(rp, gs, 3, LB.filterClass)}})
+		local n = 0
+		for _, a in ipairs(list) do
+			n = n + a.tokens
+		end
+		return list, n
+	end
+	local perTop = 0
+	for i = 1, cfg.rewardTop do
+		perTop = perTop + cfg.tokens[i]
+	end
+	local byLine, lineTotal = pay(lines)
+	local _, classTotal = pay(classTabs)
+	eq(#byLine, 7 * 2 * 3, "a top 3 per line and board")
+	eq(lineTotal, 7 * 2 * perTop, "7 lines x 2 boards x 60")
+	eq(lineTotal, 840, "the pre-O771 count: 840 Conquest Tokens at most a week")
+	eq(classTotal, 2520, "per class tab it would be 2520 (the O771 count)")
+	local firsts = {}
+	for _, a in ipairs(byLine) do
+		if a.rank == 1 then
+			firsts[a.board] = (firsts[a.board] or 0) + 1
+		end
+	end
+	eq(firsts.challenge_solo, 7, "one solo 1st per line")
+	eq(firsts.challenge_party, 7, "one party 1st per line")
+	-- the Ranger line (3, 7, 15): its fastest three, whatever their class, share one podium
+	local rangerSolo = {}
+	for _, a in ipairs(byLine) do
+		if a.board == "challenge_solo" and a.group == 3 then
+			rangerSolo[#rangerSolo + 1] = solo[a.guid].voc
+		end
+	end
+	eq(table.concat(rangerSolo, ","), "3,3,3", "the Ranger line's solo top 3 (the fastest are Rangers here)")
+end
 local sections = W.discordSections(cfg, tops, {challenge_solo = "Solo", challenge_party = "Party"})
 eq(#sections, 2, "two classes with times")
 eq(sections[1].name, "Warrior", "first section")
@@ -275,7 +337,15 @@ do
 		return {value = value}
 	end
 	LB.onReset = function(fn) hooks[#hooks + 1] = fn end
-	LB.classGroups = function() return groups end
+	-- the class tabs (V41) are one per class; the week's end must pay by the lines (O778)
+	local perClass = {}
+	for _, g in ipairs(groups) do
+		for _, id in ipairs(g.ids) do
+			perClass[#perClass + 1] = {key = id, base = g.key, name = g.name .. " " .. id, ids = {id}}
+		end
+	end
+	LB.classGroups = function() return perClass end
+	LB.lineGroups = function() return groups end
 	ChaosConquest = {grantGuid = function(guid, n, source)
 		granted[#granted + 1] = {guid = guid, n = n, source = source}
 		return n
@@ -343,7 +413,7 @@ do
 	print = function() end
 	hooks[1](20261102, {challenge_solo = ranked, challenge_party = {}}, {})
 	print = printed
-	eq(#granted, 4, "tokens to the class tops")
+	eq(#granted, 4, "tokens to the line tops (per class tab it would be 5)")
 	eq(granted[1].source, "weekly_challenge", "token source")
 	eq(#queued, 1, "one Discord row")
 	eq(queued[1].kind, "weekly_challenge", "Discord kind")

@@ -124,8 +124,12 @@ PAIR_WINGS_NORTH = 89   # pair 88 with ten code-drawn wings looks redrawn in pla
 PAIR_RELOOK_BODY = 89   # the same pair: outfits 3744-3746 of O768 rewritten in place (gen_relook_monsters.py relook), idle and walk on
                     # the standing picture by the body (the Banshee's idle stood 6 px off its walk). Client art only, no server gate.
 
-PAIR_ASSETS = 89
-PAIR_ASSETS_DAT_MD5 = 'c5c6252e23e418aa4713340c00b1430c'
+PAIR_STIPPLE_LATTICE = 90   # pair 89 with the dither stages O769 missed redrawn (O777, client/tools/sprites/fix_stipple.py build
+                    # --stage 2): the 1/16 Bayer stage filled (effect 3896, 719-726) and the glow lattice under half density
+                    # re-cut at 0.5 like the imports since O523 (effect 708, 745, 2913). Client art only, no server gate.
+
+PAIR_ASSETS = 90
+PAIR_ASSETS_DAT_MD5 = '234b9603ea190fa46371fecfea9b3764'
 
 
 def parse(text):

@@ -307,8 +307,8 @@ namespace Chaos.Core
             {
                 l.Text(LeaderboardMath.ResetText(Json.Number(Current, "resetIn") - (Clock() - boardAt) / 1000.0), "dim");
                 var champs = SFmt.Rows(Current, "champions");
-                l.Section(Json.Truthy(b, "classAwards") ? Loc.T("Last week's podium (the top 3 of every class get Conquest Tokens)") : Loc.T("{0}: the title holders this week (last week's top 3)", Json.Text(b, "title")));
-                if (champs.Count == 0) l.Text(Json.Truthy(b, "classAwards") ? Loc.T("Nobody yet: the podium of every class is rewarded on Monday.") : Loc.T("Nobody yet: the top 3 of this week get the title on Monday."), "dim");
+                l.Section(Json.Truthy(b, "classAwards") ? Loc.T("Last week's podium (the top 3 of every class line get Conquest Tokens)") : Loc.T("{0}: the title holders this week (last week's top 3)", Json.Text(b, "title")));
+                if (champs.Count == 0) l.Text(Json.Truthy(b, "classAwards") ? Loc.T("Nobody yet: the podium of every class line is rewarded on Monday.") : Loc.T("Nobody yet: the top 3 of this week get the title on Monday."), "dim");
                 foreach (var c in champs) l.Text((Json.Text(c, "rankName").Length > 0 ? Json.Text(c, "rankName") : LeaderboardMath.Ordinal(Json.Int(c, "rank"))) + " " + Json.Text(c, "name", "?") + "  -  " + LeaderboardMath.ValueText(Json.Number(c, "value"), Json.Text(b, "format")));
             }
             else l.Text(Loc.T("Every class of the line counts. Updated every few minutes."), "dim");

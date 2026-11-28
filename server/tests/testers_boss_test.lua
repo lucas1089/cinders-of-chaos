@@ -201,8 +201,9 @@ check(src:find("ChaosTestersBoss and ChaosTestersBoss.creating", 1, true) ~= nil
 check(src:find("return true -- O652", 1, true) ~= nil, "and says why")
 
 -- ------------------------------------------------------------------ the probe: no danger, then telegraphs
+-- left reads os.time(): a second may tick between the grant and the probe on a busy runner
 local pr = B.probe(bot)
-check(pr.boss and pr.boss.hp == 100 and pr.boss.name == "Talath" and pr.boss.left == cfg.lifeSeconds, "probe: the copy (the boss for level 700), its health, its time")
+check(pr.boss and pr.boss.hp == 100 and pr.boss.name == "Talath" and pr.boss.left <= cfg.lifeSeconds and pr.boss.left >= cfg.lifeSeconds - 2, "probe: the copy (the boss for level 700), its health, its time")
 eq(pr.killed, 0, "probe: no kill yet")
 eq(pr.listed, 0, "probe: no tester in a boss board")
 check(pr.guide.mode == "walk" and pr.guide.area == "boss" and pr.guide.reach[2] == cfg.reach, "probe: far: walk to it")

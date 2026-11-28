@@ -37,7 +37,9 @@ per row (rows of one thing are applied in table order, each on the result of the
               for a glow cut by a Bayer dither: a pixel with no opaque 4-neighbour inside a checker or lattice of its colour).
               Must remove `expect=n` pixels.
   unstipple   (O769) the stipple inside the body redrawn solid (fix_stipple.py: a hole on the Bayer or checker grid takes the
-              colour of its sides, a dim lattice dot of a faint fringe goes). Must find `fill=n;drop=m`.
+              colour of its sides, a dim lattice dot of a faint fringe goes). Must find `fill=n;drop=m`. `stage=2` (O777,
+              pair 90) adds the 1/16 Bayer stage (holes with partners 4 px apart) and the glow lattice re-cut at half
+              density (fix_stipple.lattice), run again on its own result until nothing is left.
   undissolve  (O766) cut the 3-phase Bayer dissolve tail of a pack import (dissolve_tail: the signature on the last three
               phases with art) with its time; blank end phases stay. Must give `keep=A-B,C` out of `of=N` phases.
   pulse       a one-frame look gets an idle of `n` phases (`ms` each): a slow brightness pulse, never darker than the
@@ -574,7 +576,7 @@ def op_undissolve(store, ts, a):
 
 def op_unstipple(store, ts, a):
     """(O769) the stipple redrawn solid: fix_stipple.py's rule (holes on the dither grid filled from their sides, dim lattice
-    dots removed); must find `fill=n;drop=m`"""
+    dots removed); must find `fill=n;drop=m`; `stage=2` is the O777 rule (1/16 stage, glow lattice under half density)"""
     import fix_stipple
     fix_stipple.op_unstipple(store, ts, a)
 

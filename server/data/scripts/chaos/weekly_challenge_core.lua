@@ -204,8 +204,8 @@ function W.entryProblem(built, current)
 end
 
 -- ---------------------------------------------------------------- the week's end
--- ranked: a ranked board (leaderboard_core.lua LB.rank, entries with voc); groups: {{key, name, ids}} (the class tabs,
--- LB.classGroups); filter(ranked, ids): LB.filterClass. -> per group the first n
+-- ranked: a ranked board (leaderboard_core.lua LB.rank, entries with voc); groups: {{key, name, ids}} (the class lines,
+-- LB.lineGroups, O778; the class tabs of LB.classGroups are a view only); filter(ranked, ids): LB.filterClass. -> per group the first n
 function W.classTop(ranked, groups, n, filter)
 	local out = {}
 	for _, g in ipairs(groups or {}) do

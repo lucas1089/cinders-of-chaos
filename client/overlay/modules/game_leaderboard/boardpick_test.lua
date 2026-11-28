@@ -91,7 +91,7 @@ eq(next(BoardPick.remember(nil, '', 'rift')), nil, 'empty name')
 
 -- the hint line under a weekly board (V41)
 local k, a = BoardPick.hint({ title = 'Tireless', classAwards = true, noReward = true })
-eq(k, 'Top 3 of every class on Monday: Conquest Tokens.', 'class awards: tokens, no title, no orbs'); eq(a, nil, 'no argument')
+eq(k, 'Top 3 of every class line on Monday: Conquest Tokens.', 'class awards: tokens per class line (O778), no title, no orbs'); eq(a, nil, 'no argument')
 k, a = BoardPick.hint({ title = 'Greater Delver', noReward = true })
 eq(k, 'Top 3 on Monday: the title %s for a week.', 'title only'); eq(a, 'Greater Delver', 'its title')
 k, a = BoardPick.hint({ title = 'Bossbane' })

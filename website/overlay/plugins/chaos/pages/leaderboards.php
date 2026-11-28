@@ -122,7 +122,7 @@ $url = static function (string $key, ?string $class = null) use ($boards, $class
 			</tbody>
 		</table>
 		<?php if (!empty($def['classAwards'])): ?>
-			<h3 class="chaos-subheading" id="podium"><?= chaos_h(chaos_t('Last week\'s podium of every class')) ?><?php if ($podiumWeek > 0): ?> <small><?= chaos_h(chaos_t('week of %s', chaos_week_label($podiumWeek))) ?></small><?php endif; ?></h3>
+			<h3 class="chaos-subheading" id="podium"><?= chaos_h(chaos_t('Last week\'s podium of every class line')) ?><?php if ($podiumWeek > 0): ?> <small><?= chaos_h(chaos_t('week of %s', chaos_week_label($podiumWeek))) ?></small><?php endif; ?></h3>
 			<p class="chaos-muted"><?= chaos_h(chaos_t('Every class is ranked on its own: the top 3 of each class earn Conquest Tokens at the Monday reset.')) ?></p>
 			<?php if (!$podium): ?>
 				<p class="chaos-muted"><?= chaos_h(chaos_t('No week has been scored yet. The podium appears after the Monday reset.')) ?></p>

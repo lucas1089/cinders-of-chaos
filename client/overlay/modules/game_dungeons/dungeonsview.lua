@@ -119,7 +119,7 @@ end
 function V.weeklyText(w)
   if type(w) ~= 'table' or not w.label then return nil end
   local lines = { tr('The same layout for everyone this week, always at difficulty 1. Solo or a party of up to 4.'),
-    tr('Fastest clear per class: Leaderboards, Weekly Challenge Solo and Party. The top 3 of each class get Conquest Tokens.') }
+    tr('Fastest clear per class: Leaderboards, Weekly Challenge Solo and Party. The top 3 of each class line get Conquest Tokens.') }
   -- the seed of the week's layout (V35, owner's row O390 "same dungeon and seed for all"): players can compare it
   if tonumber(w.seed) then
     table.insert(lines, 1, tr('Layout seed %s, the same for every player.', string.format('%d', tonumber(w.seed))))

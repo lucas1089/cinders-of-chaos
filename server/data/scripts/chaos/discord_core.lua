@@ -10,9 +10,9 @@
 --   ChaosDiscordCore.record / first / worldBossSpawn / bossKill / level / season / status   the events
 --   ChaosDiscordCore.patchnotes(cfg, title, text)      the patch note post (patchnotes.lua, English and pt-BR rows)
 --   ChaosDiscordCore.weeklyChallenge(cfg, label, theme, sections)   the Weekly Challenge's week (O390,
---                                                      weekly_challenge.lua): the top 3 of each class
+--                                                      weekly_challenge.lua): the top 3 of each class line
 --   ChaosDiscordCore.weeklyClass(cfg, label, boardName, sections)   a weekly class board's week (O409,
---                                                      weekly_class.lua): the podium of each class
+--                                                      weekly_class.lua): the podium of each class line
 --   ChaosDiscordCore.cityInvasion(cfg, phase, info)    an invasion starts, is won or is lost (O393, invasion.lua)
 --   ChaosDiscordCore.milestones(old, new, list)        the milestone levels crossed by a level up
 --   ChaosDiscordCore.saveTime(xml)                     hour, minute of the server save in globalevents.xml
@@ -402,7 +402,7 @@ function D.weeklyChallenge(cfg, label, theme, sections)
 		text = string.format("Weekly Challenge %s (%s) has ended. Nobody cleared it this week.", tostring(label),
 			tostring(theme))
 	else
-		text = string.format("Weekly Challenge %s (%s) has ended. The fastest clears of each class:", tostring(label),
+		text = string.format("Weekly Challenge %s (%s) has ended. The fastest clears of each class line:", tostring(label),
 			tostring(theme))
 	end
 	return event(cfg, "weekly_challenge", "Weekly Challenge " .. tostring(label), text, fields)
@@ -421,7 +421,7 @@ function D.weeklyClass(cfg, label, boardName, sections)
 		text = string.format("%s, week of %s: the week has ended. Nobody placed this week.", tostring(boardName),
 			tostring(label))
 	else
-		text = string.format("%s, week of %s: the week has ended. The podium of every class:", tostring(boardName),
+		text = string.format("%s, week of %s: the week has ended. The podium of every class line:", tostring(boardName),
 			tostring(label))
 	end
 	return event(cfg, "weekly_class", string.format("%s: week of %s", tostring(boardName), tostring(label)), text, fields)

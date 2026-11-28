@@ -664,11 +664,11 @@ return {
 	--            (not an Omen arena) leaves one with `chance` percent, and always at the `pity`th sealed tier 15 rift in a row
 	--            without one (the rift's own pity counter: a tier 15 key cannot drop a stronger one).
 	--   ladder   best shown tier, then least seconds, per character, mode (solo / party of 2-5), season (windows of seasonDays
-	--            from the launch, the tower's epoch) and class (the leaderboard class groups). Tester bots never rank. The weekly
-	--            boards greater_solo / greater_party of leaderboard_config.lua carry the tier too (the client's Leaderboards).
+	--            from the launch, the tower's epoch) and class line (ChaosLeaderboard.lineGroups, O778). Tester bots never
+	--            rank. The weekly boards greater_solo / greater_party of leaderboard_config.lua carry the tier too (the client's Leaderboards).
 	--   rewards  personal best: every shown tier above the character's best of the season, at most `maxPerRun` tiers a run,
 	--            pays `best` (orbs, gold to the bank, omen fragments) scaled base + perTier x (shown - firstTier). Season end:
-	--            the place of the (mode, class) board picks a bracket of `brackets` (first row with place <= upTo; a minTier
+	--            the place of the (mode, class line) board picks a bracket of `brackets` (first row with place <= upTo; a minTier
 	--            row pays everybody who reached it), once per character and mode, into the inbox (the tower's delivery).
 	--            pinnacle: a sealed Greater Rift gives every finisher `chance` percent x min(cap, (shown - maxTier) / perTiers)
 	--            of a pinnacle fragment through ChaosPinnacle.onSource(player, source, {tier, players}) when that system is

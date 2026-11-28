@@ -2401,7 +2401,7 @@ jobs:
           /tmp/fxenv/bin/python -I chaos/client/tools/sprites/fix_dissolve_tail.py check \
               "$RUNNER_TEMP/pair/Tibia.dat" "$RUNNER_TEMP/pair/Tibia.spr"
 
-      - name: Pack effects with the stipple redrawn solid (fix_stipple.py check, pair 88, O769; pending before)
+      - name: Pack effects with the stipple redrawn solid (fix_stipple.py check, both stages - pair 88 O769, pair 90 O777; pending before)
         run: |
           /tmp/fxenv/bin/python -I chaos/client/tools/sprites/fix_stipple.py check \
               "$RUNNER_TEMP/pair/Tibia.dat" "$RUNNER_TEMP/pair/Tibia.spr"

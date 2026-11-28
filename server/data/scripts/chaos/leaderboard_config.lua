@@ -68,7 +68,7 @@ return {
 			format = "time", info = "Fastest full clear of the Ashen Sepulchre this week (all five bosses in one sitting)."},
 		-- the Weekly Challenge (weekly_challenge.lua, O390): the fastest clear of this week's seeded dungeon in seconds
 		-- (mode "min"), alone or in a party of 2-4, with class tabs. noReward: the title only here; the top 3 of every
-		-- class get Conquest Tokens from weekly_challenge.lua at the reset (weekly_challenge_config.lua tokens)
+		-- class line get Conquest Tokens from weekly_challenge.lua at the reset (weekly_challenge_config.lua tokens, O778)
 		{key = "challenge_solo", name = "Weekly Challenge Solo", mode = "min", value = "Fastest", count = "Clears",
 			title = "Proven Alone", byClass = true, format = "time", noReward = true,
 			info = "Fastest clear of this week's Weekly Challenge dungeon alone (the same layout for everyone)."},
@@ -85,10 +85,11 @@ return {
 			info = "Materials gathered this week with the professions (Delving, Wortcunning, Flaying, Angling)."},
 		-- the weekly class board (weekly_class.lua, O409): experience from monsters this week, recorded once a minute and
 		-- at logout. classAwards: no overall title and no orbs (LB.awards skips it); at the reset the top of every class
-		-- tab gets Conquest Tokens, a broadcast line and a Discord post (weekly_class_config.lua)
+		-- line (a base class and its two ascended classes, O778) gets Conquest Tokens, a broadcast line and a Discord post
+		-- (weekly_class_config.lua); the class tabs show every class apart
 		{key = "weekly_xp", name = "Weekly Experience", mode = "add", value = "Experience", title = "Tireless",
 			byClass = true, classAwards = true, noReward = true,
-			info = "Experience from monsters this week. Ranked per class: the top 3 of every class are rewarded at the reset."},
+			info = "Experience from monsters this week, shown per class. The top 3 of every class line are rewarded at the reset."},
 		-- the Greater Rift (rift_config.lua greater, greater_ladder.lua, O668): the highest shown tier (16 and up) sealed this week,
 		-- alone or in a party of 2-5 (class tabs). noReward: the title only; the season ladder pays (brackets, personal bests)
 		{key = "greater_solo", name = "Greater Rift Solo", mode = "max", value = "Highest Tier", count = "Runs",
@@ -117,9 +118,10 @@ return {
 		-- mapping is grouped through Vocation(id):getDemotion() down to its base. Group names are read from the
 		-- server: Vocation(base):getName().
 		baseOf = nil,
-		-- the class tabs of every board with them (the ladder, the weekly boards, the class podium of weekly_class.lua, the
-		-- Weekly Challenge, the season ladders, trending builds): "class" = one tab per class, the Beastmaster apart from
-		-- the Ranger (V41, 21 tabs); "line" = one tab per base class with its two ascended classes (before)
+		-- the class tabs of every board with them (the ladder, the weekly boards, the season ladders, the records):
+		-- "class" = one tab per class, the Beastmaster apart from the Ranger (V41, 21 tabs); "line" = one tab per base
+		-- class with its two ascended classes (before). The class rewards always pay per line (O778, LB.lineGroups: the
+		-- podium of weekly_class.lua, the Weekly Challenge, the Greater Rift season brackets), trending builds keep lines
 		tabs = "class",
 		vocationsFile = "data/XML/vocations.xml", -- the class list: the vocation ids of this file (that the engine knows)
 		maxVocationId = 30 -- fallback when the file cannot be read: ids 1..this are asked from the engine

@@ -4,7 +4,7 @@
 -- One queue dungeon of the dungeon system, generated at startup like the Hollow Vault (areagen.lua), but its seed and
 -- theme come from the ISO week: the same layout for everyone, a new one each week. Fastest clears go to two weekly
 -- leaderboard boards with class tabs (solo, party). At the leaderboard reset (Monday, leaderboard_config.lua
--- resetHour) the top 3 of every class get Conquest Tokens and the Discord queue gets one "weekly_challenge" post.
+-- resetHour) the top 3 of every class line get Conquest Tokens and the Discord queue gets one "weekly_challenge" post.
 -- Lua 5.1 / LuaJIT and Lua 5.3 compatible.
 return {
 	enabled = true,
@@ -61,13 +61,14 @@ return {
 	valid = {walkShare = 0.5, minRoster = 50},
 
 	-- ------------------------------------------------------------------ the weekly rewards
-	-- At the reset: the 1st, 2nd and 3rd of every class tab (base class and its ascensions, the board's tabs) of each
-	-- board get these Conquest Tokens (conquest.lua, the token log source "weekly_challenge"). An existing currency,
-	-- small next to its daily caps (a dungeon clear alone gives 5-15 a clear, 90 a day): 7 classes x 2 boards x 60 is
-	-- at most 840 tokens a week on the whole server, 60 for one character (two boards: 120).
+	-- At the reset: the 1st, 2nd and 3rd of every class line (base class and its two ascended classes, LB.lineGroups;
+	-- O778: not every one of the board's 21 class tabs) of each board get these Conquest Tokens (conquest.lua, the token
+	-- log source "weekly_challenge"). An existing currency, small next to its daily caps (a dungeon clear alone gives
+	-- 5-15 a clear, 90 a day): 7 lines x 2 boards x 60 is at most 840 tokens a week on the whole server (not 21 x 2 x 60
+	-- = 2520), 60 for one character (two boards: 120).
 	tokens = {30, 20, 10},
 	rewardTop = 3,
 	-- the Discord post (discord_core.lua D.weeklyChallenge; discord_config.lua events.weekly_challenge): the top 3 of
-	-- each class
+	-- each class line
 	discordTop = 3
 }

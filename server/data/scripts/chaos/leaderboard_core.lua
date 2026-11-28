@@ -7,6 +7,7 @@
 --   ChaosLeaderboard.awards(boards, ranked, cfg)  the titles and rewards of a weekly reset (classAwards boards: none)
 --   ChaosLeaderboard.hasClassTabs(cfg, board)      class tabs on a weekly board (O409)
 --   ChaosLeaderboard.groupOf(vocId, baseOf, demotion)   base class of a vocation (class ladder)
+--   ChaosLeaderboard.classTabs(vocIds, baseOf, demotion) one tab per class (V41); lineKeyOf(g) its class line (O778)
 -- Lua 5.1 / LuaJIT and Lua 5.3 compatible.
 
 if not ChaosBounty or not ChaosBounty.week then
@@ -273,4 +274,13 @@ function LB.classTabs(vocIds, baseOf, demotion)
 		end
 	end
 	return out
+end
+
+-- the class line key of a class group (O778: the class rewards pay per line): a class tab of LB.classTabs carries its
+-- line in base, a line group of LB.groups is its own line (base); a group with neither keeps its key; nil -> nil
+function LB.lineKeyOf(g)
+	if type(g) ~= "table" then
+		return nil
+	end
+	return g.base or g.key
 end

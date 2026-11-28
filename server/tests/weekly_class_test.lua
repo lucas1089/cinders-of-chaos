@@ -110,6 +110,75 @@ for i = 1, cfg.rewardTop do
 end
 ok(cfg.tokens[1] <= 60 and sum <= 60, "token amounts stay small")
 
+-- ====================================================================== O778: one top per class line
+-- the owner's "Paga por linha" (2026-11-28): the 21 class tabs (V41, LB.classTabs) are a view; the week's end pays the
+-- top 3 of every class line (LB.groups: a base class and its two ascended classes), as before O771
+local baseOf = {[1] = 1, [5] = 1, [10] = 1, [3] = 3, [7] = 3, [15] = 3, [4] = 4, [8] = 4, [14] = 4, [11] = 11, [12] = 11,
+	[13] = 11, [17] = 17, [18] = 17, [19] = 17, [20] = 20, [21] = 20, [22] = 20, [23] = 23, [24] = 23, [25] = 23}
+do
+	local vocs = {}
+	for id in pairs(baseOf) do
+		vocs[#vocs + 1] = id
+	end
+	table.sort(vocs)
+	local lines, classTabs = LB.groups(vocs, baseOf), LB.classTabs(vocs, baseOf)
+	for _, g in ipairs(lines) do
+		g.key = g.base
+	end
+	for _, g in ipairs(classTabs) do
+		g.key = g.class
+	end
+	eq(#lines, 7, "7 class lines")
+	eq(#classTabs, 21, "21 class tabs")
+	-- a full week: four characters of every one of the 21 classes above the minimum
+	local week, guid = {}, 0
+	for _, id in ipairs(vocs) do
+		for k = 1, 4 do
+			guid = guid + 1
+			week[guid] = {value = 1000000 + guid * 1000 + k, at = 5, name = "P" .. guid, group = 1, voc = id}
+		end
+	end
+	local rankedWeek = LB.rank(week, 4)
+	local function total(list)
+		local n = 0
+		for _, a in ipairs(list) do
+			n = n + a.tokens
+		end
+		return n
+	end
+	local byLine = K.awards(cfg, K.classTop(rankedWeek, lines, 3, LB.filterClass, cfg.minValue))
+	local byClass = K.awards(cfg, K.classTop(rankedWeek, classTabs, 3, LB.filterClass, cfg.minValue))
+	local perTop = 0
+	for i = 1, cfg.rewardTop do
+		perTop = perTop + cfg.tokens[i]
+	end
+	eq(#byLine, 7 * 3, "a top 3 per line: 21 awards")
+	eq(total(byLine), 7 * perTop, "the pre-O771 count: 7 lines x 60")
+	eq(total(byLine), 420, "420 Conquest Tokens at most a week")
+	eq(total(byClass), 21 * perTop, "per class tab it would be 1260 (the O771 count)")
+	local firsts, seen = 0, {}
+	for _, a in ipairs(byLine) do
+		ok(not seen[a.guid], "one award per character " .. a.guid)
+		seen[a.guid] = true
+		if a.rank == 1 then
+			firsts = firsts + 1
+		end
+	end
+	eq(firsts, 7, "one 1st per line")
+	-- the Ranger line: Ranger 3, Deadeye 7 and Beastmaster 15 share one top 3 (the best three of the line)
+	local ranger
+	for _, a in ipairs(byLine) do
+		if a.group == 3 and a.rank == 1 then
+			ranger = a
+		end
+	end
+	ok(ranger ~= nil and week[ranger.guid].voc == 15, "the Ranger line's 1st is its best character, a Beastmaster here")
+	eq(LB.lineKeyOf(classTabs[6]), 3, "a class tab's line: the Beastmaster tab asks for the Ranger line's podium")
+	eq(LB.lineKeyOf(lines[2]), 3, "a line group is its own line")
+	eq(LB.lineKeyOf({key = 9}), 9, "a group with no base keeps its key")
+	eq(LB.lineKeyOf(nil), nil, "no group")
+end
+
 -- ====================================================================== texts
 eq(K.compact(812), "812", "small number")
 eq(K.compact(45600), "45.6K", "thousands")
@@ -122,7 +191,7 @@ eq(#sections, 2, "a field per class with a podium")
 eq(sections[1].name, "Warrior", "field name")
 eq(sections[1].value, "1. Ana 9M\n2. Bo 8M\n3. Cy 7M", "field text")
 local line = K.broadcastText(tops, "Weekly Experience", "en")
-eq(line, "Weekly Experience, the best of every class last week - Warrior: Ana; Ranger: Fy.", "broadcast")
+eq(line, "Weekly Experience, the best of every class line last week - Warrior: Ana; Ranger: Fy.", "broadcast")
 eq(K.broadcastText(K.classTop({}, groups, 3, LB.filterClass), "X", "en"), nil, "nobody: no broadcast")
 
 -- ====================================================================== Discord
@@ -178,7 +247,15 @@ do
 	Chaos = {leaderboardConfig = lbc, staffCommand = function() return true end,
 		t = function(_, s, ...) return select("#", ...) > 0 and string.format(s, ...) or s end,
 		broadcast = function(_, fn) broadcasts[#broadcasts + 1] = fn("en") end}
-	LB.classGroups = function() return groups end
+	-- the class tabs (V41) are one per class; the week's end must pay by the lines (O778)
+	local perClass = {}
+	for _, g in ipairs(groups) do
+		for _, id in ipairs(g.ids) do
+			perClass[#perClass + 1] = {key = id, base = g.key, name = g.name .. " " .. id, ids = {id}}
+		end
+	end
+	LB.classGroups = function() return perClass end
+	LB.lineGroups = function() return groups end
 	local hooks = {}
 	LB.onReset = function(fn) hooks[#hooks + 1] = fn end
 	LB.record = function(boardKey, who, value, mode)
@@ -224,7 +301,7 @@ do
 	print = function() end
 	hooks[#hooks](20261026, {weekly_xp = ranked})
 	print = printed
-	eq(#granted, 4, "tokens to the class tops")
+	eq(#granted, 4, "tokens to the line tops (per class tab it would be 5)")
 	eq(granted[1].src, "weekly_class", "token source")
 	eq(granted[1].guid, 1, "the warrior 1st")
 	eq(paidRows, 4, "podium rows")
