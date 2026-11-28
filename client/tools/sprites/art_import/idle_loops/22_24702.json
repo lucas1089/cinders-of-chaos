@@ -1,0 +1,41 @@
+{
+ "clamp": 56,
+ "client_id": 24702,
+ "element": null,
+ "frames": 16,
+ "kept_1x1": false,
+ "layers": [
+  {
+   "amount": 0,
+   "colour": [
+    255,
+    60,
+    60
+   ],
+   "effect": "pulse",
+   "repeats": 2,
+   "strength": 1.0
+  }
+ ],
+ "ms": 80,
+ "n": 22,
+ "name": "distorted heart",
+ "option": "A",
+ "pad": false,
+ "pair": {
+  "dat_md5": "ab6f6fe60ca3697ec05df614a06a1ad8",
+  "item": 24702
+ },
+ "patterns": [
+  1,
+  1
+ ],
+ "seed": 0,
+ "size": [
+  32,
+  32
+ ],
+ "soft": false,
+ "theme": null,
+ "tool": "gen_idle_loops.py (idle_loop.py layers)"
+}

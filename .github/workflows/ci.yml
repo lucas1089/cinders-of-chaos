@@ -435,6 +435,9 @@ jobs:
           /tmp/fxenv/bin/python -I client/tools/sprites/sheet_cut_test.py
           /tmp/fxenv/bin/python -I client/tools/sprites/walk_sheet_test.py
           /tmp/fxenv/bin/python -I client/tools/sprites/forge_prompts_test.py
+          # the owner's 24 idle loops in pair 92 (O787): recipes from idle_loop.py jsons, build / live on a synthetic pair, the committed recipes, table, sums and wire rows
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_idle_loops_test.py
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_idle_loops.py check
           python3 -I client/tools/sprites/donor_pick_test.py
 
       - name: 'Bot live map tiles (O727): gen_bot_map_tiles.py on a synthetic world map, items folder and swatch atlas (the pyramid, the swatch order, big swatches across a tile edge, the zoom levels, the pointer)'
@@ -1919,6 +1922,9 @@ jobs:
       - name: Item wire table, its installer step and the items.otb nodes it rewrites (synthetic, shipped item_wire.csv)
         run: python3 -I server/tools/patch_item_wire_test.py
 
+      - name: The idle loop nodes follow the pair 92 gate (install_idle_loops.py, step idleloops, O787; synthetic items.otb, shipped item_wire_idle.csv)
+        run: python3 -I server/tools/install_idle_loops_test.py
+
       - name: Creature refresh on a tile cannot strand a creature (server src-patch 0083, guard)
         run: python3 -I server/tools/creature_refresh_patch_test.py
 
@@ -2478,6 +2484,11 @@ jobs:
         run: |
           /tmp/fxenv/bin/python -I chaos/client/tools/sprites/gen_drawn_wings.py live \
               "$RUNNER_TEMP/pair/Tibia.dat" "$RUNNER_TEMP/pair/Tibia.spr" --new --keep-painted --painted-sides
+
+      - name: Idle loops animate their items in place (gen_idle_loops.py live, pair 92, O787; pending before)
+        run: |
+          /tmp/fxenv/bin/python -I chaos/client/tools/sprites/gen_idle_loops.py live \
+              "$RUNNER_TEMP/pair/Tibia.dat" "$RUNNER_TEMP/pair/Tibia.spr"
 
       - name: Decor flames sit at their ids (gen_decor_flames.py live, pair 74, O623)
         run: |

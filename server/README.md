@@ -38601,8 +38601,52 @@ client pair.
 
 The step writes the items.otb nodes and an items.xml block (markers, rewritten when the manifest changes) like `templeart`, and
 waits for `chaosClientPair >= 74` (`client_pair.PAIR_DECOR`; `PAIR_ASSETS` was 73 until pair 74 went to windows-assets, f24a858a; it is 81 now). Below it a WARNING
-line and nothing written. Nothing on the server places, sells or drops these items: map makers and the map editor do. Test:
+line and nothing written. Nothing on the server sells or drops these items. The map gets 22 of them from step
+`decorflamesmap` ("Decor flames on the map (O788)"); map makers and the map editor may place more. Test:
 `server/tools/install_decor_flames_test.py`.
+
+## Decor flames on the map (O788) (`tools/patch_decor_flames_map.py`, `tools/decor_flames_map.csv`, step `decorflamesmap`)
+
+Owner 2026-11-28, on where the flames of "Decor flames (pair 74)" go: "Pode escolher". Read on the installed map of
+2026-11-28 (renders of the areas from pair 91, map and stock art only) and chosen to light doors people walk through and the
+places that already held a still fire, never a walkway.
+
+- **The spots (22).** `tools/decor_flames_map.csv` (x, y, z, item, action, old, on, why):
+  - 6 flame braziers (48560): Cinderhold's temple north door, one each side of the paved way in on the sand strips; the
+    depot door (32344-32347, 32217) and the bank door (32353-32354) of the building north-west of the temple, one each
+    side on the street edge. Anvildeep's temple coal basins were tried and dropped: a pillar hides a brazier there.
+  - 4 flame campfires (48561): the camp of three fires south-east of Cinderhold (32415-32420, 32376-32382) and the clearing
+    camp east of Thornmere, each stock campfire swapped in place.
+  - 8 flame candles (48562): on the two altars of Mirewake's temple and two altars of Mirewake's crypt; four Cinderhold
+    candelabra on counters and a table near the temple and the depot, swapped.
+  - 4 flame cold spirits (48563): the two candelabra of the sacrificial stone in Rimeholt's temple (the ice town), swapped;
+    the two nooks between the coffins against the walls of Mirewake's crypt.
+  Not placed: the quest hall's showcase. Its alcoves hold counters with the rewards and sparkles, no free table and no
+  still candle, and skeletal torches light it already.
+- **Rules (the tool refuses the whole run, nothing written, naming every bad spot).** `swap`: the stock item `old` is on
+  the tile once, without an action id, unique id or other attribute, and becomes the flame in its place in the stack.
+  `add`: the tile's top item is `on` (its floor or the altar it stands on) and the flame goes on top. Every spot: a tile
+  with a ground, not a house tile, no door, teleport or floor change on it, not a spawn centre or a creature's place of
+  the spawn file. A 2x2 flame (brazier, campfire) draws over its west, north and north-west tiles: those are plain free
+  floor (ground, no blocking item, no house, door or floor change). A tile that is walked on now keeps the walk: its
+  walkable neighbours stay joined through the 7 x 7 tiles around it with every listed flame in the way. A tile with its
+  flame already is left alone, so a second run changes nothing.
+- **Install.** Step `decorflamesmap`, after `questshowcase`, before `poi`. Like `decorflames` it waits for
+  `chaosClientPair >= 74` (`client_pair.PAIR_DECOR`); below it a WARN line and nothing read or written. The map goes
+  through `<map>.otbm.tmp` and the map write guard ("Map write guard (O512)": only the 22 tiles may differ), the tile
+  count is checked, `<map>.otbm.bak` is written first when missing. VPS: the update installs them, admin app tab Painel >
+  card Atualizar servidor > button Aplicar e reiniciar (shell fallback: `chaos-ctl.sh update-apply`); the server restarts
+  to load the map. Nothing else to run.
+- **Checked on the local rig (2026-11-28).** The installed map of the v45 rig (19,810,799 tiles): 22 placed, the guard
+  passed (22 tiles rewritten, every other tile and node identical, 34 s), a second run "22 there already", nothing
+  written. `audit_map_tiles.py --summary` and `audit_houses.py --summary` give the same counts per code before and after
+  (no new finding). tfs started on the patched map in a run copy with a private database: Server Online, map loaded
+  in 17 s, the warnings the same as on the unpatched map. Rendered before and after from pair 91 (pictures kept out of the repo).
+- **Test.** `tools/patch_decor_flames_map_test.py` (synthetic map): each kind added or swapped, a dry run and `--out`
+  leave the map alone, only the listed tiles change, the `.bak`, a second run changes nothing; every refusal leaves the
+  map and names the spot (wrong top item, missing old item, an old item with an action id, a door, a spawn centre, a
+  creature's place, a house tile, a 2x2 flame over a wall, a flame in a one tile way, no tile); bad csv rows; the pair
+  guard; the map write guard refusing a writer that also cuts a far tile; the real csv well formed.
 
 ## Cliff pieces (pair 83) (`install_cliff_art.py`, step `cliffart`, O746)
 
@@ -39783,3 +39827,21 @@ toast merge rests on the toast kinds `ChaosNotify.send` already sends: bestiary,
 battlePassComplete, newcard and achievement are merged on the client; a new server toast kind is shown on its own unless the
 client adds it to `notifyview.lua` `V.ROUTINE_TYPES`. A unique drop stays a screen message (`loot_config.lua`
 `unique.message`), not a toast.
+
+## Idle loops (pair 92) (`install_idle_loops.py`, step `idleloops`, `data/items/item_wire_idle.csv`, O787)
+
+Owner 2026-11-28 ("Todos a"): option A of the X1 preview for all 24 items. Pair 92 animates them in place
+(client/MANIFEST.md "Idle loops in the pair (O787)"): the same client ids and server items, the flags byte for byte, more
+than one phase. Nothing is added to the map, no item, no name, no light changes.
+
+- **Wire bytes.** The client reads a phase byte after a thing with more than one phase. The 25 server nodes of these 24
+  client ids (2917 has two: 2047 and 41622) are in `data/items/item_wire_idle.csv` (server, client, animation 1). The step
+  `idleloops` (right after `itemwire`) gives them FLAG_ANIMATION when `config.lua chaosClientPair` is 92 or more
+  (`client_pair.PAIR_IDLE_LOOPS`), and takes it off below: a client on pair 91 or older reads no phase byte for them.
+  A second run changes nothing. A run of `--only orbs` alone rewrites the three orb nodes without it: run `idleloops` after.
+- **Checks.** `check_item_wire.py --table-check DAT` reads this table too (`--idle CSV`): on a pair that draws the loops a row
+  must say animation 1; on an older pair the rows are pending while `PAIR_ASSETS` is below 92. `--write-table` leaves these
+  server ids out of `item_wire.csv`. Run on the installed items.otb of a server with pair 92 recorded: 40,923 nodes, 0 disagree.
+- **Owner steps.** After the client package with pair 92 is published: admin app Comandos > "Par do cliente" > Gravar 92
+  (shell: `chaos-ctl.sh client-pair set 92`), then the install update runs the step. Until then the step keeps the nodes as
+  they are and prints a warning.

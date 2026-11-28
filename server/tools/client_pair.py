@@ -133,8 +133,11 @@ PAIR_STIPPLE_GLOW = 91   # pair 90 with the Bayer glows whose density changes wi
                     # 0 / 144 / 255, the solid core kept (218 effects and 2 missiles: 3902, 3892, 3945, 4062 and the like).
                     # Client art only, no server gate.
 
-PAIR_ASSETS = 91
-PAIR_ASSETS_DAT_MD5 = 'ab6f6fe60ca3697ec05df614a06a1ad8'
+PAIR_IDLE_LOOPS = 92   # pair 91 with the owner's 24 idle loops animated in place (O787, owner 2026-11-28 "Todos a";
+                    # client/tools/sprites/gen_idle_loops.py build): same client ids, more than one phase, so their server nodes
+                    # need FLAG_ANIMATION from this pair only (data/items/item_wire_idle.csv, install_idle_loops.py, step `idleloops`).
+PAIR_ASSETS = 92
+PAIR_ASSETS_DAT_MD5 = 'ffd3c876ae417f2eb688804abe203bcc'
 
 
 def parse(text):
