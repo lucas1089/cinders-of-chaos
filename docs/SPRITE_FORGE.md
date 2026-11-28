@@ -45,6 +45,22 @@ Ambient idle loops for decor and items. No model.
 - Our rules: body stays 255. Added pixels 255, or glow 144 with `--soft`. Changed pixels snap in Lab to the sprite colours plus the layer ramps, or to a theme. No lone pixel or speck outside the body. 4 to 24 frames, 80 to 200 ms. Loop closes by construction.
 - Writes the strip and a json with every setting. The json makes the same strip again.
 - `check STRIP --frames N` holds the rules on any strip.
+
+What the X1 preview on 24 still items of pair 90 changed (O783):
+- `--clamp N`: N colours a 32 px cell of the source, median cut (`item_post.clamp`), before anything else. Stock stills had up to 1642 colours in a 2 x 2. 56 leaves room for the layer ramps under the cap of 68.
+- `--pad`: grows a smaller sprite to 64 x 64, body at the bottom right, as our 2 x 2 things stand. Flames and motes of a 1 x 1 item get room to rise.
+  - It changes the thing size. The strip is imported as a 2 x 2 thing, not 1 x 1.
+- Source by pair thing: `make --pair DAT SPR --item CLIENT_ID OUT.png`. Reads the item's first phase, south, base layer, as `datspr.render_thing` does.
+- The json keeps clamp, pad and the source: the PNG sha256, or the client id and the dat md5.
+  - `remake OUT.json STRIP.png --png IN.png` or `--pair DAT SPR` rebuilds the same strip. A PNG or dat with another digest is refused.
+- Drip: falls where 6 clear rows lie under the body. Else runs down the body face from the top edge, colours only. Else refused with a message.
+- Pulse: its in-between colours join the loop palette as ramp steps. Whole steps of each accent colour, while the palette stays within 68 a cell. A pulse gets as many distinct frames as the loop allows: 7 of 12, 9 of 16.
+- Shine: band half width 6 % of the body's diagonal, at least 1. Rim: 1 row, one more each 16 px of body.
+- Glint: `amount` glints lit in every frame. Each lives 3 frames: plus, star, fading plus. Then it lights at the next point.
+  - Only on pixels 12 or more from its hot colour in Lab. Refused when no pixel qualifies, or a frame changes under 3 px.
+- The 24 X1 choices again on pair 90: 48 of 48 PASS, each remade the same from its json.
+  - Frames equal to the still went from 21 to 2. The 2 are the low point of a pulse.
+  - Shine, rim and glint options now change 8 to 28 % of the body at the peak, from 2 to 11 %.
 - Skipped effects: shock, wave, beat, heat, hue, plasma, trail, cycle, smoke, snow, icicles, bubbles, orbit, twinkle, blink. They move or warp the body. Our items keep their silhouette, and eight effects cover the six elements.
 
 ### sheet_cut.py

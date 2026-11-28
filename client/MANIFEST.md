@@ -8880,6 +8880,9 @@ Owner 2026-11-28: adapt what fits of Dotsmith (MIT, Michael Araque, commit 4e337
 what was adapted and skipped, and the order of the steps. No module and no pair change: these are art tools only.
 - `pixel_grid.py clean`: an AI drop back to one art pixel per pixel, before `item_post.py` and `style_check.py`.
 - `idle_loop.py make`: layered idle loops for items and decor, held to our alpha, palette, speck and frame rules.
+  O783 (X1 preview feedback): `--clamp N`, `--pad` (64 x 64 at the bottom right: the thing becomes 2 x 2), a pair thing
+  as the source (`--pair DAT SPR --item ID`, client id and dat md5 in the json), `remake` from the json; drip down the
+  face or refused, pulse ramp steps, shine and rim sized to the body, a glint lit in every frame or refused.
 - `sheet_cut.py pack / walls / room`: pack sheets and 2 x 2 wall sets cut onto our anchors; a room preview.
 - `walk_sheet.py engine / derive / fit`: walk sheets to the engine columns; on our nine redraws east = transpose of south
   holds (0.82 to 0.93), a mirror does not (0.20 to 0.41).

@@ -35,8 +35,15 @@ order over the frame:
     flames   tongues of fire along the top edge, their height a sum of sines that go round whole times a loop; only tall
              tongues get a bright core; the edge under them is lit
     frost    rime creeps in from the edge, each pixel at its own depth plus noise, and melts back
-    drip     `amount` drops swell under the bottom edge and fall
-    rim      `amount` bright segments run round the outline
+    drip     `amount` drops swell under the bottom edge and fall; a body with no room under it (anchored on the
+             bottom row) gets its drops running down its face from the top edge instead; refused when neither fits
+    rim      `amount` bright segments run round the outline, thicker on a larger body
+
+Sized to the body (O783): the shine band and the rim thickness grow with the body, so a 64 px statue reads at game size;
+`amount` glints are lit in every frame (no frame equal to the still), each 3 frames long and then at the next point,
+only on pixels they stand out from (Lab distance GLINT_DE), refused when a frame would change under GLINT_MIN_PX
+pixels; a pulse adds its own in-between colours (ramp steps) to the loop palette while the palette stays within
+COLOURS_CELL a cell, so it has as many distinct frames as the loop allows. Palette rule below, with these steps.
 
 Elements (`--element`) are presets of layers in one colour: fire, ice, energy, earth, death, holy.
 
@@ -44,18 +51,29 @@ House rules held here (docs/SPRITE_STYLE.md, the decor flame generator gen_decor
   alpha    the body stays 255 in every frame; pixels an effect adds outside it are 255, or the one glow level 144 for a
            smoke or flame tip with `--soft`; nothing else; a transparent pixel carries no colour
   palette  every changed pixel snaps (Lab) to the sprite's own colours plus the ramp of each layer colour (dark, mid,
-           light, hot), or to a theme of style_palettes.json with `--theme`: one palette a loop, no flicker of new colours
+           light, hot) and the pulse steps, or to a theme of style_palettes.json with `--theme` (no steps then): one
+           palette a loop, no flicker of new colours
   specks   pieces an effect adds outside the body under 3 px (a mote cut by the canvas edge) are dropped: no lone pixels
   frames   4 to 24 (12 by default), MS_MIN to MS_MAX ms a frame (100 by default): the range of our animated items
-  canvas   kept: an effect draws only inside it (give a 2 x 2 canvas to a 1 x 1 brazier whose fire must rise)
+  canvas   kept: an effect draws only inside it; `--pad` grows a smaller sprite to 64 x 64, the body at the bottom
+           right as our 2 x 2 things stand, so flames and motes of a 1 x 1 brazier have room to rise. It changes the
+           thing size: the strip is imported as a 2 x 2 thing
+  colours  `--clamp N` cuts the still to N colours a 32 px cell of the source (median cut, item_post.clamp) before
+           anything else; 56 leaves room for the layer ramps under the 68 of the check
 
-    python3 -I idle_loop.py make IN.png OUT.png [--element fire | --layer EFFECT[:COLOUR[:STRENGTH[:REPEATS[:AMOUNT]]]] ...]
+The source is a PNG, or a thing of a sprite pair: `--pair DAT SPR --item CLIENT_ID` reads the item's first phase, south,
+base layer (datspr.render_thing, as the other tools here read the pair).
+
+    python3 -I idle_loop.py make (IN.png | --pair DAT SPR --item ID) OUT.png [--clamp N] [--pad]
+                                [--element fire | --layer EFFECT[:COLOUR[:STRENGTH[:REPEATS[:AMOUNT]]]] ...]
                                 [--frames 12] [--ms 100] [--seed 0] [--soft] [--theme NAME]
+    python3 -I idle_loop.py remake OUT.json STRIP.png (--png IN.png | --pair DAT SPR)   # the json's strip again
     python3 -I idle_loop.py check STRIP.png --frames N [--soft]        # the house rules on a strip
     python3 -I idle_loop.py effects                                     # the effects and the elements
 
-`make` writes OUT.png (the frames left to right, the sheet our importers read) and OUT.json (every setting, the sha256
-of the source, the ms): the same json makes the same strip again. Outputs are never committed by this tool.
+`make` writes OUT.png (the frames left to right, the sheet our importers read) and OUT.json (every setting, clamp and
+pad included, and the source: the sha256 of the PNG, or the client id and the md5 of the dat): `remake` makes the same
+strip again from it, and refuses a PNG or a dat whose digest differs. Outputs are never committed by this tool.
 
 Parts adapt the Animate mode of Dotsmith (MIT, Copyright (c) 2026 Michael Araque,
 https://github.com/michyaraque/dotsmith, commit 4e33791): the layer stack, the loop as a function of t mod n, the choice
@@ -83,7 +101,12 @@ MS = 100
 MS_MIN, MS_MAX = 80, 200
 SPECK = 3
 COLOURS_CELL = 68          # SPRITE_STYLE: 11 to 68 colours a 32 px cell
+CLAMP_MIN = 8              # --clamp N: N colours a 32 px cell, CLAMP_MIN to COLOURS_CELL
+PAD = 64                   # --pad: the canvas of a 2 x 2 thing
 EMISSIVE_SHARE = (0.03, 0.12)
+GLINT_DE = 12.0            # a glint lands only on a pixel this far (Lab) from its hot colour
+GLINT_MIN_PX = 3           # and changes at least this many pixels by GLINT_DE in every frame, or is refused
+DRIP_ROOM = 6              # rows a drop needs to fall under the body, or to run down its face
 
 EFFECTS = ('pulse', 'glint', 'shine', 'motes', 'flames', 'frost', 'drip', 'rim')
 AMOUNT = {'glint': (1, 6, 2), 'motes': (1, 12, 4), 'flames': (2, 12, 5), 'drip': (1, 6, 2), 'rim': (1, 4, 2)}
@@ -162,6 +185,11 @@ def to_lab(rgb):
     return np.stack([116 * f[..., 1] - 16, 500 * (f[..., 0] - f[..., 1]), 200 * (f[..., 1] - f[..., 2])], -1)
 
 
+def cells_of(h, w):
+    """32 px cells of a canvas, as the check counts them"""
+    return max(1, (h // 32) * (w // 32))
+
+
 # ------------------------------------------------------------------------------------------------------------- the sprite
 class Sprite:
     """what every layer reads from the still sprite"""
@@ -179,6 +207,9 @@ class Sprite:
         self.depth = self.depths()
         cols = a[self.m][:, :3]
         self.colours = np.unique(cols, axis=0) if len(cols) else np.zeros((0, 3), np.uint8)
+        ys, xs = np.nonzero(self.m)
+        self.size = int(max(ys.max() - ys.min(), xs.max() - xs.min()) + 1) if len(ys) else 0
+        self.cells = cells_of(self.h, self.w)
 
     def emissive(self, thr=0.55):
         """saturated, bright pixels brighter than their neighbours, 3 to 12 % of the body: accents only."""
@@ -286,12 +317,20 @@ class Layer:
         self.colour = tuple(col)
         self.r = ramp(self.colour)
         self.amount = spec['amount']
-        sources = sp.pixels(sp.em if spec['effect'] in ('motes', 'glint') else sp.top)
+        sources = sp.pixels(sp.em if spec['effect'] == 'motes' else sp.top)
         if spec['effect'] == 'motes' and len(sources) < self.amount:
             sources = sp.pixels(sp.top)
+        if spec['effect'] == 'glint':
+            sources = self.glint_sources()
+            m = max(1, n // 3)                                    # events of each glint: 3 frames (4 or 5 to fill)
+            self.events = [(j * n) // m for j in range(m + 1)]
         if spec['effect'] == 'drip':
-            sources = sp.pixels(sp.bottom)
+            sources = self.drip_sources()
         self.points = spread(sources, max(1, self.amount))
+        if spec['effect'] == 'glint':
+            k = max(1, self.amount) * (len(self.events) - 1)
+            many = spread(sources, k)
+            self.points = [many[i % len(many)] for i in range(k)]
         self.ring = sp.contour() if spec['effect'] == 'rim' else []
         if spec['effect'] == 'frost':
             d = sp.depth.astype(float)
@@ -316,6 +355,72 @@ class Layer:
             self.taper = {x: min(1.0, (run_end[x] + 1) / 2.5) for x in xs}
             self.phase = {x: (hash01(seed, x, 1), hash01(seed, x, 2)) for x in xs}
 
+    def glint_sources(self):
+        """accents first, then the rest of the body (brightest first), only pixels the hot colour stands out from"""
+        sp = self.sp
+        lab = to_lab(sp.a[..., :3].astype(float))
+        far = sp.m & (np.sqrt(((lab - to_lab(np.array(self.r['hot'], float))) ** 2).sum(-1)) >= GLINT_DE)
+        acc = sp.pixels(far & sp.em)
+        if len(acc) < self.amount:
+            rest = sp.pixels(far & ~sp.em & ~sp.edge) or sp.pixels(far & ~sp.em)
+            rest.sort(key=lambda p: (-round(float(sp.v[p]), 4), p))
+            acc = sorted(acc + rest[:max(0, self.amount - len(acc)) * 8])
+        if not acc:
+            raise ValueError('glint: no pixel of the body differs from the glint colour by %g (Lab), the glint would '
+                             'not show: give another colour or another effect' % GLINT_DE)
+        return acc
+
+    def drip_sources(self):
+        """bottom edge pixels with DRIP_ROOM clear rows under them (falling drops); else top edge pixels over a
+        column of DRIP_ROOM body rows (drops running down the face); else refused"""
+        sp = self.sp
+        free, self.run = [], {}
+        for y, x in sp.pixels(sp.bottom):
+            room = 0
+            while y + room + 1 < sp.h and not sp.m[y + room + 1, x]:
+                room += 1
+            if room >= DRIP_ROOM:
+                free.append((y, x))
+                self.run[(y, x)] = room
+        if free:
+            self.face = False
+            return free
+        face = []
+        for y, x in sp.pixels(sp.top):
+            run = 0
+            while y + run + 1 < sp.h and sp.m[y + run + 1, x]:
+                run += 1
+            if run >= DRIP_ROOM:
+                face.append((y, x))
+                self.run[(y, x)] = run
+        if not face:
+            raise ValueError('drip: no room under the body (%d clear rows) and no column of %d body rows to run down; '
+                             'give the sprite room below (a taller canvas) or pick another effect'
+                             % (DRIP_ROOM, DRIP_ROOM))
+        self.face = True
+        return face
+
+    def pulse_levels(self, times):
+        """the blend weights the pulse reaches at the loop's frames (0 left out)"""
+        n, r = self.n, self.spec['repeats']
+        ps = sorted({round((1 - math.cos(TAU * ((t * r) % n) / float(n))) / 2, 9) for t in times})
+        return [p for p in ps if p > 0]
+
+    def pulse_steps(self, times):
+        """the colours the pulse makes, one group a source colour (accents by count, then the ring): ramp steps"""
+        sp = self.sp
+        light = np.array(self.r['light'], float)
+        levels = self.pulse_levels(times)
+        halo = dilate4(sp.em) & sp.m & ~sp.em
+        groups = []
+        for mask, k in ((sp.em, 0.6), (halo, 0.25)):
+            cols, cnt = np.unique(sp.a[mask][:, :3], axis=0, return_counts=True)
+            for i in sorted(range(len(cols)), key=lambda j: (-cnt[j], tuple(int(v) for v in cols[j]))):
+                c = cols[i].astype(float)
+                groups.append([tuple(int(v) for v in np.floor(c + (light - c) * min(1.0, k * p) + 0.5).clip(0, 255))
+                               for p in levels])
+        return groups
+
     def apply(self, pt, t):
         n, e = self.n, self.spec['effect']
         ph = (t % n) / float(n)
@@ -328,19 +433,27 @@ class Layer:
         pt.blend(sp.em, self.r['light'], 0.6 * p)
         pt.blend(halo, self.r['light'], 0.25 * p)
 
+    GLINT_SHAPES = ('plus', 'star', 'fade', 'x', 'dot')
+
     def glint(self, pt, t, ph):
-        n = self.n
-        for i, (y, x) in enumerate(self.points):
-            birth = (i * n) // max(1, len(self.points))
-            age = (t - birth) % n
-            if age == 0:
-                pt.put(y, x, self.r['hot'])
-            elif age == 1:
-                pt.put(y, x, self.r['hot'])
-                for dy, dx in ((1, 0), (-1, 0), (0, 1), (0, -1)):
-                    pt.put(y + dy, x + dx, self.r['light'])
-            elif age == 2:
-                pt.put(y, x, self.r['light'])
+        """`amount` glints lit in every frame; each lives 3 frames (4 or 5 where the loop does not split in threes):
+        a plus, a star (arms of 2 and the diagonals), the plus fading; then it lights at the next point"""
+        n, ev, amt = self.n, self.events, max(1, self.amount)
+        m = len(ev) - 1
+        for i in range(amt):
+            u = (t - (i * n) // (amt * m)) % n                   # tracks offset inside an event
+            j = max(k for k in range(m) if ev[k] <= u)
+            y, x = self.points[j * amt + i]
+            shape = self.GLINT_SHAPES[min(u - ev[j], len(self.GLINT_SHAPES) - 1)]
+            hot, light, mid = self.r['hot'], self.r['light'], self.r['mid']
+            pt.put(y, x, hot if shape != 'fade' else light)
+            arms = {'plus': ((1, light),), 'star': ((1, light), (2, light)), 'fade': ((1, mid),)}.get(shape, ())
+            for d, c in arms:
+                for dy, dx in ((d, 0), (-d, 0), (0, d), (0, -d)):
+                    pt.put(y + dy, x + dx, c)
+            if shape in ('star', 'x'):
+                for dy, dx in ((1, 1), (1, -1), (-1, 1), (-1, -1)):
+                    pt.put(y + dy, x + dx, light if shape == 'star' else mid)
 
     def shine(self, pt, t, ph):
         sp = self.sp
@@ -348,10 +461,21 @@ class Layer:
             return
         yy, xx = np.mgrid[0:sp.h, 0:sp.w]
         d = yy + xx
-        lo, hi = int(d[sp.m].min()) - 2, int(d[sp.m].max()) + 2
+        hw = self.shine_half()
+        lo, hi = int(d[sp.m].min()) - 1 - hw, int(d[sp.m].max()) + 1 + hw
         pos = lo + int((hi - lo) * ph * 2)
-        pt.blend(sp.m & (np.abs(d - pos) <= 1), self.r['light'], 0.55)
-        pt.blend(sp.m & (d == pos), self.r['hot'], 0.5)
+        pt.blend(sp.m & (np.abs(d - pos) <= hw), self.r['light'], 0.55)
+        pt.blend(sp.m & (np.abs(d - pos) <= hw // 3), self.r['hot'], 0.5)
+
+    def shine_half(self):
+        """half width of the shine band: 6 % of the body's diagonal, at least 1 (3 px on a small item)"""
+        sp = self.sp
+        d = np.mgrid[0:sp.h, 0:sp.w].sum(0)[sp.m]
+        return max(1, int(round(0.06 * (int(d.max()) - int(d.min())))))
+
+    def rim_thick(self):
+        """rows of the rim band: 1 on a body under 16 px, one more each 16 px"""
+        return 1 + self.sp.size // 16
 
     def motes(self, pt, t, ph):
         sp, n = self.sp, self.n
@@ -404,34 +528,63 @@ class Layer:
                 tip[y0, x0] = True
                 pt.blend(tip, self.r['light'], 0.3 + q)
                 continue
-            fall = sp.h - 1 - y0
-            y = y0 + 1 + int((q - 0.4) / 0.6 * fall)
+            run = self.run[(y0, x0)]
+            if self.face:                                         # down the face, over the body: colours only
+                y = y0 + int((q - 0.4) / 0.6 * (run + 1))
+                for k, key in enumerate(('mid', 'light', 'hot')):
+                    if y0 <= y - 2 + k <= y0 + run:
+                        pt.put(y - 2 + k, x0, self.r[key])
+                continue
+            y = y0 + 1 + int((q - 0.4) / 0.6 * run)
             for k, key in enumerate(('mid', 'light', 'hot')):
-                pt.put(y + k, x0, self.r[key], over_body=False)
+                if y + k <= y0 + run:
+                    pt.put(y + k, x0, self.r[key], over_body=False)
 
     def rim(self, pt, t, ph):
         ring = self.ring
         L = len(ring)
         if not L:
             return
+        sp = self.sp
         seg = max(3, L // 6)
+        thick = self.rim_thick()
+        band = np.zeros_like(sp.m)
+        heads = []
         for j in range(max(1, self.amount)):
             pos = int(ph * L) + (j * L) // max(1, self.amount)
             for k in range(seg):
                 y, x = ring[(pos - k) % L]
-                pt.put(y, x, self.r['hot'] if k == 0 else self.r['light'])
+                band[y, x] = True
+                heads.append((y, x, k == 0))
+        if thick > 1:
+            inner = band
+            for _ in range(thick - 1):
+                inner = dilate4(inner)
+            pt.blend(inner & sp.m & (sp.depth < thick) & ~band, self.r['light'], 0.7)
+        for y, x, head in heads:
+            pt.put(y, x, self.r['hot'] if head else self.r['light'])
 
 
 # ------------------------------------------------------------------------------------------------------------- the loop
 def palette_of(sp, layers, theme=None):
+    """the loop's one palette: the sprite's colours and the layer ramps, then the pulse steps, a whole group at a
+    time, while the palette stays within COLOURS_CELL a cell (so no frame can break the colour rule); or the theme"""
     if theme:
         import style_check
         pal = style_check.load_palettes()['themes'][theme]['palette']
         return np.array([style_check.unhex(c) for c in pal], int)
-    cols = [tuple(int(v) for v in c) for c in sp.colours]
+    cols = {tuple(int(v) for v in c) for c in sp.colours}
     for ly in layers:
-        cols += list(ly.r.values())
-    return np.array(sorted(set(cols)), int)
+        cols |= set(ly.r.values())
+    budget = COLOURS_CELL * sp.cells
+    for ly in layers:
+        if ly.spec['effect'] != 'pulse':
+            continue
+        for group in ly.pulse_steps(range(ly.n)):
+            new = set(group) - cols
+            if len(cols) + len(new) <= budget:
+                cols |= new
+    return np.array(sorted(cols), int)
 
 
 def snap(rgb, pal, pal_lab):
@@ -490,6 +643,17 @@ def animate(a, specs, frames=FRAMES, seed=0, soft=False, theme=None, times=None)
     layers = [Layer(sp, s, frames, seed + 7919 * i) for i, s in enumerate(specs)]
     pal = palette_of(sp, layers, theme)
     pal_lab = to_lab(pal)
+    glints = [(ly, s) for ly, s in zip(layers, specs) if s['effect'] == 'glint' and s['strength'] > 0]
+    if glints:
+        still_lab = to_lab(a[..., :3].astype(float))
+        for t in range(frames):
+            f = frame_at(sp, [g[0] for g in glints], [g[1] for g in glints], t, soft, pal, pal_lab)
+            dist = np.sqrt(((to_lab(f[..., :3].astype(float)) - still_lab) ** 2).sum(-1))
+            seen = (dist >= GLINT_DE) & (f[..., 3] > 0)
+            seen |= (f[..., 3] > 0) & ~sp.m
+            if int(seen.sum()) < GLINT_MIN_PX:
+                raise ValueError('glint: frame %d changes %d px visibly, under %d: the glint would not show; give '
+                                 'another colour or another effect' % (t, int(seen.sum()), GLINT_MIN_PX))
     ts = range(frames) if times is None else times
     return [frame_at(sp, layers, specs, t, soft, pal, pal_lab) for t in ts]
 
@@ -536,26 +700,127 @@ def sha12(path):
         return hashlib.sha256(f.read()).hexdigest()[:12]
 
 
+_PAIRS = {}
+
+
+def file_md5(path):
+    h = hashlib.md5()
+    with open(path, 'rb') as f:
+        for block in iter(lambda: f.read(1 << 20), b''):
+            h.update(block)
+    return h.hexdigest()
+
+
+def pair_still(dat, spr, cid):
+    """an item of a sprite pair as a still: first phase, south, base layer (datspr.render_thing); and its dat md5"""
+    import datspr
+    key = (os.path.abspath(dat), os.path.abspath(spr))
+    if key not in _PAIRS:
+        _PAIRS[key] = (datspr.Dat(dat), datspr.Spr(spr), file_md5(dat))
+    d, sp, md5 = _PAIRS[key]
+    if not 100 <= cid < 100 + len(d.items):
+        raise ValueError('item %d is not in this dat (items 100 to %d)' % (cid, 99 + len(d.items)))
+    t = d.items[cid - 100]
+    return np.array(datspr.render_thing(t, sp, layers='base', phase=0).convert('RGBA')), md5
+
+
+def prepare(a, clamp=None, pad=False):
+    """the still the loop is drawn over: alpha cut at 128, then --clamp (N colours a 32 px cell of the source,
+    item_post.clamp), then --pad (64 x 64, the body at the bottom right)"""
+    import item_post
+    a = np.array(a, np.uint8)
+    a[..., 3] = np.where(a[..., 3] >= 128, 255, 0)
+    a[a[..., 3] == 0] = 0
+    if clamp:
+        if not CLAMP_MIN <= int(clamp) <= COLOURS_CELL:
+            raise ValueError('--clamp %d: %d to %d colours a cell' % (clamp, CLAMP_MIN, COLOURS_CELL))
+        a = item_post.clamp(a, int(clamp) * cells_of(*a.shape[:2]))
+    if pad:
+        h, w = a.shape[:2]
+        if h > PAD or w > PAD:
+            raise ValueError('--pad: the sprite is %d x %d, larger than %d x %d' % (w, h, PAD, PAD))
+        big = np.zeros((PAD, PAD, 4), np.uint8)
+        big[PAD - h:, PAD - w:] = a
+        a = big
+    return a
+
+
+def build(src, specs, frames=FRAMES, ms=MS, seed=0, soft=False, theme=None, clamp=None, pad=False, element=None,
+          source=None):
+    """(frames, problems, json) of a loop over a raw still; source = the json's fields that name where it came from"""
+    if not MS_MIN <= ms <= MS_MAX:
+        raise ValueError('--ms %d: %d to %d' % (ms, MS_MIN, MS_MAX))
+    a = prepare(src, clamp, pad)
+    out = animate(a, specs, frames, seed, soft, theme)
+    errs = check(out, a[..., 3] > 0, soft)
+    if any(e.endswith(' colours') for e in errs) and not clamp:
+        errs.append('the still has too many colours: try --clamp 56')
+    meta = {'tool': 'idle_loop.py', 'frames': len(out), 'ms': ms, 'seed': seed, 'soft': soft, 'theme': theme,
+            'element': element, 'layers': specs, 'size': [a.shape[1], a.shape[0]],
+            'source_size': [src.shape[1], src.shape[0]], 'clamp': int(clamp) if clamp else None, 'pad': bool(pad)}
+    meta.update(source or {})
+    return out, errs, meta
+
+
+def write(out_png, frames, meta):
+    Image.fromarray(strip(frames), 'RGBA').save(out_png)
+    with open(os.path.splitext(out_png)[0] + '.json', 'w') as f:
+        json.dump(meta, f, indent=1, sort_keys=True)
+        f.write('\n')
+
+
 def cmd_make(args):
-    a = np.array(Image.open(args.png).convert('RGBA'))
+    if args.pair:
+        if len(args.paths) != 1 or args.item is None:
+            raise SystemExit('make --pair DAT SPR --item CLIENT_ID OUT.png')
+        src, md5 = pair_still(args.pair[0], args.pair[1], args.item)
+        source = {'source': 'pair item %d' % args.item, 'pair': {'item': args.item, 'dat_md5': md5}}
+        name, out_png = 'item %d' % args.item, args.paths[0]
+    else:
+        if len(args.paths) != 2 or args.item is not None:
+            raise SystemExit('make IN.png OUT.png (or --pair DAT SPR --item CLIENT_ID OUT.png)')
+        name, out_png = args.paths
+        src = np.array(Image.open(name).convert('RGBA'))
+        source = {'source': os.path.basename(name), 'source_sha256_12': sha12(name)}
     specs = element_layers(args.element) if args.element else []
     specs += [parse_layer(t) for t in (args.layer or [])]
     if not specs:
         specs = element_layers('holy')
-    if not MS_MIN <= args.ms <= MS_MAX:
-        raise SystemExit('--ms %d: %d to %d' % (args.ms, MS_MIN, MS_MAX))
-    frames = animate(a, specs, args.frames, args.seed, args.soft, args.theme)
-    body = a[..., 3] >= 128
-    errs = check(frames, body, args.soft)
-    Image.fromarray(strip(frames), 'RGBA').save(args.out)
-    meta = {'tool': 'idle_loop.py', 'source': os.path.basename(args.png), 'source_sha256_12': sha12(args.png),
-            'frames': len(frames), 'ms': args.ms, 'seed': args.seed, 'soft': args.soft, 'theme': args.theme,
-            'element': args.element, 'layers': specs, 'size': [a.shape[1], a.shape[0]]}
-    with open(os.path.splitext(args.out)[0] + '.json', 'w') as f:
-        json.dump(meta, f, indent=1, sort_keys=True)
-        f.write('\n')
-    print('%s -> %s: %d frames of %d ms, %d layers%s' % (args.png, args.out, len(frames), args.ms, len(specs),
+    try:
+        frames, errs, meta = build(src, specs, args.frames, args.ms, args.seed, args.soft, args.theme, args.clamp,
+                                   args.pad, args.element, source)
+    except ValueError as e:
+        raise SystemExit('%s: %s' % (name, e))
+    write(out_png, frames, meta)
+    print('%s -> %s: %d frames of %d ms, %d layers%s' % (name, out_png, len(frames), args.ms, len(specs),
                                                          '' if not errs else '; ' + '; '.join(errs)))
+    return 1 if errs else 0
+
+
+def cmd_remake(args):
+    meta = json.load(open(args.json))
+    if meta.get('pair'):
+        if not args.pair:
+            raise SystemExit('%s comes from item %d of a pair: give --pair DAT SPR' % (args.json, meta['pair']['item']))
+        src, md5 = pair_still(args.pair[0], args.pair[1], meta['pair']['item'])
+        if md5 != meta['pair']['dat_md5']:
+            raise SystemExit('%s: the dat md5 is %s, the json was made on %s'
+                             % (args.json, md5, meta['pair']['dat_md5']))
+    else:
+        if not args.png:
+            raise SystemExit('%s comes from %s: give --png' % (args.json, meta.get('source')))
+        if sha12(args.png) != meta.get('source_sha256_12'):
+            raise SystemExit('%s: sha256 %s, the json was made on %s' % (args.png, sha12(args.png),
+                                                                       meta.get('source_sha256_12')))
+        src = np.array(Image.open(args.png).convert('RGBA'))
+    source = {k: meta[k] for k in ('source', 'source_sha256_12', 'pair') if k in meta}
+    try:
+        frames, errs, new = build(src, meta['layers'], meta['frames'], meta['ms'], meta['seed'], meta['soft'],
+                                  meta['theme'], meta.get('clamp'), meta.get('pad', False), meta.get('element'), source)
+    except ValueError as e:
+        raise SystemExit('%s: %s' % (args.json, e))
+    write(args.out, frames, new)
+    print('%s -> %s: %s' % (args.json, args.out, 'PASS' if not errs else 'FAIL: ' + '; '.join(errs)))
     return 1 if errs else 0
 
 
@@ -571,8 +836,13 @@ def main(argv=None):
                                 formatter_class=argparse.RawDescriptionHelpFormatter, epilog=__doc__)
     sub = p.add_subparsers(dest='cmd', required=True)
     m = sub.add_parser('make', help='a still sprite -> an idle loop strip and its json')
-    m.add_argument('png')
-    m.add_argument('out')
+    m.add_argument('paths', nargs='+', metavar='IN.png OUT.png', help='IN.png OUT.png, or OUT.png alone with --pair')
+    m.add_argument('--pair', nargs=2, metavar=('DAT', 'SPR'), help='the source is an item of this sprite pair')
+    m.add_argument('--item', type=int, help='client id of the item with --pair')
+    m.add_argument('--clamp', type=int, help='N colours a 32 px cell of the source (%d to %d; 56 leaves room for the '
+                   'layer ramps)' % (CLAMP_MIN, COLOURS_CELL))
+    m.add_argument('--pad', action='store_true',
+                   help='grow the canvas to 64 x 64, the body at the bottom right (a 2 x 2 thing then)')
     m.add_argument('--element', choices=sorted(ELEMENTS))
     m.add_argument('--layer', action='append', help='EFFECT[:RRGGBB[:STRENGTH[:REPEATS[:AMOUNT]]]] (repeatable)')
     m.add_argument('--frames', type=int, default=FRAMES)
@@ -580,6 +850,11 @@ def main(argv=None):
     m.add_argument('--seed', type=int, default=0)
     m.add_argument('--soft', action='store_true', help='allow the glow level 144 outside the body')
     m.add_argument('--theme', help='snap to a theme of style_palettes.json')
+    r = sub.add_parser('remake', help='the strip of a json again, from its PNG or its pair')
+    r.add_argument('json')
+    r.add_argument('out')
+    r.add_argument('--png', help='the source PNG (its sha256 must match)')
+    r.add_argument('--pair', nargs=2, metavar=('DAT', 'SPR'), help='the pair (its dat md5 must match)')
     c = sub.add_parser('check', help='the house rules on a strip')
     c.add_argument('png')
     c.add_argument('--frames', type=int, required=True)
@@ -588,6 +863,8 @@ def main(argv=None):
     args = p.parse_args(argv)
     if args.cmd == 'make':
         return cmd_make(args)
+    if args.cmd == 'remake':
+        return cmd_remake(args)
     if args.cmd == 'check':
         return cmd_check(args)
     print('effects: ' + ', '.join(EFFECTS))
