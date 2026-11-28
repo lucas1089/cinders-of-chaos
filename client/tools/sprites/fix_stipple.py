@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""The stipple of the purchased pack effects redrawn as solid pixel art (ROADMAP O769, pair 88; stage 2: O777, pair 90).
+"""The stipple of the purchased pack effects redrawn as solid pixel art (ROADMAP O769, pair 88; stage 2: O777, pair 90;
+stage 3: O786, pair 91).
 
-python3 -I fix_stipple.py scan DAT SPR [--stage 1|2] [--write] [--out stats.csv]
-python3 -I fix_stipple.py build DAT SPR OUT_DIR [--stage 1|2] [--dry-run] [--write-sums]
-python3 -I fix_stipple.py check DAT SPR          # both stages
+python3 -I fix_stipple.py scan DAT SPR [--stage 1|2|3] [--write] [--out stats.csv]
+python3 -I fix_stipple.py build DAT SPR OUT_DIR [--stage 1|2|3] [--dry-run] [--write-sums]
+python3 -I fix_stipple.py check DAT SPR          # every stage
 
 Why. Owner 2026-11-26 ("3 redesenha"): the dotted rests and the Bayer or checker fill inside the body of the pack effects go;
 solid fills with hard alpha, the house rules of O733. The pack imports up to pair 65 cut the soft glow of a pack frame to 0 / 255
@@ -55,10 +56,34 @@ args fill=N;drop=M;stage=2). V45 saw two dither stages the rule above misses in 
            were cut hard, a lattice there is the artist's), and a thing whose drop would take more than DROP_MAX of its art
            (made of its glow). Lines, small rings, rows of sparks, solid round shapes and lone drawn holes do not repeat on
            both axes and stay. Not caught on purpose: a Bayer glow whose alpha changes within a few pixels (3902, 3892,
-           3945, 4062: the pattern does not repeat); a hard cut there would take 35 to 75% of the art, which is a redraw.
+           3945, 4062: the pattern does not repeat); a hard cut there would take 35 to 75% of the art: stage 3 below.
 A thing is listed when fill and drop together reach MIN_FILL and MIN_SHARE of its art. The forms chain: fix_pack_fx.forms
 takes a thing redrawn by O769 and then by stage 2 (or by stage 2 alone) as fixed; the O769 check takes its stage 2 form as
 redrawn; fixed_ids adds both stages.
+
+Stage 3 (O786, pair 91; --stage 3, the default of scan and build; table pair_fixes/stipple_p91.csv, sums stipple_p91.sums,
+args fill=N;drop=M;soft=K;stage=3). The Bayer glows stage 2 left: the alpha changes within a few pixels, so the dither does not
+repeat, and a hard cut would take a third or more of the art. Stage 3 redraws them by rule with the one glow level of
+docs/SPRITE_STYLE.md (alpha 144, O587) instead of a cut:
+  region   an ordered dither is found by its edges, not by repetition: under the import's threshold a pixel is art when its
+           alpha is over its Bayer rank, so on every art / clear edge the art side has the lower rank. Per frame the phase
+           that explains most edges is taken; a pixel is in the glow when the 7x7 window round it holds EDGES_MIN edge ends,
+           AGREE of them follow the ranks, and it is a lattice both ways (LATTICE2_MIN art pixels two apart along a row and
+           along a column); grown GLOW_GROW px over the mixed density. Drawn art agrees about half the time at any phase
+           (body edges, discs, rings, outlines); a one pixel diagonal line or a row of sparks two apart agree fully (they
+           lie on the low ranks) but are no lattice both ways.
+  levels   inside the region the alpha the dither stood for (density, the centred 4x4 box) is quantised: under LO 0, from
+           LO to HI the glow level, at HI or over 255. The solid core stays as it is: an art pixel whose 3x3 is all art, or
+           in a run of RUN_CORE along a row or a column (a full period of art means an alpha over that row's highest rank).
+           A clear pixel that becomes art takes the colour most of its nearest art neighbours share (rings 1 to 3, the solid
+           ones first): only colours the frame has. A lone dot under LO goes; one with an art neighbour takes the glow level.
+  passes   the rule runs again on its own result (GLOW_PASSES at most; the glow level of a pass is neither art nor clear in
+           the next) until nothing is left: a second run finds nothing.
+  guards   as stage 2 (stock looks and their copies, ids after BAYER_LAST, DROP_MAX, owned, soft alpha), and a thing is
+           listed only when AGREE_THING of all its edges follow the ranks (drawn art reads about half: 600 0.47, 719 0.61)
+           and its changes reach MIN_FILL and MIN_SHARE3 of its art.
+The forms chain on: fix_pack_fx.forms takes a thing redrawn by any earlier stage and then by stage 3 as fixed; the O769 and O777
+checks take its stage 3 form as redrawn; fixed_ids adds all three stages.
 """
 import argparse
 import csv
@@ -79,7 +104,11 @@ PAIR2 = 90              # stage 2 (O777): the 1/16 stage and the glow lattice, o
 TABLE2 = os.path.join(HERE, 'pair_fixes', 'stipple_p90.csv')
 SUMS2 = os.path.join(HERE, 'pair_fixes', 'stipple_p90.sums')
 # stage -> (pair of the redraw, table, sums, row, the input pair)
-STAGES = {1: (PAIR, TABLE, SUMS, 'O769', 'pair 87'), 2: (PAIR2, TABLE2, SUMS2, 'O777', 'pair 89')}
+PAIR3 = 91              # stage 3 (O786): the Bayer glows whose density changes within a few pixels, on pair 90
+TABLE3 = os.path.join(HERE, 'pair_fixes', 'stipple_p91.csv')
+SUMS3 = os.path.join(HERE, 'pair_fixes', 'stipple_p91.sums')
+STAGES = {1: (PAIR, TABLE, SUMS, 'O769', 'pair 87'), 2: (PAIR2, TABLE2, SUMS2, 'O777', 'pair 89'),
+          3: (PAIR3, TABLE3, SUMS3, 'O786', 'pair 90')}
 STATS_COLS = ['kind', 'id', 'art', 'fill', 'drop', 'holes_left', 'lone_left']
 
 MIN_FILL = 24           # fill pixels over all frames of a thing, at least
@@ -93,6 +122,22 @@ LATTICE_GROW = 2        # px the lattice core grows over the mixed density round
 SOLID_NEAR = 0.7        # art next to a pixel of this density or more is the border of a dense body and stays
 PASSES = 4              # stage 2 passes over a frame, at most (the second finds a few pixels the first opened, the third none)
 DROP_MAX = 0.45         # a thing whose drop would take more than this share of its art is made of its glow: left
+# stage 3 (O786, pair 91)
+BAYER4 = ((0, 8, 2, 10), (12, 4, 14, 6), (3, 11, 1, 9), (15, 7, 13, 5))   # the ranks of gen_pack27_fx.BAYER (the import's threshold)
+AGREE = 0.85            # a window is an ordered dither when this share of its art / clear edges agree with the Bayer ranks
+EDGES_MIN = 16          # and it holds at least this many edge ends (an edge counts at both of its pixels)
+AGREE_R = 3             # the window: 7x7 round the pixel
+GLOW = 144              # the one glow level of docs/SPRITE_STYLE.md (O587)
+LO = 0.25               # a density under this goes (the faint lone dots of the fringe)
+HI = 0.75               # a density at this or over is solid (255); between LO and HI the glow level
+RUN_CORE = 4            # an art pixel in a run of this many along a row or a column is solid core and stays: under the
+                        # ranks a full period of art means the alpha is over the row's (column's) highest rank, 0.66 to 0.97
+LATTICE2_MIN = 2        # art pixels two apart along a row (and as many along a column) a window of the glow region holds
+GLOW_GROW = 1           # px the agreeing windows grow over the mixed density round them
+GLOW_PASSES = 8         # stage 3 passes over a frame, at most (the glow level of a pass is left out of the next)
+MIN_SHARE3 = 0.01       # a thing is listed when its changed pixels reach MIN_FILL and this share of its art
+AGREE_THING = 0.8       # and only when this share of all its art / clear edges follow the ranks (each frame at its best
+                        # phase): drawn art reads about half (600 0.47, 719 0.61), the glows of the Bayer era 0.84 to 0.95
 STOCK = {'effect': 371, 'missile': 115}   # the stock effects and missiles (gen_effects.STOCK_*): stage 2 leaves them
 BAYER_LAST = {'effect': 4701, 'missile': 253}   # the last ids of pair 65, the last pair whose imports were cut by the Bayer
                         # threshold (O523 made the cut hard): a lattice in later art is the artist's own, stage 2 leaves it
@@ -303,6 +348,177 @@ def redraw_once(img, stage=1):
     return out, int(fill.sum()), int(drop.sum())
 
 
+# ------------------------------------------------------------------------------------------------ stage 3 (O786)
+def bayer_tiles(h, w):
+    """the 16 phases of the 4x4 Bayer ranks over an h x w canvas"""
+    base = np.tile(np.array(BAYER4, np.int16), (h // 4 + 2, w // 4 + 2))
+    return [base[oy:oy + h, ox:ox + w] for oy in range(4) for ox in range(4)]
+
+
+def boxsum(m, r):
+    """the sum of m over the (2r+1) square round every pixel (zeros outside)"""
+    h, w = m.shape
+    p = np.pad(m.astype(np.int32), ((r + 1, r), (r + 1, r)))
+    c = p.cumsum(0).cumsum(1)
+    k = 2 * r + 1
+    return c[k:k + h, k:k + w] - c[:h, k:k + w] - c[k:k + h, :w] + c[:h, :w]
+
+
+def edge_agreement(a, T, skip=None):
+    """(agree, edges) per pixel: the art / clear 4-neighbour edges at that pixel and how many of them the Bayer ranks T
+    explain (the art side has the lower rank: under an ordered dither a pixel is art when its alpha is over its rank); an
+    edge that touches a `skip` pixel (soft alpha, the glow level of an earlier run) is neither"""
+    h, w = a.shape
+    sk = np.zeros(a.shape, bool) if skip is None else skip
+    agree = np.zeros((h, w), np.int16)
+    edges = np.zeros((h, w), np.int16)
+    for sp, sq in ((np.s_[:, :-1], np.s_[:, 1:]), (np.s_[:-1, :], np.s_[1:, :])):
+        p, q, tp, tq = a[sp], a[sq], T[sp], T[sq]
+        mixed = (p != q) & ~sk[sp] & ~sk[sq]
+        ok = mixed & ((p & (tp < tq)) | (q & (tq < tp)))
+        for sl in (sp, sq):
+            edges[sl] += mixed
+            agree[sl] += ok
+    return agree, edges
+
+
+def best_phase(a, skip=None):
+    """(agreeing edges, edges, T, agree map, edge map) of the Bayer phase that explains most art / clear edges of a frame"""
+    h, w = a.shape
+    best = (-1, 0, None, None, None)
+    for T in bayer_tiles(h, w):
+        ag, ed = edge_agreement(a, T, skip)
+        n = int(ag.sum())
+        if n > best[0]:
+            best = (n // 2, int(ed.sum()) // 2, T, ag, ed)
+    return best
+
+
+def glow_region(a, skip=None):
+    """(O786) the pixels of an ordered dither glow, any density and density changing within a few pixels: the 7x7 window
+    round the pixel holds EDGES_MIN or more art / clear edges and AGREE of them follow the Bayer ranks at the frame's best
+    phase (the art side of an edge has the lower rank), and the window is a lattice both ways: LATTICE2_MIN or more art
+    pixels with art two away along a row and as many along a column, but not beside it (the dots of a dither repeat two
+    apart on both axes). Drawn art (body edges, rings) agrees about half the time at any phase; a one pixel diagonal line and
+    a row of sparks two apart agree fully (they lie on the low ranks) but are no lattice both ways. The region keeps the
+    pixels of mixed density only (0 < density < 1). -> (region, density)"""
+    d = density(a)
+    _n, _e, _T, bag, bed = best_phase(a, skip)
+    sa, se = boxsum(bag, AGREE_R), boxsum(bed, AGREE_R)
+    a16 = a.astype(np.int16)
+    lx = a & ((shift(a16, 0, 2) | shift(a16, 0, -2)) > 0) & ((shift(a16, 0, 1) & shift(a16, 0, -1)) == 0)
+    ly = a & ((shift(a16, 2, 0) | shift(a16, -2, 0)) > 0) & ((shift(a16, 1, 0) & shift(a16, -1, 0)) == 0)
+    both = (boxsum(lx, AGREE_R) >= LATTICE2_MIN) & (boxsum(ly, AGREE_R) >= LATTICE2_MIN)
+    seed = (se >= EDGES_MIN) & (sa >= AGREE * se) & both
+    return dilate(seed, GLOW_GROW) & (d > 0) & (d < 1), d
+
+
+def runs(a):
+    """(horizontal, vertical) length of the run of art each art pixel is in (0 for clear)"""
+    out = []
+    for m in (a, a.T):
+        m = m.astype(np.int32)
+        left, right = np.zeros_like(m), np.zeros_like(m)
+        for x in range(m.shape[1]):
+            left[:, x] = (left[:, x - 1] + 1) * m[:, x] if x else m[:, x]
+        for x in range(m.shape[1] - 1, -1, -1):
+            right[:, x] = (right[:, x + 1] + 1) * m[:, x] if x < m.shape[1] - 1 else m[:, x]
+        out.append(np.maximum(left + right - 1, 0))
+    return out[0], out[1].T
+
+
+def ring_colours(img, fill, keep, rmax=3):
+    """[N, 3] colours for new art pixels: the colour most of the nearest art pixels (Chebyshev ring 1, then 2, 3) share, the
+    solid ones (`keep`) first, ties to the one nearest their mean; only colours the frame already has"""
+    ys, xs = np.nonzero(fill)
+    h, w = fill.shape
+    out = np.zeros((len(ys), 3), np.uint8)
+    todo = np.ones(len(ys), bool)
+    for r in range(1, rmax + 1):
+        if not todo.any():
+            break
+        offs = [(dy, dx) for dy in range(-r, r + 1) for dx in range(-r, r + 1) if max(abs(dy), abs(dx)) == r]
+        yi, xi = ys[todo], xs[todo]
+        inside = np.stack([(yi + dy >= 0) & (yi + dy < h) & (xi + dx >= 0) & (xi + dx < w) for dy, dx in offs], 1)
+        yy = [np.clip(yi + dy, 0, h - 1) for dy, _dx in offs]
+        xx = [np.clip(xi + dx, 0, w - 1) for _dy, dx in offs]
+        n = np.stack([img[y, x, :3].astype(np.int32) for y, x in zip(yy, xx)], 1)
+        art = np.stack([img[y, x, 3] > 0 for y, x in zip(yy, xx)], 1) & inside
+        kept = np.stack([keep[y, x] for y, x in zip(yy, xx)], 1) & art
+        ok = np.where(kept.any(1, keepdims=True), kept, art)
+        has = ok.any(1)
+        if not has.any():
+            continue
+        eq = ((n[:, :, None, :] == n[:, None, :, :]).all(3) & ok[:, None, :]).sum(2)
+        cnt = np.maximum(ok.sum(1, keepdims=True), 1)
+        mean = (n * ok[..., None]).sum(1, keepdims=True) / cnt[..., None]
+        dist = np.abs(n - mean).sum(2)
+        score = np.where(ok, eq * 100000 - dist, -1e18)
+        pick = n[np.arange(len(yi)), score.argmax(1)].astype(np.uint8)
+        idx = np.nonzero(todo)[0]
+        out[idx[has]] = pick[has]
+        todo[idx[has]] = False
+    return out, todo
+
+
+def glow_plan(img):
+    """(O786) RGBA canvas -> (fill, drop, soft, solid, density) masks of the stage 3 rule: inside the glow region the alpha the
+    dither stood for (density, the 4x4 box of `density`) is quantised to 0 / GLOW / 255: under LO the art goes, from LO to
+    HI it is the glow level, at HI or over solid; an art pixel whose 3x3 is all art (the solid core) stays 255 and keeps its
+    colour, a clear pixel that becomes art takes the colour of its nearest art neighbours"""
+    a = img[..., 3] == 255
+    sk = (img[..., 3] > 0) & ~a
+    reg, d = glow_region(a, sk)
+    rh, rv = runs(a)
+    core = (code3(a) == 511) | (rh >= RUN_CORE) | (rv >= RUN_CORE)
+    r = reg & ~(a & core) & ~sk
+    lvl = np.where(d >= HI, 255, np.where(d >= LO, GLOW, 0))
+    fill = r & ~a & (lvl > 0)
+    drop = r & a & (lvl == 0)
+    faint = np.zeros(a.shape, bool)
+    if drop.any():                      # a lone dot of the fringe goes; one with an art neighbour (a pair or a chain of the
+        a16 = a.astype(np.int16)        # fringe, a line drawn through the glow) takes the glow level
+        k8 = sum(shift(a16, dy, dx) for dy, dx in RING)
+        faint = drop & (k8 > 0)
+        drop = drop & (k8 == 0)
+    soft = r & (((lvl == GLOW) & (a | fill)) | faint)
+    solid = r & (lvl == 255) & ~a
+    return fill, drop, soft, solid, lvl
+
+
+def glow_redraw(img):
+    """(O786) RGBA canvas -> (redrawn canvas, fill, drop, soft): fill counts the clear pixels that become art, drop the art
+    that goes, soft the pixels set to the glow level (filled or not). The rule runs again on its own result (GLOW_PASSES at most;
+    the glow level of a run is left out of the next) until nothing is left, so a second run finds nothing."""
+    out, nf, nd, ns = img, 0, 0, 0
+    for _ in range(GLOW_PASSES):
+        out, f, d, s = glow_once(out)
+        nf, nd, ns = nf + f, nd + d, ns + s
+        if not (f or d or s):
+            break
+    return out, nf, nd, ns
+
+
+def glow_once(img):
+    """one pass of the stage 3 rule"""
+    fill, drop, soft, _solid, lvl = glow_plan(img)
+    out = img.copy()
+    if fill.any():
+        keep = (img[..., 3] == 255) & ~drop
+        cols, left = ring_colours(img, fill, keep)
+        if left.any():                                  # no art within 3 px: no colour to take, the pixel stays clear
+            ys, xs = np.nonzero(fill)
+            fill = fill.copy()
+            fill[ys[left], xs[left]] = False
+            soft = soft & ~(~fill & ~(img[..., 3] > 0))
+            cols = cols[~left]
+        out[..., :3][fill] = cols
+        out[..., 3][fill] = lvl[fill]
+    out[..., 3][soft] = GLOW
+    out[drop] = 0
+    return out, int(fill.sum()), int(drop.sum()), int(soft.sum())
+
+
 def soft_alpha(store, g):
     return any(((f[..., 3] > 0) & (f[..., 3] < 255)).any() for f in (AF.frame(store, g, *k) for k in AF.frames_of(g)))
 
@@ -324,8 +540,41 @@ def measure(store, g, stage=1):
     return art, nf, nd, hl, ll
 
 
+def agreement(store, g):
+    """(O786) (art, share of the art / clear edges of a group the Bayer ranks explain, each frame at its best phase)"""
+    art = ag = ed = 0
+    for k in AF.frames_of(g):
+        img = AF.frame(store, g, *k)
+        if not img[..., 3].any():
+            continue
+        n, e, _t, _a, _e = best_phase(img[..., 3] == 255, (img[..., 3] > 0) & (img[..., 3] < 255))
+        art, ag, ed = art + int((img[..., 3] > 0).sum()), ag + n, ed + e
+    return art, (ag / ed if ed else 0.0)
+
+
+def measure3(store, g, gate=True):
+    """(O786) (art, agreement, fill, drop, soft, left) over every frame of a group; left is what a second run would still
+    change. With `gate` a group under AGREE_THING is not redrawn (zeros)."""
+    art, agr = agreement(store, g)
+    nf = nd = ns = left = 0
+    if gate and agr < AGREE_THING:
+        return art, agr, 0, 0, 0, 0
+    for k in AF.frames_of(g):
+        img = AF.frame(store, g, *k)
+        if not img[..., 3].any():
+            continue
+        new, f, d, s = glow_redraw(img)
+        nf, nd, ns = nf + f, nd + d, ns + s
+        left += sum(int(m.sum()) for m in glow_plan(new)[:3])
+    return art, agr, nf, nd, ns, left
+
+
 def listed(art, fill):
     return fill >= MIN_FILL and fill >= MIN_SHARE * art
+
+
+def listed3(art, changed):
+    return changed >= MIN_FILL and changed >= MIN_SHARE3 * art
 
 
 def stage_of(a):
@@ -341,6 +590,8 @@ def op_unstipple(store, ts, a):
     AF.need(a, 'fill', 'drop')
     st = stage_of(a)
     g = ts.groups[0]
+    if st >= 3:
+        return op_glow(store, ts, a)
     got = [0, 0]
     for k in AF.frames_of(g):
         img = AF.frame(store, g, *k)
@@ -358,6 +609,26 @@ def op_unstipple(store, ts, a):
         return new, f + d
     n = AF.map_frames(store, ts, fn)
     ts.log.append(('0', 'unstipple', 'stipple of fix_stipple.py (stage %d)' % st, '%d filled, %d removed' % (got[0], got[1])))
+    return n
+
+
+def op_glow(store, ts, a):
+    """(O786) stage 3: the Bayer glows requantised to 0 / GLOW / 255; must find `fill=n;drop=m;soft=k`"""
+    AF.need(a, 'soft')
+    g = ts.groups[0]
+    got = [0, 0, 0]
+    for k in AF.frames_of(g):
+        _n, f, d, s = glow_redraw(AF.frame(store, g, *k))
+        got = [got[0] + f, got[1] + d, got[2] + s]
+    want = [int(a['fill']), int(a['drop']), int(a['soft'])]
+    if got != want:
+        raise SystemExit('%s%d: fill %d drop %d soft %d, the row says %d %d %d' % (ts.cat, ts.id, *got, *want))
+
+    def fn(img):
+        new, f, d, s = glow_redraw(img)
+        return new, f + d + s
+    n = AF.map_frames(store, ts, fn)
+    ts.log.append(('0', 'unstipple', 'Bayer glow of fix_stipple.py (stage 3)', '%d filled, %d removed, %d at the glow level' % tuple(got)))
     return n
 
 
@@ -405,7 +676,7 @@ def scan(dat_path, spr_path, log=print, stats=None, stage=1):
     extra = owned_extra()
     stock = stock_digests(store, things) if stage >= 2 else None
     rows, out = [], []
-    skipped = {'soft': 0, 'owned': 0, 'stock': 0, 'after the Bayer cut': 0, 'mostly glow': 0}
+    skipped = {'soft': 0, 'owned': 0, 'stock': 0, 'after the Bayer cut': 0, 'mostly glow': 0, 'not ordered': 0}
     for kind in ('effect', 'missile'):
         for t in things[kind]:
             g = t.groups[0]
@@ -419,6 +690,24 @@ def scan(dat_path, spr_path, log=print, stats=None, stage=1):
                 continue
             if soft_alpha(store, g):
                 skipped['soft'] += 1
+                continue
+            if stage >= 3:
+                art, agr, f, d, so, left = measure3(store, g)
+                out.append({'kind': kind, 'id': t.id, 'art': art, 'fill': f, 'drop': d, 'holes_left': left,
+                            'lone_left': round(agr, 4)})
+                if agr < AGREE_THING:
+                    skipped['not ordered'] += 1
+                    continue
+                if not listed3(art, f + d + so):
+                    continue
+                why = guarded(kind, t.id, art, d, stock, pixel_digest(store, g))
+                if why:
+                    skipped[why] += 1
+                    continue
+                rows.append({'kind': kind, 'id': t.id, 'op': 'unstipple', 'args': 'fill=%d;drop=%d;soft=%d;stage=3' % (f, d, so),
+                             'reason': 'O786: Bayer glow requantised (art %d, edges %.2f ordered, %.1f%% filled, %.1f%% dropped, '
+                             '%.1f%% at the glow level)' % (art, agr, 100.0 * f / art, 100.0 * d / art, 100.0 * so / art),
+                             'review': ''})
                 continue
             art, f, d, hl, ll = measure(store, g, stage)
             out.append({'kind': kind, 'id': t.id, 'art': art, 'fill': f, 'drop': d, 'holes_left': hl, 'lone_left': ll})
@@ -441,8 +730,9 @@ def scan(dat_path, spr_path, log=print, stats=None, stage=1):
             w.writerows(out)
     log('stipple scan (stage %d): %d things listed of %d measured (%d owned by another tool, %d soft alpha%s)' % (
         stage, len(rows), len(out), skipped['owned'], skipped['soft'],
-        '' if stage == 1 else ', %d stock or stock copies, %d after the Bayer cut, %d mostly glow' % (
-            skipped['stock'], skipped['after the Bayer cut'], skipped['mostly glow'])))
+        '' if stage == 1 else ', %d stock or stock copies, %d after the Bayer cut, %d mostly glow%s' % (
+            skipped['stock'], skipped['after the Bayer cut'], skipped['mostly glow'],
+            ', %d not an ordered dither' % skipped['not ordered'] if stage >= 3 else '')))
     return rows
 
 
@@ -485,8 +775,9 @@ def build(dat_path, spr_path, out_dir=None, dry_run=False, write=False, table=No
     edited = AF.apply_rows(rows, things, store, log)
     nf = sum(int(AF.args_of(r['args'])['fill']) for r in rows)
     nd = sum(int(AF.args_of(r['args'])['drop']) for r in rows)
-    log('stipple (%s): %d things redrawn, %d pixels filled, %d removed, %d sprite records appended' % (
-        row, len(rows), nf, nd, len(store.recs)))
+    ns = sum(int(AF.args_of(r['args']).get('soft', 0)) for r in rows)
+    log('stipple (%s): %d things redrawn, %d pixels filled, %d removed%s, %d sprite records appended' % (
+        row, len(rows), nf, nd, ', %d at the glow level' % ns if ns else '', len(store.recs)))
     for (kind, i), ts in edited.items():
         t = ts.orig
         if idt.entry_bytes(t.cat, t.flags, t.groups) != d[t.raw[0]:t.raw[1]]:
@@ -571,12 +862,12 @@ def read_sums(path=SUMS):
 
 
 def forms(dat_path, spr_path, sums_path=None, stage=1):
-    """{(kind, id): 'after' | 'before' | None} of the things of the sums of a stage in this pair; a stage 1 thing whose
-    redrawn form stage 2 redrew again (O777) counts as 'after'"""
+    """{(kind, id): 'after' | 'before' | None} of the things of the sums of a stage in this pair; a thing whose redrawn form
+    a later stage redrew again (stage 2 of O777, stage 3 of O786) counts as 'after'"""
     sums = read_sums(sums_path or STAGES[stage][2])
     if not sums:
         return {}
-    return fpf().forms(dat_path, spr_path, sums, raw=True, stipple='late' if stage == 1 else False)
+    return fpf().forms(dat_path, spr_path, sums, raw=True, stipple={1: 'late', 2: 'last'}.get(stage, False))
 
 
 def check(dat_path, spr_path, assets=None, sums_path=None, log=print, stage=1):
@@ -611,14 +902,15 @@ def main(argv=None):
     s.add_argument('spr')
     s.add_argument('--write', action='store_true')
     s.add_argument('--out')
-    s.add_argument('--stage', type=int, choices=sorted(STAGES), default=2, help='2 (O777, on pair 89) or 1 (O769, on pair 87)')
+    s.add_argument('--stage', type=int, choices=sorted(STAGES), default=3,
+                   help='3 (O786, on pair 90), 2 (O777, on pair 89) or 1 (O769, on pair 87)')
     b = sub.add_parser('build')
     b.add_argument('dat')
     b.add_argument('spr')
     b.add_argument('out_dir', nargs='?')
     b.add_argument('--dry-run', action='store_true')
     b.add_argument('--write-sums', action='store_true')
-    b.add_argument('--stage', type=int, choices=sorted(STAGES), default=2)
+    b.add_argument('--stage', type=int, choices=sorted(STAGES), default=3)
     c = sub.add_parser('check')
     c.add_argument('dat')
     c.add_argument('spr')
