@@ -6,6 +6,7 @@
     python3 -I gen_wst_wear.py ids [--check]          # the generated files from the table (no art)
     python3 -I gen_wst_wear.py build DAT SPR OUT_DIR --src DIR   # the cliff-built pair 82 -> pair 83; any other refused
     python3 -I gen_wst_wear.py live DAT SPR           # a built pair holds every piece (pending while PAIR_ASSETS < 83)
+    python3 -I gen_wst_wear.py shifts DAT SPR [--check]   # the north move of every pack wing from the pair (O779)
     python3 -I gen_wst_wear.py preview OUT_DIR --src DIR         # wear_preview.mp4 on the class sheets (never committed)
 
 Owner 2026-11-24: "Pode importar, com levitação e camada nova. Remova as nossas artes já publicadas que estão com qualidade
@@ -39,6 +40,18 @@ wing (dark, half see-through pixels of the back layer) is taken out first, becau
 the engine's own soft shadow stays on the ground under a floating wearer. Rows N, E, S, W of the sheet (6, 0, 2, 4) in the dat
 order north, east, south, west. Placement in the engine: the frame's top left is the wearer's tile minus anchor x 32 px, the
 wearer's tile being the creature's place minus the body's displacement (client/BASE.md "0209").
+
+North view (O779, V46 seen in a client on pair 90). The pack draws its four direction rows from straight above: they turn
+one picture (north is the west row mirrored on the diagonal), so facing north the wings lie on the body's side towards the
+viewer and the picture hangs 8.4 to 12.8 px under the south one, 2 to 5 px left (alpha centre, mean of the frames; in a client
+11 to 15 px). The game's camera looks from the south at a slant, and a wing on the back stands as high from behind as from the
+front (the rule of the code-drawn wings, O770 `north_hang`). art_import/pack_wear_shift.csv holds per wings look the move of its
+north picture: the whole pixels that put the alpha centre of y pattern 0 facing north on the one facing south (`turn_of`,
+`hang` = north minus south before, px). `shifts DAT SPR` measures them on a built pair; `live` holds the table to the pair.
+wear_pieces.lua `shifts` hands them to the engine (base patch 0217, setOutfitPackShift): the wings' picture moves, the body,
+its lift and the head / cape layer stay. East and west keep the pack's place (the wings trail behind the body, 2 to 11 px
+under the south view, inside the range of the code-drawn wings). Heads and capes are not moved: their north views differ by
+the piece (a cape seen from behind covers the back), not by one rule.
 
 Input pair: pair 82 with the cliff pieces of O746 (gen_cliff_art.py build): items end at 44605, outfits at 3588, and the
 cliff pieces pass gen_cliff_art.py live. Any other pair is refused. The order of pair 83 is therefore cliff art first, then
@@ -83,6 +96,9 @@ ELEMENTS = ('fire', 'water', 'wind', 'earth', 'energy', 'light', 'dark', 'neutra
 EXTRA_ELEMENT = {'plasma_fly_wings': 'energy', 'atom_orbit': 'energy', 'tesla_crown': 'energy', 'academic_gown_cape': 'neutral',
                  'hex_shield_cape': 'energy', 'ion_hood': 'energy', 'magnet_plate_cape': 'neutral', 'plasma_train': 'energy'}
 ROWS = (6, 0, 2, 4)               # sheet rows of north, east, south, west (the sheet: E SE S SW W NW N NE)
+SHIFTS = os.path.join(HERE, 'art_import', 'pack_wear_shift.csv')
+SHIFT_HEADER = ['look', 'key', 'dir', 'dx', 'dy', 'hang']
+SHIFT_MAX = 24                    # px; base patch 0217 ignores a larger move (chaospieceshift.h kMaxShiftPx)
 SHADOW_SUM = 60                   # a back-layer pixel darker than this (r + g + b), half see-through, is the pack's ground shadow
 HEADER = ['cat', 'key', 'name', 'element', 'look', 'wings', 'design', 'cost', 'aura', 'frames', 'fw', 'fh', 'ax', 'ay',
           'src_back', 'src_front', 'lift']
@@ -334,6 +350,89 @@ def read_sums(path=SUMS):
     return out
 
 
+# ------------------------------------------------------------------------------------------------ the north move (O779)
+def rnd(v):
+    """to the nearest whole pixel, a half away from zero"""
+    return int(v + 0.5) if v >= 0 else -int(-v + 0.5)
+
+
+def centre(frames):
+    """the mean over the frames of the alpha centre (x, y) of RGBA pictures; None when every frame is empty"""
+    import numpy as np
+    xs, ys = [], []
+    for img in frames:
+        yy, xx = np.nonzero(img[..., 3] > 0)
+        if len(yy):
+            xs.append(xx.mean())
+            ys.append(yy.mean())
+    return (float(np.mean(xs)), float(np.mean(ys))) if xs else None
+
+
+def turn_of(pats, frames):
+    """(dx, dy, hang) of a wing's pictures {(y, direction, frame): RGBA}: the whole px that put the north picture's centre (y
+    pattern 0, the whole wing) on the south one's, and the north minus south row before (px)"""
+    n = centre([pats[(0, 0, f)] for f in range(frames)])
+    s = centre([pats[(0, 2, f)] for f in range(frames)])
+    if n is None or s is None:
+        return 0, 0, 0.0
+    return rnd(s[0] - n[0]), rnd(s[1] - n[1]), round(n[1] - s[1], 1)
+
+
+def shift_rows(dat, spr, rows=None, log=print):
+    """one row a pack wing, in table order, measured on a built pair; None when a wing is not in the pair"""
+    rows = load() if rows is None else rows
+    out = []
+    for r in rows:
+        if r['cat'] != 'wings':
+            continue
+        pats = pair_pictures(dat, spr, r)
+        if isinstance(pats, str):
+            log(pats)
+            return None
+        dx, dy, hang = turn_of(pats, int(r['frames']))
+        out.append({'look': r['look'], 'key': r['key'], 'dir': 'north', 'dx': str(dx), 'dy': str(dy), 'hang': '%.1f' % hang})
+    return out
+
+
+def shift_text(srows):
+    return ','.join(SHIFT_HEADER) + '\n' + ''.join(','.join(r[c] for c in SHIFT_HEADER) + '\n' for r in srows)
+
+
+def load_shifts(path=SHIFTS):
+    if not os.path.isfile(path):
+        return []
+    with open(path, newline='', encoding='utf-8') as f:
+        return list(csv.DictReader(f))
+
+
+def shift_problems(srows=None, rows=None):
+    """the rules of pack_wear_shift.csv that need no pair: one north row per pack wing in table order, whole px inside
+    SHIFT_MAX, dy the hang rounded the other way, the move up (a pack wing never hangs higher facing north)"""
+    srows = load_shifts() if srows is None else srows
+    rows = load() if rows is None else rows
+    if not srows or set(srows[0].keys()) != set(SHIFT_HEADER):
+        return ['pack_wear_shift.csv: the columns are not %s (run gen_wst_wear.py shifts DAT SPR)' % SHIFT_HEADER]
+    wings = [(r['look'], r['key']) for r in rows if r['cat'] == 'wings']
+    if [(r['look'], r['key']) for r in srows] != wings:
+        return ['pack_wear_shift.csv: one row per pack wing of pack_wear.csv in its order (%d wings, %d rows)' % (len(wings), len(srows))]
+    bad = []
+    for r in srows:
+        tag = 'pack_wear_shift.csv %s %s' % (r['look'], r['key'])
+        if r['dir'] != 'north':
+            bad.append('%s: only the north view moves' % tag)
+        if not re.fullmatch(r'-?\d+', r['dx']) or not re.fullmatch(r'-?\d+', r['dy']) or not re.fullmatch(r'-?\d+\.\d', r['hang']):
+            bad.append('%s: dx, dy whole px, hang px with one decimal' % tag)
+            continue
+        dx, dy, hang = int(r['dx']), int(r['dy']), float(r['hang'])
+        if abs(dx) > SHIFT_MAX or abs(dy) > SHIFT_MAX:
+            bad.append('%s: a move over %d px' % (tag, SHIFT_MAX))
+        if abs(dy + hang) > 0.55:
+            bad.append('%s: dy %d is not the hang %.1f rounded the other way' % (tag, dy, hang))
+        if dy > 0:
+            bad.append('%s: a pack wing moves up facing north, not down' % tag)
+    return bad
+
+
 # ------------------------------------------------------------------------------------------------ generated files
 def art_by_row_text(rows=None, rows_designs=None, curation_cut=None):
     """one line per designs.csv row: its look, wings id, key and the art it has from pair 83"""
@@ -359,7 +458,7 @@ def lua_str(s):
     return '"%s"' % s.replace('\\', '\\\\').replace('"', '\\"')
 
 
-def client_text(rows=None):
+def client_text(rows=None, shifts=None):
     rows = load() if rows is None else rows
     lines = ['-- Generated by client/tools/sprites/gen_wst_wear.py ids from client/tools/sprites/art_import/pack_wear.csv. Do not edit.',
              '-- The purchased wings, heads and capes of client pair %d (O747): per look the anchor tile (the column and row of the' % PAIR_OUT,
@@ -378,6 +477,12 @@ def client_text(rows=None):
     for r in rows:
         if r['cat'] == 'wings':
             lines.append('    [%s] = "%s",' % (r['look'], r['lift']))
+    lines.append('  },')
+    lines.append('  -- O779, base patch 0217: a pack wing\'s picture moved facing a direction {look, dir (0 north), dx, dy}, px at 1x')
+    lines.append('  shifts = {')
+    for r in (load_shifts() if shifts is None else shifts):
+        if r['dx'] != '0' or r['dy'] != '0':
+            lines.append('    {%s,%d,%s,%s},' % (r['look'], ('north', 'east', 'south', 'west').index(r['dir']), r['dx'], r['dy']))
     lines.append('  },')
     for cat in ('heads', 'capes'):
         lines.append('  %s = {' % cat)
@@ -630,9 +735,12 @@ def build(dat_path, spr_path, out_dir, src, rows=None, first=FIRST_NEW, last_ite
     return md5
 
 
-def live(dat_path, spr_path, rows=None, sums=None, assets=None, log=print):
-    """a built pair holds every piece at its look with the pictures of pack_wear.sums; pending while windows-assets is older than 83"""
+def live(dat_path, spr_path, rows=None, sums=None, assets=None, log=print, shifts=None):
+    """a built pair holds every piece at its look with the pictures of pack_wear.sums and the north moves of
+    pack_wear_shift.csv (O779; the committed table when the rows are the committed ones, else `shifts` when given);
+    pending while windows-assets is older than 83"""
     from datspr import Dat, Spr
+    own = rows is None
     rows = load() if rows is None else rows
     sums = read_sums() if sums is None else sums
     if assets is None:
@@ -651,6 +759,13 @@ def live(dat_path, spr_path, rows=None, sums=None, assets=None, log=print):
             bad.append(got)
         elif digest(got) != sums.get(int(r['look'])):
             bad.append('look %s (%s %s): pictures are not those of pack_wear.sums' % (r['look'], r['cat'], r['key']))
+    if shifts is None and own:
+        shifts = load_shifts()
+    if shifts is not None and not bad:
+        got = shift_rows(dat, spr, rows, log=log)
+        if got != shifts:
+            diff = [g['key'] for g, w in zip(got or [], shifts) if g != w] or ['%d rows, the table %d' % (len(got or []), len(shifts))]
+            bad.append('pack_wear_shift.csv is not the north move of the pair (%s): run gen_wst_wear.py shifts DAT SPR' % ', '.join(diff[:5]))
     for line in bad:
         log(line)
     log('%d of %d pieces hold their pictures' % (len(rows) - len(bad), len(rows)))
@@ -747,6 +862,7 @@ def check(log=print):
         bad.append('pack_wear.sums names %d looks, the table %d: run table --src' % (len(sums), len(looks)))
     if len(set(sums.values())) != len(sums):
         bad.append('two pieces have the same pictures')
+    bad += shift_problems(rows=rows)
     bad += generated(True, rows)
     for line in bad:
         log(line)
@@ -797,6 +913,24 @@ def main(argv):
             print(__doc__)
             return 2
         return 1 if live(args[0], args[1]) else 0
+    if cmd == 'shifts':
+        if len(args) != 2:
+            print(__doc__)
+            return 2
+        from datspr import Dat, Spr
+        srows = shift_rows(Dat(args[0]), Spr(args[1]))
+        if srows is None:
+            return 1
+        bad = write_or_check(SHIFTS, shift_text(srows), chk)
+        bad += shift_problems(srows)
+        if not bad:
+            bad += generated(chk)
+        for line in bad:
+            print(line)
+        hang = sorted(float(r['hang']) for r in srows)
+        print('%d pack wings: north minus south %.1f to %.1f px before, moved %d to %d px up%s' % (
+            len(srows), hang[0], hang[-1], min(-int(r['dy']) for r in srows), max(-int(r['dy']) for r in srows), '' if bad else ': ok'))
+        return 1 if bad else 0
     if cmd == 'preview':
         if len(args) != 1 or not src:
             print(__doc__)

@@ -167,6 +167,28 @@ function M.applyPieces(data, setPiece, setLift, levitate)
   return np, nl
 end
 
+-- O779 (base patch 0217): wear_pieces.lua `shifts` {look, dir, dx, dy} moves a pack wing's picture facing a direction
+-- (dir 0 north .. 3 west, px at 1x, at most 24): the pack draws from above, so its north view hung 8-13 px low. setShift(look,
+-- dir, dx, dy) for each good row, in table order; returns how many. The Float option does not touch them.
+M.MAX_SHIFT = 24
+function M.applyShifts(data, setShift)
+  if type(data) ~= 'table' or type(data.shifts) ~= 'table' then return 0 end
+  local n = 0
+  for _, row in ipairs(data.shifts) do
+    local ok = type(row) == 'table'
+    for i = 1, 4 do
+      ok = ok and type(row[i]) == 'number' and row[i] == math.floor(row[i])
+    end
+    ok = ok and row[1] >= 1 and row[2] >= 0 and row[2] <= 3 and math.abs(row[3]) <= M.MAX_SHIFT
+      and math.abs(row[4]) <= M.MAX_SHIFT
+    if ok then
+      setShift(row[1], row[2], row[3], row[4])
+      n = n + 1
+    end
+  end
+  return n
+end
+
 -- the levitation setting of this client (g_settings value): on unless it was switched off
 M.LEVITATION_KEY = 'chaosWingLevitation'
 function M.levitationOn(value)

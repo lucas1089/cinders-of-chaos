@@ -29,9 +29,15 @@ end
 -- wing_anchors.lua keep the drawn art of the replaced looks in place
 function applyPieces()
   if clearOutfitPackPieces then clearOutfitPackPieces() end
+  if clearOutfitPackShifts then clearOutfitPackShifts() end
   if not piecesSupported() then return end
   WingFitCore.applyPieces(ChaosWearPieces, function(look, ax, ay) setOutfitPackPiece(look, ax, ay) end,
     function(look, text) setOutfitWingsLift(look, text) end, isLevitation())
+  -- O779 (base patch 0217): the north view of a pack wing moved up to the south one's height; a client without the
+  -- patch has no setOutfitPackShift and draws the pack's place
+  if setOutfitPackShift then
+    WingFitCore.applyShifts(ChaosWearPieces, function(look, dir, dx, dy) setOutfitPackShift(look, dir, dx, dy) end)
+  end
 end
 
 -- O762 (owner 2026-11-24: "o efeito de flutuar funciona. coloque uma opção pra desativar"): the pack wings lift their wearer
@@ -79,6 +85,7 @@ function terminate()
   if clearOutfitHeadCentres then clearOutfitHeadCentres() end
   if clearOutfitWingAnchors then clearOutfitWingAnchors() end
   if clearOutfitPackPieces then clearOutfitPackPieces() end
+  if clearOutfitPackShifts then clearOutfitPackShifts() end
 end
 
 -- the {x, y} shift of a head piece of an outfit table {type, aura, ...} facing south, in sprite pixels at 1x; {0, 0}

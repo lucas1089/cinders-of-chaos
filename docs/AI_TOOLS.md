@@ -85,6 +85,41 @@ Most of the list is 3D, world models, engine bridges for other engines, and talk
 - Maturity: 8.4k stars, last push 2026-02-10. Qwen-Image 2.0 is announced as a hosted model only.
 - Action: **spike** after the beta. Compare against the current AI pixel-art service on two monsters.
 
+### Dotsmith (`michyaraque/dotsmith`; read 2026-11-28, commit 4e33791)
+
+- What: a Windows desktop app that makes pixel art with local diffusion models on the user's own NVIDIA GPU. No
+  account, no upload, no cost per image. Modes:
+  - Sprite: one item or map prop from text, 16 to 192 px, transparent.
+  - Pack: a 2x2 or 3x3 sheet of related items in one pass.
+  - Walls: a matching wall set in our view (post, north run, east run, corner) and an optional closed room.
+  - Character: an 8-frame walk in 1 or 4 directions, with GIF export.
+  - Variants, Angle (the same object from another camera angle), Regions (repaint only marked pixels).
+  - Image: a picture turned into pixel art, with or without AI (PixelOE).
+  - Animate: an ambient loop over a sprite from layered effects (fire, frost, shockwave), no AI.
+  - Every result is a PNG plus a JSON of its settings, so a result can be made again.
+- Runs as: a Rust app (GPUI interface, candle + CUDA engine, no Python, no server). Windows 10 or 11, NVIDIA RTX 30
+  series or newer with 6 GB VRAM, 16 GB RAM (32 GB for the large models). It does not run in a cloud session: there is
+  no GPU and it is Windows only. The owner's PC with an RTX card can run it.
+- Models (downloaded inside the app, none ship with it): Qwen-Image 2.1 (items, packs, walls), Krea 2 (characters
+  and walk sheets), LiliPixel V1 (native 16, 32 and 64 px with real alpha on small GPUs), RD Flow 64 (64 x 64, every
+  pixel a palette colour). LoRA files can be added.
+- Fit:
+  - The free local twin of the AI pixel art service: items, props, wall sets and walk sheets with no credit spent.
+  - The Walls mode makes the four pieces our walls need. The planner's wall brushes could get new materials from it.
+  - The Animate mode (no AI) may help idle loops of decor and items.
+  - Output still goes through our own steps: `style_check.py`, `sprite_quality.py check`, the alpha cut, the palette,
+    `oblique_lean.py` for figures, then the import tools. Nothing from it skips those.
+- Rules for us:
+  - Prompts in our own words only. Never feed it purchased, donor or third-party art, not even as a source picture:
+    our art rule covers every AI model, local ones too.
+  - Check each model's licence on its model card before shipping output. The tool is MIT. The model weights have
+    their own licences, which the repo does not state. Note the model in `docs/CREDITS.md` when art made with it ships.
+  - We keep no copy of its code: the code needs a GPU and Windows to run, and the repo is large. This entry pins the
+    commit read.
+- Licence: MIT (the app). Each model: its own licence, not checked yet.
+- Action: **spike** on the owner's PC: one wall set in a new material, one pack of 4 items, one 4-direction walk.
+  Compare each against the AI pixel art service and our quality bar. Adopt for the kinds that pass.
+
 ### ComfyUI (`Comfy-Org/ComfyUI`)
 
 - What: the node GUI and backend most local image and video models run in.

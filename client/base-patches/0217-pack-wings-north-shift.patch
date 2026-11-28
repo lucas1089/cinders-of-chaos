@@ -1,0 +1,115 @@
+# Chaos: a pack wing's north view stands as high as its south one (O779; client/BASE.md "0217"; src/client/chaospieceshift.h
+# (new, pure), outfit.cpp, luafunctions_client.cpp; after 0001-0216).
+# Seen in a client (V46, pair 90, 2026-11-28): the purchased wings of pair 83 (O747) hang 11 to 15 px lower facing north than
+# facing south. The pack draws its four rows from straight above, so facing north the wings lie on the body's side towards the
+# viewer. A row of client_chaos_wingfit/wear_pieces.lua `shifts` (gen_wst_wear.py shifts, from the pair) moves a wings look's
+# picture facing one direction by whole sprite px, after its anchor tile of 0209 (setOutfitPackShift, clearOutfitPackShifts);
+# the body, its lift (0209, 0211) and the head / cape layer (0210) stay. A look or direction without a row draws as before.
+diff -ruN a/src/client/chaospieceshift.h b/src/client/chaospieceshift.h
+--- /dev/null
++++ b/src/client/chaospieceshift.h
+@@ -0,0 +1,61 @@
++// Cinders of Chaos (base patch 0217): a pack wing's picture moved per direction (O779).
++// Pure and header-only so client/tools/chaospieceshift_test.cpp can run it without the engine; it uses Point2 of chaospiece.h
++// (base patch 0209).
++// The purchased wings of pair 83 (O747) were drawn from straight above: their four direction rows turn one picture, so facing
++// north the wings lie on the side of the body towards the viewer and the picture hangs 8 to 13 px under the south one (and
++// 2 to 5 px left; pair 90, V46). The game's camera looks from the south at a slant: from behind, wings on the back stand as
++// high as from the front (the rule of the code-drawn wings, O770). A row of client_chaos_wingfit/wear_pieces.lua `shifts`
++// (made by client/tools/sprites/gen_wst_wear.py from the pair) moves the wings' picture of one direction by whole sprite px,
++// on top of the anchor tile of 0209; the body, its lift and the head / cape layer stay. A look or direction without a row
++// draws as before.
++#ifndef CHAOSPIECESHIFT_H
++#define CHAOSPIECESHIFT_H
++
++#include "chaospiece.h"
++
++#include <array>
++#include <unordered_map>
++
++namespace chaos {
++namespace piece {
++
++constexpr int kMaxShiftPx = 24;  // a larger move is a bad row: ignored
++constexpr int kDirections = 4;   // north, east, south, west (Otc::Direction 0-3)
++
++inline std::unordered_map<int, std::array<Point2, kDirections>>& shifts()
++{
++    static std::unordered_map<int, std::array<Point2, kDirections>> s;
++    return s;
++}
++
++// the move of a wings look's picture facing `dir` (0 north, 1 east, 2 south, 3 west), sprite px at 1x; a bad row sets nothing
++inline bool setShift(int look, int dir, int dx, int dy)
++{
++    if (look <= 0 || dir < 0 || dir >= kDirections)
++        return false;
++    if (dx < -kMaxShiftPx || dx > kMaxShiftPx || dy < -kMaxShiftPx || dy > kMaxShiftPx)
++        return false;
++    shifts()[look][static_cast<size_t>(dir)] = Point2{ dx, dy };
++    return true;
++}
++
++inline void clearShifts()
++{
++    shifts().clear();
++}
++
++// 0, 0 without a row, for a diagonal or any other direction
++inline Point2 shift(int look, int dir)
++{
++    if (dir < 0 || dir >= kDirections)
++        return Point2{};
++    auto it = shifts().find(look);
++    if (it == shifts().end())
++        return Point2{};
++    return it->second[static_cast<size_t>(dir)];
++}
++
++}  // namespace piece
++}  // namespace chaos
++
++#endif
+diff -ruN a/src/client/luafunctions_client.cpp b/src/client/luafunctions_client.cpp
+--- a/src/client/luafunctions_client.cpp
++++ b/src/client/luafunctions_client.cpp
+@@ -58,6 +58,7 @@
+ #include "chaosheadfit.h"
+ #include "chaospiece.h"
+ #include "chaoswear.h"
++#include "chaospieceshift.h"
+ #include "healthbars.h"
+ #include "uigrid.h"
+ 
+@@ -522,6 +523,9 @@
+     g_lua.bindGlobalFunction("setOutfitPackPiece", chaos::piece::setPiece);
+     g_lua.bindGlobalFunction("setOutfitWingsLift", chaos::piece::setLift);
+     g_lua.bindGlobalFunction("clearOutfitPackPieces", chaos::piece::clear);
++    // Chaos (base patch 0217): a pack wing's picture moved per direction (client_chaos_wingfit, wear_pieces.lua shifts)
++    g_lua.bindGlobalFunction("setOutfitPackShift", chaos::piece::setShift);
++    g_lua.bindGlobalFunction("clearOutfitPackShifts", chaos::piece::clearShifts);
+     // Chaos (base patch 0210): who wears which head piece and cape (game_cosmetics, the cosmetics "looks")
+     g_lua.bindGlobalFunction("setCreatureWear", chaos::wear::set);
+     g_lua.bindGlobalFunction("clearCreatureWear", chaos::wear::clear);
+diff -ruN a/src/client/outfit.cpp b/src/client/outfit.cpp
+--- a/src/client/outfit.cpp
++++ b/src/client/outfit.cpp
+@@ -33,6 +33,7 @@
+ #include "chaospiece.h"
+ #include "chaoswear.h"
+ #include "chaospiecewalk.h"
++#include "chaospieceshift.h"
+ 
+ #include <framework/graphics/painter.h>
+ #include <framework/graphics/drawcache.h>
+@@ -441,6 +442,10 @@
+         const chaos::piece::Point2 at = chaos::piece::place(-bodyDisplacement.x, -bodyDisplacement.y, packWingsType->getWidth(),
+                                                           packWingsType->getHeight(), packWing);
+         wingDest = dest + Point(at.x, at.y) * g_sprites.getOffsetFactor();
++        // Cinders of Chaos (base patch 0217): the wings' picture of this direction moved by its row (a pack wing drawn from
++        // above hangs low facing north); the body and its lift stay
++        const chaos::piece::Point2 turn = chaos::piece::shift(m_wings, direction);
++        wingDest += Point(turn.x, turn.y) * g_sprites.getOffsetFactor();
+         packPlaced = true;
+         if (!riding) {
+             // Cinders of Chaos (base patch 0211): walking, the body holds the steady lift (the mean of the row), so it moves
