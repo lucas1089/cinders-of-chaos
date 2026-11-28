@@ -429,6 +429,12 @@ jobs:
           /tmp/fxenv/bin/python -I client/tools/sprites/style_check_test.py
           # quality bar of the reference sprite (O625): synthetic art against sprite_quality_bar.json; `check` is not run on committed art
           /tmp/fxenv/bin/python -I client/tools/sprites/sprite_quality_test.py
+          # sprite forge (O781, docs/SPRITE_FORGE.md): picture to pixel grid, idle loops, pack and wall cut, walk sheets, prompt recipes (synthetic pictures)
+          /tmp/fxenv/bin/python -I client/tools/sprites/pixel_grid_test.py
+          /tmp/fxenv/bin/python -I client/tools/sprites/idle_loop_test.py
+          /tmp/fxenv/bin/python -I client/tools/sprites/sheet_cut_test.py
+          /tmp/fxenv/bin/python -I client/tools/sprites/walk_sheet_test.py
+          /tmp/fxenv/bin/python -I client/tools/sprites/forge_prompts_test.py
           python3 -I client/tools/sprites/donor_pick_test.py
 
       - name: 'Bot live map tiles (O727): gen_bot_map_tiles.py on a synthetic world map, items folder and swatch atlas (the pyramid, the swatch order, big swatches across a tile edge, the zoom levels, the pointer)'

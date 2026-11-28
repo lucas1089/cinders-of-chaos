@@ -520,6 +520,11 @@ Game sounds (game_chaossound, O238): short picks from four packs, cut, set to mo
   - Licence: GNU Affero General Public License v3.0 (LICENSE and NOTICE next to the program). Shipped in the Windows package (mapeditor) as our modified build, named Cinders Map Editor: in English, with our speed patches and a self-updater that installs our releases (mapeditor/patches), with the patched source zip of the same build (our patches inside); its About window names this editor, its authors and licence and says that we modified it. Without a build of ours the package ships their release with its source zip and leaves out its self-updater; the package replaces its 10.98 creatures.xml and items.xml with the game's (mapeditor/CHANGES.txt). It brings Qt 6 (LGPL-3.0) and a public-domain part of the LZMA SDK
   - Source: https://github.com/dewral/DewralMapEditor
   - Used for: editing the game map; its Lua scripts run our area generator and paint our area plans (mapeditor/cinders)
+- **Dotsmith**
+  - Author: Michael Araque
+  - Licence: MIT (Copyright (c) 2026 Michael Araque); the notice is kept in the header of each adapted tool
+  - Used for: the ideas and parts of the logic of our sprite forge tools, rewritten in Python at commit 4e33791: the picture to pixel grid clean-up, the layered idle loops of items and decor, the pack and wall set cut, the walk sheet layout and derived directions (client/tools/sprites/pixel_grid.py, idle_loop.py, sheet_cut.py, walk_sheet.py, O781, docs/SPRITE_FORGE.md); no Dotsmith code or model ships in the game
+  - Source: https://github.com/michyaraque/dotsmith
 
 <!-- credits:end -->
 
