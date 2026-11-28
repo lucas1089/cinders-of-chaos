@@ -60,9 +60,21 @@ end
 -- the client's thing data of a creature thing: size, displacement, patterns and sprite ids (LookPreviewCore.lookBox
 -- measures a look the anchors do not know from its tiles). Read once per id.
 local creatureThings = {}
+
+-- the dat is loaded (O782): game_outfitextras builds its preview at module load, before game_things loads the dat at
+-- the login screen. A thing type asked then is the engine's null type, logged as "invalid thing type client id 128 in
+-- category 1" (the neutral look) and kept in the cache below for the whole session. Before the load nothing is read
+-- or kept: the box falls back to look 128's and the next refresh, with the dat there, reads the real thing.
+local function datLoaded()
+  local f = g_things and g_things.isDatLoaded
+  if type(f) ~= 'function' then return true end
+  local ok, v = pcall(f)
+  return not ok or v ~= false
+end
+
 local function thingInfo(id)
   id = num(id)
-  if id <= 0 then return nil end
+  if id <= 0 or not datLoaded() then return nil end
   local cached = creatureThings[id]
   if cached ~= nil then return cached or nil end
   local info = false
@@ -192,6 +204,7 @@ local fxEvent
 local things = {}
 
 local function readThing(id, missile)
+  if not datLoaded() then return nil end
   local key = (missile and 'm' or 'e') .. tostring(id)
   if things[key] ~= nil then return things[key] or nil end
   local info = false

@@ -95,6 +95,9 @@ end
 
 -- the client's size and displacement of a creature thing (for a look outfit_anchors.lua does not know)
 local function thingInfo(id)
+  -- before the dat loads the engine has only its null type (logged as an invalid client id, O782)
+  local okd, loaded = pcall(function() return not g_things.isDatLoaded or g_things.isDatLoaded() end)
+  if okd and loaded == false then return nil end
   local ok, t = pcall(function() return g_things.getThingType(id, ThingCategoryCreature) end)
   if not ok or not t then return nil end
   local function get(m) local okm, v = pcall(t[m], t) return okm and v or nil end
