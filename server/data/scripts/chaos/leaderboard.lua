@@ -368,6 +368,10 @@ function LB.classGroups()
 	return LB.groupsCache
 end
 
+-- one group per class line (a base class and its two ascended classes, key = the base's vocation id). What the class
+-- rewards pay by (O778, the owner's "Paga por linha"): the weekly class podium (weekly_class.lua), the Weekly Challenge
+-- (weekly_challenge.lua) and the Greater Rift season brackets (greater_ladder.lua) pay one top 3 per line, as before
+-- V41 / O771; the 21 class tabs stay a view. Trending builds keep their snapshot by line too (build_trends.lua).
 function LB.lineGroups()
 	if not LB.lineGroupsCache then
 		LB.lineGroupsCache = buildGroups(false)
@@ -504,10 +508,11 @@ function LB.sendBoard(player, key, groupKey, season, mode)
 		local mine = LB.find(ranked, player:getGuid())
 		local champions, championGroup = {}, nil
 		if b.classAwards then
-			-- ranked per class (weekly_class.lua, O409): last week's podium of the class tab shown (the own class on
-			-- "All classes")
+			-- ranked per class (weekly_class.lua, O409): last week's podium of the line of the class tab shown (the own
+			-- class's line on "All classes")
+			-- the podium is paid per class line (O778): a class tab shows the podium of its line (cg.base, the line's key)
 			local cg = g or groupOfPlayer(player)
-			championGroup = cg and cg.key or nil
+			championGroup = LB.lineKeyOf(cg)
 			if championGroup and ChaosWeeklyClass and ChaosWeeklyClass.champions then
 				local okC, list = pcall(ChaosWeeklyClass.champions, championGroup)
 				champions = okC and list or {}

@@ -288,7 +288,7 @@ namespace Chaos.Core
             lines.AddRange(new[]
             {
                 Loc.T("The same layout for everyone this week, always at difficulty 1. Solo or a party of up to 4."),
-                Loc.T("Fastest clear per class: Leaderboards, Weekly Challenge Solo and Party. The top 3 of each class get Conquest Tokens."),
+                Loc.T("Fastest clear per class: Leaderboards, Weekly Challenge Solo and Party. The top 3 of each class line get Conquest Tokens."),
             });
             if (Json.Get(w, "current") != null && !Json.Truthy(w, "current", true)) lines.Add(Loc.T("This layout is last week's: the new one opens at the next server save."));
             else if (Json.Get(w, "resetIn") is double r) lines.Add(Loc.T("New layout in {0}.", Eg.Span(r)));

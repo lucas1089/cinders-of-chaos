@@ -1143,7 +1143,7 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Weekly Challenge %s: %s"] = "Desafio Semanal %s: %s",
   ["Layout seed %s, the same for every player."] = "Semente do mapa %s, a mesma para todos os jogadores.",
   ["The same layout for everyone this week, always at difficulty 1. Solo or a party of up to 4."] = "O mesmo mapa para todos nesta semana, sempre na dificuldade 1. Sozinho ou em grupo de até 4.",
-  ["Fastest clear per class: Leaderboards, Weekly Challenge Solo and Party. The top 3 of each class get Conquest Tokens."] = "Conclusão mais rápida por classe: Leaderboards, Desafio Semanal Solo e em Grupo. Os 3 primeiros de cada classe ganham Conquest Tokens.",
+  ["Fastest clear per class: Leaderboards, Weekly Challenge Solo and Party. The top 3 of each class line get Conquest Tokens."] = "Conclusão mais rápida por classe: Leaderboards, Desafio Semanal Solo e em Grupo. Os 3 primeiros de cada linha de classe ganham Conquest Tokens.",
   ["This layout is last week's: the new one opens at the next server save."] = "Este mapa é da semana passada: o novo abre no próximo server save.",
   ["New layout in %s."] = "Novo mapa em %s.",
   -- game_dungeons/killcounter.otui
@@ -1649,7 +1649,7 @@ ChaosLocaleStrings['pt-BR'] = {
   ["You have no score on this board this week."] = "Você não tem pontuação neste quadro nesta semana.",
   ["Your class is not on this ladder."] = "Sua classe não está neste ranking.",
   ["Top 3 on Monday: the title %s for a week, orbs to the inbox."] = "Top 3 na segunda: o título %s por uma semana, orbes no inbox.",
-  ["Top 3 of every class on Monday: Conquest Tokens."] = "Top 3 de cada classe na segunda: Conquest Tokens.",
+  ["Top 3 of every class line on Monday: Conquest Tokens."] = "Top 3 de cada linha de classe na segunda: Conquest Tokens.",
   ["Top 3 on Monday: the title %s for a week."] = "Top 3 na segunda: o título %s por uma semana.",
   ["Top 3 on Monday: orbs to the inbox."] = "Top 3 na segunda: orbes no inbox.",
   ["Nothing is awarded on this board."] = "Este quadro não dá prêmio.",
@@ -6954,8 +6954,8 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Your party is too large for the battleground."] = "O seu grupo é grande demais para o battleground.",
   ["Your party leader picks the queues."] = "O líder do seu grupo escolhe as filas.",
   -- O409: the weekly class board (game_leaderboard)
-  ["%s: last week's podium (the top 3 of every class get Conquest Tokens)"] = "%s: pódio da semana passada (os 3 melhores de cada classe ganham Conquest Tokens)",
-  ["Nobody yet: the podium of every class is rewarded on Monday."] = "Ninguém ainda: o pódio de cada classe é premiado na segunda-feira.",
+  ["%s line: last week's podium (the top 3 of every class line get Conquest Tokens)"] = "Linha %s: pódio da semana passada (os 3 melhores de cada linha de classe ganham Conquest Tokens)",
+  ["Nobody yet: the podium of every class line is rewarded on Monday."] = "Ninguém ainda: o pódio de cada linha de classe é premiado na segunda-feira.",
   -- O409: trending builds (game_passivetree trends)
   ["Trending Builds"] = "Builds em Alta",
   ["The most played builds of every class this week (no names). Import one from the list."] = "As builds mais jogadas de cada classe nesta semana (sem nomes). Importe uma da lista.",

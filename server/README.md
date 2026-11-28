@@ -14635,13 +14635,13 @@ A weekly board of the experience gained from monsters, ranked per class. Board `
   experience of monster kills to a buffer per character. Quests, tasks and other sources do not count.
 - The buffer goes to the board (`LB.record`, mode `add`) every `flushSeconds` (60) and at logout.
 - Fair per class: the board has class tabs; `LB.awards` skips a `classAwards` board, so no overall title and no orbs.
-- At the weekly reset (`LB.onReset`, Monday `resetHour` 6) the top `rewardTop` (3) of every class with at least
+- At the weekly reset (`LB.onReset`, Monday `resetHour` 6) the top `rewardTop` (3) of every class line (O778) with at least
   `minValue` experience get Conquest Tokens 30 / 20 / 10 (`ChaosConquest.grantGuid`, source `weekly_class`; offline too).
 - The podium rows go to `chaos_weekly_class_podium` (week, board, class, rank, player, value, tokens). A week with rows
   is never paid twice (a manual `/leaderboard reset` included). Rows older than `keepWeeks` (12) are deleted.
-- A broadcast names the winner of every class. A Discord post (kind `weekly_class`, channel `records`) lists the podium
-  of every class, one inline field per class (`ChaosDiscordCore.weeklyClass`, `discord_lib.php` kind and colour).
-- The client window shows last week's podium of the class tab (or the player's own class) in the champion panel.
+- A broadcast names the winner of every class line. A Discord post (kind `weekly_class`, channel `records`) lists the
+  podium of every line, one inline field per line (`ChaosDiscordCore.weeklyClass`, `discord_lib.php` kind and colour).
+- The client window shows last week's podium of the class tab's line (or the player's own line) in the champion panel.
 - The website Leaderboards page shows the board, its class dropdown and last week's podium of every class.
 - Staff: `/weeklyclass` prints the buffer size and the last paid week.
 
@@ -14657,9 +14657,30 @@ Beastmaster, ...). `LB.classGroups()` (cached in `LB.groupsCache`) is what every
 weekly boards, the Weekly Challenge, the season ladder, the Greater Rift ladder and the records. The group key is the
 vocation id and its name the vocation's name. `ladder.tabs = "line"` brings back the old line tabs. `LB.lineGroups()`
 keeps the line grouping for `build_trends.lua`, whose snapshot is keyed by `class_base`.
-Effects: the weekly class podium and the Weekly Challenge pay the top of every one of the 21 classes, not of every line,
-so more Conquest Tokens go out each week; podium rows of earlier weeks keep their base id as the class. Test:
-`tests/leaderboard_test.lua` (order, Beastmaster alone).
+Effects at the time: the weekly class podium and the Weekly Challenge paid the top of every one of the 21 classes, not
+of every line, so more Conquest Tokens went out each week (undone by O778 below). Test: `tests/leaderboard_test.lua`
+(order, Beastmaster alone).
+
+**Paid per class line (O778, owner 2026-11-28 "Paga por linha").** The class rewards rank and pay by class line again,
+as before O771: a line is a base class with its two ascended classes (`LB.lineGroups()`, key = the base's vocation id,
+name = the base's name). Who reads it:
+- `weekly_class.lua` `onWeekEnd`: the top 3 of every line with `minValue` get 30 / 20 / 10 Conquest Tokens; the
+  podium row's `class_base` is the line's base; the broadcast and the Discord post name the 1st / podium of every line.
+- `weekly_challenge.lua` `onWeekEnd`: the top 3 of every line on each board (solo, party).
+- `greater_ladder.lua` (Greater Rift season brackets): the place on the (mode, line) board picks the bracket; the
+  `/greater` text shows that board ("Top, solo, your class line:").
+The 21 class tabs stay a view (ladder, weekly boards, season, records): a player still finds the Beastmaster apart from
+the Ranger, which was the fault O771 fixed, and the podium under a tab is the one of its line
+(`LB.lineKeyOf(g)` in `leaderboard_core.lua`, the tab's `base`; `leaderboard.lua` `sendBoard` sends it as
+`championGroup`). Paying per tab would give one character of a small ascended class a 1st place that a bigger class
+of its line cannot reach, and triple the tokens: 21 x 60 = 1260 a week on the podium and 2520 on the Weekly Challenge,
+against 420 and 840 per line. The texts say "class line": the board info of `weekly_xp`, the client hint
+(`boardpick.lua`), the champion panel (`"%s line: last week's podium (the top 3 of every class line get Conquest
+Tokens)"`), the Weekly Challenge text of `game_dungeons`, the Unity mirror (`Leaderboard.cs`, `EndgamePve.cs`), all with
+pt-BR ("linha de classe"). Podium rows of the O771 weeks keyed by an ascended class id stay in the table and are not
+shown. Tests: `tests/weekly_class_test.lua` and `tests/weekly_challenge_test.lua` (a week of all 21 classes pays one
+top 3 per line: 420 and 840 tokens, 1260 and 2520 per class tab; the mocked engine pays the lines though the class
+tabs differ), `tests/greater_rift_test.lua` (two classes of one line share one board: one Champion and one Vanguard).
 
 **Tests:** `tests/weekly_class_test.lua` (board flags, tabs, buffer, tops, awards, texts, Discord kind on both ends, the
 SQL file, the mocked engine: monster kills only, flush, logout, the week end, no double pay);
@@ -22740,7 +22761,7 @@ Owner 2026-11-19 ("do what you recommended"): the rift past tier 15, endless, wi
 - **The rule** (`greater.rule`, per Greater tier g): every rift monster and guardian has health x 1.06^g and hits x 1.03^g (`R.applyGreater` on the run's effects, so the pack and the guardian both take it, the party scaling and the modifiers stay on top); the shown monster level is 1025 + 25 g (`R.displayLevel`; the engine adds 0.15% damage a level, patch 0090, which the model counts); every finisher's chest gold and orbs x min(3, 1 + 0.04 g). The pack and guardian budgets stay the tier 15 ones (sized for the tier 15 level), so the curve is one number: the health step.
 - **The clock** (`greater.clock`): the run's time is the size band limit of tier 15 (21 minutes, 1,260 s), whatever layout the slot gave (`R.runLimit`, O674; before it followed the layout's own band, 1,000 s on a small one). Sealed in at most 50% of it the key goes up 3 tiers, in 75% up 2, in time up 1 (`R.greaterUp`, `R.greaterNext`). A failed rift (time up, no lives, nobody back in time) does not lose the key: the opener, if online, gets one 1 tier lower (never under a plain tier 15 key; modifiers are rolled again; a sealed run rolls the count as a better key). Leaving a run by hand or by logging out spends the key as in any rift. A crash or a clean shutdown refunds it through the run marker (storage `riftRun`, which holds the shown tier; Omen markers start at 1000, so Greater tiers are capped at 999). `maxShownTier` 999 is the only end.
 - **Ladder** (`greater_ladder.lua`, tables `chaos_greater_rift`, `chaos_greater_rift_rewards`): per season (the Infinity Tower's windows, `Chaos.tower` epoch, 30 days), character, mode (solo, party of 2-5) and class: the best shown tier, then the least seconds, with the vocation of that run. Equal tier and time share a place. Staff groups and anti-bot held accounts are left out. **Testers never rank**: `G.record` skips `Chaos.isTesterGuid` and a tester player, the ladder query uses `Chaos.notTesterSql`, `ChaosLeaderboard.record` skips testers too. The client shows the tier in two new weekly boards of `leaderboard_config.lua`, `greater_solo` and `greater_party` (class tabs by the window's own rule, title only, `noReward`; board names have pt-BR in `client_chaos_locale`); the season ladder of your class and the key purchase are read with the Greater Ladder button of the same page (a text window; the website reads the two tables); a chat command is not offered to players. The rift's own weekly board "Rifts" now takes the shown tier of a Greater run.
-- **Rewards** (`greater.rewards`): *personal best*: every shown tier above the character's best of the season over both modes, at most 3 a run, pays Orbs of Fate and Upheaval, gold to the bank and omen fragments (base + perTier x (tier - 16)); a row of `chaos_greater_rift_rewards` (kind `pb`, slot = the tier) is written once, delivered at once to a character online and at the next login otherwise (marked before the items are made, as the tower). *Season end*: `ChaosGreater.checkSeasons` (startup and every 60 s; server_config `chaos_greater_rift_season_done`; one season, oldest first) ranks every (mode, class) board and writes one row per character and mode (kind `season`): place 1 Greater Champion (40 / 80 orbs, 150 fragments), 2-3 Greater Vanguard, 4-10 Greater Delver, 11-50 Greater Seeker, anybody at tier 20 or more Greater Rifter. *Pinnacle fragment* (O667): each finisher of a sealed run rolls 2% x min(3, (shown - 15) / 5); on a win `ChaosPinnacle.grantFragment(player, "greater_rift", {tier, players})` is called through `pcall` when that system exists; without it nothing happens. The contract is named here so O667 can adopt it or rename it.
+- **Rewards** (`greater.rewards`): *personal best*: every shown tier above the character's best of the season over both modes, at most 3 a run, pays Orbs of Fate and Upheaval, gold to the bank and omen fragments (base + perTier x (tier - 16)); a row of `chaos_greater_rift_rewards` (kind `pb`, slot = the tier) is written once, delivered at once to a character online and at the next login otherwise (marked before the items are made, as the tower). *Season end*: `ChaosGreater.checkSeasons` (startup and every 60 s; server_config `chaos_greater_rift_season_done`; one season, oldest first) ranks every (mode, class line) board (O778: a base class with its two ascended classes, `LB.lineGroups()`) and writes one row per character and mode (kind `season`): place 1 Greater Champion (40 / 80 orbs, 150 fragments), 2-3 Greater Vanguard, 4-10 Greater Delver, 11-50 Greater Seeker, anybody at tier 20 or more Greater Rifter. *Pinnacle fragment* (O667): each finisher of a sealed run rolls 2% x min(3, (shown - 15) / 5); on a win `ChaosPinnacle.grantFragment(player, "greater_rift", {tier, players})` is called through `pcall` when that system exists; without it nothing happens. The contract is named here so O667 can adopt it or rename it.
 - **Staff.** `/greaterseason status | pay` (group 4+): the season, its end, the last season paid; `pay` runs the check now (idempotent).
 - **Storage and tables.** Storage 7103150 - 7103159 (`greater.key.boughtStorage`): +0 keys bought today, +1 the day (YYYYMMDD); +2..9 free. Tables `chaos_greater_rift`, `chaos_greater_rift_rewards` (in `launch_wipe_tables.json`: wipe). No opcode.
 - **Model** (`python3 -I server/tools/greater_rift_model.py --check`, `greater_balance_config.lua`, test `greater_rift_model_test.py`; computed, not measured). The median class's damage (`class_dps_model.py median_dps`, 1 target for the guardian, 5 for the packs, to level 2500) against the typical player of the tier 15 rift model (`R.clearParts`: 394 s packs + 96 s guardian + 62 s walk = 552 s of the 1260 s clock at level 1025), the packs and guardian x the health step; the clock is the wall. Against the guardian: its tier 15 damage (`guardian_model.py`) x the rule x the engine level bonus against the median class's pool and healing at the player's level. Reached tier (solo = party of 5, a rift scales its total health with the party): level 1025 tier 30, 1500 tier 36, 2000 tier 42, 2500 tier 46 (9 to 14 runs of +1 / +2 / +3 from the first key). Tier 16 costs 33% of the clock at level 1500 (581 s at the entry level), each tier 5.4-5.9% more seconds than the one before (limits 3-10%: no wall, no free tier), the guardian deals 0.80 x the median healing at tier 16 and 1.70 x at tier 36 (a median class dies in 7.6 s then 3.4 s with no healing; the 60% hit cap of the rift guardians is not counted), growing at most 6% a tier; a party of 5 takes 1.37 x the solo pressure per head. The limits and the reason of each are in `greater_balance_config.lua`; `--detail --level N` prints every tier. Not modelled: key modifiers (they add difficulty and reward on top of the tier), gear beyond the median class, the Atlas's time bonus and charms (they only add seconds).
@@ -29170,11 +29191,12 @@ and queues a Discord post. Owner's idea of 2026-11-03. No opcode, no storage, no
   seconds shown as m:ss, class tabs (`byClass`), title only for the overall top 3 (`noReward`: no orbs). The game window
   and the website's Leaderboards page read the config, so both show them with class tabs.
 - **The week's end.** `ChaosLeaderboard.onReset` (new: hooks run after each weekly reset with the ended week's ranked
-  boards) calls `onWeekEnd`: the 1st, 2nd and 3rd of every class tab of each board get 30 / 20 / 10 Conquest Tokens
+  boards) calls `onWeekEnd`: the 1st, 2nd and 3rd of every class line (O778: base class and its two ascended classes,
+  `LB.lineGroups()`, not every class tab) of each board get 30 / 20 / 10 Conquest Tokens
   (`ChaosConquest.grantGuid`, new: by guid, online or not, logged as source `weekly_challenge`), and one Discord row of
   the new kind `weekly_challenge` (channel `records`; `discord_core.lua` `D.weeklyChallenge`) lists the top 3 of each
-  class on both boards. The website worker knows the kind (`discord_lib.php` `KINDS`, `COLORS`).
-- **Economy.** Conquest Tokens are an existing currency. At most 7 classes x 2 boards x 60 = 840 tokens a week on the
+  class line on both boards. The website worker knows the kind (`discord_lib.php` `KINDS`, `COLORS`).
+- **Economy.** Conquest Tokens are an existing currency. At most 7 lines x 2 boards x 60 = 840 tokens a week on the
   server, 120 for one character; a dungeon clear alone gives 5-15 tokens with a daily cap of 90
   (`conquest_config.lua`; the test holds 2 x 30 under that cap). No item, gold or orb is added.
 

@@ -11,7 +11,7 @@
 --                 a won run calls onClear per finisher with the run time and party size
 --   leaderboard   challenge_solo / challenge_party (leaderboard_config.lua): mode "min", time, class tabs, the title of
 --                 the overall top 3; ChaosLeaderboard.onReset -> onWeekEnd: Conquest Tokens for the top 3 of every
---                 class (conquest.lua grantGuid) and the Discord row "weekly_challenge" (discord.lua)
+--                 class line (LB.lineGroups, O778; conquest.lua grantGuid) and the Discord row "weekly_challenge" (discord.lua)
 -- The client: game_dungeons shows the challenge with its week and theme (dungeon payload `weekly`), the boards are in
 -- game_leaderboard and on the website's Leaderboards page (both read leaderboard_config.lua).
 -- Staff: /challenge (status: the built week, seed and theme; the current week).
@@ -169,10 +169,11 @@ end
 function WC.onWeekEnd(prev, ranked)
 	local cfg = C()
 	local LB = ChaosLeaderboard
-	if not cfg.enabled or not (LB and LB.classGroups and LB.filterClass) then
+	if not cfg.enabled or not (LB and LB.lineGroups and LB.filterClass) then
 		return
 	end
-	local groups = LB.classGroups()
+	-- the top 3 of every class line (a base class and its two ascended classes), not of every class tab (O778)
+	local groups = LB.lineGroups()
 	local n = math.max(cfg.rewardTop or 3, cfg.discordTop or 3)
 	local tops = {}
 	for _, key in ipairs({cfg.boards.solo, cfg.boards.party}) do
@@ -193,7 +194,7 @@ function WC.onWeekEnd(prev, ranked)
 		local sections = W.discordSections(cfg, tops, {[cfg.boards.solo] = "Solo", [cfg.boards.party] = "Party"})
 		ChaosDiscord.queue(ChaosDiscordCore.weeklyChallenge(ChaosDiscordConfig, label, theme, sections))
 	end
-	log(string.format("week %s ended: %d Conquest Tokens to the class top %d", label, given, cfg.rewardTop or 3))
+	log(string.format("week %s ended: %d Conquest Tokens to the top %d of every class line", label, given, cfg.rewardTop or 3))
 end
 
 local function hook()

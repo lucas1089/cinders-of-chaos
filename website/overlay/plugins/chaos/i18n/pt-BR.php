@@ -499,7 +499,7 @@ return array(
 	'Patch notes right in the client' => 'Notas de atualização dentro do cliente',
 	// the weekly class board (leaderboards.php, O409)
 	'Trending builds: what each class plays this week' => 'Builds em alta: o que cada classe joga nesta semana',
-	"Last week's podium of every class" => 'Pódio de cada classe na semana passada',
+	"Last week's podium of every class line" => 'Pódio de cada linha de classe na semana passada',
 	'Every class is ranked on its own: the top 3 of each class earn Conquest Tokens at the Monday reset.' => 'Cada classe tem o seu próprio ranking: os 3 melhores de cada classe ganham Conquest Tokens no reset de segunda-feira.',
 	'No week has been scored yet. The podium appears after the Monday reset.' => 'Nenhuma semana foi pontuada ainda. O pódio aparece depois do reset de segunda-feira.',
 	// trending builds (trends.php, O409)

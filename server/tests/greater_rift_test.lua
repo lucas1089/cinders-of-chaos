@@ -475,7 +475,9 @@ Chaos.select = function(q, cols)
 end
 local lbCalls = {}
 ChaosLeaderboard = {record = function(board, who, value, mode) lbCalls[#lbCalls + 1] = {board, who, value, mode} return {} end,
-	classGroups = function() return {{key = "knight", name = "Knight", ids = {4, 8}}} end}
+	-- the 21 class tabs (V41) are a view; the season brackets pay per class line (O778, the owner's "Paga por linha")
+	classGroups = function() return {{key = 4, base = 4, name = "Knight", ids = {4}}, {key = 8, base = 4, name = "Elite Knight", ids = {8}}} end,
+	lineGroups = function() return {{key = 4, base = 4, name = "Knight", ids = {4, 8}}} end}
 local pinnacle = {}
 local function reset()
 	queries, lbCalls, pinnacle = {}, {}, {}
@@ -574,7 +576,10 @@ do
 	eq(count("INSERT IGNORE INTO `chaos_greater_rift_rewards`"), 4, "one reward row per character and mode")
 	local champion = 0
 	for _, q in ipairs(queries) do if q:find("Greater Champion", 1, true) then champion = champion + 1 end end
-	eq(champion, 2, "the first of the knights, solo and party, gets the first bracket")
+	eq(champion, 2, "the first of the knight line, solo and party, gets the first bracket (per class tab it would be 4)")
+	local vanguard = 0
+	for _, q in ipairs(queries) do if q:find("Greater Vanguard", 1, true) then vanguard = vanguard + 1 end end
+	eq(vanguard, 2, "the second of the line (another class of it) gets the second bracket: one board per line (O778)")
 	ok(count("'season'") == 4, "kind season")
 	-- the check: the stored season is the marker
 	reset()

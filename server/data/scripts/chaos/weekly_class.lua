@@ -6,12 +6,14 @@
 --   EventCallback onGainExperience (index cfg.expIndex, after every bonus and cap): a monster kill's experience is kept
 --                 per character in memory; once a minute and at logout it goes to ChaosLeaderboard.record(cfg.board,
 --                 player, amount, "add") (the weekly_xp board of leaderboard_config.lua: classAwards, class tabs)
---   ChaosLeaderboard.onReset -> onWeekEnd: per class tab the top 3 get Conquest Tokens (conquest.lua grantGuid, source
---                 "weekly_class"), one broadcast names the 1st of every class, one Discord row "weekly_class"
---                 (discord_core.lua D.weeklyClass) lists the podium of every class; the podium is written to
---                 chaos_weekly_class_podium (the website shows it; a second reset of the same week finds it and pays nothing)
--- The client: game_leaderboard shows the board with its class tabs (the meta's byClass); the website's Leaderboards page
--- shows it and last week's podium per class.
+--   ChaosLeaderboard.onReset -> onWeekEnd: per class line (ChaosLeaderboard.lineGroups: a base class and its two
+--                 ascended classes, O778 "Paga por linha") the top 3 get Conquest Tokens (conquest.lua grantGuid, source
+--                 "weekly_class"), one broadcast names the 1st of every line, one Discord row "weekly_class"
+--                 (discord_core.lua D.weeklyClass) lists the podium of every line; the podium is written to
+--                 chaos_weekly_class_podium, class_base = the line's base (the website shows it; a second reset of the
+--                 same week finds it and pays nothing)
+-- The client: game_leaderboard shows the board with its class tabs (the meta's byClass, one per class since V41) and,
+-- under a tab, last week's podium of that class's line; the website's Leaderboards page shows it and the podium per line.
 -- Staff: /weeklyclass (status: the week, characters with experience kept, the last week paid).
 
 if not Chaos then
@@ -103,7 +105,7 @@ end
 function WK.onWeekEnd(prev, ranked)
 	local cfg = C()
 	local LB = ChaosLeaderboard
-	if not cfg.enabled or not (LB and LB.classGroups and LB.filterClass) then
+	if not cfg.enabled or not (LB and LB.lineGroups and LB.filterClass) then
 		return
 	end
 	if paid(prev) then
@@ -111,7 +113,7 @@ function WK.onWeekEnd(prev, ranked)
 		return
 	end
 	local n = math.max(cfg.rewardTop or 3, cfg.discordTop or 3)
-	local tops = K.classTop(ranked[cfg.board] or {}, LB.classGroups(), n, LB.filterClass, cfg.minValue)
+	local tops = K.classTop(ranked[cfg.board] or {}, LB.lineGroups(), n, LB.filterClass, cfg.minValue) -- per line (O778)
 	local label = K.weekLabel(prev)
 	local given, now = 0, os.time()
 	for _, a in ipairs(K.awards(cfg, tops)) do
@@ -144,10 +146,11 @@ function WK.onWeekEnd(prev, ranked)
 	end
 	WK.lastPaid = prev
 	WK.podium = {week = nil, byClass = {}}
-	log(string.format("week %s ended: %d Conquest Tokens to the class top %d", label, given, cfg.rewardTop or 3))
+	log(string.format("week %s ended: %d Conquest Tokens to the top %d of every class line", label, given, cfg.rewardTop or 3))
 end
 
--- last week's podium of one class tab (leaderboard.lua sendBoard: the champions line of a classAwards board):
+-- last week's podium of one class line, groupKey = the line's base id (leaderboard.lua sendBoard: the champions line of a
+-- classAwards board, a class tab asks for its line, O778):
 -- {{rank, rankName, name, value}}, read once a week from the podium table
 WK.podium = WK.podium or {week = nil, byClass = {}}
 function WK.champions(groupKey)
