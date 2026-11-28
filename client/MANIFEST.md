@@ -8873,3 +8873,15 @@ in the task report, not committed). Server side: server/README.md "F49 fixes (O7
 - **Banshee 3744, Werelion 3745, Leaf Golem 3746, White Lion 1041, Hellhound 3280** (O768): the walk keeps the body column of the stand within 0.7 px in every direction, no split view. The split seen before came from the pair 88 shards read with a newer dat; with the one `Tibia.spr` of pair 90 nothing is wrong.
 - **Tests**: `gen_wst_wear_test.py` (`turn_of`, the table rules on broken copies, the `shifts` rows, `live` with a wrong move), `wingfit_core_test.lua` (74 rows, north only, bad rows skipped) in luajit and lua5.3, `client/tools/chaospieceshift_test.cpp`; `gen_wst_wear.py live` on pair 90 passes. A clip of every piece before and after (105 s) was made; it is not committed.
 - **Owner steps**: none on the server. The fix reaches players with the next client build (base patch 0217); an older client ignores `shifts`.
+
+## Sprite forge tools (O781, `tools/sprites/pixel_grid.py`, `idle_loop.py`, `sheet_cut.py`, `walk_sheet.py`, `forge_prompts.py`)
+
+Owner 2026-11-28: adapt what fits of Dotsmith (MIT, Michael Araque, commit 4e33791). docs/SPRITE_FORGE.md has the review,
+what was adapted and skipped, and the order of the steps. No module and no pair change: these are art tools only.
+- `pixel_grid.py clean`: an AI drop back to one art pixel per pixel, before `item_post.py` and `style_check.py`.
+- `idle_loop.py make`: layered idle loops for items and decor, held to our alpha, palette, speck and frame rules.
+- `sheet_cut.py pack / walls / room`: pack sheets and 2 x 2 wall sets cut onto our anchors; a room preview.
+- `walk_sheet.py engine / derive / fit`: walk sheets to the engine columns; on our nine redraws east = transpose of south
+  holds (0.82 to 0.93), a mirror does not (0.20 to 0.41).
+- `forge_prompts.py`: prompt recipes in our words, text only.
+Tests on synthetic pictures: `*_test.py` of each (ci.yml art job, fx venv). Outputs are never committed.
