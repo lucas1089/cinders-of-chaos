@@ -1051,6 +1051,20 @@ do
   eq(#L.helpRows(nil), 0, 'no help: no rows')
 end
 
+-- ---------------------------------------------------------------- V45: a tile value fits its tile
+do
+  local px = function(t) return #t * 7 end -- 7 px a byte
+  -- the Interval tile of the Misericorde of the Pale Vow on a Thief: "0.86s (1.2/s)" was cut to "0.86s (1.2/"
+  local v = L.baseValue({ k = 'yourinterval', v = 0.86, fmt = 'sec' })
+  eq(v, '0.86s (1.2/s)', 'interval under a second carries its rate')
+  eq(L.fitValue(v, 66, px), '0.86s', 'too wide: the rate goes, the seconds stay')
+  eq(px(L.fitValue(v, 66, px)) <= 66, true, 'the short form fits')
+  eq(L.fitValue(v, 100, px), v, 'room enough: unchanged')
+  eq(L.fitValue('~1,450', 10, px), '~1,450', 'a number is never cut')
+  eq(L.fitValue('192', nil, px), '192', 'no width: unchanged')
+  eq(L.fitValue(nil, 60, px), '', 'no text')
+end
+
 -- ---------------------------------------------------------------- V37: a tile caption fits its tile
 do
   local px = function(t) return #t * 7 end -- 7 px a byte

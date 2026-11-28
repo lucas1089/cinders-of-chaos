@@ -223,7 +223,8 @@ local function statTiles(panel, y, tiles)
     end
     putLabel(tile, 'ItemTooltipCap', 5, centred(tw), L.fitCaption(L.caps(t.caption), tw - 4,
       function(text) return textWidth('ItemTooltipCap', text) end))
-    putLabel(tile, 'ItemTooltipLine', 19, centred(tw), t.value, t.hero and C.gold or '#f2e6cc')
+    putLabel(tile, 'ItemTooltipLine', 19, centred(tw), L.fitValue(t.value, tw - 4,
+      function(text) return textWidth('ItemTooltipLine', text) end), t.hero and C.gold or '#f2e6cc')
   end
   return y + 38 + 5
 end
