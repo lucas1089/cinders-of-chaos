@@ -359,6 +359,77 @@ wrong[2]['dy'] = str(int(wrong[2]['dy']) - 2)
 check(any('west' in b for b in ww.live(ndat_p, nspr_p, prow, psums, assets=83, log=quiet, shifts=wrong)),
       'live: a wrong west move is found and named')
 
+# ---- the head pieces and capes moved onto the body (O785, base patch 0219)
+torso_img = np.zeros((64, 64), np.uint8)
+torso_img[20:60, 30:40] = 255          # a body 40 rows high: torso band rows 32-48, columns 30-39
+tx, ty = ww.torso_xy(torso_img)
+check(abs(tx - 34.5) < 0.6 and abs(ty - 40.0) < 0.6, 'torso_xy: the median column and the middle of the torso band: %s %s' % (tx, ty))
+check(ww.torso_xy(np.zeros((32, 32), np.uint8)) is None, 'torso_xy: nothing visible')
+ref = {'heads': [(10.0, 4.0), (11.0, 4.0), (10.0, 4.0), (9.0, 5.0)], 'capes': [(10.0, 12.0)] * 4}
+hp = {(0, 2, 0): pic(40, 30), (0, 2, 1): pic(40, 30), (0, 0, 0): pic(38, 33), (0, 0, 1): pic(38, 33),
+      (0, 1, 0): pic(44, 28), (0, 1, 1): pic(44, 28), (0, 3, 0): pic(40, 30), (0, 3, 1): pic(40, 30)}
+check(ww.layer_of(hp, 2, ref['heads'], 'heads', 0) == (2, -3, -2.0, 3.0), 'layer_of: a head 2 px left and 3 low facing north moves back: %s'
+      % (ww.layer_of(hp, 2, ref['heads'], 'heads', 0),))
+check(ww.layer_of(hp, 2, ref['heads'], 'heads', 1) == (-3, 2, 3.0, -2.0), 'layer_of: the body\'s own move facing east is taken out: %s'
+      % (ww.layer_of(hp, 2, ref['heads'], 'heads', 1),))
+check(ww.layer_of(hp, 2, ref['heads'], 'heads', 3) == (-1, 1, 1.0, -1.0), 'layer_of: a head on the same picture as south follows the head facing west')
+check(ww.layer_of(hp, 2, ref['capes'], 'capes', 0) == (2, -3, -2.0, 3.0), 'layer_of: a cape facing north moves both ways')
+check(ww.layer_of(hp, 2, ref['capes'], 'capes', 1) == (0, 2, 4.0, -2.0), 'layer_of: a cape facing east moves in height only: %s'
+      % (ww.layer_of(hp, 2, ref['capes'], 'capes', 1),))
+empty = {k: np.zeros((96, 96, 4), np.uint8) for k in hp}
+check(ww.layer_of(empty, 2, ref['heads'], 'heads', 0) == (0, 0, 0.0, 0.0), 'layer_of: an empty view does not move')
+check(ww.layer_problems() == [], 'the committed pack_wear_layer_shift.csv keeps its rules')
+lrows = ww.load_layer_shifts()
+lp = [r for r in rows if r['cat'] in ('heads', 'capes')]
+check(len(lrows) == 3 * len(lp) == 432, 'a north, an east and a west row per head piece and cape: %d' % len(lrows))
+horns = [r for r in lrows if r['key'] == 'antelope_horns' and r['dir'] == 'north']
+check(len(horns) == 1 and (horns[0]['dx'], horns[0]['dy'], horns[0]['off_y']) == ('1', '-3', '2.8'),
+      'Antelope Horns 3590 facing north: 2.8 px low, moved 1 right and 3 up')
+check(all(r['dx'] == '0' for r in lrows if r['cat'] == 'capes' and r['dir'] != 'north'), 'capes facing east or west: never across')
+check(all(abs(int(r['dy']) + float(r['off_y'])) <= 0.55 for r in lrows), 'after the move every view is within half a px in height')
+summary = ww.layer_summary(lrows)
+check(len(summary) == 6 and all('0.5 max' in s or '0.4 max' in s or '0.3 max' in s for s in summary), 'layer_summary: six lines, at most 0.5 px after')
+
+
+def bad_layer(change):
+    c = copy.deepcopy(lrows)
+    change(c)
+    return ' '.join(ww.layer_problems(c, rows))
+
+
+check('order' in bad_layer(lambda c: c.reverse()), 'a head / cape row out of order is found')
+check('order' in bad_layer(lambda c: c.pop()), 'a missing cape row is found')
+check('order' in bad_layer(lambda c: c[0].__setitem__('cat', 'capes')), 'a wrong kind is found')
+check('height only' in bad_layer(lambda c: next(r for r in c if r['cat'] == 'capes' and r['dir'] == 'east').update(dx='1')),
+      'a cape moved across facing east is found')
+check('dx' in bad_layer(lambda c: c[0].update(dx=str(int(c[0]['dx']) + 2))), 'a head dx off its offset is found')
+check('dy' in bad_layer(lambda c: c[0].update(dy=str(int(c[0]['dy']) + 2))), 'a dy off its offset is found')
+check('whole px' in bad_layer(lambda c: c[0].update(dy='1.5')), 'a part px is found')
+check('over 24' in bad_layer(lambda c: c[0].update(dy='25', off_y='-25.0')), 'a move over 24 px is found')
+check('columns' in ' '.join(ww.layer_problems([], rows)), 'an empty head / cape table is found')
+lt = ww.client_text(rows, [], [{'look': '3590', 'key': 'antelope_horns', 'cat': 'heads', 'dir': 'north', 'dx': '1', 'dy': '-3',
+                                'off_x': '-1.3', 'off_y': '2.8'},
+                               {'look': '3590', 'key': 'antelope_horns', 'cat': 'heads', 'dir': 'west', 'dx': '0', 'dy': '0',
+                                'off_x': '0.4', 'off_y': '0.2'}])
+check('wearShifts = {' in lt and '{3590,0,1,-3}' in lt and '{3590,3,' not in lt,
+      'wear_pieces.lua: wearShifts as look, direction, dx, dy; a row of no move left out')
+
+# measured on the synthetic pair against its two bodies (outfits 1 and 3), then held by live
+bref = ww.body_ref(nd, nspr, [1, 3])
+check(bref is not None and len(bref['heads']) == 4 and len(bref['capes']) == 4, 'body_ref: a head and a torso per direction')
+check(ww.body_ref(nd, nspr, [FIRST + 50]) is None, 'body_ref: no body in the pair')
+lp_rows = ww.layer_rows(nd, nspr, prow, bodies=[1, 3], log=quiet)
+check(lp_rows is not None and len(lp_rows) == 3 * sum(1 for r in prow if r['cat'] in ('heads', 'capes')),
+      'layer_rows: three rows per head piece and cape of the pair')
+check(ww.layer_rows(nd, nspr, prow, bodies=[FIRST + 50], log=quiet) is None, 'layer_rows: none without a body')
+check(ww.layer_problems(lp_rows, prow) == [], 'layer_rows: the rows keep the rules')
+check(ww.live(ndat_p, nspr_p, prow, psums, assets=83, log=quiet, layer=lp_rows, bodies=[1, 3]) == [], 'live: the head / cape moves pass')
+wrong = copy.deepcopy(lp_rows)
+wrong[-1]['dy'] = str(int(wrong[-1]['dy']) - 2)
+check(any('pack_wear_layer_shift' in b and 'west' in b
+          for b in ww.live(ndat_p, nspr_p, prow, psums, assets=83, log=quiet, layer=wrong, bodies=[1, 3])),
+      'live: a wrong cape move is found and named')
+
 shutil.rmtree(case.dir, ignore_errors=True)
 shutil.rmtree(tmp, ignore_errors=True)
 if fails:

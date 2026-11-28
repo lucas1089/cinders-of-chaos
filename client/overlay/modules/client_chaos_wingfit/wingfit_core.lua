@@ -170,7 +170,9 @@ end
 -- O779 (base patch 0217): wear_pieces.lua `shifts` {look, dir, dx, dy} moves a pack wing's picture facing a direction
 -- (dir 0 north .. 3 west, px at 1x, at most 24): the pack draws from above, so its north view hung 8-13 px low, and (O784)
 -- its east and west views 1-10 px low. setShift(look, dir, dx, dy) for each good row, in table order; returns how many. The
--- Float option does not touch them. A table of O779 (north rows only) loads the same way.
+-- Float option does not touch them. A table of O779 (north rows only) loads the same way. O785 (base patch 0219): `field`
+-- names another list of the same rows, wearShifts (the head pieces and capes, moved onto the body's head or back); default
+-- shifts.
 M.MAX_SHIFT = 24
 local function goodShift(row)
   local ok = type(row) == 'table'
@@ -181,10 +183,11 @@ local function goodShift(row)
     and math.abs(row[4]) <= M.MAX_SHIFT
 end
 
-function M.applyShifts(data, setShift)
-  if type(data) ~= 'table' or type(data.shifts) ~= 'table' then return 0 end
+function M.applyShifts(data, setShift, field)
+  field = field or 'shifts'
+  if type(data) ~= 'table' or type(data[field]) ~= 'table' then return 0 end
   local n = 0
-  for _, row in ipairs(data.shifts) do
+  for _, row in ipairs(data[field]) do
     if goodShift(row) then
       setShift(row[1], row[2], row[3], row[4])
       n = n + 1
@@ -195,11 +198,12 @@ end
 
 -- O784 (base patch 0218): the same good rows grouped by look, for setOutfitPackShifts(look, text): text "nx ny ex ey sx sy
 -- wx wy", a direction without a row 0 0, a later row of a look and direction wins (as with setShift). Looks in the order of
--- their first row; returns how many looks.
-function M.applyShiftTexts(data, setShifts)
-  if type(data) ~= 'table' or type(data.shifts) ~= 'table' then return 0 end
+-- their first row; returns how many looks. `field` as for applyShifts.
+function M.applyShiftTexts(data, setShifts, field)
+  field = field or 'shifts'
+  if type(data) ~= 'table' or type(data[field]) ~= 'table' then return 0 end
   local order, moves = {}, {}
-  for _, row in ipairs(data.shifts) do
+  for _, row in ipairs(data[field]) do
     if goodShift(row) then
       local m = moves[row[1]]
       if not m then

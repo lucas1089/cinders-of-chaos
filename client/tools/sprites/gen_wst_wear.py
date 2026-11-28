@@ -7,6 +7,7 @@
     python3 -I gen_wst_wear.py build DAT SPR OUT_DIR --src DIR   # the cliff-built pair 82 -> pair 83; any other refused
     python3 -I gen_wst_wear.py live DAT SPR           # a built pair holds every piece (pending while PAIR_ASSETS < 83)
     python3 -I gen_wst_wear.py shifts DAT SPR [--check]   # the north, east and west move of every pack wing (O779, O784)
+                                                          # and of every head piece and cape (O785)
     python3 -I gen_wst_wear.py preview OUT_DIR --src DIR         # wear_preview.mp4 on the class sheets (never committed)
 
 Owner 2026-11-24: "Pode importar, com levitação e camada nova. Remova as nossas artes já publicadas que estão com qualidade
@@ -49,8 +50,7 @@ front (the rule of the code-drawn wings, O770 `north_hang`). art_import/pack_wea
 north picture: the whole pixels that put the alpha centre of y pattern 0 facing north on the one facing south (`turn_of`,
 `hang` = north minus south before, px). `shifts DAT SPR` measures them on a built pair; `live` holds the table to the pair.
 wear_pieces.lua `shifts` hands them to the engine (base patch 0217, setOutfitPackShift): the wings' picture moves, the body,
-its lift and the head / cape layer stay. Heads and capes are not moved: their north views differ by the piece (a cape seen
-from behind covers the back), not by one rule.
+its lift and the head / cape layer stay. Heads and capes have their own rows since O785 (below).
 
 East and west views (O784). Seen beside the fixed north view, the side views still hung under the south one: on pair 90 the
 alpha centre of y pattern 0 facing east is 4.8 to 9.8 px lower (median 7.9), facing west 1.0 to 6.5 px (median 4.1). The same
@@ -60,6 +60,20 @@ dx 0. Only the height moves: facing east or west the wings trail behind the body
 which is where wings on the back belong. A wing whose side hang rounds to 0 keeps its row in the table (dy 0) and gets no
 line in wear_pieces.lua. Base patch 0217 already moves any direction a row names; base patch 0218 adds the call that hands
 in a look's four moves at once (setOutfitPackShifts), and an older client with 0217 only takes the rows one by one.
+
+Heads and capes (O785). The head pieces and capes turn one picture drawn from above too. Measured on pair 90 against the
+body they are worn on (body_ref: per direction the median over the class looks of gen_class_redraw.py of the head,
+gen_wing_centres.head_xy, and of the torso, torso_xy; px on the wearer's tile), every one of the 144 pieces sat more than 1 px
+off in some direction: a head piece's alpha centre (y pattern 0) moved against the body's head between south and the other
+views by up to 12.2 px facing north (median 1.5; Antelope Horns 3590 2.8 px low), 7.8 east (2.8), 8.6 west (3.2); a cape
+against the torso 19.8 px facing north (median 9.3, it hung low), 9.3 east, 5.3 west. The south view is where the pack sets
+a piece on its body (a horn on the head, a cape behind the back), so the rule keeps that offset in every view (`layer_of`):
+a head piece moves both ways facing north, east and west (it sits on the head seen from any side); a cape moves both ways
+facing north (it covers the back) and only in height facing east and west (it hangs behind the body there, like the wings).
+art_import/pack_wear_layer_shift.csv holds a north, an east and a west row per piece (`off_x`, `off_y` the offset before,
+px); `shifts DAT SPR` writes it beside the wings table and `live` holds it to the pair. wear_pieces.lua `wearShifts` hands
+the moves to the engine through the same calls and table as the wings (base patches 0217, 0218: a head or cape look is
+never a wings look); base patch 0219 adds a look's move to the head / cape layer of 0210. After: every view within 0.5 px.
 
 Input pair: pair 82 with the cliff pieces of O746 (gen_cliff_art.py build): items end at 44605, outfits at 3588, and the
 cliff pieces pass gen_cliff_art.py live. Any other pair is refused. The order of pair 83 is therefore cliff art first, then
@@ -459,6 +473,177 @@ def shift_problems(srows=None, rows=None):
     return bad
 
 
+# ------------------------------------------------------------------------------------------------ heads and capes (O785)
+LAYER_SHIFTS = os.path.join(HERE, 'art_import', 'pack_wear_layer_shift.csv')
+LAYER_HEADER = ['look', 'key', 'cat', 'dir', 'dx', 'dy', 'off_x', 'off_y']
+LAYER_CATS = ('heads', 'capes')
+LAYER_DIRS = SHIFT_DIRS                  # north, east, west: south is the reference view
+
+
+def torso_xy(alpha):
+    """(x, y) in canvas px of a body's torso: x the median column of the body core's torso band (gen_wing_centres.torso_x, O576),
+    y the middle of that band (rows TORSO_LO to TORSO_HI of the core's box); None when nothing is visible"""
+    import numpy as np
+    import gen_outfit_anchors as anchors
+    import gen_wing_centres as wc
+    a = np.asarray(alpha)
+    m = a >= anchors.ALPHA
+    if not m.any():
+        return None
+    core = anchors.largest_part(anchors.solid(m, wc.TORSO_OPEN))
+    ys, xs = np.nonzero(core)
+    top, bot = ys.min(), ys.max() + 1
+    r0, r1 = top + wc.TORSO_LO * (bot - top), top + wc.TORSO_HI * (bot - top)
+    sel = (ys >= r0) & (ys < r1)
+    if not sel.any():
+        sel = np.ones(len(ys), bool)
+    return float(np.median(xs[sel])), float((r0 + r1) / 2.0)
+
+
+def body_looks():
+    """the player class looks (gen_class_redraw.py table): the bodies a head piece or a cape is worn on"""
+    import gen_class_redraw
+    return [look for r in gen_class_redraw.rows() for look in gen_class_redraw.looks_of(r)]
+
+
+def body_ref(dat, spr, looks=None):
+    """{'heads': [(x, y)] * 4, 'capes': [(x, y)] * 4}: per direction (north, east, south, west) the median over the body looks
+    of the head (gen_wing_centres.head_xy) and of the torso (torso_xy), px from the top left of the wearer's tile (the canvas
+    minus its first (tiles - 1) tiles; the place base patch 0209 puts a piece's anchor tile on). None without a body."""
+    import numpy as np
+    import gen_wing_centres as wc
+    looks = body_looks() if looks is None else looks
+    heads, torsos = [], []
+    for look in looks:
+        t = dat.outfit(look)
+        if t is None or not t.sprites or t.px < 4:
+            continue
+        ox, oy = (t.w - 1) * 32, (t.h - 1) * 32
+        h, b = [], []
+        for d in range(4):
+            al = wc.frame_alpha_union(t, spr, d)
+            hh, tt = wc.head_xy(al), torso_xy(al)
+            if hh is None or tt is None:
+                break
+            h.append((hh[0] - ox, hh[1] - oy))
+            b.append((tt[0] - ox, tt[1] - oy))
+        if len(h) == 4:
+            heads.append(h)
+            torsos.append(b)
+    if not heads:
+        return None
+    return {'heads': [tuple(float(v) for v in p) for p in np.median(np.array(heads), axis=0)],
+            'capes': [tuple(float(v) for v in p) for p in np.median(np.array(torsos), axis=0)]}
+
+
+def layer_of(pats, frames, ref, cat, d):
+    """(dx, dy, off_x, off_y) of a head piece or cape facing north (d 0), east (1) or west (3), `ref` the body's head or torso
+    per direction on the piece's canvas: off is how far its picture (y pattern 0, alpha centre, mean of the frames) sits from the body's head (heads) or torso (capes) more
+    than the south view does, the body's own move between the directions taken out; the move puts it back. A head piece moves
+    both ways in every direction (it sits on the head seen from any side); a cape moves both ways facing north (it covers the
+    back) and only in height facing east or west (it hangs behind the body there, like the wings, O784)."""
+    v = centre([pats[(0, d, f)] for f in range(frames)])
+    s = centre([pats[(0, 2, f)] for f in range(frames)])
+    if v is None or s is None:
+        return 0, 0, 0.0, 0.0
+    ox = (v[0] - ref[d][0]) - (s[0] - ref[2][0])
+    oy = (v[1] - ref[d][1]) - (s[1] - ref[2][1])
+    across = cat == 'heads' or d == 0
+    return (-rnd(ox) if across else 0), -rnd(oy), round(ox, 1), round(oy, 1)
+
+
+def layer_rows(dat, spr, rows=None, ref=None, bodies=None, log=print):
+    """three rows a head piece or cape (north, east, west), in table order, measured on a built pair against the median body
+    (body_ref of `bodies`, default the class looks); None when a piece or every body is missing"""
+    rows = load() if rows is None else rows
+    ref = body_ref(dat, spr, bodies) if ref is None else ref
+    if ref is None:
+        log('no body look of the class table in the pair')
+        return None
+    out = []
+    for r in rows:
+        if r['cat'] not in LAYER_CATS:
+            continue
+        pats = pair_pictures(dat, spr, r)
+        if isinstance(pats, str):
+            log(pats)
+            return None
+        n, ax, ay = int(r['frames']), int(r['ax']) * 32, int(r['ay']) * 32
+        on_canvas = [(x + ax, y + ay) for x, y in ref[r['cat']]]   # the body on the piece's canvas (its anchor tile)
+        for d in LAYER_DIRS:
+            dx, dy, ox, oy = layer_of(pats, n, on_canvas, r['cat'], ('north', 'east', 'south', 'west').index(d))
+            out.append({'look': r['look'], 'key': r['key'], 'cat': r['cat'], 'dir': d, 'dx': str(dx), 'dy': str(dy),
+                        'off_x': '%.1f' % ox, 'off_y': '%.1f' % oy})
+    return out
+
+
+def layer_text(lrows):
+    return ','.join(LAYER_HEADER) + '\n' + ''.join(','.join(r[c] for c in LAYER_HEADER) + '\n' for r in lrows)
+
+
+def load_layer_shifts(path=LAYER_SHIFTS):
+    if not os.path.isfile(path):
+        return []
+    with open(path, newline='', encoding='utf-8') as f:
+        return list(csv.DictReader(f))
+
+
+def layer_problems(lrows=None, rows=None):
+    """the rules of pack_wear_layer_shift.csv that need no pair: a north, an east and a west row per head piece and cape in
+    table order, whole px inside SHIFT_MAX, each moved axis the offset rounded the other way, a cape facing east or west
+    moved in height only (dx 0)"""
+    lrows = load_layer_shifts() if lrows is None else lrows
+    rows = load() if rows is None else rows
+    if not lrows or set(lrows[0].keys()) != set(LAYER_HEADER):
+        return ['pack_wear_layer_shift.csv: the columns are not %s (run gen_wst_wear.py shifts DAT SPR)' % LAYER_HEADER]
+    want = [(r['look'], r['key'], r['cat'], d) for r in rows if r['cat'] in LAYER_CATS for d in LAYER_DIRS]
+    if [(r['look'], r['key'], r['cat'], r['dir']) for r in lrows] != want:
+        return ['pack_wear_layer_shift.csv: a north, an east and a west row per head piece and cape of pack_wear.csv in its '
+                'order (%d rows wanted, %d rows)' % (len(want), len(lrows))]
+    bad = []
+    num = r'-?\d+\.\d'
+    for r in lrows:
+        tag = 'pack_wear_layer_shift.csv %s %s %s' % (r['look'], r['key'], r['dir'])
+        if not re.fullmatch(r'-?\d+', r['dx']) or not re.fullmatch(r'-?\d+', r['dy']) or \
+                not re.fullmatch(num, r['off_x']) or not re.fullmatch(num, r['off_y']):
+            bad.append('%s: dx, dy whole px, off_x, off_y px with one decimal' % tag)
+            continue
+        dx, dy, ox, oy = int(r['dx']), int(r['dy']), float(r['off_x']), float(r['off_y'])
+        if abs(dx) > SHIFT_MAX or abs(dy) > SHIFT_MAX:
+            bad.append('%s: a move over %d px' % (tag, SHIFT_MAX))
+        if abs(dy + oy) > 0.55:
+            bad.append('%s: dy %d is not the offset %.1f rounded the other way' % (tag, dy, oy))
+        across = r['cat'] == 'heads' or r['dir'] == 'north'
+        if across and abs(dx + ox) > 0.55:
+            bad.append('%s: dx %d is not the offset %.1f rounded the other way' % (tag, dx, ox))
+        if not across and dx != 0:
+            bad.append('%s: a cape facing east or west moves in height only (dx 0)' % tag)
+    return bad
+
+
+def layer_summary(lrows):
+    """per kind and direction: max and median of the offset before and after the move (px, the larger axis moved)"""
+    out = []
+    for cat in LAYER_CATS:
+        for d in LAYER_DIRS:
+            sel = [r for r in lrows if r['cat'] == cat and r['dir'] == d]
+            if not sel:
+                continue
+            across = cat == 'heads' or d == 'north'
+
+            def off(r, moved):
+                ox, oy = float(r['off_x']), float(r['off_y'])
+                if moved:
+                    ox, oy = ox + int(r['dx']), oy + int(r['dy'])
+                return max(abs(ox) if across else 0.0, abs(oy))
+            before = sorted(off(r, False) for r in sel)
+            after = sorted(off(r, True) for r in sel)
+            out.append('%d %s facing %s: off %.1f px max, %.1f median before; %.1f max, %.1f median after; %d over 1 px before' % (
+                len(sel), cat, d, before[-1], before[len(before) // 2], after[-1], after[len(after) // 2],
+                sum(1 for v in before if v > 1.0)))
+    return out
+
+
 # ------------------------------------------------------------------------------------------------ generated files
 def art_by_row_text(rows=None, rows_designs=None, curation_cut=None):
     """one line per designs.csv row: its look, wings id, key and the art it has from pair 83"""
@@ -484,7 +669,7 @@ def lua_str(s):
     return '"%s"' % s.replace('\\', '\\\\').replace('"', '\\"')
 
 
-def client_text(rows=None, shifts=None):
+def client_text(rows=None, shifts=None, layer=None):
     rows = load() if rows is None else rows
     lines = ['-- Generated by client/tools/sprites/gen_wst_wear.py ids from client/tools/sprites/art_import/pack_wear.csv. Do not edit.',
              '-- The purchased wings, heads and capes of client pair %d (O747): per look the anchor tile (the column and row of the' % PAIR_OUT,
@@ -508,6 +693,13 @@ def client_text(rows=None, shifts=None):
     lines.append('  -- 1 east, 3 west), dx, dy}, px at 1x; a direction without a row does not move')
     lines.append('  shifts = {')
     for r in (load_shifts() if shifts is None else shifts):
+        if r['dx'] != '0' or r['dy'] != '0':
+            lines.append('    {%s,%d,%s,%s},' % (r['look'], ('north', 'east', 'south', 'west').index(r['dir']), r['dx'], r['dy']))
+    lines.append('  },')
+    lines.append('  -- O785, base patch 0219: a head piece\'s or cape\'s picture moved facing a direction onto the body\'s head or back')
+    lines.append('  -- {look, dir, dx, dy} as in shifts; the same engine table, read by the head / cape layer of base patch 0210')
+    lines.append('  wearShifts = {')
+    for r in (load_layer_shifts() if layer is None else layer):
         if r['dx'] != '0' or r['dy'] != '0':
             lines.append('    {%s,%d,%s,%s},' % (r['look'], ('north', 'east', 'south', 'west').index(r['dir']), r['dx'], r['dy']))
     lines.append('  },')
@@ -762,10 +954,11 @@ def build(dat_path, spr_path, out_dir, src, rows=None, first=FIRST_NEW, last_ite
     return md5
 
 
-def live(dat_path, spr_path, rows=None, sums=None, assets=None, log=print, shifts=None):
-    """a built pair holds every piece at its look with the pictures of pack_wear.sums and the north moves of
-    pack_wear_shift.csv (O779; the committed table when the rows are the committed ones, else `shifts` when given);
-    pending while windows-assets is older than 83"""
+def live(dat_path, spr_path, rows=None, sums=None, assets=None, log=print, shifts=None, layer=None, bodies=None):
+    """a built pair holds every piece at its look with the pictures of pack_wear.sums, the wing moves of
+    pack_wear_shift.csv (O779, O784) and the head / cape moves of pack_wear_layer_shift.csv (O785, measured against the
+    median of `bodies`, default the class looks); the committed tables when the rows are the committed ones, else `shifts`
+    and `layer` when given; pending while windows-assets is older than 83"""
     from datspr import Dat, Spr
     own = rows is None
     rows = load() if rows is None else rows
@@ -794,6 +987,15 @@ def live(dat_path, spr_path, rows=None, sums=None, assets=None, log=print, shift
             diff = [g['key'] for g, w in zip(got or [], shifts) if g != w] or ['%d rows, the table %d' % (len(got or []), len(shifts))]
             diff = [g['key'] + ' ' + g['dir'] for g, w in zip(got or [], shifts) if g != w] or diff
             bad.append('pack_wear_shift.csv is not the move of the pair (%s): run gen_wst_wear.py shifts DAT SPR' % ', '.join(diff[:5]))
+    if layer is None and own:
+        layer = load_layer_shifts()
+    if layer is not None and not bad:
+        got = layer_rows(dat, spr, rows, bodies=bodies, log=log)
+        if got != layer:
+            diff = [g['key'] + ' ' + g['dir'] for g, w in zip(got or [], layer) if g != w] or \
+                ['%d rows, the table %d' % (len(got or []), len(layer))]
+            bad.append('pack_wear_layer_shift.csv is not the move of the pair (%s): run gen_wst_wear.py shifts DAT SPR'
+                       % ', '.join(diff[:5]))
     for line in bad:
         log(line)
     log('%d of %d pieces hold their pictures' % (len(rows) - len(bad), len(rows)))
@@ -891,6 +1093,7 @@ def check(log=print):
     if len(set(sums.values())) != len(sums):
         bad.append('two pieces have the same pictures')
     bad += shift_problems(rows=rows)
+    bad += layer_problems(rows=rows)
     bad += generated(True, rows)
     for line in bad:
         log(line)
@@ -946,11 +1149,17 @@ def main(argv):
             print(__doc__)
             return 2
         from datspr import Dat, Spr
-        srows = shift_rows(Dat(args[0]), Spr(args[1]))
+        dat, spr = Dat(args[0]), Spr(args[1])
+        srows = shift_rows(dat, spr)
         if srows is None:
+            return 1
+        lrows = layer_rows(dat, spr)
+        if lrows is None:
             return 1
         bad = write_or_check(SHIFTS, shift_text(srows), chk)
         bad += shift_problems(srows)
+        bad += write_or_check(LAYER_SHIFTS, layer_text(lrows), chk)
+        bad += layer_problems(lrows)
         if not bad:
             bad += generated(chk)
         for line in bad:
@@ -960,7 +1169,9 @@ def main(argv):
             hang = sorted(float(r['hang']) for r in dr)
             print('%d pack wings: %s minus south %.1f to %.1f px before (median %.1f), moved %d to %d px up' % (
                 len(dr), d, hang[0], hang[-1], hang[len(hang) // 2], min(-int(r['dy']) for r in dr), max(-int(r['dy']) for r in dr)))
-        print('%d rows%s' % (len(srows), '' if bad else ': ok'))
+        for line in layer_summary(lrows):
+            print(line)
+        print('%d wing rows, %d head / cape rows%s' % (len(srows), len(lrows), '' if bad else ': ok'))
         return 1 if bad else 0
     if cmd == 'preview':
         if len(args) != 1 or not src:

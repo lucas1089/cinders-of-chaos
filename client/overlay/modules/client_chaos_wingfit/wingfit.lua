@@ -36,10 +36,14 @@ function applyPieces()
   -- O779 / O784 (base patches 0217, 0218): the north, east and west views of a pack wing moved up to the south one's
   -- height; with 0218 a look's four moves go in at once, with 0217 only row by row (the same result); a client without
   -- either patch draws the pack's place
-  if setOutfitPackShifts then
-    WingFitCore.applyShiftTexts(ChaosWearPieces, function(look, text) setOutfitPackShifts(look, text) end)
-  elseif setOutfitPackShift then
-    WingFitCore.applyShifts(ChaosWearPieces, function(look, dir, dx, dy) setOutfitPackShift(look, dir, dx, dy) end)
+  -- O785 (base patch 0219): the head pieces and capes moved onto the body's head or back the same way (wearShifts, other looks
+  -- than the wings, the same engine table); a client without 0219 keeps them unused
+  for _, field in ipairs({ 'shifts', 'wearShifts' }) do
+    if setOutfitPackShifts then
+      WingFitCore.applyShiftTexts(ChaosWearPieces, function(look, text) setOutfitPackShifts(look, text) end, field)
+    elseif setOutfitPackShift then
+      WingFitCore.applyShifts(ChaosWearPieces, function(look, dir, dx, dy) setOutfitPackShift(look, dir, dx, dy) end, field)
+    end
   end
 end
 

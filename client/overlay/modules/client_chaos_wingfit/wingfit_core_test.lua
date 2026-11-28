@@ -239,5 +239,34 @@ ns = C.applyShifts({ shifts = { { 5, 0, 1, -9 }, { 0, 0, 1, 1 }, { 6, 4, 0, 1 },
 ok(ns == 1 and good == 1, 'bad shift rows skipped')
 ok(C.applyShifts(nil, error) == 0 and C.applyShifts({ pieces = {} }, error) == 0, 'no shifts: nothing')
 
+-- O785 (base patch 0219): the head pieces and capes moved onto the body's head or back (pack_wear_layer_shift.csv, pair 90,
+-- against the median class body): wearShifts, the same rows, other looks than the wings; a head moves both ways in every
+-- direction, a cape both ways facing north and only in height facing east or west; south never moves
+local headLooks, capeLooks = {}, {}
+for _, h in ipairs(P.heads) do headLooks[h.look] = true end
+for _, c in ipairs(P.capes) do capeLooks[c.look] = true end
+ok(type(P.wearShifts) == 'table' and #P.wearShifts > 0 and #P.wearShifts <= 3 * (#P.heads + #P.capes),
+  'up to a north, an east and a west move per head piece and cape: ' .. tostring(P.wearShifts and #P.wearShifts))
+local worn = {}
+local nw = C.applyShifts(P, function(look, d, dx, dy) worn[#worn + 1] = { look, d, dx, dy } end, 'wearShifts')
+ok(nw == #P.wearShifts and #worn == nw, 'every wear row handed in: ' .. nw)
+local horns, train = {}, {}
+for _, t in ipairs(worn) do
+  ok((headLooks[t[1]] or capeLooks[t[1]]) and not wingLooks[t[1]], 'a moved look is a head piece or a cape ' .. t[1])
+  ok(t[2] ~= 2, 'south never moves: ' .. t[1])
+  if capeLooks[t[1]] and t[2] ~= 0 then ok(t[3] == 0, 'a cape facing east or west moves in height only: ' .. t[1]) end
+  if t[1] == 3590 then horns[t[2]] = t end
+  if t[1] == 3697 then train[t[2]] = t end
+end
+ok(horns[0] and horns[0][3] == 1 and horns[0][4] == -3, 'Antelope Horns 3590 facing north: 1 right, 3 up (it sat 2.8 px low)')
+ok(train[0] and train[0][4] == -20 and train[1] and train[1][4] == -9, 'Mermaid Scale Train 3697: 20 up facing north, 9 facing east')
+local wtexts = {}
+local nwl = C.applyShiftTexts(P, function(look, text) wtexts[look] = text end, 'wearShifts')
+ok(nwl == #P.heads + #P.capes, 'one text per head piece and cape (every one sat more than 1 px off): ' .. nwl)
+ok(wtexts[3590] == '1 -3 3 -5 0 0 0 -2', 'Antelope Horns text: ' .. tostring(wtexts[3590]))
+-- the wings rows are not touched by the field, and an old table without wearShifts hands in nothing
+ok(C.applyShifts(P, function() end) == #P.shifts, 'the default field is still the wings shifts')
+ok(C.applyShiftTexts({ shifts = { { 2442, 0, 2, -9 } } }, error, 'wearShifts') == 0, 'a table without wearShifts: nothing')
+
 if fails > 0 then os.exit(1) end
 print('wingfit_core_test: all checks passed')

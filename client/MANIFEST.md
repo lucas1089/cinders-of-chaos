@@ -8452,6 +8452,24 @@ files, anchor tile, frames, lift, price, twin aura) and `pack_wear.sums` (one sh
   off. Live pair checks on pair 84: `gen_wing_centres.py --check`, `clean_wing_shadows.py check-clean`,
   `gen_wst_wear.py live` (218 of 218), `gen_drawn_wings.py live-new` (6 of 6) pass; `gen_drawn_wings.py live` (no flags) says
   44 of 121: it still expects drawn art on the 73 looks pair 83 gave the pack art and the painted rows (not a client fault).
+- **Heads and capes on the body in every direction (O785, base patch 0219).** The pack turns one picture drawn from above for the
+  heads and capes too. Measured on pair 90 against the body they are worn on (`body_ref`: per direction the median over the class
+  looks of `gen_class_redraw.py` of the head, `gen_wing_centres.head_xy`, and of the torso, `torso_xy`), every one of the 144
+  pieces sat more than 1 px off where its south view sits in some direction. Before, max / median of the offset against south
+  (px): heads facing north 12.2 / 1.5 (Antelope Horns 3590 2.8 low; the halos and sigils about 12 low, the earlier note "by
+  design" is dropped: from behind a halo stands as high as from the front), east 7.8 / 2.8, west 8.6 / 3.2; capes facing north
+  19.8 / 9.3 (the trains hung low), east 9.3 / 2.2, west 5.3 / 0.6. The rule keeps the south view's offset in every view: a head
+  piece moves both ways facing north, east and west; a cape both ways facing north (it covers the back) and only in height facing
+  east and west (it hangs behind the body there, as the wings trail). `gen_wst_wear.py shifts DAT SPR` writes
+  `art_import/pack_wear_layer_shift.csv` (432 rows, `off_x` / `off_y` the offset before) beside the wings table; `check` holds
+  its rules, `live` holds it to the pair; `wear_pieces.lua` `wearShifts` (390 rows of a move) goes in through the calls of
+  0218 / 0217 into the same table as the wings (other looks); base patch 0219 adds a look's move to the head / cape layer of
+  0210. After, from the pair: every moved view within 0.5 px (median 0.3 to 0.4). A clip from pair 90 (body 2044, the 5 heads
+  and the 5 capes most off, four directions, before | after, 35 s; the ten most off overall are all capes) was made; it is not
+  committed. Not seen in a client yet (no client build in this change). Unity draws no head / cape layer, so it has nothing to
+  mirror. Tests: `gen_wst_wear_test.py` (`torso_xy`, `layer_of`, the table rules on broken copies, `body_ref` / `layer_rows` /
+  `live` on the synthetic pair), `wingfit_core_test.lua` (wearShifts), `client/tools/chaoswearshift_test.cpp`. Owner steps:
+  none on the server; the fix reaches players with the next client build (base patch 0219).
 
 ### Pair 83 build order
 
@@ -8868,8 +8886,8 @@ in the task report, not committed). Server side: server/README.md "F49 fixes (O7
 - **Seen**: the Linux main client on pair 90 (the engine loaded the one `Tibia.spr`, "Sprites: 1691068 in one file", dat md5 234b9603..., no `Tibia.sprshards` in the folder) against a local server, the own body 2044 on a flat black ground, every piece facing north, east, south and west and walking. Numbers only for the purchased pieces (the alpha centre of the visible part, sprite px; the art was never looked at or sent anywhere).
 - **Code-drawn wings** (O581, O583, O770: 937, 939, 940, 1180, 2140, 2141, 2231, 2232, 2395, 2457, 3555-3560): north minus south +1.1 (940) and +1.2 (3555); the O770 fix holds. Nothing to do.
 - **Purchased wings** (O747, all 74): facing north 11 to 15 px lower than facing south in the client (2442 Pearl Scallop +11.3, 2390 +13.1, 2398 +14.5), +8.4 to +12.8 px in the pair, and 2 to 5 px to the left. The pack draws from straight above: in the pair the north picture is the transpose of the west one and the east one of the south one, so on the one anchor tile of base patch 0209 the north view falls on the viewer's side. Fixed: `gen_wst_wear.py shifts DAT SPR` measures per pack wing the whole px that put the north picture's centre on the south one's (`turn_of`) into `art_import/pack_wear_shift.csv` (74 rows, dx 2..5, dy -8..-13, Pearl 2, -9; `check` holds its rules, `live` holds it to the pair), `wear_pieces.lua` gets a `shifts` table, `client_chaos_wingfit` hands it to the engine (`WingFitCore.applyShifts`, `setOutfitPackShift`), base patch 0217 moves the wings' picture (client/BASE.md "0217"). After: north minus south +1.1 (2442), +0.5 (2390), +0.7 (2398), +2.0 (2406); x within 1.1 px; the drawn wings unchanged. No new art and no new pair. East and west stay 2 to 11 px under south, inside the range of the drawn wings.
-- **Head piece** 3590 (O747): north minus south +2.8 in the pair; the heads' median is +0.3 (some halos +12 by design). Left as is.
-- **Cape** 3656 (O747): +14 to +16 px lower facing north, where it covers the back as seen from behind. Left as is on purpose.
+- **Head piece** 3590 (O747): north minus south +2.8 in the pair; the heads' median is +0.3 (some halos +12). Left as is then; moved since O785 (see "Purchased wings, heads and capes (O747)").
+- **Cape** 3656 (O747): +14 to +16 px lower facing north, where it covers the back as seen from behind. Left as is then; moved since O785.
 - **Banshee 3744, Werelion 3745, Leaf Golem 3746, White Lion 1041, Hellhound 3280** (O768): the walk keeps the body column of the stand within 0.7 px in every direction, no split view. The split seen before came from the pair 88 shards read with a newer dat; with the one `Tibia.spr` of pair 90 nothing is wrong.
 - **Tests**: `gen_wst_wear_test.py` (`turn_of`, the table rules on broken copies, the `shifts` rows, `live` with a wrong move), `wingfit_core_test.lua` (74 rows, north only, bad rows skipped) in luajit and lua5.3, `client/tools/chaospieceshift_test.cpp`; `gen_wst_wear.py live` on pair 90 passes. A clip of every piece before and after (105 s) was made; it is not committed.
 - **Owner steps**: none on the server. The fix reaches players with the next client build (base patch 0217); an older client ignores `shifts`.
