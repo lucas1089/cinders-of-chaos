@@ -128,8 +128,13 @@ PAIR_STIPPLE_LATTICE = 90   # pair 89 with the dither stages O769 missed redrawn
                     # --stage 2): the 1/16 Bayer stage filled (effect 3896, 719-726) and the glow lattice under half density
                     # re-cut at 0.5 like the imports since O523 (effect 708, 745, 2913). Client art only, no server gate.
 
-PAIR_ASSETS = 90
-PAIR_ASSETS_DAT_MD5 = '234b9603ea190fa46371fecfea9b3764'
+PAIR_STIPPLE_GLOW = 91   # pair 90 with the Bayer glows whose density changes within a few pixels requantised (O786,
+                    # client/tools/sprites/fix_stipple.py build --stage 3): the local density of the dither quantised to alpha
+                    # 0 / 144 / 255, the solid core kept (218 effects and 2 missiles: 3902, 3892, 3945, 4062 and the like).
+                    # Client art only, no server gate.
+
+PAIR_ASSETS = 91
+PAIR_ASSETS_DAT_MD5 = 'ab6f6fe60ca3697ec05df614a06a1ad8'
 
 
 def parse(text):
