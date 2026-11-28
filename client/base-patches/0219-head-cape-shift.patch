@@ -1,0 +1,70 @@
+# Chaos: a head piece's or cape's picture moved per direction onto the body's head or back (O785; client/BASE.md "0219";
+# src/client/chaoswearshift.h (new, pure), outfit.cpp; after 0001-0218, 0210 and later unchanged).
+# The purchased head pieces and capes of pair 83 (O747) turn one picture drawn from above like the wings: on pair 90, against
+# the median class body, a head piece facing north, east or west sat up to 12 px off where its south view sits on the head
+# (Antelope Horns 3590 2.8 px low facing north), a cape facing north up to 20 px low. client_chaos_wingfit/wear_pieces.lua
+# `wearShifts` (gen_wst_wear.py shifts, from the pair) names the move per look and direction; client_chaos_wingfit hands it
+# in through setOutfitPackShifts of 0218 (or setOutfitPackShift of 0217): the one move table, keyed by look, so a head or cape
+# look never touches a wing. The head / cape layer of 0210 now adds the look's move of the drawn direction to the piece's
+# anchor place (chaoswearshift.h placed); the body, its lift and the wings stay. A look or direction without a row draws as
+# before, and a client without 0219 keeps the rows in the table unused.
+diff -ruN a/src/client/chaoswearshift.h b/src/client/chaoswearshift.h
+--- /dev/null
++++ b/src/client/chaoswearshift.h
+@@ -0,0 +1,33 @@
++// Cinders of Chaos (base patch 0219): a head piece's or cape's picture moved per direction onto the body (O785).
++// Pure and header-only so client/tools/chaoswearshift_test.cpp can run it without the engine; it uses Point2 of chaospiece.h
++// (base patch 0209) and the move table of chaospieceshift.h (base patch 0217, filled by 0217's setOutfitPackShift or 0218's
++// setOutfitPackShifts).
++// The purchased head pieces and capes of pair 83 (O747) are drawn from straight above like the wings: their four direction
++// rows turn one picture, so seen from the other sides they sit off the body's head or back (pair 90: a head piece up to 12 px,
++// a cape facing north up to 20 px low). client_chaos_wingfit/wear_pieces.lua `wearShifts` (made by
++// client/tools/sprites/gen_wst_wear.py shifts from the pair) names a move per look and direction; the head / cape layer of
++// base patch 0210 adds it to the piece's anchor place. A head piece and a cape are other looks than the wings, so they share
++// the one table without clashing. A look or direction without a row draws as before; the body and the wings stay.
++#ifndef CHAOSWEARSHIFT_H
++#define CHAOSWEARSHIFT_H
++
++#include "chaospiece.h"
++#include "chaospieceshift.h"
++
++namespace chaos {
++namespace wear {
++
++// the place of a worn piece's picture: its anchor place `at` (chaospiece.h place) plus the look's move facing `dir`
++// (0 north, 1 east, 2 south, 3 west; any other direction, a look of 0 or less, or a look without a row: no move)
++inline piece::Point2 placed(const piece::Point2& at, int look, int dir)
++{
++    if (look <= 0)
++        return at;
++    const piece::Point2 s = piece::shift(look, dir);
++    return piece::Point2{ at.x + s.x, at.y + s.y };
++}
++
++}  // namespace wear
++}  // namespace chaos
++
++#endif
+diff -ruN a/src/client/outfit.cpp b/src/client/outfit.cpp
+--- a/src/client/outfit.cpp
++++ b/src/client/outfit.cpp
+@@ -34,6 +34,7 @@
+ #include "chaoswear.h"
+ #include "chaospiecewalk.h"
+ #include "chaospieceshift.h"
++#include "chaoswearshift.h"
+ 
+ #include <framework/graphics/painter.h>
+ #include <framework/graphics/drawcache.h>
+@@ -595,8 +596,9 @@
+             ThingType* wearType = g_things.rawGetThingType(look, ThingCategoryCreature);
+             if (!wearType || wearType->getNumPatternY() <= s.yPattern)
+                 continue;
+-            const chaos::piece::Point2 at = chaos::piece::place(-bodyDisplacement.x, -bodyDisplacement.y, wearType->getWidth(),
+-                                                              wearType->getHeight(), piece);
++            const chaos::piece::Point2 at = chaos::wear::placed(  // Chaos (base patch 0219): the look's move facing this way
++                chaos::piece::place(-bodyDisplacement.x, -bodyDisplacement.y, wearType->getWidth(), wearType->getHeight(), piece),
++                look, direction);
+             const int wearPhase = animate ? chaos::piece::phase(g_clock.millis(), wearType->getAnimationPhases()) : 0;
+             wearType->draw(dest + Point(at.x, at.y) * g_sprites.getOffsetFactor(), 0, direction, s.yPattern, 0, wearPhase,
+                            Color::white, lightView);
