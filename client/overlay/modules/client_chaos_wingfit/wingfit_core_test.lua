@@ -181,5 +181,27 @@ ok(nl == 74, 'float on: the lifts')
 ok(C.levitationOn(nil) and C.levitationOn(true) and C.levitationOn('true'), 'float is on by default')
 ok(not C.levitationOn(false) and not C.levitationOn('false'), 'float off when saved off')
 
+-- O779 (base patch 0217): the north view of every pack wing moves up onto the south one's height (pack_wear_shift.csv,
+-- pair 90: 8 to 13 px up, 2 to 5 px right); no other direction moves, a bad row is skipped, the Float option leaves them
+ok(type(P.shifts) == 'table' and #P.shifts == 74, 'a north move per pack wing: ' .. tostring(P.shifts and #P.shifts))
+local wingLooks = {}
+for look in pairs(P.lifts) do wingLooks[look] = true end
+local turned = {}
+local ns = C.applyShifts(P, function(look, d, dx, dy) turned[#turned + 1] = { look, d, dx, dy } end)
+ok(ns == 74 and #turned == 74, 'every row handed in: ' .. ns)
+local pearl
+for _, t in ipairs(turned) do
+  ok(wingLooks[t[1]], 'a moved look is a pack wing ' .. t[1])
+  ok(t[2] == 0, 'only facing north ' .. t[1])
+  ok(t[4] <= -8 and t[4] >= -13 and t[3] >= 2 and t[3] <= 5, 'up 8-13 px, right 2-5 px: ' .. t[1] .. ' ' .. t[3] .. ' ' .. t[4])
+  if t[1] == 2442 then pearl = t end
+end
+ok(pearl and pearl[3] == 2 and pearl[4] == -9, 'Pearl Scallop Wings 2442: 2 right, 9 up (it hung 9.2 px low)')
+local good = 0
+ns = C.applyShifts({ shifts = { { 5, 0, 1, -9 }, { 0, 0, 1, 1 }, { 6, 4, 0, 1 }, { 7, 0, 0.5, 1 }, { 8, 0, 0, -25 }, { 9, 2 }, 'x' } },
+  function(look) good = good + 1; ok(look == 5, 'only the good row ' .. look) end)
+ok(ns == 1 and good == 1, 'bad shift rows skipped')
+ok(C.applyShifts(nil, error) == 0 and C.applyShifts({ pieces = {} }, error) == 0, 'no shifts: nothing')
+
 if fails > 0 then os.exit(1) end
 print('wingfit_core_test: all checks passed')
