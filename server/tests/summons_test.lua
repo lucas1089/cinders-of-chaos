@@ -207,7 +207,14 @@ assert(wild:find("ChaosSpell.bindSummon(player, m)", 1, true) and not wild:find(
 local moon = read("data/spells/chaos/druid/spirit_wolves.lua")
 assert(moon:find("ChaosSpell.bindSummon(player, wolf)", 1, true) and not moon:find(":setMaster(", 1, true), "Moonfang Pack binds its wolves")
 assert(moon:find("ChaosCompanionGuard", 1, true), "Moonfang wolves take no hits from the owner's area spells")
-assert(read("data/spells/chaos/illusionist/mirror_image.lua"):find("bindSummon", 1, true), "Mirror Image binds its clones")
+local mirror = read("data/spells/chaos/illusionist/mirror_image.lua")
+assert(mirror:find("bindSummon", 1, true), "Mirror Image binds its clones")
+-- V30 follow-up: a caster boxed in by a pack still gets the summon, on the next ring out (ChaosSpell.freeNear)
+for path, text in pairs({wild_bond = wild, spirit_wolves = moon, mirror_image = mirror,
+		necro_lib = read("data/scripts/chaos/necro_lib.lua")}) do
+	assert(text:find("ChaosSpell.freeNear(", 1, true) and not text:find("ChaosSpell.freeAround(", 1, true),
+		path .. ": summons take the next ring when the 8 tiles round the caster are taken")
+end
 assert(read("data/scripts/chaos/necro_lib.lua"):find("ChaosSpell.bindSummon(player, m)", 1, true), "the Necromancer's minions")
 local arch = read("data/scripts/chaos/archetypes.lua")
 local _, binds = arch:gsub("bindSummon%(player, m%)", "")

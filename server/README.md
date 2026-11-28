@@ -836,6 +836,11 @@ left open, now closed (`summons_core.lua`, `summons.lua`, `tests/summons_test.lu
   caster's own or its party's summons (its comment always said so; the code did not); Feral Command picks the nearest enemy
   within 7 sqm when its target is an ally (or says "No enemy in range."); the companion's bite skips an ally target;
 - the Moonfang wolves now carry the companion guard too (the owner's area spells do not hurt them).
+- **Room round a boxed-in caster (V30 follow-up, 2026-11-27).** Moonfang Pack of the Druid and Hall of Mirrors of the
+  Illusionist placed summons on ring 1 only. With a pack on all 8 tiles they said "There is not enough room." Both now use
+  `ChaosSpell.freeNear`, the rule Wild Bond got in V30: ring 1 first, then the next ring, only tiles in sight past ring 1.
+  Moonfang Pack reaches 3 rings, as Wild Bond does. Hall of Mirrors reaches 2 rings: a copy must stand in the crowd to pass
+  for the caster, and a copy past the pack would not. Tests: `tests/spell_no_room_test.lua`, `tests/summons_test.lua`.
 Client side the Auto Target already skips summons and effigies (base patch 0076); its locked target and attack next
 followed in 2026-10-21 (base patch 0112, see "Summons: targets, walk-through, levels"). **Second pass (O86, 2026-10-27).**
 A likely engine cause, still a hypothesis (the engine source is not here; written from the TFS 1.4.2 code as remembered):
@@ -2592,6 +2597,9 @@ took only a free tile on or next to the spot, so a caster in a pack of monsters 
 and three steps away (a free tile in sight), then takes a tile with a creature on it (the spot, a tile next to it, the
 caster's own); `Game.createMonster` already places with force, so the minion shares it and walks off. Never a protection
 zone, a wall, stairs or a teleport. Bone Golem goes through the same rule. Test: `tests/necro_summon_test.lua` "no room".
+V30 follow-up, 2026-11-27: the free tile search of `spotAt` is now `ChaosSpell.freeNear(Position(pos), ref, M.SPOT_REACH)`,
+the shared room rule of every summon. `M.SPOT_REACH = 3`. Same result as the old loop of its own: ring 1, then rings 2 and
+3, only tiles in sight. The test adds a free tile on ring 3 and one out of sight.
 Fields (owner: "summons do not appear in fields"): the minion types have under 50 health until `setMaxHealth`, so a fire
 field on the spot killed them as they rose. `spotAt` now takes an empty field tile (on or next to the spot) before a
 crowded one, and `ChaosNecro.raise` removes the field on the spot first (a puff).
@@ -27960,6 +27968,8 @@ health; Wild Bond on wolves already out calls them back and heals them. In 10 s 
   `data/spells/chaos/_common.lua` takes the nearest ring with a free tile, up to `reach` rings out, and past ring 1 only
   tiles in sight of the caster (`Position:isSightClear`). Wild Bond calls and brings back its wolves with
   `CALL_REACH = 3`. Live: 8 rats on ring 1, the cast made the wolf on ring 2. Test: `tests/spell_no_room_test.lua`.
+  The other summons followed on 2026-11-27: Moonfang Pack, Hall of Mirrors and the Necromancer's minions. See "Player summons
+  are allies" and "Necromancer summons and the summon cap".
 
 O332 (below, "Wolves as the main damage") changed the numbers of this section: the own bite is `0.75 x level + 1.35 x skill`, every wolf hit
 takes the wolf factor (Pack Alpha, the Trials' minion damage), the share limits are per build (plain, tree, full) and the model

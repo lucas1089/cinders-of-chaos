@@ -150,35 +150,21 @@ local function inSight(from, to)
 	return not ok or clear ~= false
 end
 
+-- the rings round the spot where a minion may rise when the spot is taken
+M.SPOT_REACH = 3
+
 -- where a minion of `pos` rises (never a protection zone), or nil: a free tile on or next to `pos`, else a free tile
--- two or three steps away in sight of it, else (beta 2026-10-22: "when the necromancer has no room, the summons are
--- blocked") a tile with a creature on it, `pos` or next to it, then `ref` (the caster's own tile). M.raise creates
--- with force, so the minion shares that tile and walks off.
+-- two or three steps away in sight of it (ChaosSpell.freeNear, the room rule of every summon since V30), else (beta
+-- 2026-10-22: "when the necromancer has no room, the summons are blocked") a tile with a creature on it, `pos` or next to
+-- it, then `ref` (the caster's own tile). M.raise creates with force, so the minion shares that tile and walks off.
 function M.spotAt(pos, ref)
 	ref = ref or pos
 	if ChaosSpell.isFreeTile(pos) then
 		return Position(pos)
 	end
-	local spots = ChaosSpell.freeAround(pos, ref)
+	local spots = ChaosSpell.freeNear(Position(pos), ref, M.SPOT_REACH)
 	if spots[1] then
 		return spots[1].pos
-	end
-	for r = 2, 3 do
-		local best, bestD
-		for dx = -r, r do
-			for dy = -r, r do
-				if math.max(math.abs(dx), math.abs(dy)) == r then
-					local p = Position(pos.x + dx, pos.y + dy, pos.z)
-					local d = (p.x - ref.x) ^ 2 + (p.y - ref.y) ^ 2
-					if (not best or d < bestD) and ChaosSpell.isFreeTile(p) and inSight(pos, p) then
-						best, bestD = p, d
-					end
-				end
-			end
-		end
-		if best then
-			return best
-		end
 	end
 	-- (beta 2026-10-22: "summons do not appear in fields") a field-covered tile with nobody on it, on or next to the
 	-- spot; M.raise puts the field out before the minion rises there

@@ -77,6 +77,19 @@ do
 	local wild = read("data/spells/chaos/beastmaster/wild_bond.lua")
 	ok(wild:find("ChaosSpell.freeNear(pos, pos, CALL_REACH)", 1, true) and wild:find("local CALL_REACH = 3", 1, true)
 		and not wild:find("freeAround", 1, true), "Wild Bond calls its wolves up to 3 rings out")
+	ok(#ChaosSpell.freeNear(c, c, 2) == 0, "freeNear: rings 1 and 2 taken, reach 2: no room")
+	-- the other summons that stood on ring 1 only (V30 follow-up): Moonfang Pack and the Necromancer's minions 3 rings out,
+	-- Hall of Mirrors 2 (a copy past the pack reads as no copy)
+	local moon = read("data/spells/chaos/druid/spirit_wolves.lua")
+	ok(moon:find("ChaosSpell.freeNear(player:getPosition(), player:getPosition(), CALL_REACH)", 1, true)
+		and moon:find("local CALL_REACH = 3", 1, true) and not moon:find("freeAround", 1, true),
+		"Moonfang Pack calls its wolves up to 3 rings out")
+	local mirror = read("data/spells/chaos/illusionist/mirror_image.lua")
+	ok(mirror:find("ChaosSpell.freeNear(pos, pos, COPY_REACH)", 1, true) and mirror:find("local COPY_REACH = 2", 1, true)
+		and not mirror:find("freeAround", 1, true), "Hall of Mirrors places its copies up to 2 rings out")
+	local necro = read("data/scripts/chaos/necro_lib.lua")
+	ok(necro:find("ChaosSpell.freeNear(Position(pos), ref, M.SPOT_REACH)", 1, true) and necro:find("M.SPOT_REACH = 3", 1, true)
+		and not necro:find("freeAround", 1, true), "the Necromancer's minions rise up to 3 rings out")
 end
 
 print(string.format("spell_no_room_test: %d checks, %d failures", n, fails))
