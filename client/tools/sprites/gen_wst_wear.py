@@ -6,7 +6,7 @@
     python3 -I gen_wst_wear.py ids [--check]          # the generated files from the table (no art)
     python3 -I gen_wst_wear.py build DAT SPR OUT_DIR --src DIR   # the cliff-built pair 82 -> pair 83; any other refused
     python3 -I gen_wst_wear.py live DAT SPR           # a built pair holds every piece (pending while PAIR_ASSETS < 83)
-    python3 -I gen_wst_wear.py shifts DAT SPR [--check]   # the north move of every pack wing from the pair (O779)
+    python3 -I gen_wst_wear.py shifts DAT SPR [--check]   # the north, east and west move of every pack wing (O779, O784)
     python3 -I gen_wst_wear.py preview OUT_DIR --src DIR         # wear_preview.mp4 on the class sheets (never committed)
 
 Owner 2026-11-24: "Pode importar, com levitação e camada nova. Remova as nossas artes já publicadas que estão com qualidade
@@ -49,9 +49,17 @@ front (the rule of the code-drawn wings, O770 `north_hang`). art_import/pack_wea
 north picture: the whole pixels that put the alpha centre of y pattern 0 facing north on the one facing south (`turn_of`,
 `hang` = north minus south before, px). `shifts DAT SPR` measures them on a built pair; `live` holds the table to the pair.
 wear_pieces.lua `shifts` hands them to the engine (base patch 0217, setOutfitPackShift): the wings' picture moves, the body,
-its lift and the head / cape layer stay. East and west keep the pack's place (the wings trail behind the body, 2 to 11 px
-under the south view, inside the range of the code-drawn wings). Heads and capes are not moved: their north views differ by
-the piece (a cape seen from behind covers the back), not by one rule.
+its lift and the head / cape layer stay. Heads and capes are not moved: their north views differ by the piece (a cape seen
+from behind covers the back), not by one rule.
+
+East and west views (O784). Seen beside the fixed north view, the side views still hung under the south one: on pair 90 the
+alpha centre of y pattern 0 facing east is 4.8 to 9.8 px lower (median 7.9), facing west 1.0 to 6.5 px (median 4.1). The same
+cause (the pack's rows turn one picture drawn from above) and the same rule as north for the height: each pack wing gets an
+east and a west row after its north row, dy the whole px that put the side picture's centre row on the south one's (`side_of`),
+dx 0. Only the height moves: facing east or west the wings trail behind the body (5 to 10 px towards the back in the pair),
+which is where wings on the back belong. A wing whose side hang rounds to 0 keeps its row in the table (dy 0) and gets no
+line in wear_pieces.lua. Base patch 0217 already moves any direction a row names; base patch 0218 adds the call that hands
+in a look's four moves at once (setOutfitPackShifts), and an older client with 0217 only takes the rows one by one.
 
 Input pair: pair 82 with the cliff pieces of O746 (gen_cliff_art.py build): items end at 44605, outfits at 3588, and the
 cliff pieces pass gen_cliff_art.py live. Any other pair is refused. The order of pair 83 is therefore cliff art first, then
@@ -378,8 +386,22 @@ def turn_of(pats, frames):
     return rnd(s[0] - n[0]), rnd(s[1] - n[1]), round(n[1] - s[1], 1)
 
 
+def side_of(pats, frames, d):
+    """(0, dy, hang) of a wing's view facing east (d 1) or west (d 3): the whole px that put that picture's centre row on the
+    south one's, and the side minus south row before (px); the wing keeps its place across (it trails behind the body)"""
+    v = centre([pats[(0, d, f)] for f in range(frames)])
+    s = centre([pats[(0, 2, f)] for f in range(frames)])
+    if v is None or s is None:
+        return 0, 0, 0.0
+    return 0, rnd(s[1] - v[1]), round(v[1] - s[1], 1)
+
+
+SHIFT_DIRS = ('north', 'east', 'west')   # the rows of a pack wing, in this order (O779 north, O784 east and west)
+
+
 def shift_rows(dat, spr, rows=None, log=print):
-    """one row a pack wing, in table order, measured on a built pair; None when a wing is not in the pair"""
+    """three rows a pack wing (north, east, west), in table order, measured on a built pair; None when a wing is not in
+    the pair"""
     rows = load() if rows is None else rows
     out = []
     for r in rows:
@@ -389,8 +411,10 @@ def shift_rows(dat, spr, rows=None, log=print):
         if isinstance(pats, str):
             log(pats)
             return None
-        dx, dy, hang = turn_of(pats, int(r['frames']))
-        out.append({'look': r['look'], 'key': r['key'], 'dir': 'north', 'dx': str(dx), 'dy': str(dy), 'hang': '%.1f' % hang})
+        n = int(r['frames'])
+        for d in SHIFT_DIRS:
+            dx, dy, hang = turn_of(pats, n) if d == 'north' else side_of(pats, n, 1 if d == 'east' else 3)
+            out.append({'look': r['look'], 'key': r['key'], 'dir': d, 'dx': str(dx), 'dy': str(dy), 'hang': '%.1f' % hang})
     return out
 
 
@@ -406,20 +430,20 @@ def load_shifts(path=SHIFTS):
 
 
 def shift_problems(srows=None, rows=None):
-    """the rules of pack_wear_shift.csv that need no pair: one north row per pack wing in table order, whole px inside
-    SHIFT_MAX, dy the hang rounded the other way, the move up (a pack wing never hangs higher facing north)"""
+    """the rules of pack_wear_shift.csv that need no pair: a north, an east and a west row per pack wing in table order,
+    whole px inside SHIFT_MAX, dy the hang rounded the other way, the move up (a pack wing never hangs higher facing north,
+    east or west than facing south), dx 0 facing east and west (only the height moves, O784)"""
     srows = load_shifts() if srows is None else srows
     rows = load() if rows is None else rows
     if not srows or set(srows[0].keys()) != set(SHIFT_HEADER):
         return ['pack_wear_shift.csv: the columns are not %s (run gen_wst_wear.py shifts DAT SPR)' % SHIFT_HEADER]
-    wings = [(r['look'], r['key']) for r in rows if r['cat'] == 'wings']
-    if [(r['look'], r['key']) for r in srows] != wings:
-        return ['pack_wear_shift.csv: one row per pack wing of pack_wear.csv in its order (%d wings, %d rows)' % (len(wings), len(srows))]
+    wings = [(r['look'], r['key'], d) for r in rows if r['cat'] == 'wings' for d in SHIFT_DIRS]
+    if [(r['look'], r['key'], r['dir']) for r in srows] != wings:
+        return ['pack_wear_shift.csv: a north, an east and a west row per pack wing of pack_wear.csv in its order '
+                '(%d rows wanted, %d rows)' % (len(wings), len(srows))]
     bad = []
     for r in srows:
-        tag = 'pack_wear_shift.csv %s %s' % (r['look'], r['key'])
-        if r['dir'] != 'north':
-            bad.append('%s: only the north view moves' % tag)
+        tag = 'pack_wear_shift.csv %s %s %s' % (r['look'], r['key'], r['dir'])
         if not re.fullmatch(r'-?\d+', r['dx']) or not re.fullmatch(r'-?\d+', r['dy']) or not re.fullmatch(r'-?\d+\.\d', r['hang']):
             bad.append('%s: dx, dy whole px, hang px with one decimal' % tag)
             continue
@@ -429,7 +453,9 @@ def shift_problems(srows=None, rows=None):
         if abs(dy + hang) > 0.55:
             bad.append('%s: dy %d is not the hang %.1f rounded the other way' % (tag, dy, hang))
         if dy > 0:
-            bad.append('%s: a pack wing moves up facing north, not down' % tag)
+            bad.append('%s: a pack wing moves up, not down' % tag)
+        if r['dir'] != 'north' and dx != 0:
+            bad.append('%s: facing east or west only the height moves (dx 0)' % tag)
     return bad
 
 
@@ -478,7 +504,8 @@ def client_text(rows=None, shifts=None):
         if r['cat'] == 'wings':
             lines.append('    [%s] = "%s",' % (r['look'], r['lift']))
     lines.append('  },')
-    lines.append('  -- O779, base patch 0217: a pack wing\'s picture moved facing a direction {look, dir (0 north), dx, dy}, px at 1x')
+    lines.append('  -- O779 / O784, base patches 0217 and 0218: a pack wing\'s picture moved facing a direction {look, dir (0 north,')
+    lines.append('  -- 1 east, 3 west), dx, dy}, px at 1x; a direction without a row does not move')
     lines.append('  shifts = {')
     for r in (load_shifts() if shifts is None else shifts):
         if r['dx'] != '0' or r['dy'] != '0':
@@ -765,7 +792,8 @@ def live(dat_path, spr_path, rows=None, sums=None, assets=None, log=print, shift
         got = shift_rows(dat, spr, rows, log=log)
         if got != shifts:
             diff = [g['key'] for g, w in zip(got or [], shifts) if g != w] or ['%d rows, the table %d' % (len(got or []), len(shifts))]
-            bad.append('pack_wear_shift.csv is not the north move of the pair (%s): run gen_wst_wear.py shifts DAT SPR' % ', '.join(diff[:5]))
+            diff = [g['key'] + ' ' + g['dir'] for g, w in zip(got or [], shifts) if g != w] or diff
+            bad.append('pack_wear_shift.csv is not the move of the pair (%s): run gen_wst_wear.py shifts DAT SPR' % ', '.join(diff[:5]))
     for line in bad:
         log(line)
     log('%d of %d pieces hold their pictures' % (len(rows) - len(bad), len(rows)))
@@ -927,9 +955,12 @@ def main(argv):
             bad += generated(chk)
         for line in bad:
             print(line)
-        hang = sorted(float(r['hang']) for r in srows)
-        print('%d pack wings: north minus south %.1f to %.1f px before, moved %d to %d px up%s' % (
-            len(srows), hang[0], hang[-1], min(-int(r['dy']) for r in srows), max(-int(r['dy']) for r in srows), '' if bad else ': ok'))
+        for d in SHIFT_DIRS:
+            dr = [r for r in srows if r['dir'] == d]
+            hang = sorted(float(r['hang']) for r in dr)
+            print('%d pack wings: %s minus south %.1f to %.1f px before (median %.1f), moved %d to %d px up' % (
+                len(dr), d, hang[0], hang[-1], hang[len(hang) // 2], min(-int(r['dy']) for r in dr), max(-int(r['dy']) for r in dr)))
+        print('%d rows%s' % (len(srows), '' if bad else ': ok'))
         return 1 if bad else 0
     if cmd == 'preview':
         if len(args) != 1 or not src:

@@ -872,6 +872,20 @@ jobs:
           g++ -std=c++17 -O1 -fsanitize=address,undefined -I "$d" client/tools/chaospieceshift_test.cpp -o "$d/chaospieceshift_asan"
           "$d/chaospieceshift_asan"
 
+      - name: Pack wings facing east and west stand as high as facing south (C++; headers from base patches 0209, 0217 and 0218, O784)
+        run: |
+          d=$(mktemp -d)
+          awk '/^\+\+\+ b\/src\/client\/chaospiece\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
+            client/base-patches/0209-pack-wings-levitation.patch > "$d/chaospiece.h"
+          awk '/^\+\+\+ b\/src\/client\/chaospieceshift\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
+            client/base-patches/0217-pack-wings-north-shift.patch > "$d/chaospieceshift.h"
+          awk '/^\+\+\+ b\/src\/client\/chaospiecesides\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
+            client/base-patches/0218-pack-wings-side-shift.patch > "$d/chaospiecesides.h"
+          g++ -std=c++17 -O1 -Wall -Wextra -I "$d" client/tools/chaospiecesides_test.cpp -o "$d/chaospiecesides_test"
+          "$d/chaospiecesides_test"
+          g++ -std=c++17 -O1 -fsanitize=address,undefined -I "$d" client/tools/chaospiecesides_test.cpp -o "$d/chaospiecesides_asan"
+          "$d/chaospiecesides_asan"
+
       - name: Head and cape layer round the body (C++; header from base patch 0210, O747)
         run: |
           d=$(mktemp -d)

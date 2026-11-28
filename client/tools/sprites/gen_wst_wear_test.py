@@ -10,7 +10,8 @@ pack (metadata and sheets of one replaced wing, one new wing, one head and one c
 wing keeps its look and loses its displacement, the new looks are appended, every old outfit, item, effect and sprite byte
 for byte, the same bytes twice), the refusals (another item count, a built pair, an existing folder, looks not dense), and
 `live` (pending below pair 83, a wrong picture and a missing look found); the north move of the pack wings (O779):
-`turn_of`, the rules of pack_wear_shift.csv on broken copies, the rows in wear_pieces.lua, `live` with a wrong move.
+`turn_of`, the rules of pack_wear_shift.csv on broken copies, the rows in wear_pieces.lua, `live` with a wrong move; the
+east and west moves (O784): `side_of`, three rows per wing, dx 0 on the sides, `live` with a wrong west move.
 """
 import copy
 import hashlib
@@ -296,13 +297,27 @@ check(ww.turn_of(pats, 2) == (2, -10, 10.0), 'turn_of: the north picture 2 px le
       % (ww.turn_of(pats, 2),))
 empty = {k: np.zeros((96, 96, 4), np.uint8) for k in pats}
 check(ww.turn_of(empty, 2) == (0, 0, 0.0), 'turn_of: an empty view does not move')
+east, west = pic(40, 37), pic(40, 33)
+pats.update({(0, 1, 0): east, (0, 1, 1): east, (0, 3, 0): west, (0, 3, 1): west})
+check(ww.side_of(pats, 2, 1) == (0, -7, 7.0), 'side_of: the east picture 7 px low moves 7 up: %s' % (ww.side_of(pats, 2, 1),))
+check(ww.side_of(pats, 2, 3) == (0, -3, 3.0), 'side_of: the west picture 3 px low moves 3 up')
+pats[(0, 1, 0)] = pats[(0, 1, 1)] = pic(33, 37)
+check(ww.side_of(pats, 2, 1) == (0, -7, 7.0), 'side_of: only the height moves, the wing keeps its place across')
+empty = {k: np.zeros((96, 96, 4), np.uint8) for k in pats}
+check(ww.side_of(empty, 2, 1) == (0, 0, 0.0) and ww.side_of(empty, 2, 3) == (0, 0, 0.0), 'side_of: an empty view does not move')
 check(ww.shift_problems() == [], 'the committed pack_wear_shift.csv keeps its rules')
 srows = ww.load_shifts()
 wl = [r for r in rows if r['cat'] == 'wings']
-check(len(srows) == len(wl) == 74, 'one north move per pack wing: %d' % len(srows))
-pearl = [r for r in srows if r['key'] == 'pearl_scallop_wings']
+check(len(srows) == 3 * len(wl) == 222, 'a north, an east and a west move per pack wing: %d' % len(srows))
+check([r['dir'] for r in srows[:3]] == ['north', 'east', 'west'], 'the rows of a wing: north, east, west')
+north_rows = [r for r in srows if r['dir'] == 'north']
+side_rows = [r for r in srows if r['dir'] != 'north']
+pearl = [r for r in north_rows if r['key'] == 'pearl_scallop_wings']
 check(len(pearl) == 1 and (pearl[0]['dx'], pearl[0]['dy']) == ('2', '-9'), 'Pearl Scallop Wings: 2 right, 9 up')
-check(all(-13 <= int(r['dy']) <= -8 for r in srows), 'every pack wing hung 8-13 px low facing north (pair 90)')
+check(all(-13 <= int(r['dy']) <= -8 for r in north_rows), 'every pack wing hung 8-13 px low facing north (pair 90)')
+check(all(r['dx'] == '0' and -10 <= int(r['dy']) <= 0 for r in side_rows), 'facing east and west: up 0-10 px, never across')
+check(all(-10 <= int(r['dy']) <= -5 for r in side_rows if r['dir'] == 'east'), 'facing east every pack wing hung 5-10 px low (pair 90)')
+check(all(abs(int(r['dy']) + float(r['hang'])) <= 0.5 for r in srows), 'after the move every view is within half a px of south')
 
 
 def bad_shift(change):
@@ -313,7 +328,11 @@ def bad_shift(change):
 
 check('order' in bad_shift(lambda c: c.reverse()), 'a row out of order is found')
 check('order' in bad_shift(lambda c: c.pop()), 'a missing wing is found')
-check('only the north' in bad_shift(lambda c: c[0].__setitem__('dir', 'east')), 'another direction is found')
+check('order' in bad_shift(lambda c: c[0].__setitem__('dir', 'east')), 'a direction out of its place is found')
+check('order' in bad_shift(lambda c: c.__delitem__(1)), 'a missing east row is found')
+check('dx 0' in bad_shift(lambda c: c[1].update(dx='2')), 'a side move across is found')
+check('not down' in bad_shift(lambda c: c[2].update(dy='2', hang='-2.0')), 'a side move down is found')
+check(ww.shift_problems([r for r in srows if r['dir'] == 'north'], rows) != [], 'the north-only table of O779 is stale now')
 check('whole px' in bad_shift(lambda c: c[0].__setitem__('dx', '1.5')), 'a part px is found')
 check('over 24' in bad_shift(lambda c: c[0].update(dx='25')), 'a move over 24 px is found')
 check('rounded' in bad_shift(lambda c: c[0].update(dy=str(int(c[0]['dy']) + 2))), 'dy off the hang is found')
@@ -321,15 +340,24 @@ check('not down' in bad_shift(lambda c: c[0].update(dy='3', hang='-3.0')), 'a mo
 check('columns' in ' '.join(ww.shift_problems([], rows)), 'an empty table is found')
 lt = ww.client_text(rows, [{'look': '2442', 'key': 'pearl_scallop_wings', 'dir': 'north', 'dx': '2', 'dy': '-9', 'hang': '9.2'}])
 check('shifts = {' in lt and '{2442,0,2,-9}' in lt, 'wear_pieces.lua: the shift rows as look, direction 0, dx, dy')
+lt = ww.client_text(rows, [{'look': '2442', 'key': 'pearl_scallop_wings', 'dir': 'north', 'dx': '2', 'dy': '-9', 'hang': '9.2'},
+                           {'look': '2442', 'key': 'pearl_scallop_wings', 'dir': 'east', 'dx': '0', 'dy': '-6', 'hang': '6.1'},
+                           {'look': '2442', 'key': 'pearl_scallop_wings', 'dir': 'west', 'dx': '0', 'dy': '0', 'hang': '0.3'}])
+check('{2442,1,0,-6}' in lt and '{2442,3,' not in lt, 'wear_pieces.lua: an east row as direction 1; a row of no move left out')
 
 # live holds the moves to a pair: the synthetic wings measured, then one row wrong
 sp = ww.shift_rows(nd, nspr, prow, log=quiet)
-check(sp is not None and len(sp) == sum(1 for r in prow if r['cat'] == 'wings'), 'shift_rows: one row per wing of the pair')
+check(sp is not None and len(sp) == 3 * sum(1 for r in prow if r['cat'] == 'wings'), 'shift_rows: three rows per wing of the pair')
+check(sp is not None and [r['dir'] for r in sp[:3]] == ['north', 'east', 'west'], 'shift_rows: north, east, west')
 check(ww.live(ndat_p, nspr_p, prow, psums, assets=83, log=quiet, shifts=sp) == [], 'live: the moves of the pair pass')
 wrong = copy.deepcopy(sp)
 wrong[0]['dy'] = str(int(wrong[0]['dy']) - 3)
 check(any('pack_wear_shift' in b for b in ww.live(ndat_p, nspr_p, prow, psums, assets=83, log=quiet, shifts=wrong)),
       'live: a wrong north move is found')
+wrong = copy.deepcopy(sp)
+wrong[2]['dy'] = str(int(wrong[2]['dy']) - 2)
+check(any('west' in b for b in ww.live(ndat_p, nspr_p, prow, psums, assets=83, log=quiet, shifts=wrong)),
+      'live: a wrong west move is found and named')
 
 shutil.rmtree(case.dir, ignore_errors=True)
 shutil.rmtree(tmp, ignore_errors=True)
