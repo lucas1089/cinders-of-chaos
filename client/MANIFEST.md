@@ -7965,7 +7965,7 @@ No art file is read. No purchased art, no AI service. **Status: tool, table, ser
 
 ## Decor flames (O623; `tools/sprites/gen_decor_flames.py`, `art_import/decor_flames.csv`; owner 2026-11-17; joins pair 74)
 
-**Seen in a client (2026-11-27, V43):** the campfire of the ashfall hamlet camp animates; torch, brazier, candle and cold spirit animate when placed (no map places them yet). The temple torch first cut the map packet short: its node lacked FLAG_ANIMATION (server/README.md "Decor flames (pair 74)"); fixed by an `item_wire.csv` row.
+**Seen in a client (2026-11-27, V43):** the campfire of the ashfall hamlet camp animates; torch, brazier, candle and cold spirit animate when placed (the map holds 22 of them since O788, server/README.md "Decor flames on the map (O788)"). The temple torch first cut the map packet short: its node lacked FLAG_ANIMATION (server/README.md "Decor flames (pair 74)"); fixed by an `item_wire.csv` row.
 
 Five animated fire props from pixelfx (https://github.com/patch-gg/pixelfx, commit 5294518, MIT, Copyright (c) 2026 Patch, Hugo Duprez;
 docs/CREDITS.md). The owner said yes to the O622 fit. Built into pair 74 (O647, "Pair 74, the real build").

@@ -433,6 +433,13 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                rewards on show in the quest hall's alcoves match what each quest gives (tools/quest_showcase.json: an
                item swapped, an item added, the boss-loot quests' sign text; after mapfixes, before poi; with --dry-run
                it reads the real map and writes nothing)
+  decorflamesmap tools/patch_decor_flames_map.py the owner's answer of 2026-11-28 ("Pode escolher", README "Decor flames on the
+               map (O788)"): the animated decor flames of pair 74 on the map, tools/decor_flames_map.csv (braziers by
+               temple, depot and bank doors, camp fires, candles on altars and counters, cold spirit flames in the ice
+               temple and a crypt; a still coal basin, candelabrum or campfire swapped in place or the flame put on top);
+               refused when a tile is not what the row expects; only the listed tiles change (map write guard); waits
+               for chaosClientPair >= 74 like decorflames (after questshowcase, before poi; with --dry-run it reads the
+               real map and writes nothing)
   deadholes    tools/patch_dead_holes.py         the owner's report of 2026-10-26 ("this hole leads nowhere", README "Dead holes (O264)"): the
                floor changes of the base map whose landing has no walkable ground (tools/dead_holes.csv, found by
                tools/check_dead_holes.py) lose their item or turn into plain ground; one that has a tile below now is
@@ -1759,6 +1766,21 @@ def step_questshowcase(server, data, ctx):
 
 
 STEPS.insert(STEPS.index('mapfixes') + 1, 'questshowcase')  # after mapfixes (the quest hall's alcoves moved), before poi
+
+
+def step_decorflamesmap(server, data, ctx):
+    # the client pair guard (config.lua chaosClientPair >= 74) is in the tool; its warning reaches the report
+    if ctx['dry']:
+        real = os.path.join(ctx['server'], 'data')
+        mp = ctx.get('dry_map') or tool_map_path(real)
+        if not mp:
+            return tool_result((False, ['no map in %s/world' % real]))
+        return tool_result_warn(run_tool([tool('patch_decor_flames_map.py'), real, '--dry-run', '--map', mp],
+                                         'patch_decor_flames_map.py'))
+    return tool_result_warn(run_tool([tool('patch_decor_flames_map.py'), data], 'patch_decor_flames_map.py'))
+
+
+STEPS.insert(STEPS.index('questshowcase') + 1, 'decorflamesmap')  # after the last map writer before poi (O788)
 
 
 def step_deadholes(server, data, ctx):

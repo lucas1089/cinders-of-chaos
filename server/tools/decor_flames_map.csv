@@ -1,0 +1,27 @@
+# The animated decor flames on the world map (O788, owner 2026-11-28 "Pode escolher"): read by patch_decor_flames_map.py, step decorflamesmap.
+# item: 48560 flame brazier (2x2, solid), 48561 flame campfire (2x2), 48562 flame candle, 48563 flame cold spirit.
+# action swap: the stock item `old` on the tile becomes the flame in its place. action add: the flame goes on top; `on` is the tile's top item now.
+# A 2x2 flame draws over its west, north and north-west tiles: those are free floor. Read on the installed map of 2026-11-28.
+x,y,z,item,action,old,on,why
+32365,32229,7,48560,add,,4543,Cinderhold temple north door: west of the paved way in (sand strip beside the hedge)
+32374,32229,7,48560,add,,4543,Cinderhold temple north door: east of the paved way in (sand strip beside the hedge)
+32343,32216,7,48560,add,,724,Cinderhold depot north door (32344-32347): west of it against the wall column
+32349,32216,7,48560,add,,3654,Cinderhold depot north door: east of it against the wall
+32352,32216,7,48560,add,,3656,Cinderhold bank door (32353-32354): west of it under the bank sign
+32356,32216,7,48560,add,,3655,Cinderhold bank door: east of it past the street lamp
+32418,32376,7,48561,swap,1424,,the camp of three fires south-east of Cinderhold: north fire
+32415,32379,7,48561,swap,1424,,the camp of three fires south-east of Cinderhold: west fire
+32420,32382,7,48561,swap,1424,,the camp of three fires south-east of Cinderhold: south fire
+32474,31781,7,48561,swap,1424,,the clearing camp east of Thornmere
+32962,32073,7,48562,add,,2606,Mirewake temple: the north altar
+32962,32079,7,48562,add,,2607,Mirewake temple: the south altar
+32954,32088,7,48562,add,,2609,Mirewake crypt: the altar row by the north coffins
+32954,32095,7,48562,add,,2609,Mirewake crypt: the altar row by the south coffins
+32359,32208,7,48562,swap,2057,,Cinderhold: the north counter candelabrum of the tavern north of the depot
+32359,32211,7,48562,swap,2057,,Cinderhold: the south counter candelabrum of the same tavern
+32359,32231,7,48562,swap,2057,,Cinderhold: the counter candelabrum of the shop west of the temple
+32344,32237,7,48562,swap,2057,,Cinderhold: the table candelabrum of the house south of the depot
+32211,31129,7,48563,swap,2042,,Rimeholt temple (the ice town): the west candelabrum of the sacrificial stone
+32214,31129,7,48563,swap,2042,,Rimeholt temple: the east candelabrum of the sacrificial stone
+32959,32087,7,48563,add,,407,Mirewake crypt: the nook between the north coffins against the wall
+32959,32096,7,48563,add,,407,Mirewake crypt: the nook between the south coffins against the wall
